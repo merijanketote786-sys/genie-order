@@ -14,7 +14,7 @@ import {
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Button } from "@/components/ui/button";
 import { useChat } from "@ai-sdk/react";
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { RotateCcw, Share2 } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -136,17 +136,22 @@ function OrderChat() {
               </p>
             </div>
           </div>
-          {messages.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClear}
-              className="gap-1.5"
-            >
-              <RotateCcw className="h-4 w-4" />
-              <span className="hidden sm:inline">New</span>
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            <Link to="/invoice">
+              <Button variant="ghost" size="sm">Invoice Bot</Button>
+            </Link>
+            {messages.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClear}
+                className="gap-1.5"
+              >
+                <RotateCcw className="h-4 w-4" />
+                <span className="hidden sm:inline">New</span>
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
