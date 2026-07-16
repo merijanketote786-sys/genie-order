@@ -24,6 +24,7 @@ Rules:
 - Order Number agar user ne na diya ho to blank chhor do.
 - Phone number ko as-is rakho, formatting badlo mat.
 - Numbers (Product Total, Delivery, Advance) me sirf digits/currency rakho jaisa user ne diya.
+- Agar user ne payment status "cc" (cash on delivery / COD wali cc) mention ki ho, to Product Total, Delivery, aur Advance teeno fields me sirf "0" likho (chahe user ne koi bhi amount di ho).
 - Response me pehli line se seedha "Order Number:" start karo.`;
 
 type ChatRequestBody = { messages?: unknown };
