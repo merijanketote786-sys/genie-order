@@ -9,12 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as InvoiceRouteImport } from './routes/invoice'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiInvoiceRouteImport } from './routes/api/invoice'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 
+const InvoiceRoute = InvoiceRouteImport.update({
+  id: '/invoice',
+  path: '/invoice',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiInvoiceRoute = ApiInvoiceRouteImport.update({
+  id: '/api/invoice',
+  path: '/api/invoice',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -25,37 +37,59 @@ const ApiChatRoute = ApiChatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/invoice': typeof InvoiceRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/invoice': typeof ApiInvoiceRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/invoice': typeof InvoiceRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/invoice': typeof ApiInvoiceRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/invoice': typeof InvoiceRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/invoice': typeof ApiInvoiceRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/chat'
+  fullPaths: '/' | '/invoice' | '/api/chat' | '/api/invoice'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/chat'
-  id: '__root__' | '/' | '/api/chat'
+  to: '/' | '/invoice' | '/api/chat' | '/api/invoice'
+  id: '__root__' | '/' | '/invoice' | '/api/chat' | '/api/invoice'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  InvoiceRoute: typeof InvoiceRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiInvoiceRoute: typeof ApiInvoiceRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/invoice': {
+      id: '/invoice'
+      path: '/invoice'
+      fullPath: '/invoice'
+      preLoaderRoute: typeof InvoiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/invoice': {
+      id: '/api/invoice'
+      path: '/api/invoice'
+      fullPath: '/api/invoice'
+      preLoaderRoute: typeof ApiInvoiceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/chat': {
@@ -70,7 +104,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  InvoiceRoute: InvoiceRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiInvoiceRoute: ApiInvoiceRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

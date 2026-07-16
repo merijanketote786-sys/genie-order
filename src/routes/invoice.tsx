@@ -20,26 +20,20 @@ import { RotateCcw, Share2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/invoice")({
   head: () => ({
     meta: [
-      { title: "Order Format Bot — Instant Order Formatter" },
+      { title: "Invoice Bot — Instant Invoice Generator" },
       {
         name: "description",
-        content:
-          "Kisi bhi format mein order likho aur foran clean, WhatsApp-ready order format hasil karo.",
-      },
-      { property: "og:title", content: "Order Format Bot — Instant Order Formatter" },
-      {
-        property: "og:description",
-        content: "Kisi bhi format mein order likho aur foran clean, WhatsApp-ready order format hasil karo.",
+        content: "Kisi bhi format mein inquiry ya order paste karo aur foran clean invoice hasil karo.",
       },
     ],
   }),
-  component: OrderChat,
+  component: InvoiceChat,
 });
 
-const transport = new DefaultChatTransport({ api: "/api/chat" });
+const transport = new DefaultChatTransport({ api: "/api/invoice" });
 
 function messageText(msg: UIMessage): string {
   return msg.parts
@@ -53,9 +47,9 @@ function shareOnWhatsApp(text: string) {
   window.open(url, "_blank", "noopener,noreferrer");
 }
 
-const STORAGE_KEY = "order-format-bot:messages:v1";
+const STORAGE_KEY = "invoice-bot:messages:v1";
 
-function OrderChat() {
+function InvoiceChat() {
   const { messages, sendMessage, status, setMessages, error } = useChat({
     transport,
     onError: (err) => toast.error(err.message || "Kuch masla ho gaya"),
@@ -64,7 +58,6 @@ function OrderChat() {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const hydratedRef = useRef(false);
 
-  // Hydrate from localStorage once on mount
   useEffect(() => {
     if (hydratedRef.current) return;
     hydratedRef.current = true;
@@ -79,14 +72,13 @@ function OrderChat() {
     }
   }, [setMessages]);
 
-  // Persist to localStorage whenever messages change (only after hydration)
   useEffect(() => {
     if (!hydratedRef.current) return;
     if (status === "streaming" || status === "submitted") return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
     } catch {
-      // ignore quota errors
+      // ignore
     }
   }, [messages, status]);
 
@@ -122,31 +114,26 @@ function OrderChat() {
           <div className="flex items-center gap-3">
             <img
               src={logoUrl}
-              alt="Order Format Bot"
+              alt="Invoice Bot"
               width={40}
               height={40}
               className="h-10 w-10 rounded-lg bg-card object-contain shadow-sm"
             />
             <div>
               <h1 className="text-base font-semibold leading-tight text-foreground">
-                Order Format Bot
+                Invoice Bot
               </h1>
               <p className="text-xs text-muted-foreground">
-                Kisi bhi format ka order → foran clean format
+                Order/inquiry → foran invoice
               </p>
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <Link to="/invoice">
-              <Button variant="ghost" size="sm">Invoice Bot</Button>
+            <Link to="/">
+              <Button variant="ghost" size="sm">Order Bot</Button>
             </Link>
             {messages.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClear}
-                className="gap-1.5"
-              >
+              <Button variant="ghost" size="sm" onClick={handleClear} className="gap-1.5">
                 <RotateCcw className="h-4 w-4" />
                 <span className="hidden sm:inline">New</span>
               </Button>
@@ -172,16 +159,12 @@ function OrderChat() {
                             {text}
                           </pre>
                         ) : (
-                          <Shimmer>Format ho raha hai...</Shimmer>
+                          <Shimmer>Invoice ban rahi hai...</Shimmer>
                         )}
                       </MessageContent>
                       {text ? (
                         <div className="mt-1 flex flex-wrap gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => shareOnWhatsApp(text)}
-                            className="gap-1.5"
-                          >
+                          <Button size="sm" onClick={() => shareOnWhatsApp(text)} className="gap-1.5">
                             <Share2 className="h-4 w-4" />
                             WhatsApp par bhejo
                           </Button>
@@ -210,7 +193,7 @@ function OrderChat() {
             {status === "submitted" ? (
               <Message from="assistant">
                 <MessageContent>
-                  <Shimmer>Format ho raha hai...</Shimmer>
+                  <Shimmer>Invoice ban rahi hai...</Shimmer>
                 </MessageContent>
               </Message>
             ) : null}
@@ -226,7 +209,7 @@ function OrderChat() {
           <PromptInput onSubmit={handleSubmit}>
             <PromptInputTextarea
               ref={textareaRef}
-              placeholder="Order details paste karein... (name, phone, city, address, product, total, delivery, advance)"
+              placeholder="Products + prices paste karein... (e.g. Conditioner 250ml 750, Glycerine 250ml 250 ...)"
               disabled={isBusy}
             />
             <PromptInputFooter className="justify-end">
@@ -234,7 +217,7 @@ function OrderChat() {
             </PromptInputFooter>
           </PromptInput>
           <p className="mt-2 text-center text-[11px] text-muted-foreground">
-            "WhatsApp par bhejo" dabao → WhatsApp khulega → apna group choose karo.
+            Delivery Charges blank rehti hain — baad mein manually add karain.
           </p>
         </div>
       </main>
@@ -243,13 +226,13 @@ function OrderChat() {
 }
 
 function EmptyState() {
-  const example = `Ahmad ali\n03001234567\nLahore, model town H block ghar 42\niPhone case black\nTotal 1500, delivery 200, advance 500`;
+  const example = `Conditioner 250ml 750\nGlycerine 250ml 250\nLanolin 100ml 450\nCocobetaine 500ml 500`;
   return (
     <div className="mx-auto mt-8 max-w-xl rounded-xl border border-border/60 bg-card/50 p-6 text-center">
-      <h2 className="text-lg font-semibold text-foreground">Order paste karein</h2>
+      <h2 className="text-lg font-semibold text-foreground">Invoice banayein</h2>
       <p className="mt-2 text-sm text-muted-foreground">
-        Kisi bhi shakal mein: bikhri hui lines, Urdu, Roman Urdu, ya English. Main aap ko standard
-        order format mein foran wapas dunga — phir ek tap se WhatsApp group par bhej dain.
+        Products aur unki prices kisi bhi format mein paste karein. Main clean invoice format mein
+        wapas dunga — Delivery Charges blank rahengi taake aap baad mein add kar sakein.
       </p>
       <div className="mt-4 rounded-lg bg-muted/60 p-3 text-left">
         <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
