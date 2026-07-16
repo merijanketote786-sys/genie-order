@@ -29,10 +29,10 @@ export const Route = createFileRoute("/")({
         content:
           "Kisi bhi format mein order likho aur foran clean, WhatsApp-ready order format hasil karo.",
       },
-      { property: "og:title", content: "Order Format Bot" },
+      { property: "og:title", content: "Order Format Bot — Instant Order Formatter" },
       {
         property: "og:description",
-        content: "Kisi bhi format ka order paste karo, formatted order foran WhatsApp par bhejo.",
+        content: "Kisi bhi format mein order likho aur foran clean, WhatsApp-ready order format hasil karo.",
       },
     ],
   }),

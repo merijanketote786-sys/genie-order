@@ -77,16 +77,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Order Format Bot" },
+      { title: "Order Format Bot — Instant Order Formatter" },
       {
         name: "description",
-        content: "Kisi bhi format ka order paste karo, WhatsApp-ready formatted order foran hasil karo.",
+        content: "Kisi bhi format mein order likho aur foran clean, WhatsApp-ready order format hasil karo.",
       },
       { name: "author", content: "Order Format Bot" },
-      { property: "og:title", content: "Order Format Bot" },
+      { property: "og:title", content: "Order Format Bot — Instant Order Formatter" },
       {
         property: "og:description",
-        content: "Kisi bhi format ka order paste karo, WhatsApp-ready formatted order foran hasil karo.",
+        content: "Kisi bhi format mein order likho aur foran clean, WhatsApp-ready order format hasil karo.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -95,6 +95,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "OrderBot" },
+      { name: "twitter:title", content: "Order Format Bot — Instant Order Formatter" },
+      { name: "twitter:description", content: "Kisi bhi format mein order likho aur foran clean, WhatsApp-ready order format hasil karo." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/0081841b-1e31-44ac-b10d-55ed532ad134" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/0081841b-1e31-44ac-b10d-55ed532ad134" },
     ],
 
 
