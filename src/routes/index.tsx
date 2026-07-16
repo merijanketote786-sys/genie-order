@@ -53,6 +53,8 @@ function shareOnWhatsApp(text: string) {
   window.open(url, "_blank", "noopener,noreferrer");
 }
 
+const STORAGE_KEY = "order-format-bot:messages:v1";
+
 function OrderChat() {
   const { messages, sendMessage, status, setMessages, error } = useChat({
     transport,
@@ -60,6 +62,33 @@ function OrderChat() {
   });
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const hydratedRef = useRef(false);
+
+  // Hydrate from localStorage once on mount
+  useEffect(() => {
+    if (hydratedRef.current) return;
+    hydratedRef.current = true;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as UIMessage[];
+        if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed);
+      }
+    } catch {
+      // ignore
+    }
+  }, [setMessages]);
+
+  // Persist to localStorage whenever messages change (only after hydration)
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    if (status === "streaming" || status === "submitted") return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    } catch {
+      // ignore quota errors
+    }
+  }, [messages, status]);
 
   useEffect(() => {
     if (status === "ready") textareaRef.current?.focus();
@@ -75,6 +104,15 @@ function OrderChat() {
     const trimmed = text.trim();
     if (!trimmed || isBusy) return;
     await sendMessage({ text: trimmed });
+  };
+
+  const handleClear = () => {
+    setMessages([]);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
   };
 
   return (
