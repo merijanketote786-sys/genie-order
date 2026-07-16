@@ -10,7 +10,7 @@ Phone:
 City: 
 Address: 
 Product: 
-Qty: 1
+Qty:
 Product Total: 
 Delivery: 
 Advance: 
