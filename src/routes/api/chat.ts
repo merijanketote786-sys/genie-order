@@ -1,0 +1,57 @@
+import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
+import { createFileRoute } from "@tanstack/react-router";
+import { convertToModelMessages, streamText, type UIMessage } from "ai";
+
+const SYSTEM_PROMPT = `Aap aik order-formatter assistant hain. User aap ko kisi bhi format (Urdu, Roman Urdu, English, mixed, ya bikhri hui lines) mein order details bhejega. Aap ne ussi order ko HAMESHA neeche wale exact format mein reply karna hai, koi extra bat/greeting/explanation ke bagair. Sirf ye 11 lines return karo, koi markdown/code fence nahi:
+
+Order Number: 
+Name: 
+Phone: 
+City: 
+Address: 
+Product: 
+Qty: 1
+Product Total: 
+Delivery: 
+Advance: 
+Status: Confirmed
+
+Rules:
+- Jo field user ne di hai wo bharo. Missing field ko blank chhor do (colon aur space k baad kuch na likho).
+- Qty agar user ne di ho to use karo, warna default 1 rakho.
+- Status hamesha "Confirmed" rakho jab tak user explicitly kuch aur na kahay.
+- Order Number agar user ne na diya ho to blank chhor do.
+- Phone number ko as-is rakho, formatting badlo mat.
+- Numbers (Product Total, Delivery, Advance) me sirf digits/currency rakho jaisa user ne diya.
+- Response me pehli line se seedha "Order Number:" start karo.`;
+
+type ChatRequestBody = { messages?: unknown };
+
+export const Route = createFileRoute("/api/chat")({
+  server: {
+    handlers: {
+      POST: async ({ request }) => {
+        const { messages } = (await request.json()) as ChatRequestBody;
+        if (!Array.isArray(messages)) {
+          return new Response("Messages are required", { status: 400 });
+        }
+
+        const key = process.env.LOVABLE_API_KEY;
+        if (!key) {
+          return new Response("Missing LOVABLE_API_KEY", { status: 500 });
+        }
+
+        const gateway = createLovableAiGatewayProvider(key);
+        const result = streamText({
+          model: gateway("google/gemini-3-flash-preview"),
+          system: SYSTEM_PROMPT,
+          messages: convertToModelMessages(messages as UIMessage[]),
+        });
+
+        return result.toUIMessageStreamResponse({
+          originalMessages: messages as UIMessage[],
+        });
+      },
+    },
+  },
+});
