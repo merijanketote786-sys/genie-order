@@ -1,0 +1,15 @@
+{
+  "name": "Order Format Bot",
+  "short_name": "OrderBot",
+  "description": "Kisi bhi format ka order paste karo, WhatsApp-ready formatted order foran hasil karo.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1220",
+  "theme_color": "#0ea5e9",
+  "icons": [
+    { "src": "/app-icon.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" },
+    { "src": "/app-icon.png", "sizes": "1024x1024", "type": "image/png", "purpose": "maskable" }
+  ]
+}
