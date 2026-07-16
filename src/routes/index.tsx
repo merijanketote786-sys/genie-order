@@ -140,7 +140,7 @@ function OrderChat() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setMessages([])}
+              onClick={handleClear}
               className="gap-1.5"
             >
               <RotateCcw className="h-4 w-4" />
