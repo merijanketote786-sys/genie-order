@@ -10,13 +10,20 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as InvoiceRouteImport } from './routes/invoice'
+import { Route as ExtractRouteImport } from './routes/extract'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiInvoiceRouteImport } from './routes/api/invoice'
+import { Route as ApiExtractRouteImport } from './routes/api/extract'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 
 const InvoiceRoute = InvoiceRouteImport.update({
   id: '/invoice',
   path: '/invoice',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExtractRoute = ExtractRouteImport.update({
+  id: '/extract',
+  path: '/extract',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -29,6 +36,11 @@ const ApiInvoiceRoute = ApiInvoiceRouteImport.update({
   path: '/api/invoice',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiExtractRoute = ApiExtractRouteImport.update({
+  id: '/api/extract',
+  path: '/api/extract',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
@@ -37,35 +49,62 @@ const ApiChatRoute = ApiChatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/extract': typeof ExtractRoute
   '/invoice': typeof InvoiceRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/extract': typeof ExtractRoute
   '/invoice': typeof InvoiceRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/extract': typeof ExtractRoute
   '/invoice': typeof InvoiceRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/invoice' | '/api/chat' | '/api/invoice'
+  fullPaths:
+    | '/'
+    | '/extract'
+    | '/invoice'
+    | '/api/chat'
+    | '/api/extract'
+    | '/api/invoice'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/invoice' | '/api/chat' | '/api/invoice'
-  id: '__root__' | '/' | '/invoice' | '/api/chat' | '/api/invoice'
+  to:
+    | '/'
+    | '/extract'
+    | '/invoice'
+    | '/api/chat'
+    | '/api/extract'
+    | '/api/invoice'
+  id:
+    | '__root__'
+    | '/'
+    | '/extract'
+    | '/invoice'
+    | '/api/chat'
+    | '/api/extract'
+    | '/api/invoice'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ExtractRoute: typeof ExtractRoute
   InvoiceRoute: typeof InvoiceRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiExtractRoute: typeof ApiExtractRoute
   ApiInvoiceRoute: typeof ApiInvoiceRoute
 }
 
@@ -76,6 +115,13 @@ declare module '@tanstack/react-router' {
       path: '/invoice'
       fullPath: '/invoice'
       preLoaderRoute: typeof InvoiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/extract': {
+      id: '/extract'
+      path: '/extract'
+      fullPath: '/extract'
+      preLoaderRoute: typeof ExtractRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -92,6 +138,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiInvoiceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/extract': {
+      id: '/api/extract'
+      path: '/api/extract'
+      fullPath: '/api/extract'
+      preLoaderRoute: typeof ApiExtractRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/chat': {
       id: '/api/chat'
       path: '/api/chat'
@@ -104,8 +157,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ExtractRoute: ExtractRoute,
   InvoiceRoute: InvoiceRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiExtractRoute: ApiExtractRoute,
   ApiInvoiceRoute: ApiInvoiceRoute,
 }
 export const routeTree = rootRouteImport

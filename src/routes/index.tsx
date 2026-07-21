@@ -138,7 +138,10 @@ function OrderChat() {
           </div>
           <div className="flex items-center gap-1">
             <Link to="/invoice">
-              <Button variant="ghost" size="sm">Invoice Bot</Button>
+              <Button variant="ghost" size="sm">Invoice</Button>
+            </Link>
+            <Link to="/extract">
+              <Button variant="ghost" size="sm">Extract</Button>
             </Link>
             {messages.length > 0 && (
               <Button
