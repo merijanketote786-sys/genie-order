@@ -74,10 +74,29 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/extract' | '/invoice' | '/api/chat' | '/api/extract' | '/api/invoice'
+  fullPaths:
+    | '/'
+    | '/extract'
+    | '/invoice'
+    | '/api/chat'
+    | '/api/extract'
+    | '/api/invoice'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/extract' | '/invoice' | '/api/chat' | '/api/extract' | '/api/invoice'
-  id: '__root__' | '/' | '/extract' | '/invoice' | '/api/chat' | '/api/extract' | '/api/invoice'
+  to:
+    | '/'
+    | '/extract'
+    | '/invoice'
+    | '/api/chat'
+    | '/api/extract'
+    | '/api/invoice'
+  id:
+    | '__root__'
+    | '/'
+    | '/extract'
+    | '/invoice'
+    | '/api/chat'
+    | '/api/extract'
+    | '/api/invoice'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
