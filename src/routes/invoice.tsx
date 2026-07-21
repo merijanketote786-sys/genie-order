@@ -130,7 +130,10 @@ function InvoiceChat() {
           </div>
           <div className="flex items-center gap-1">
             <Link to="/">
-              <Button variant="ghost" size="sm">Order Bot</Button>
+              <Button variant="ghost" size="sm">Order</Button>
+            </Link>
+            <Link to="/extract">
+              <Button variant="ghost" size="sm">Extract</Button>
             </Link>
             {messages.length > 0 && (
               <Button variant="ghost" size="sm" onClick={handleClear} className="gap-1.5">
