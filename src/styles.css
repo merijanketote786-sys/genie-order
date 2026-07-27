@@ -129,17 +129,15 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    /* WhatsApp-style subtle chat wallpaper */
     background-image:
-      radial-gradient(
-        60rem 40rem at 12% -12%,
-        color-mix(in oklab, var(--primary) 16%, transparent),
-        transparent 65%
-      ),
-      radial-gradient(
-        48rem 36rem at 100% 0%,
-        color-mix(in oklab, var(--gold) 10%, transparent),
-        transparent 60%
-      );
+      radial-gradient(circle at 20% 20%, rgba(233, 237, 239, 0.035) 1.5px, transparent 1.6px),
+      radial-gradient(circle at 70% 60%, rgba(233, 237, 239, 0.028) 1.5px, transparent 1.6px),
+      radial-gradient(60rem 40rem at 50% -20%, rgba(0, 168, 132, 0.1), transparent 70%);
+    background-size:
+      120px 120px,
+      160px 160px,
+      100% 100%;
     background-attachment: fixed;
   }
 
@@ -152,10 +150,23 @@
 }
 
 @utility glass-panel {
-  background: var(--gradient-surface);
-  backdrop-filter: blur(18px);
+  background: var(--surface-2);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-elegant);
+}
+
+@utility bubble-out {
+  background: var(--bubble-out);
+  color: var(--color-foreground);
+  border-radius: 0.9rem 0.25rem 0.9rem 0.9rem;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+}
+
+@utility bubble-in {
+  background: var(--bubble-in);
+  color: var(--color-foreground);
+  border-radius: 0.25rem 0.9rem 0.9rem 0.9rem;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
 }
 
 @utility text-gradient-brand {
