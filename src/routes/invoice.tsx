@@ -129,7 +129,7 @@ function InvoiceChat() {
                     </MessageContent>
                   )
                 ) : (
-                  <MessageContent className="group-[.is-user]:rounded-2xl group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground">
+                  <MessageContent className="bubble-out group-[.is-user]:bg-bubble-out group-[.is-user]:text-foreground">
                     <MessageResponse>{text}</MessageResponse>
                   </MessageContent>
                 )}
