@@ -23,10 +23,12 @@ export function ResultCard({ text, label }: { text: string; label: string }) {
   };
 
   return (
-    <div className="glass-panel w-full overflow-hidden rounded-2xl">
-      <div className="flex items-center justify-between border-b border-border/60 px-4 py-2">
-        <span className="font-display text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+    <div className="bubble-in w-full overflow-hidden">
+      <div className="flex items-center justify-between border-b border-border/50 px-4 py-2">
+        <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
           {label}
+        </span>
+        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
         </span>
         <span className="h-1.5 w-1.5 rounded-full bg-primary" />
       </div>
