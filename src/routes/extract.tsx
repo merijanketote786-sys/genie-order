@@ -209,7 +209,7 @@ function ExtractChat() {
             if (msg.role === "user") {
               return (
                 <Message key={msg.id} from="user">
-                  <MessageContent className="group-[.is-user]:rounded-2xl group-[.is-user]:bg-surface-2">
+                  <MessageContent className="bubble-out group-[.is-user]:bg-bubble-out group-[.is-user]:text-foreground">
                     <div className="flex flex-col gap-2">
                       {msg.previewUrl && msg.fileType.startsWith("image/") ? (
                         <img

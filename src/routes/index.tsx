@@ -131,7 +131,7 @@ function OrderChat() {
                     </MessageContent>
                   )
                 ) : (
-                  <MessageContent className="group-[.is-user]:rounded-2xl group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground">
+                  <MessageContent className="bubble-out group-[.is-user]:bg-bubble-out group-[.is-user]:text-foreground">
                     <MessageResponse>{text}</MessageResponse>
                   </MessageContent>
                 )}
@@ -155,7 +155,7 @@ function OrderChat() {
       </Conversation>
 
       <div className="sticky bottom-0 bg-gradient-to-t from-background via-background/95 to-transparent pb-4 pt-3">
-        <div className="glass-panel rounded-2xl p-1.5">
+        <div className="rounded-3xl border border-border/50 bg-surface-2 p-1.5 shadow-lg">
           <PromptInput onSubmit={handleSubmit} className="border-0 bg-transparent shadow-none">
             <PromptInputTextarea
               ref={textareaRef}

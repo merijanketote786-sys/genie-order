@@ -39,6 +39,8 @@
   --color-ring-offset-background: var(--background);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-bubble-out: var(--bubble-out);
+  --color-bubble-in: var(--bubble-in);
   --color-gold: var(--gold);
   --color-gold-foreground: var(--gold-foreground);
   --color-chart-1: var(--chart-1);
@@ -57,57 +59,56 @@
 }
 
 :root {
-  --radius: 0.9rem;
+  --radius: 0.85rem;
 
-  /* Deep charcoal-emerald premium palette (single dark theme) */
-  --background: oklch(0.17 0.015 175);
-  --foreground: oklch(0.97 0.005 170);
-  --surface: oklch(0.21 0.017 175);
-  --surface-2: oklch(0.25 0.019 175);
-  --card: oklch(0.21 0.017 175);
-  --card-foreground: oklch(0.97 0.005 170);
-  --popover: oklch(0.21 0.017 175);
-  --popover-foreground: oklch(0.97 0.005 170);
-  --primary: oklch(0.74 0.15 165);
-  --primary-foreground: oklch(0.18 0.03 170);
-  --secondary: oklch(0.26 0.02 175);
-  --secondary-foreground: oklch(0.96 0.005 170);
-  --muted: oklch(0.26 0.02 175);
-  --muted-foreground: oklch(0.72 0.015 170);
-  --accent: oklch(0.29 0.03 172);
-  --accent-foreground: oklch(0.97 0.005 170);
-  --destructive: oklch(0.68 0.19 22);
-  --destructive-foreground: oklch(0.98 0.005 170);
-  --border: oklch(0.98 0.01 170 / 12%);
-  --input: oklch(0.98 0.01 170 / 16%);
-  --ring: oklch(0.74 0.15 165 / 60%);
-  --gold: oklch(0.82 0.13 88);
-  --gold-foreground: oklch(0.2 0.03 88);
+  /* WhatsApp dark premium palette */
+  --background: #0b141a;
+  --foreground: #e9edef;
+  --surface: #111b21;
+  --surface-2: #202c33;
+  --card: #111b21;
+  --card-foreground: #e9edef;
+  --popover: #202c33;
+  --popover-foreground: #e9edef;
+  --primary: #00a884;
+  --primary-foreground: #0b141a;
+  --secondary: #202c33;
+  --secondary-foreground: #e9edef;
+  --muted: #202c33;
+  --muted-foreground: #8696a0;
+  --accent: #2a3942;
+  --accent-foreground: #e9edef;
+  --destructive: #f15c6d;
+  --destructive-foreground: #0b141a;
+  --border: rgba(233, 237, 239, 0.1);
+  --input: #2a3942;
+  --ring: rgba(0, 168, 132, 0.55);
+  --gold: #25d366;
+  --gold-foreground: #0b141a;
 
-  --chart-1: oklch(0.74 0.15 165);
-  --chart-2: oklch(0.82 0.13 88);
-  --chart-3: oklch(0.65 0.13 200);
-  --chart-4: oklch(0.7 0.14 320);
-  --chart-5: oklch(0.75 0.15 40);
+  /* WhatsApp bubbles */
+  --bubble-out: #005c4b;
+  --bubble-in: #202c33;
 
-  --sidebar: oklch(0.19 0.016 175);
-  --sidebar-foreground: oklch(0.97 0.005 170);
-  --sidebar-primary: oklch(0.74 0.15 165);
-  --sidebar-primary-foreground: oklch(0.18 0.03 170);
-  --sidebar-accent: oklch(0.26 0.02 175);
-  --sidebar-accent-foreground: oklch(0.97 0.005 170);
-  --sidebar-border: oklch(0.98 0.01 170 / 12%);
-  --sidebar-ring: oklch(0.74 0.15 165 / 60%);
+  --chart-1: #00a884;
+  --chart-2: #25d366;
+  --chart-3: #53bdeb;
+  --chart-4: #7f66ff;
+  --chart-5: #ffd279;
 
-  --gradient-brand: linear-gradient(135deg, oklch(0.74 0.15 165), oklch(0.82 0.13 88));
-  --gradient-surface: linear-gradient(
-    160deg,
-    color-mix(in oklab, var(--surface) 92%, transparent),
-    color-mix(in oklab, var(--background) 88%, transparent)
-  );
-  --shadow-elegant: 0 24px 60px -28px oklch(0 0 0 / 70%);
-  --shadow-glow: 0 0 0 1px color-mix(in oklab, var(--primary) 22%, transparent),
-    0 18px 50px -24px color-mix(in oklab, var(--primary) 55%, transparent);
+  --sidebar: #111b21;
+  --sidebar-foreground: #e9edef;
+  --sidebar-primary: #00a884;
+  --sidebar-primary-foreground: #0b141a;
+  --sidebar-accent: #202c33;
+  --sidebar-accent-foreground: #e9edef;
+  --sidebar-border: rgba(233, 237, 239, 0.1);
+  --sidebar-ring: rgba(0, 168, 132, 0.55);
+
+  --gradient-brand: linear-gradient(135deg, #00a884, #25d366);
+  --gradient-surface: linear-gradient(160deg, #111b21, #0e171d);
+  --shadow-elegant: 0 12px 30px -18px rgba(0, 0, 0, 0.9);
+  --shadow-glow: 0 0 0 1px rgba(0, 168, 132, 0.22), 0 10px 30px -18px rgba(0, 168, 132, 0.5);
 }
 
 .dark {
@@ -128,17 +129,15 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    /* WhatsApp-style subtle chat wallpaper */
     background-image:
-      radial-gradient(
-        60rem 40rem at 12% -12%,
-        color-mix(in oklab, var(--primary) 16%, transparent),
-        transparent 65%
-      ),
-      radial-gradient(
-        48rem 36rem at 100% 0%,
-        color-mix(in oklab, var(--gold) 10%, transparent),
-        transparent 60%
-      );
+      radial-gradient(circle at 20% 20%, rgba(233, 237, 239, 0.035) 1.5px, transparent 1.6px),
+      radial-gradient(circle at 70% 60%, rgba(233, 237, 239, 0.028) 1.5px, transparent 1.6px),
+      radial-gradient(60rem 40rem at 50% -20%, rgba(0, 168, 132, 0.1), transparent 70%);
+    background-size:
+      120px 120px,
+      160px 160px,
+      100% 100%;
     background-attachment: fixed;
   }
 
@@ -151,10 +150,23 @@
 }
 
 @utility glass-panel {
-  background: var(--gradient-surface);
-  backdrop-filter: blur(18px);
+  background: var(--surface-2);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-elegant);
+}
+
+@utility bubble-out {
+  background: var(--bubble-out);
+  color: var(--color-foreground);
+  border-radius: 0.9rem 0.25rem 0.9rem 0.9rem;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+}
+
+@utility bubble-in {
+  background: var(--bubble-in);
+  color: var(--color-foreground);
+  border-radius: 0.25rem 0.9rem 0.9rem 0.9rem;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
 }
 
 @utility text-gradient-brand {

@@ -30,7 +30,7 @@ export function AppShell({
 }: AppShellProps) {
   return (
     <div className="flex min-h-[100dvh] flex-col">
-      <header className="sticky top-0 z-20 border-b border-border/70 bg-background/70 backdrop-blur-xl">
+      <header className="sticky top-0 z-20 border-b border-border/60 bg-surface-2 shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
         <div className="mx-auto w-full max-w-3xl px-4 pb-2 pt-3">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
             <div className="flex min-w-0 items-center gap-3">
@@ -68,7 +68,7 @@ export function AppShell({
             )}
           </div>
 
-          <nav className="mt-3 flex gap-1 rounded-full border border-border/70 bg-surface/70 p-1">
+          <nav className="mt-3 flex">
             {TABS.map((tab) => {
               const isActive = tab.to === active;
               return (
@@ -76,10 +76,10 @@ export function AppShell({
                   key={tab.to}
                   to={tab.to}
                   className={cn(
-                    "flex-1 rounded-full px-3 py-1.5 text-center text-xs font-semibold transition-all",
+                    "flex-1 border-b-[3px] px-3 pb-2 pt-1.5 text-center text-xs font-semibold uppercase tracking-wide transition-colors",
                     isActive
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {tab.label}
