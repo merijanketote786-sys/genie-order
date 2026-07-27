@@ -39,6 +39,8 @@
   --color-ring-offset-background: var(--background);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-bubble-out: var(--bubble-out);
+  --color-bubble-in: var(--bubble-in);
   --color-gold: var(--gold);
   --color-gold-foreground: var(--gold-foreground);
   --color-chart-1: var(--chart-1);
