@@ -30,8 +30,8 @@ export function AppShell({
   children,
 }: AppShellProps) {
   return (
-    <div className="flex min-h-[100dvh] flex-col">
-      <header className="sticky top-0 z-20 border-b border-border/60 bg-surface-2 shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
+    <div className="flex h-[100dvh] min-h-0 flex-col overflow-hidden">
+      <header className="shrink-0 border-b border-border/60 bg-surface-2 shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
         <div className="mx-auto w-full max-w-3xl px-4 pb-2 pt-3">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
             <div className="flex min-w-0 items-center gap-3">
@@ -95,7 +95,7 @@ export function AppShell({
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-3 sm:px-4">
+      <main className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col px-3 sm:px-4">
         {children}
       </main>
     </div>
