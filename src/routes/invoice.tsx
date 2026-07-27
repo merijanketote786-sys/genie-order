@@ -16,6 +16,7 @@ import { ResultCard } from "@/components/result-card";
 import { useChat } from "@ai-sdk/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
+import { ScrollToEnd } from "@/components/scroll-to-end";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
@@ -149,6 +150,7 @@ function InvoiceChat() {
             <p className="text-center text-sm text-destructive">{error.message}</p>
           ) : null}
         </ConversationContent>
+        <ScrollToEnd count={messages.length} />
         <ConversationScrollButton />
       </Conversation>
 

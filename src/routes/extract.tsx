@@ -10,6 +10,7 @@ import { ResultCard } from "@/components/result-card";
 import { Button } from "@/components/ui/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { FileText, Paperclip, Send, X } from "lucide-react";
+import { ScrollToEnd } from "@/components/scroll-to-end";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -243,6 +244,7 @@ function ExtractChat() {
             );
           })}
         </ConversationContent>
+        <ScrollToEnd count={messages.length} />
         <ConversationScrollButton />
       </Conversation>
 
