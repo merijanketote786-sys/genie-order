@@ -68,7 +68,7 @@ export function AppShell({
             )}
           </div>
 
-          <nav className="mt-3 flex gap-1 rounded-full border border-border/70 bg-surface/70 p-1">
+          <nav className="mt-3 flex">
             {TABS.map((tab) => {
               const isActive = tab.to === active;
               return (
@@ -76,10 +76,10 @@ export function AppShell({
                   key={tab.to}
                   to={tab.to}
                   className={cn(
-                    "flex-1 rounded-full px-3 py-1.5 text-center text-xs font-semibold transition-all",
+                    "flex-1 border-b-[3px] px-3 pb-2 pt-1.5 text-center text-xs font-semibold uppercase tracking-wide transition-colors",
                     isActive
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {tab.label}
