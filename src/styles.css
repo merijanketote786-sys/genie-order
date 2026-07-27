@@ -115,13 +115,54 @@
   color-scheme: dark;
 }
 
+/* WhatsApp light palette */
+.light {
+  color-scheme: light;
+
+  --background: #efeae2;
+  --foreground: #111b21;
+  --surface: #ffffff;
+  --surface-2: #f0f2f5;
+  --card: #ffffff;
+  --card-foreground: #111b21;
+  --popover: #ffffff;
+  --popover-foreground: #111b21;
+  --primary: #008069;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f2f5;
+  --secondary-foreground: #111b21;
+  --muted: #f0f2f5;
+  --muted-foreground: #667781;
+  --accent: #e9edef;
+  --accent-foreground: #111b21;
+  --destructive: #d93025;
+  --destructive-foreground: #ffffff;
+  --border: rgba(17, 27, 33, 0.12);
+  --input: #ffffff;
+  --ring: rgba(0, 128, 105, 0.45);
+  --gold: #25d366;
+  --gold-foreground: #0b141a;
+
+  --bubble-out: #d9fdd3;
+  --bubble-in: #ffffff;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #111b21;
+  --sidebar-primary: #008069;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f0f2f5;
+  --sidebar-accent-foreground: #111b21;
+  --sidebar-border: rgba(17, 27, 33, 0.12);
+  --sidebar-ring: rgba(0, 128, 105, 0.45);
+
+  --gradient-surface: linear-gradient(160deg, #ffffff, #f0f2f5);
+  --shadow-elegant: 0 10px 26px -20px rgba(11, 20, 26, 0.4);
+  --shadow-glow: 0 0 0 1px rgba(0, 128, 105, 0.18), 0 10px 30px -20px rgba(0, 128, 105, 0.35);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
-  }
-
-  html {
-    color-scheme: dark;
   }
 
   body {
@@ -140,6 +181,16 @@
       100% 100%;
     background-attachment: fixed;
   }
+
+  .light body,
+  body:has(> #root .light),
+  html.light body {
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(17, 27, 33, 0.05) 1.5px, transparent 1.6px),
+      radial-gradient(circle at 70% 60%, rgba(17, 27, 33, 0.04) 1.5px, transparent 1.6px),
+      radial-gradient(60rem 40rem at 50% -20%, rgba(0, 128, 105, 0.08), transparent 70%);
+  }
+
 
   h1,
   h2,
