@@ -182,8 +182,6 @@
     background-attachment: fixed;
   }
 
-  .light body,
-  body:has(> #root .light),
   html.light body {
     background-image:
       radial-gradient(circle at 20% 20%, rgba(17, 27, 33, 0.05) 1.5px, transparent 1.6px),
