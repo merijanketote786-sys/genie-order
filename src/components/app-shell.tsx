@@ -1,4 +1,5 @@
 import logoUrl from "@/assets/logo.png";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
