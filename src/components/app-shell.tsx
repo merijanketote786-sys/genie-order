@@ -30,7 +30,7 @@ export function AppShell({
 }: AppShellProps) {
   return (
     <div className="flex min-h-[100dvh] flex-col">
-      <header className="sticky top-0 z-20 border-b border-border/70 bg-background/70 backdrop-blur-xl">
+      <header className="sticky top-0 z-20 border-b border-border/60 bg-surface-2 shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
         <div className="mx-auto w-full max-w-3xl px-4 pb-2 pt-3">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
             <div className="flex min-w-0 items-center gap-3">
