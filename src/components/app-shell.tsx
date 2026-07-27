@@ -50,23 +50,27 @@ export function AppShell({
                 <p className="truncate text-[11px] text-muted-foreground">{subtitle}</p>
               </div>
             </div>
-            {showClear && onClear ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onClear}
-                className="h-8 shrink-0 gap-1.5 rounded-full border-border/70 bg-surface-2/60 text-xs"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">New chat</span>
-              </Button>
-            ) : (
-              <span className="hidden sm:flex items-center gap-1.5 rounded-full border border-border/70 bg-surface-2/60 px-3 py-1 text-[11px] text-muted-foreground">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                Online
-              </span>
-            )}
+            <div className="flex shrink-0 items-center gap-2">
+              <ThemeToggle />
+              {showClear && onClear ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onClear}
+                  className="h-8 shrink-0 gap-1.5 rounded-full border-border/70 bg-surface-2 text-xs"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">New chat</span>
+                </Button>
+              ) : (
+                <span className="hidden items-center gap-1.5 rounded-full border border-border/70 bg-surface-2 px-3 py-1 text-[11px] text-muted-foreground sm:flex">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  Online
+                </span>
+              )}
+            </div>
           </div>
+
 
           <nav className="mt-3 flex">
             {TABS.map((tab) => {
