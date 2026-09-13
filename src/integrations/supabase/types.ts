@@ -14,7 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      products: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          normalized_name: string
+          p100_staff_price: number | null
+          sale_price: number
+          stock: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          normalized_name: string
+          p100_staff_price?: number | null
+          sale_price?: number
+          stock?: number
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          normalized_name?: string
+          p100_staff_price?: number | null
+          sale_price?: number
+          stock?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sync_logs: {
+        Row: {
+          error_count: number
+          error_details: Json | null
+          id: string
+          inserted_count: number
+          skipped_count: number
+          status: string
+          synced_at: string
+          total_rows: number
+          updated_count: number
+        }
+        Insert: {
+          error_count?: number
+          error_details?: Json | null
+          id?: string
+          inserted_count?: number
+          skipped_count?: number
+          status?: string
+          synced_at?: string
+          total_rows?: number
+          updated_count?: number
+        }
+        Update: {
+          error_count?: number
+          error_details?: Json | null
+          id?: string
+          inserted_count?: number
+          skipped_count?: number
+          status?: string
+          synced_at?: string
+          total_rows?: number
+          updated_count?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
