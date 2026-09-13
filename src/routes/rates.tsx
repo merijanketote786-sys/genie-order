@@ -38,7 +38,7 @@ type Item = {
   stock: number | null;
 };
 
-const ITEMS = priceList as Item[];
+const FALLBACK_ITEMS = priceList as Item[];
 
 function cleanName(name: string) {
   return name.replace(/\s*\/(kg|piece|ltr|litre|gram|g)\s*$/i, "").trim();
@@ -60,8 +60,17 @@ function score(item: Item, q: string) {
 }
 
 function RatesPage() {
+  const { admin } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
+
+  const { data } = useQuery({
+    queryKey: ["products"],
+    queryFn: () => getProducts(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const ITEMS = data?.products?.length ? (data.products as Item[]) : FALLBACK_ITEMS;
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
