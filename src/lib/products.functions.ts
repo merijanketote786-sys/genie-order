@@ -32,8 +32,8 @@ export const getProducts = createServerFn({ method: "GET" }).handler(async () =>
 });
 
 export const getSyncStatus = createServerFn({ method: "GET" }).handler(async () => {
-  const { createPublicSupabase } = await import("@/lib/product-sync.server");
-  const supabase = createPublicSupabase();
+  const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
+
 
   const [{ count }, { data: logs }] = await Promise.all([
     supabase.from("products").select("id", { count: "exact", head: true }).eq("is_active", true),
