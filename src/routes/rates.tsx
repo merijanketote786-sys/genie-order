@@ -246,3 +246,53 @@ function EmptyState({ total, onPick }: { total: number; onPick: (q: string) => v
     </div>
   );
 }
+
+function SyncStatusPanel() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["sync-status"],
+    queryFn: () => getSyncStatus(),
+    refetchInterval: 60_000,
+  });
+
+  const last = data?.last ?? null;
+
+  return (
+    <div className="glass-panel mb-3 rounded-2xl px-4 py-3 text-xs">
+      <p className="font-display text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
+        Sync status
+      </p>
+      {isLoading ? (
+        <p className="mt-2 text-muted-foreground">Loading…</p>
+      ) : (
+        <div className="mt-2 space-y-1 text-muted-foreground">
+          <p>
+            Products in database: <span className="text-foreground">{data?.productCount ?? 0}</span>
+          </p>
+          <p>
+            Last sync:{" "}
+            <span className="text-foreground">
+              {last ? new Date(last.synced_at).toLocaleString("en-PK") : "—"}
+            </span>
+          </p>
+          {last ? (
+            <>
+              <p>
+                Updated <span className="text-foreground">{last.updated_count}</span> · Inserted{" "}
+                <span className="text-foreground">{last.inserted_count}</span> · Skipped{" "}
+                <span className="text-foreground">{last.skipped_count}</span>
+              </p>
+              <p>
+                Status: <span className="text-foreground">{last.status}</span> · Errors:{" "}
+                <span className={last.error_count ? "text-destructive" : "text-foreground"}>
+                  {last.error_count}
+                </span>
+              </p>
+            </>
+          ) : (
+            <p>Abhi tak koi sync nahi hua.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
