@@ -16,6 +16,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiInvoiceRouteImport } from './routes/api/invoice'
 import { Route as ApiExtractRouteImport } from './routes/api/extract'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiSyncProductsRouteImport } from './routes/api/sync/products'
+import { Route as ApiPublicSyncProductsRouteImport } from './routes/api/public/sync/products'
 
 const RatesRoute = RatesRouteImport.update({
   id: '/rates',
@@ -52,6 +54,16 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSyncProductsRoute = ApiSyncProductsRouteImport.update({
+  id: '/api/sync/products',
+  path: '/api/sync/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicSyncProductsRoute = ApiPublicSyncProductsRouteImport.update({
+  id: '/api/public/sync/products',
+  path: '/api/public/sync/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +73,8 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
+  '/api/sync/products': typeof ApiSyncProductsRoute
+  '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +84,8 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
+  '/api/sync/products': typeof ApiSyncProductsRoute
+  '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +96,8 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
+  '/api/sync/products': typeof ApiSyncProductsRoute
+  '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +109,8 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/extract'
     | '/api/invoice'
+    | '/api/sync/products'
+    | '/api/public/sync/products'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +120,8 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/extract'
     | '/api/invoice'
+    | '/api/sync/products'
+    | '/api/public/sync/products'
   id:
     | '__root__'
     | '/'
@@ -109,6 +131,8 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/extract'
     | '/api/invoice'
+    | '/api/sync/products'
+    | '/api/public/sync/products'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +143,8 @@ export interface RootRouteChildren {
   ApiChatRoute: typeof ApiChatRoute
   ApiExtractRoute: typeof ApiExtractRoute
   ApiInvoiceRoute: typeof ApiInvoiceRoute
+  ApiSyncProductsRoute: typeof ApiSyncProductsRoute
+  ApiPublicSyncProductsRoute: typeof ApiPublicSyncProductsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -172,6 +198,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/sync/products': {
+      id: '/api/sync/products'
+      path: '/api/sync/products'
+      fullPath: '/api/sync/products'
+      preLoaderRoute: typeof ApiSyncProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/sync/products': {
+      id: '/api/public/sync/products'
+      path: '/api/public/sync/products'
+      fullPath: '/api/public/sync/products'
+      preLoaderRoute: typeof ApiPublicSyncProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -183,6 +223,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiChatRoute: ApiChatRoute,
   ApiExtractRoute: ApiExtractRoute,
   ApiInvoiceRoute: ApiInvoiceRoute,
+  ApiSyncProductsRoute: ApiSyncProductsRoute,
+  ApiPublicSyncProductsRoute: ApiPublicSyncProductsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

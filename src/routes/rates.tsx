@@ -1,12 +1,17 @@
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import priceList from "@/data/price-list.json";
+import { getProducts, getSyncStatus } from "@/lib/products.functions";
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Check, Copy, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/rates")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    admin: search["admin"] === "1" || search["admin"] === 1 ? "1" : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Staff Rate List — HB Chemicals" },
@@ -33,7 +38,7 @@ type Item = {
   stock: number | null;
 };
 
-const ITEMS = priceList as Item[];
+const FALLBACK_ITEMS = priceList as Item[];
 
 function cleanName(name: string) {
   return name.replace(/\s*\/(kg|piece|ltr|litre|gram|g)\s*$/i, "").trim();
@@ -55,8 +60,17 @@ function score(item: Item, q: string) {
 }
 
 function RatesPage() {
+  const { admin } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
+
+  const { data } = useQuery({
+    queryKey: ["products"],
+    queryFn: () => getProducts(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const ITEMS = data?.products?.length ? (data.products as Item[]) : FALLBACK_ITEMS;
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -66,7 +80,7 @@ function RatesPage() {
       .sort((a, b) => a.s - b.s || cleanName(a.item.name).localeCompare(cleanName(b.item.name)))
       .slice(0, 60)
       .map((r) => r.item);
-  }, [query]);
+  }, [query, ITEMS]);
 
   const copyItem = async (item: Item) => {
     const lines = [
@@ -115,6 +129,7 @@ function RatesPage() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto pb-6">
+        {admin === "1" ? <SyncStatusPanel /> : null}
         {!query ? (
           <EmptyState total={ITEMS.length} onPick={setQuery} />
         ) : results.length === 0 ? (
@@ -228,6 +243,56 @@ function EmptyState({ total, onPick }: { total: number; onPick: (q: string) => v
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function SyncStatusPanel() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["sync-status"],
+    queryFn: () => getSyncStatus(),
+    refetchInterval: 60_000,
+  });
+
+  const last = data?.last ?? null;
+
+  return (
+    <div className="glass-panel mb-3 rounded-2xl px-4 py-3 text-xs">
+      <p className="font-display text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
+        Sync status
+      </p>
+      {isLoading ? (
+        <p className="mt-2 text-muted-foreground">Loading…</p>
+      ) : (
+        <div className="mt-2 space-y-1 text-muted-foreground">
+          <p>
+            Products in database: <span className="text-foreground">{data?.productCount ?? 0}</span>
+          </p>
+          <p>
+            Last sync:{" "}
+            <span className="text-foreground">
+              {last ? new Date(last.synced_at).toLocaleString("en-PK") : "—"}
+            </span>
+          </p>
+          {last ? (
+            <>
+              <p>
+                Updated <span className="text-foreground">{last.updated_count}</span> · Inserted{" "}
+                <span className="text-foreground">{last.inserted_count}</span> · Skipped{" "}
+                <span className="text-foreground">{last.skipped_count}</span>
+              </p>
+              <p>
+                Status: <span className="text-foreground">{last.status}</span> · Errors:{" "}
+                <span className={last.error_count ? "text-destructive" : "text-foreground"}>
+                  {last.error_count}
+                </span>
+              </p>
+            </>
+          ) : (
+            <p>Abhi tak koi sync nahi hua.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
