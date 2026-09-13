@@ -9,8 +9,7 @@ export type DbProduct = {
 };
 
 export const getProducts = createServerFn({ method: "GET" }).handler(async () => {
-  const { createPublicSupabase } = await import("@/lib/product-sync.server");
-  const supabase = createPublicSupabase();
+  const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabase
     .from("products")
     .select("name, unit, sale_price, p100_staff_price, stock")
