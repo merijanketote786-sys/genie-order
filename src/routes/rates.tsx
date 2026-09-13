@@ -80,7 +80,7 @@ function RatesPage() {
       .sort((a, b) => a.s - b.s || cleanName(a.item.name).localeCompare(cleanName(b.item.name)))
       .slice(0, 60)
       .map((r) => r.item);
-  }, [query]);
+  }, [query, ITEMS]);
 
   const copyItem = async (item: Item) => {
     const lines = [
@@ -129,6 +129,7 @@ function RatesPage() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto pb-6">
+        {admin === "1" ? <SyncStatusPanel /> : null}
         {!query ? (
           <EmptyState total={ITEMS.length} onPick={setQuery} />
         ) : results.length === 0 ? (
