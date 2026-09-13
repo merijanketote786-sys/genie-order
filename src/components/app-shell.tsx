@@ -10,12 +10,13 @@ const TABS = [
   { to: "/", label: "Order" },
   { to: "/invoice", label: "Invoice" },
   { to: "/extract", label: "Extract" },
+  { to: "/rates", label: "Rates" },
 ] as const;
 
 type AppShellProps = {
   title: string;
   subtitle: string;
-  active: "/" | "/invoice" | "/extract";
+  active: "/" | "/invoice" | "/extract" | "/rates";
   onClear?: () => void;
   showClear?: boolean;
   children: ReactNode;

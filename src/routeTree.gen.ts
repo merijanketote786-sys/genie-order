@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RatesRouteImport } from './routes/rates'
 import { Route as InvoiceRouteImport } from './routes/invoice'
 import { Route as ExtractRouteImport } from './routes/extract'
 import { Route as IndexRouteImport } from './routes/index'
@@ -16,6 +17,11 @@ import { Route as ApiInvoiceRouteImport } from './routes/api/invoice'
 import { Route as ApiExtractRouteImport } from './routes/api/extract'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 
+const RatesRoute = RatesRouteImport.update({
+  id: '/rates',
+  path: '/rates',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InvoiceRoute = InvoiceRouteImport.update({
   id: '/invoice',
   path: '/invoice',
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/extract': typeof ExtractRoute
   '/invoice': typeof InvoiceRoute
+  '/rates': typeof RatesRoute
   '/api/chat': typeof ApiChatRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/extract': typeof ExtractRoute
   '/invoice': typeof InvoiceRoute
+  '/rates': typeof RatesRoute
   '/api/chat': typeof ApiChatRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
@@ -68,6 +76,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/extract': typeof ExtractRoute
   '/invoice': typeof InvoiceRoute
+  '/rates': typeof RatesRoute
   '/api/chat': typeof ApiChatRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
@@ -78,6 +87,7 @@ export interface FileRouteTypes {
     | '/'
     | '/extract'
     | '/invoice'
+    | '/rates'
     | '/api/chat'
     | '/api/extract'
     | '/api/invoice'
@@ -86,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/extract'
     | '/invoice'
+    | '/rates'
     | '/api/chat'
     | '/api/extract'
     | '/api/invoice'
@@ -94,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/extract'
     | '/invoice'
+    | '/rates'
     | '/api/chat'
     | '/api/extract'
     | '/api/invoice'
@@ -103,6 +115,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ExtractRoute: typeof ExtractRoute
   InvoiceRoute: typeof InvoiceRoute
+  RatesRoute: typeof RatesRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiExtractRoute: typeof ApiExtractRoute
   ApiInvoiceRoute: typeof ApiInvoiceRoute
@@ -110,6 +123,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/rates': {
+      id: '/rates'
+      path: '/rates'
+      fullPath: '/rates'
+      preLoaderRoute: typeof RatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/invoice': {
       id: '/invoice'
       path: '/invoice'
@@ -159,6 +179,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ExtractRoute: ExtractRoute,
   InvoiceRoute: InvoiceRoute,
+  RatesRoute: RatesRoute,
   ApiChatRoute: ApiChatRoute,
   ApiExtractRoute: ApiExtractRoute,
   ApiInvoiceRoute: ApiInvoiceRoute,
