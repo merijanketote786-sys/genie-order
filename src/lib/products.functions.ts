@@ -9,8 +9,7 @@ export type DbProduct = {
 };
 
 export const getProducts = createServerFn({ method: "GET" }).handler(async () => {
-  const { createPublicSupabase } = await import("@/lib/product-sync.server");
-  const supabase = createPublicSupabase();
+  const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabase
     .from("products")
     .select("name, unit, sale_price, p100_staff_price, stock")
@@ -33,8 +32,8 @@ export const getProducts = createServerFn({ method: "GET" }).handler(async () =>
 });
 
 export const getSyncStatus = createServerFn({ method: "GET" }).handler(async () => {
-  const { createPublicSupabase } = await import("@/lib/product-sync.server");
-  const supabase = createPublicSupabase();
+  const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
+
 
   const [{ count }, { data: logs }] = await Promise.all([
     supabase.from("products").select("id", { count: "exact", head: true }).eq("is_active", true),
