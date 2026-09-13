@@ -1,12 +1,17 @@
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import priceList from "@/data/price-list.json";
+import { getProducts, getSyncStatus } from "@/lib/products.functions";
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Check, Copy, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/rates")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    admin: search["admin"] === "1" || search["admin"] === 1 ? "1" : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Staff Rate List — HB Chemicals" },
