@@ -12,7 +12,7 @@ export function normalizeName(name: string) {
 
 const productSchema = z.object({
   name: z.string().min(1).max(300),
-  unit: z.enum(["kg", "piece"]),
+  unit: z.enum(["kg", "piece", "litre", "grammes", "pcs", "bottles", "bundles"]),
   sale_price: z.coerce.number().finite().min(0),
   stock: z.coerce.number().finite().default(0),
 });
