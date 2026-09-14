@@ -4,6 +4,8 @@ export type DbProduct = {
   name: string;
   unit: string;
   p100: number | null;
+  p250: number | null;
+  p500: number | null;
   sale: number | null;
   stock: number | null;
 };
@@ -12,7 +14,7 @@ export const getProducts = createServerFn({ method: "GET" }).handler(async () =>
   const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabase
     .from("products")
-    .select("name, unit, sale_price, p100_staff_price, stock")
+    .select("name, unit, sale_price, p100_staff_price, p250_staff_price, p500_staff_price, stock")
     .eq("is_active", true)
     .order("name", { ascending: true })
     .limit(5000);
