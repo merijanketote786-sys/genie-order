@@ -89,6 +89,8 @@ function RatesPage() {
       cleanName(item.name),
       item.sale ? `Rate (per ${item.unit || "unit"}): ${money(item.sale)}` : null,
       item.p100 ? `100 gram: ${money(item.p100)}` : null,
+      item.p250 ? `250 gram: ${money(item.p250)}` : null,
+      item.p500 ? `500 gram: ${money(item.p500)}` : null,
       item.stock !== null ? `Available: ${item.stock} ${item.unit || ""}`.trim() : null,
     ].filter(Boolean);
     try {
