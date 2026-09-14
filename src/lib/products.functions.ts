@@ -27,6 +27,8 @@ export const getProducts = createServerFn({ method: "GET" }).handler(async () =>
       name: String(r["name"]),
       unit: String(r["unit"]),
       p100: r["p100_staff_price"] === null ? null : Number(r["p100_staff_price"]),
+      p250: r["p250_staff_price"] == null ? null : Number(r["p250_staff_price"]),
+      p500: r["p500_staff_price"] == null ? null : Number(r["p500_staff_price"]),
       sale: r["sale_price"] === null ? null : Number(r["sale_price"]),
       stock: r["stock"] === null ? null : Number(r["stock"]),
     })) as DbProduct[],
