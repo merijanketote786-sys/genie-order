@@ -22,6 +22,8 @@ export type Database = {
           name: string
           normalized_name: string
           p100_staff_price: number | null
+          p250_staff_price: number | null
+          p500_staff_price: number | null
           sale_price: number
           stock: number
           unit: string
@@ -34,6 +36,8 @@ export type Database = {
           name: string
           normalized_name: string
           p100_staff_price?: number | null
+          p250_staff_price?: number | null
+          p500_staff_price?: number | null
           sale_price?: number
           stock?: number
           unit: string
@@ -46,6 +50,8 @@ export type Database = {
           name?: string
           normalized_name?: string
           p100_staff_price?: number | null
+          p250_staff_price?: number | null
+          p500_staff_price?: number | null
           sale_price?: number
           stock?: number
           unit?: string
