@@ -34,6 +34,8 @@ type Item = {
   name: string;
   unit: string;
   p100: number | null;
+  p250?: number | null;
+  p500?: number | null;
   sale: number | null;
   stock: number | null;
 };
