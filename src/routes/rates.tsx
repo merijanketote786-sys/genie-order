@@ -34,6 +34,8 @@ type Item = {
   name: string;
   unit: string;
   p100: number | null;
+  p250?: number | null;
+  p500?: number | null;
   sale: number | null;
   stock: number | null;
 };
@@ -87,6 +89,8 @@ function RatesPage() {
       cleanName(item.name),
       item.sale ? `Rate (per ${item.unit || "unit"}): ${money(item.sale)}` : null,
       item.p100 ? `100 gram: ${money(item.p100)}` : null,
+      item.p250 ? `250 gram: ${money(item.p250)}` : null,
+      item.p500 ? `500 gram: ${money(item.p500)}` : null,
       item.stock !== null ? `Available: ${item.stock} ${item.unit || ""}`.trim() : null,
     ].filter(Boolean);
     try {
@@ -173,6 +177,8 @@ function RatesPage() {
                 <div className="mt-3 grid grid-cols-3 gap-2">
                   <Stat label={`Per ${item.unit || "unit"}`} value={money(item.sale)} accent />
                   <Stat label="100 gram" value={money(item.p100)} />
+                  <Stat label="250 gram" value={money(item.p250 ?? null)} />
+                  <Stat label="500 gram" value={money(item.p500 ?? null)} />
                   <Stat
                     label="Available"
                     value={item.stock === null ? "—" : `${item.stock}`}
