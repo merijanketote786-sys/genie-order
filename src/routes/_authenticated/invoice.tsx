@@ -18,33 +18,32 @@ import { createFileRoute } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { ScrollToEnd } from "@/components/scroll-to-end";
 import { WorkspaceHeader } from "@/components/workspace-header";
-import { useEffect, useRef } from "react";
+import { Phone, ReceiptText, ShieldCheck, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ClipboardList, Languages, MessageSquareText, Sparkles } from "lucide-react";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/invoice")({
   head: () => ({
     meta: [
-      { title: "Order Format Bot — Instant Order Formatter" },
+      { title: "Invoice Bot — Instant Invoice Generator" },
       {
         name: "description",
         content:
-          "Kisi bhi format mein order likho aur foran clean, WhatsApp-ready order format hasil karo.",
+          "Kisi bhi format mein inquiry ya order paste karo aur foran clean invoice hasil karo.",
       },
-      { property: "og:title", content: "Order Format Bot — Instant Order Formatter" },
+      { property: "og:title", content: "Invoice Bot — Instant Invoice Generator" },
       {
         property: "og:description",
-        content:
-          "Kisi bhi format mein order likho aur foran clean, WhatsApp-ready order format hasil karo.",
+        content: "Products paste karein aur foran professional invoice hasil karein.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: OrderChat,
+  component: InvoiceChat,
 });
 
-const transport = new DefaultChatTransport({ api: "/api/chat" });
+const transport = new DefaultChatTransport({ api: "/api/invoice" });
 
 function messageText(msg: UIMessage): string {
   return msg.parts
@@ -53,9 +52,11 @@ function messageText(msg: UIMessage): string {
     .trim();
 }
 
-const STORAGE_KEY = "order-format-bot:messages:v1";
+const STORAGE_KEY = "invoice-bot:messages:v1";
+const PHONE_KEY = "invoice-bot:phone:v1";
 
-function OrderChat() {
+function InvoiceChat() {
+  const [phone, setPhone] = useState("");
   const { messages, sendMessage, status, setMessages, error } = useChat({
     transport,
     onError: (err) => toast.error(err.message || "Kuch masla ho gaya"),
@@ -81,12 +82,11 @@ function OrderChat() {
   useEffect(() => {
     if (!hydratedRef.current) return;
     if (status === "streaming" || status === "submitted") return;
-    // Never overwrite saved history with an empty array (clearing removes the key directly)
     if (messages.length === 0) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
     } catch {
-      // ignore quota errors
+      // ignore
     }
   }, [messages, status]);
 
@@ -95,6 +95,25 @@ function OrderChat() {
       textareaRef.current?.focus({ preventScroll: true });
     }
   }, [status, messages.length]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(PHONE_KEY);
+      if (saved) setPhone(saved);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const updatePhone = (value: string) => {
+    const cleaned = value.replace(/[^\d+\s-]/g, "");
+    setPhone(cleaned);
+    try {
+      localStorage.setItem(PHONE_KEY, cleaned);
+    } catch {
+      // ignore
+    }
+  };
 
   const isBusy = status === "submitted" || status === "streaming";
 
@@ -115,21 +134,21 @@ function OrderChat() {
 
   return (
     <AppShell
-      title="Order Format Bot"
-      subtitle="Kisi bhi format ka order → clean format"
-      active="/"
+      title="Invoice Bot"
+      subtitle="Order/inquiry → foran invoice"
+      active="/invoice"
       onClear={handleClear}
       showClear={messages.length > 0}
     >
       <WorkspaceHeader
-        icon={ClipboardList}
-        eyebrow="Order operations"
-        title="Create Order"
-        description="Paste any customer order and instantly convert it into a clean standard format."
-        meta={["Urdu", "Roman Urdu", "English"]}
+        icon={ReceiptText}
+        eyebrow="Billing operations"
+        title="Invoice Workspace"
+        description="Create a clean item invoice using live staff rates, then amend it through the same conversation."
+        meta={["Live rates", "Editable", "WhatsApp ready"]}
       />
       <Conversation className="flex-1">
-        <ConversationContent className="gap-4 px-0 pb-4 pt-3 sm:gap-6 sm:pb-6 sm:pt-5">
+        <ConversationContent className="gap-4 px-0 pb-3 pt-3 sm:gap-6 sm:pb-4 sm:pt-5">
           {messages.length === 0 ? <EmptyState /> : null}
 
           {messages.map((msg) => {
@@ -138,10 +157,10 @@ function OrderChat() {
               <Message key={msg.id} from={msg.role}>
                 {msg.role === "assistant" ? (
                   text ? (
-                    <ResultCard text={text} label="Formatted order" />
+                    <ResultCard text={text} label="Invoice" phone={phone} />
                   ) : (
                     <MessageContent>
-                      <Shimmer>Format ho raha hai...</Shimmer>
+                      <Shimmer>Invoice ban rahi hai...</Shimmer>
                     </MessageContent>
                   )
                 ) : (
@@ -156,7 +175,7 @@ function OrderChat() {
           {status === "submitted" ? (
             <Message from="assistant">
               <MessageContent>
-                <Shimmer>Format ho raha hai...</Shimmer>
+                <Shimmer>Invoice ban rahi hai...</Shimmer>
               </MessageContent>
             </Message>
           ) : null}
@@ -171,24 +190,38 @@ function OrderChat() {
 
       <div className="sticky bottom-0 bg-background/95 pb-2 pt-2 backdrop-blur-sm sm:pb-4 sm:pt-3">
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/20">
-          <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-xs font-semibold text-foreground sm:px-4 sm:py-2.5">
-            <MessageSquareText className="size-4 text-primary" /> Customer order
-            <span className="ml-auto hidden text-[11px] font-normal text-muted-foreground sm:inline">Enter to process · Shift+Enter for new line</span>
-          </div>
+          <label className="grid min-h-12 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-border px-3 sm:px-4">
+            <Phone className="size-4 shrink-0 text-primary" />
+            <span className="sr-only">Customer WhatsApp number</span>
+            <input
+              value={phone}
+              onChange={(e) => updatePhone(e.target.value)}
+              inputMode="tel"
+              placeholder="Customer WhatsApp number (03xxxxxxxxx)"
+              className="min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              autoComplete="tel"
+            />
+            {phone ? (
+              <button type="button" onClick={() => updatePhone("")} aria-label="Clear number" className="grid size-10 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <X className="size-4" />
+              </button>
+            ) : null}
+          </label>
           <PromptInput onSubmit={handleSubmit} className="border-0 bg-transparent shadow-none">
             <PromptInputTextarea
               ref={textareaRef}
-              placeholder="Order details paste karein... (name, phone, city, address, product, total)"
+              placeholder="Products + prices paste karein... (e.g. Conditioner 250ml 750, Glycerine 250ml 250 ...)"
               disabled={isBusy}
-              className="min-h-20 px-3 py-2.5 text-sm leading-6 sm:min-h-32 sm:px-4 sm:py-3"
+              className="min-h-20 px-3 py-2.5 text-sm leading-6 sm:min-h-28 sm:px-4 sm:py-3"
             />
             <PromptInputFooter className="justify-end border-0 px-2 pb-2 sm:px-3 sm:pb-3">
               <PromptInputSubmit status={status} disabled={isBusy} />
             </PromptInputFooter>
           </PromptInput>
         </div>
-        <p className="mt-2 hidden text-center text-xs text-muted-foreground sm:block">
-          "WhatsApp par bhejo" dabao → WhatsApp khulega → apna group choose karo.
+        <p className="mt-2 hidden items-center justify-center gap-1.5 text-center text-xs text-muted-foreground sm:flex">
+          <ShieldCheck className="size-3.5" />
+          Delivery Charges blank rehti hain — baad mein manually add karain.
         </p>
       </div>
     </AppShell>
@@ -196,14 +229,13 @@ function OrderChat() {
 }
 
 function EmptyState() {
-  const example = `Ahmad ali\n03001234567\nLahore, model town H block ghar 42\niPhone case black\nTotal 1500, delivery 200, advance 500`;
+  const example = `Conditioner 250ml 750\nGlycerine 250ml 250\nLanolin 100ml 450\nCocobetaine 500ml 500`;
   return (
     <div className="mx-auto grid w-full max-w-4xl gap-3 md:grid-cols-[0.8fr_1.2fr]">
       <div className="glass-panel flex flex-col justify-center rounded-xl p-4 sm:p-6">
-        <span className="grid size-9 place-items-center rounded-lg bg-accent text-accent-foreground sm:size-10"><Sparkles className="size-4.5 sm:size-5" /></span>
-        <h3 className="mt-3 font-display text-base font-bold text-foreground sm:mt-4 sm:text-lg">No order yet</h3>
-        <p className="mt-1.5 text-[13px] leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">Paste an order below to standardize customer, delivery and payment details.</p>
-        <div className="mt-3 flex items-center gap-2 text-[11px] font-medium text-muted-foreground sm:mt-4 sm:text-xs"><Languages className="size-4 shrink-0 text-primary" /> Urdu, Roman Urdu and English supported</div>
+        <span className="grid size-9 place-items-center rounded-lg bg-accent text-accent-foreground sm:size-10"><ReceiptText className="size-4.5 sm:size-5" /></span>
+        <h3 className="mt-3 font-display text-base font-bold text-foreground sm:mt-4 sm:text-lg">No invoice yet</h3>
+        <p className="mt-1.5 text-[13px] leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">Paste product details below. Delivery and grand total remain blank until you provide them.</p>
       </div>
       <div className="hidden rounded-xl border border-border bg-card p-5 sm:block sm:p-6">
         <p className="text-[11px] font-bold uppercase text-muted-foreground">Example input</p>

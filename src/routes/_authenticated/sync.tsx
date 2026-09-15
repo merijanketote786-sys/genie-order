@@ -4,7 +4,7 @@ import { SyncStatusPanel, VyaparUploadCard } from "@/components/vyapar-sync";
 import { createFileRoute } from "@tanstack/react-router";
 import { RefreshCw } from "lucide-react";
 
-export const Route = createFileRoute("/sync")({
+export const Route = createFileRoute("/_authenticated/sync")({
   head: () => ({
     meta: [
       { title: "Vyapar Sync — HB Chemicals OrderBot" },

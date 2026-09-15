@@ -1,5 +1,6 @@
 import logoUrl from "@/assets/logo.png";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SignOutButton } from "@/components/sign-out-button";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
@@ -110,6 +111,7 @@ export function AppShell({
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <ThemeToggle />
+              <SignOutButton />
               {showClear && onClear ? (
                 <Button
                   variant="outline"

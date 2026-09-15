@@ -15,7 +15,7 @@ import { WorkspaceHeader } from "@/components/workspace-header";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/extract")({
+export const Route = createFileRoute("/_authenticated/extract")({
   head: () => ({
     meta: [
       { title: "Extract Bot — Image/PDF to Text" },
