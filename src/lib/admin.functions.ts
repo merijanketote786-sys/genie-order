@@ -20,53 +20,40 @@ export type AdminUserRow = {
   confirmed: boolean;
 };
 
-async function isAdminUser(supabase: {
-  rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }>;
-}, userId: string) {
-  const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+type RpcClient = { rpc: (fn: "has_role", args: { _user_id: string; _role: "admin" }) => PromiseLike<{ data: unknown }> };
+
+async function isAdminUser(supabase: unknown, userId: string) {
+  const { data } = await (supabase as RpcClient).rpc("has_role", {
+    _user_id: userId,
+    _role: "admin",
+  });
   return data === true;
 }
 
 export const getMyAccess = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase, userId, claims } = context as {
-      supabase: never;
-      userId: string;
-      claims: Record<string, unknown>;
-    };
-    const client = supabase as unknown as {
-      rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }>;
-      from: (t: string) => {
-        select: (c: string) => {
-          eq: (col: string, v: string) => {
-            maybeSingle: () => Promise<{ data: Record<string, unknown> | null }>;
-          };
-        };
-      };
-    };
+    const { supabase, userId, claims } = context;
 
     const [isAdmin, profile] = await Promise.all([
-      isAdminUser(client, userId),
-      client.from("profiles").select("full_name, is_active").eq("id", userId).maybeSingle(),
+      isAdminUser(supabase, userId),
+      supabase.from("profiles").select("full_name, is_active").eq("id", userId).maybeSingle(),
     ]);
+
+    const email = (claims as Record<string, unknown>)["email"];
 
     return {
       isAdmin,
-      isActive: profile.data?.["is_active"] !== false,
-      email: String(claims["email"] ?? ""),
-      fullName: String(profile.data?.["full_name"] ?? ""),
+      isActive: profile.data?.is_active !== false,
+      email: typeof email === "string" ? email : "",
+      fullName: profile.data?.full_name ?? "",
     } satisfies AccessInfo;
   });
 
 export const listAppUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase, userId } = context as { supabase: never; userId: string };
-    const client = supabase as unknown as {
-      rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }>;
-    };
-    if (!(await isAdminUser(client, userId))) {
+    if (!(await isAdminUser(context.supabase, context.userId))) {
       return { ok: false as const, users: [] as AdminUserRow[], message: "Sirf admin" };
     }
 
@@ -83,23 +70,17 @@ export const listAppUsers = createServerFn({ method: "GET" })
       supabaseAdmin.from("user_roles").select("user_id, role").in("user_id", ids),
     ]);
 
-    const profileMap = new Map(
-      (profiles ?? []).map((p: Record<string, unknown>) => [String(p["id"]), p]),
-    );
-    const adminIds = new Set(
-      (roles ?? [])
-        .filter((r: Record<string, unknown>) => r["role"] === "admin")
-        .map((r: Record<string, unknown>) => String(r["user_id"])),
-    );
+    const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+    const adminIds = new Set((roles ?? []).filter((r) => r.role === "admin").map((r) => r.user_id));
 
     const users: AdminUserRow[] = authData.users.map((u) => {
       const p = profileMap.get(u.id);
       return {
         id: u.id,
         email: u.email ?? "",
-        fullName: String(p?.["full_name"] ?? ""),
+        fullName: p?.full_name ?? "",
         role: adminIds.has(u.id) ? "admin" : "staff",
-        isActive: p?.["is_active"] !== false,
+        isActive: p?.is_active !== false,
         createdAt: u.created_at,
         lastSignInAt: u.last_sign_in_at ?? null,
         confirmed: Boolean(u.email_confirmed_at),
@@ -123,14 +104,10 @@ export const updateUserAccess = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context as { supabase: never; userId: string };
-    const client = supabase as unknown as {
-      rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }>;
-    };
-    if (!(await isAdminUser(client, userId))) {
+    if (!(await isAdminUser(context.supabase, context.userId))) {
       return { ok: false as const, message: "Sirf admin ye change kar sakta hai." };
     }
-    if (data.userId === userId && (data.role === "staff" || data.isActive === false)) {
+    if (data.userId === context.userId && (data.role === "staff" || data.isActive === false)) {
       return { ok: false as const, message: "Apna hi admin access nahi hata sakte." };
     }
 
@@ -153,10 +130,14 @@ export const updateUserAccess = createServerFn({ method: "POST" })
         .upsert({ user_id: data.userId, role: "staff" }, { onConflict: "user_id,role" });
     }
 
-    const patch: Record<string, unknown> = {};
-    if (data.role) patch["role"] = data.role;
-    if (typeof data.isActive === "boolean") patch["is_active"] = data.isActive;
-    if (typeof data.fullName === "string") patch["full_name"] = data.fullName;
+    const patch: {
+      role?: string;
+      is_active?: boolean;
+      full_name?: string;
+    } = {};
+    if (data.role) patch.role = data.role;
+    if (typeof data.isActive === "boolean") patch.is_active = data.isActive;
+    if (typeof data.fullName === "string") patch.full_name = data.fullName;
 
     if (Object.keys(patch).length > 0) {
       const { error } = await supabaseAdmin.from("profiles").update(patch).eq("id", data.userId);
