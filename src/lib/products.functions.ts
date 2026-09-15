@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
 export type DbProduct = {
@@ -18,7 +19,9 @@ export type DbProduct = {
 
 const num = (v: unknown) => (v == null ? null : Number(v));
 
-export const getProducts = createServerFn({ method: "GET" }).handler(async () => {
+export const getProducts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
   const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabase
     .from("products")
@@ -65,6 +68,7 @@ const priceField = z
   });
 
 export const saveProductPrices = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -93,6 +97,7 @@ export const saveProductPrices = createServerFn({ method: "POST" })
   });
 
 export const syncProductsFromSheet = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -132,7 +137,9 @@ export const syncProductsFromSheet = createServerFn({ method: "POST" })
     };
   });
 
-export const getSyncStatus = createServerFn({ method: "GET" }).handler(async () => {
+export const getSyncStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
   const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
 
 
