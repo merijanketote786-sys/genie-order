@@ -1,25 +1,18 @@
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
+import { SyncStatusPanel } from "@/components/vyapar-sync";
 import priceList from "@/data/price-list.json";
-import {
-  getProducts,
-  getSyncStatus,
-  saveProductPrices,
-  syncProductsFromSheet,
-} from "@/lib/products.functions";
+import { getProducts, saveProductPrices } from "@/lib/products.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
   Copy,
-  FileSpreadsheet,
-  Loader2,
   RotateCcw,
   Save,
   Search,
   SlidersHorizontal,
   Tag,
-  Upload,
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
