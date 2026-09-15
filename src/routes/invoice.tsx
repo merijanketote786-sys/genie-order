@@ -17,6 +17,7 @@ import { useChat } from "@ai-sdk/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { ScrollToEnd } from "@/components/scroll-to-end";
+import { Phone, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
