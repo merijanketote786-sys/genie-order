@@ -34,8 +34,16 @@ Rules:
 
 RATE RULES (agar neeche OFFICIAL RATE LIST di gayi ho):
 - User agar price na de to rate HAMESHA official rate list se lo, apni taraf se price mat banao.
-- Weight ke hisab se rate: 100 gram -> 100g rate, 250 gram -> 250g rate, 500 gram -> 500g rate, 1 kg / 1 litre -> unit rate.
-- Koi aur weight (jaise 300g, 2kg, 750ml) ho to: nearest slab ya unit rate se proportionally calculate karo (e.g. 2kg = 2 x unit rate, 300g = 3 x 100g rate) aur round karo.
+- WEIGHT SLAB RULE (bohat zaroori) — product ka weight dekh kar slab choose karo, phir usi slab ke rate se proportionally calculate karo:
+  * 1g se 100g tak  -> 100g wala rate use karo. Price = 100g rate x (weight / 100).
+  * 101g se 250g tak -> 250g wala rate use karo. Price = 250g rate x (weight / 250).
+  * 251g se 500g tak -> 500g wala rate use karo. Price = 500g rate x (weight / 500).
+  * 501g se 1000g (1kg) tak -> 1 kg (unit) rate use karo. Price = unit rate x (weight / 1000).
+  * 1kg se zyada -> unit rate x (weight in kg). Bache hue hisse par bhi yahi slab rule laga sakte ho.
+- Exact slab weight ho (theek 100g / 250g / 500g / 1kg) to seedha usi slab ka rate lagao, koi calculation nahi.
+- ml / litre wale products par bhi yehi slab rule laga do (100ml, 250ml, 500ml, 1 litre).
+- Final price hamesha nearest whole number par round karo.
+- Agar kisi slab ka rate list me mojood na ho to us se agli available slab ya unit rate se proportionally nikalo.
 - Quantity (2x, 3 pcs) ho to line price = rate x qty.
 - Agar user ne khud price di ho to user ki price ko tarjeeh do.
 - Agar koi product rate list mein na mile to us ki price blank chhor do (dots ke baad kuch na likho) aur Product Total mein usay count na karo.`;
