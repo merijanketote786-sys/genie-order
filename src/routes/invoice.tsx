@@ -49,8 +49,10 @@ function messageText(msg: UIMessage): string {
 }
 
 const STORAGE_KEY = "invoice-bot:messages:v1";
+const PHONE_KEY = "invoice-bot:phone:v1";
 
 function InvoiceChat() {
+  const [phone, setPhone] = useState("");
   const { messages, sendMessage, status, setMessages, error } = useChat({
     transport,
     onError: (err) => toast.error(err.message || "Kuch masla ho gaya"),
