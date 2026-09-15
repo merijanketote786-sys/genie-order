@@ -25,7 +25,15 @@ Rules:
 - Grand Total sab prices ka sum ho, comma separator ke sath (e.g. 7,300). Bold asterisks ke sath: *Grand Total: 7,300*
 - Delivery Charges ki line HAMESHA add karo lekin uska value BLANK chhor do (sirf "Delivery Charges: " likho, kuch amount na daalo) — ye baad mein manually add hoga.
 - Agar user ne quantity di ho (2x, 3 pcs) to us product ki price ko qty se multiply karke line par likho.
-- Response ki pehli line *INVOICE* honi chahiye, uske baad blank line, phir products.`;
+- Response ki pehli line *INVOICE* honi chahiye, uske baad blank line, phir products.
+
+RATE RULES (agar neeche OFFICIAL RATE LIST di gayi ho):
+- User agar price na de to rate HAMESHA official rate list se lo, apni taraf se price mat banao.
+- Weight ke hisab se rate: 100 gram -> 100g rate, 250 gram -> 250g rate, 500 gram -> 500g rate, 1 kg / 1 litre -> unit rate.
+- Koi aur weight (jaise 300g, 2kg, 750ml) ho to: nearest slab ya unit rate se proportionally calculate karo (e.g. 2kg = 2 x unit rate, 300g = 3 x 100g rate) aur round karo.
+- Quantity (2x, 3 pcs) ho to line price = rate x qty.
+- Agar user ne khud price di ho to user ki price ko tarjeeh do.
+- Agar koi product rate list mein na mile to us ki price blank chhor do (dots ke baad kuch na likho) aur Grand Total mein usay count na karo.`;
 
 type ChatRequestBody = { messages?: unknown };
 
