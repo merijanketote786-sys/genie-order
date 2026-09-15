@@ -19,16 +19,16 @@ export function WorkspaceHeader({
   className,
 }: WorkspaceHeaderProps) {
   return (
-    <section className={cn("shrink-0 border-b border-border py-5 sm:py-6", className)}>
+    <section className={cn("shrink-0 border-b border-border py-3 sm:py-6", className)}>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
-        <div className="flex min-w-0 gap-3.5">
-          <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-            <Icon className="size-5" />
+        <div className="flex min-w-0 items-center gap-3 sm:items-start sm:gap-3.5">
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm sm:size-11">
+            <Icon className="size-4.5 sm:size-5" />
           </span>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase text-primary">{eyebrow}</p>
-            <h2 className="mt-1 font-display text-xl font-bold text-foreground sm:text-2xl">{title}</h2>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p>
+            <p className="text-[10px] font-bold uppercase text-primary sm:text-[11px]">{eyebrow}</p>
+            <h2 className="font-display text-lg font-bold text-foreground sm:mt-1 sm:text-2xl">{title}</h2>
+            <p className="mt-1 hidden max-w-2xl text-sm leading-6 text-muted-foreground sm:block">{description}</p>
           </div>
         </div>
         {meta.length ? (

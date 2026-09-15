@@ -85,14 +85,16 @@ export function AppShell({
 
       <section className="flex min-h-0 min-w-0 flex-col">
         <header className="shrink-0 border-b border-border bg-surface/95 backdrop-blur-sm">
-          <div className="grid min-h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 sm:px-6 lg:px-8">
-            <div className="flex min-w-0 items-center gap-3 lg:hidden">
-              <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-card">
+          <div className="grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 sm:min-h-16 sm:gap-3 sm:px-6 lg:px-8">
+            <div className="flex min-w-0 items-center gap-2.5 lg:hidden">
+              <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-card">
                 <img
                   src={logoUrl}
                   alt="HB Chemicals Pakistan"
-                  width={36}
-                  height={36}
+                  width={32}
+                  height={32}
+                  loading="eager"
+                  decoding="async"
                   className="size-full object-contain"
                 />
               </span>
@@ -136,7 +138,7 @@ export function AppShell({
                   to={tab.to}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "flex min-h-14 flex-col items-center justify-center gap-1 border-b-2 px-1 text-[10px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                    "flex min-h-12 flex-col items-center justify-center gap-0.5 border-b-2 px-1 text-[10px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                     isActive
                       ? "border-primary text-primary"
                       : "border-transparent text-muted-foreground hover:text-foreground"
@@ -150,7 +152,7 @@ export function AppShell({
           </nav>
         </header>
 
-        <main className="mx-auto flex min-h-0 w-full max-w-[1180px] flex-1 flex-col px-3 sm:px-6 lg:px-8">
+        <main className="mx-auto flex min-h-0 w-full max-w-[1180px] flex-1 flex-col px-3 pb-[env(safe-area-inset-bottom)] sm:px-6 lg:px-8">
           {children}
         </main>
       </section>
