@@ -536,7 +536,7 @@ function BulkEditor({ items, searching }: { items: Item[]; searching: boolean })
         <p className="font-display text-sm font-bold text-foreground">Bulk price editing</p>
         <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
           {searching ? "Search ke mutabiq items" : "Saare products"} — jitne chahein rates edit
-          karein, phir neeche "Save all" dabayen. Khali field ka matlab automatic rate.
+          karein, phir "Save all" dabayen. Khali field ka matlab automatic rate.
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <label className="flex min-h-11 flex-1 items-center gap-2 rounded-lg border border-border bg-surface-2/60 px-3 sm:max-w-56">
@@ -553,7 +553,34 @@ function BulkEditor({ items, searching }: { items: Item[]; searching: boolean })
             Apply to {shown.length}
           </Button>
         </div>
+        <div className="mt-3 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-2">
+          <p className="min-w-0 flex-1 px-1 text-[12px] font-semibold text-foreground">
+            {dirty.length > 0
+              ? `${dirty.length} item${dirty.length === 1 ? "" : "s"} change hue`
+              : "Koi change nahi — rates edit karein"}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setDrafts({})}
+            disabled={dirty.length === 0 || mutation.isPending}
+            className="min-h-10 gap-1.5 border-border bg-card"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Undo
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => mutation.mutate()}
+            disabled={dirty.length === 0 || mutation.isPending}
+            className="min-h-10 flex-1 gap-1.5 sm:flex-none sm:px-6"
+          >
+            <Save className="h-4 w-4" />
+            {mutation.isPending ? "Saving…" : "Save all"}
+          </Button>
+        </div>
       </div>
+
 
       <ul className="flex flex-col gap-2.5">
         {shown.map((item) => {
@@ -619,32 +646,7 @@ function BulkEditor({ items, searching }: { items: Item[]; searching: boolean })
         </div>
       ) : null}
 
-      {dirty.length > 0 ? (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
-          <div className="mx-auto flex max-w-3xl items-center gap-2">
-            <p className="flex-1 text-[12px] font-semibold text-foreground">
-              {dirty.length} item{dirty.length === 1 ? "" : "s"} change hue
-            </p>
-            <Button
-              variant="outline"
-              onClick={() => setDrafts({})}
-              disabled={mutation.isPending}
-              className="gap-1.5 border-border bg-card"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Undo
-            </Button>
-            <Button
-              onClick={() => mutation.mutate()}
-              disabled={mutation.isPending}
-              className="gap-1.5"
-            >
-              <Save className="h-4 w-4" />
-              {mutation.isPending ? "Saving…" : "Save all"}
-            </Button>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
+
