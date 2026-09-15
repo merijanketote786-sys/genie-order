@@ -69,13 +69,21 @@ export function ResultCard({
         {text}
       </pre>
       <div className="flex flex-wrap gap-2 border-t border-border/50 bg-black/15 px-3 py-2.5">
-        <Button
-          size="sm"
-          onClick={() => shareOnWhatsApp(text, phone)}
-          className="gap-1.5 rounded-full"
-        >
-          <Share2 className="h-4 w-4" />
-          {toWhatsAppNumber(phone) ? "Customer ko bhejo" : "WhatsApp par bhejo"}
+        <Button asChild size="sm" className="gap-1.5 rounded-full">
+          <a
+            href={whatsappUrl(text, phone)}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => {
+              if (window.self !== window.top) {
+                e.preventDefault();
+                shareOnWhatsApp(text, phone);
+              }
+            }}
+          >
+            <Share2 className="h-4 w-4" />
+            {toWhatsAppNumber(phone) ? "Customer ko bhejo" : "WhatsApp par bhejo"}
+          </a>
         </Button>
         <Button
           size="sm"
