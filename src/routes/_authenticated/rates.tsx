@@ -10,7 +10,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { WorkspaceHeader } from "@/components/workspace-header";
 
-export const Route = createFileRoute("/rates")({
+export const Route = createFileRoute("/_authenticated/rates")({
   validateSearch: (search: Record<string, unknown>) => ({
     admin: search["admin"] === "1" || search["admin"] === 1 ? "1" : undefined,
   }),

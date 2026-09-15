@@ -22,7 +22,7 @@ import { Phone, ReceiptText, ShieldCheck, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/invoice")({
+export const Route = createFileRoute("/_authenticated/invoice")({
   head: () => ({
     meta: [
       { title: "Invoice Bot — Instant Invoice Generator" },
