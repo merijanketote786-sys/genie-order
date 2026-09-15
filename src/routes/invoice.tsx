@@ -17,7 +17,8 @@ import { useChat } from "@ai-sdk/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { ScrollToEnd } from "@/components/scroll-to-end";
-import { useEffect, useRef } from "react";
+import { Phone, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/invoice")({
@@ -49,8 +50,10 @@ function messageText(msg: UIMessage): string {
 }
 
 const STORAGE_KEY = "invoice-bot:messages:v1";
+const PHONE_KEY = "invoice-bot:phone:v1";
 
 function InvoiceChat() {
+  const [phone, setPhone] = useState("");
   const { messages, sendMessage, status, setMessages, error } = useChat({
     transport,
     onError: (err) => toast.error(err.message || "Kuch masla ho gaya"),
@@ -88,6 +91,25 @@ function InvoiceChat() {
     if (status === "ready") textareaRef.current?.focus();
   }, [status, messages.length]);
 
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(PHONE_KEY);
+      if (saved) setPhone(saved);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const updatePhone = (value: string) => {
+    const cleaned = value.replace(/[^\d+\s-]/g, "");
+    setPhone(cleaned);
+    try {
+      localStorage.setItem(PHONE_KEY, cleaned);
+    } catch {
+      // ignore
+    }
+  };
+
   const isBusy = status === "submitted" || status === "streaming";
 
   const handleSubmit = async ({ text }: { text: string }) => {
@@ -123,7 +145,7 @@ function InvoiceChat() {
               <Message key={msg.id} from={msg.role}>
                 {msg.role === "assistant" ? (
                   text ? (
-                    <ResultCard text={text} label="Invoice" />
+                    <ResultCard text={text} label="Invoice" phone={phone} />
                   ) : (
                     <MessageContent>
                       <Shimmer>Invoice ban rahi hai...</Shimmer>
@@ -155,6 +177,26 @@ function InvoiceChat() {
       </Conversation>
 
       <div className="sticky bottom-0 bg-gradient-to-t from-background via-background/95 to-transparent pb-4 pt-3">
+        <div className="mb-2 flex items-center gap-2 rounded-full border border-border/50 bg-surface-2 px-4 py-2">
+          <Phone className="h-4 w-4 shrink-0 text-primary" />
+          <input
+            value={phone}
+            onChange={(e) => updatePhone(e.target.value)}
+            inputMode="tel"
+            placeholder="Customer ka WhatsApp number (03xxxxxxxxx)"
+            className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            autoComplete="tel"
+          />
+          {phone ? (
+            <button
+              onClick={() => updatePhone("")}
+              aria-label="Clear number"
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : null}
+        </div>
         <div className="rounded-3xl border border-border/50 bg-surface-2 p-1.5 shadow-lg">
           <PromptInput onSubmit={handleSubmit} className="border-0 bg-transparent shadow-none">
             <PromptInputTextarea

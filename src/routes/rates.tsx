@@ -1,10 +1,10 @@
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import priceList from "@/data/price-list.json";
-import { getProducts, getSyncStatus } from "@/lib/products.functions";
+import { getProducts, getSyncStatus, saveProductPrices } from "@/lib/products.functions";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { Check, Copy, Search, X } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check, Copy, RotateCcw, Save, Search, SlidersHorizontal, Tag, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -38,6 +38,10 @@ type Item = {
   p500?: number | null;
   sale: number | null;
   stock: number | null;
+  customSale?: number | null;
+  customP100?: number | null;
+  customP250?: number | null;
+  customP500?: number | null;
 };
 
 const FALLBACK_ITEMS = priceList as Item[];
@@ -65,6 +69,7 @@ function RatesPage() {
   const { admin } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
+  const [mode, setMode] = useState<"view" | "edit">("view");
 
   const { data } = useQuery({
     queryKey: ["products"],
@@ -106,6 +111,30 @@ function RatesPage() {
   return (
     <AppShell title="Staff Rate List" subtitle="Item ka naam likho → rate + quantity" active="/rates">
       <div className="sticky top-0 z-10 bg-gradient-to-b from-background via-background/95 to-transparent pb-3 pt-4">
+        <div className="mb-2.5 flex gap-1.5 rounded-full border border-border/60 bg-surface-2/60 p-1">
+          <button
+            onClick={() => setMode("view")}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+              mode === "view"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Tag className="h-3.5 w-3.5" />
+            Rate List
+          </button>
+          <button
+            onClick={() => setMode("edit")}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+              mode === "edit"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            Price Customize
+          </button>
+        </div>
         <div className="glass-panel flex items-center gap-2 rounded-full px-4 py-2.5">
           <Search className="h-4 w-4 shrink-0 text-primary" />
           <input
@@ -143,6 +172,12 @@ function RatesPage() {
               Spelling check karein ya thoda chhota naam likhein (e.g. "glycer").
             </p>
           </div>
+        ) : mode === "edit" ? (
+          <ul className="flex flex-col gap-2.5">
+            {results.map((item) => (
+              <EditItemCard key={item.name} item={item} />
+            ))}
+          </ul>
         ) : (
           <ul className="flex flex-col gap-2.5">
             {results.map((item) => (
@@ -300,5 +335,139 @@ function SyncStatusPanel() {
         </div>
       )}
     </div>
+  );
+}
+
+function EditItemCard({ item }: { item: Item }) {
+  const queryClient = useQueryClient();
+  const [sale, setSale] = useState(item.customSale == null ? "" : String(item.customSale));
+  const [p100, setP100] = useState(item.customP100 == null ? "" : String(item.customP100));
+  const [p250, setP250] = useState(item.customP250 == null ? "" : String(item.customP250));
+  const [p500, setP500] = useState(item.customP500 == null ? "" : String(item.customP500));
+
+  const mutation = useMutation({
+    mutationFn: (payload: { sale: string; p100: string; p250: string; p500: string }) =>
+      saveProductPrices({
+        data: { name: item.name, ...payload },
+      }),
+    onSuccess: (res) => {
+      if (res?.ok) {
+        toast.success("Price save ho gayi");
+        void queryClient.invalidateQueries({ queryKey: ["products"] });
+      } else {
+        toast.error(res?.message || "Save nahi ho saka");
+      }
+    },
+    onError: () => toast.error("Save nahi ho saka"),
+  });
+
+  const save = () => mutation.mutate({ sale, p100, p250, p500 });
+
+  const reset = () => {
+    setSale("");
+    setP100("");
+    setP250("");
+    setP500("");
+    mutation.mutate({ sale: "", p100: "", p250: "", p500: "" });
+  };
+
+  const hasCustom =
+    item.customSale != null ||
+    item.customP100 != null ||
+    item.customP250 != null ||
+    item.customP500 != null;
+
+  return (
+    <li className="glass-panel rounded-2xl px-4 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-display text-[15px] font-bold leading-tight text-foreground">
+            {cleanName(item.name)}
+          </p>
+          <span className="mt-1 inline-block rounded-full border border-border/70 px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+            {item.unit || "unit"}
+          </span>
+        </div>
+        {hasCustom ? (
+          <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
+            Custom
+          </span>
+        ) : null}
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <PriceField
+          label={`Per ${item.unit || "unit"}`}
+          value={sale}
+          onChange={setSale}
+          placeholder={item.sale == null ? "—" : String(item.sale)}
+        />
+        <PriceField
+          label="100 gram"
+          value={p100}
+          onChange={setP100}
+          placeholder={item.p100 == null ? "—" : String(item.p100)}
+        />
+        <PriceField
+          label="250 gram"
+          value={p250}
+          onChange={setP250}
+          placeholder={item.p250 == null ? "—" : String(item.p250)}
+        />
+        <PriceField
+          label="500 gram"
+          value={p500}
+          onChange={setP500}
+          placeholder={item.p500 == null ? "—" : String(item.p500)}
+        />
+      </div>
+
+      <div className="mt-3 flex items-center gap-2">
+        <Button size="sm" onClick={save} disabled={mutation.isPending} className="gap-1.5 rounded-full">
+          <Save className="h-4 w-4" />
+          {mutation.isPending ? "Saving…" : "Save"}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={reset}
+          disabled={mutation.isPending || !hasCustom}
+          className="gap-1.5 rounded-full border-border/70 bg-transparent"
+        >
+          <RotateCcw className="h-4 w-4" />
+          Auto rate
+        </Button>
+      </div>
+      <p className="mt-2 text-[11px] text-muted-foreground">
+        Khali chhorain to automatic rate chalega. Vyapar sync in prices ko overwrite nahi karega.
+      </p>
+    </li>
+  );
+}
+
+function PriceField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <label className="rounded-xl border border-border/60 bg-surface-2/60 px-2.5 py-2">
+      <span className="block text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+        {label}
+      </span>
+      <input
+        inputMode="decimal"
+        value={value}
+        onChange={(e) => onChange(e.target.value.replace(/[^0-9.]/g, ""))}
+        placeholder={placeholder}
+        className="mt-0.5 w-full bg-transparent font-mono text-sm font-bold text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground"
+      />
+    </label>
   );
 }
