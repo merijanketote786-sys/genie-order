@@ -1,10 +1,27 @@
 import { AppShell } from "@/components/app-shell";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { Button } from "@/components/ui/button";
-import { getMyAccess, listAppUsers, updateUserAccess } from "@/lib/admin.functions";
+import {
+  getMyAccess,
+  listAppUsers,
+  sendPasswordReset,
+  setUserPassword,
+  updateUserAccess,
+  type AdminUserRow,
+} from "@/lib/admin.functions";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Loader2, ShieldCheck, ShieldOff, UserCheck, UserX, Users } from "lucide-react";
+import { Eye, EyeOff, KeyRound, Loader2, Mail, ShieldCheck, ShieldOff, UserCheck, UserX, Users } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -37,6 +54,7 @@ function AdminPage() {
     enabled: isAdmin,
   });
 
+  const [pwUser, setPwUser] = useState<AdminUserRow | null>(null);
   const qc = useQueryClient();
   const mutate = useMutation({
     mutationFn: (input: { userId: string; role?: "admin" | "staff"; isActive?: boolean }) =>
@@ -157,6 +175,15 @@ function AdminPage() {
                               )}
                               {u.isActive ? "Block" : "Unblock"}
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setPwUser(u)}
+                              className="h-9 gap-1.5 text-xs"
+                            >
+                              <KeyRound className="size-3.5" />
+                              Password
+                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -165,6 +192,13 @@ function AdminPage() {
                 </table>
               </div>
             </div>
+
+            <p className="px-1 text-xs text-muted-foreground">
+              Security ki wajah se purana password kisi ko bhi nazar nahi aata (woh encrypted
+              mehfooz hota hai) — aap naya password set kar sakte hain ya reset link bhej sakte
+              hain.
+            </p>
+            <PasswordDialog user={pwUser} onClose={() => setPwUser(null)} />
 
             <p className="px-1 text-xs text-muted-foreground">
               Block kiye gaye user app ke kisi bhi section (Rates, Sync, Invoice) ka data nahi dekh
@@ -205,5 +239,87 @@ function Badge({
     >
       {children}
     </span>
+  );
+}
+
+function PasswordDialog({ user, onClose }: { user: AdminUserRow | null; onClose: () => void }) {
+  const [password, setPassword] = useState("");
+  const [show, setShow] = useState(false);
+
+  const save = useMutation({
+    mutationFn: (input: { userId: string; password: string }) => setUserPassword({ data: input }),
+    onSuccess: (res) => {
+      if (res.ok) {
+        toast.success(res.message);
+        setPassword("");
+        onClose();
+      } else toast.error(res.message);
+    },
+    onError: () => toast.error("Password set nahi ho saka."),
+  });
+
+  const reset = useMutation({
+    mutationFn: (email: string) =>
+      sendPasswordReset({
+        data: { email, redirectTo: `${window.location.origin}/reset-password` },
+      }),
+    onSuccess: (res) => (res.ok ? toast.success(res.message) : toast.error(res.message)),
+    onError: () => toast.error("Email nahi bheja ja saka."),
+  });
+
+  return (
+    <Dialog open={user !== null} onOpenChange={(open) => (!open ? onClose() : null)}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-display">Password manage karein</DialogTitle>
+          <DialogDescription>
+            {user?.email} — purana password kisi ko nazar nahi aa sakta, woh encrypted mehfooz hai.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-2">
+          <Label htmlFor="new-pw">Naya password</Label>
+          <div className="relative">
+            <Input
+              id="new-pw"
+              type={show ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Kam az kam 8 characters"
+              className="h-11 pr-11"
+              autoComplete="new-password"
+            />
+            <button
+              type="button"
+              onClick={() => setShow((v) => !v)}
+              aria-label={show ? "Password chhupayein" : "Password dikhayein"}
+              className="absolute inset-y-0 right-0 grid w-11 place-items-center text-muted-foreground hover:text-foreground"
+            >
+              {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            className="h-11 flex-1 gap-2"
+            disabled={password.length < 8 || save.isPending || !user}
+            onClick={() => user && save.mutate({ userId: user.id, password })}
+          >
+            {save.isPending ? <Loader2 className="size-4 animate-spin" /> : <KeyRound className="size-4" />}
+            Password set karein
+          </Button>
+          <Button
+            variant="outline"
+            className="h-11 flex-1 gap-2"
+            disabled={reset.isPending || !user?.email}
+            onClick={() => user?.email && reset.mutate(user.email)}
+          >
+            {reset.isPending ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
+            Reset link bhejein
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
