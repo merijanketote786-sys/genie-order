@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Check, Copy, MessageCircle, QrCode } from "lucide-react";
+import { Check, Copy, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -15,11 +15,11 @@ export function toWhatsAppNumber(input?: string | null): string | null {
   return n.length >= 11 ? n : null;
 }
 
+/** wa.me: mobile par installed WhatsApp app, desktop par WhatsApp app/web khud khul jata hai */
 export function whatsappUrl(text: string, phone?: string | null) {
   const to = toWhatsAppNumber(phone);
-  return to
-    ? `https://web.whatsapp.com/send?phone=${to}&text=${encodeURIComponent(text)}`
-    : `https://web.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+  const t = encodeURIComponent(text);
+  return to ? `https://wa.me/${to}?text=${t}` : `https://wa.me/?text=${t}`;
 }
 
 export function ResultCard({
@@ -66,16 +66,6 @@ export function ResultCard({
           >
             <MessageCircle className="h-4 w-4" />
             {toWhatsAppNumber(phone) ? "Customer ko bhejo" : "WhatsApp par bhejo"}
-          </a>
-        </Button>
-        <Button asChild size="sm" variant="outline" className="gap-1.5 border-border bg-card">
-          <a
-            href="https://web.whatsapp.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <QrCode className="h-4 w-4" />
-            WhatsApp QR
           </a>
         </Button>
         <Button
