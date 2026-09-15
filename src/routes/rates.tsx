@@ -1,10 +1,27 @@
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import priceList from "@/data/price-list.json";
-import { getProducts, getSyncStatus, saveProductPrices } from "@/lib/products.functions";
+import {
+  getProducts,
+  getSyncStatus,
+  saveProductPrices,
+  syncProductsFromSheet,
+} from "@/lib/products.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, RotateCcw, Save, Search, SlidersHorizontal, Tag, X } from "lucide-react";
+import {
+  Check,
+  Copy,
+  FileSpreadsheet,
+  Loader2,
+  RotateCcw,
+  Save,
+  Search,
+  SlidersHorizontal,
+  Tag,
+  Upload,
+  X,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { WorkspaceHeader } from "@/components/workspace-header";
