@@ -187,3 +187,31 @@ export const sendPasswordReset = createServerFn({ method: "POST" })
     if (error) return { ok: false as const, message: error.message };
     return { ok: true as const, message: "Reset link email par bhej diya" };
   });
+
+/** Admin-only: generates the one-click Windows auto-sync installer (.cmd). */
+export const getAutoSyncSetup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ folder: z.string().min(2).max(120).optional() }).parse(data ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    if (!(await isAdminUser(context.supabase, context.userId))) {
+      return { ok: false as const, message: "Sirf admin ye file download kar sakta hai." };
+    }
+    const apiKey = process.env["PRODUCT_SYNC_API_KEY"];
+    if (!apiKey) {
+      return { ok: false as const, message: "Sync key server par set nahi hai." };
+    }
+    const folder = (data.folder ?? "C:\\VyaparExport").replace(/["']/g, "");
+    const { buildSetupCmd } = await import("@/lib/autosync-script.server");
+    return {
+      ok: true as const,
+      fileName: "OrderBot-AutoSync-Setup.cmd",
+      folder,
+      content: buildSetupCmd({
+        apiKey,
+        url: "https://orderbot.hbchemicalspakistan.com/api/public/sync/products",
+        folder,
+      }),
+    };
+  });
