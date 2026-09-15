@@ -144,7 +144,7 @@ function InvoiceChat() {
               <Message key={msg.id} from={msg.role}>
                 {msg.role === "assistant" ? (
                   text ? (
-                    <ResultCard text={text} label="Invoice" />
+                    <ResultCard text={text} label="Invoice" phone={phone} />
                   ) : (
                     <MessageContent>
                       <Shimmer>Invoice ban rahi hai...</Shimmer>
