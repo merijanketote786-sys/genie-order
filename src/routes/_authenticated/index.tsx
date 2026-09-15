@@ -18,7 +18,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { ScrollToEnd } from "@/components/scroll-to-end";
 import { WorkspaceHeader } from "@/components/workspace-header";
-import { useEffect, useRef } from "react";
+import { OrderTemplateDialog } from "@/components/order-template-dialog";
+import { DEFAULT_ORDER_TEMPLATE } from "@/lib/order-template";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ClipboardList, Languages, MessageSquareText, Sparkles } from "lucide-react";
 
@@ -44,8 +46,6 @@ export const Route = createFileRoute("/_authenticated/")({
   component: OrderChat,
 });
 
-const transport = new DefaultChatTransport({ api: "/api/chat" });
-
 function messageText(msg: UIMessage): string {
   return msg.parts
     .map((part) => (part.type === "text" ? part.text : ""))
@@ -56,6 +56,18 @@ function messageText(msg: UIMessage): string {
 const STORAGE_KEY = "order-format-bot:messages:v1";
 
 function OrderChat() {
+  const [orderTemplate, setOrderTemplate] = useState(DEFAULT_ORDER_TEMPLATE);
+  const handleTemplateChange = useCallback((template: string) => setOrderTemplate(template), []);
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/chat",
+        prepareSendMessagesRequest: ({ messages }) => ({
+          body: { messages, template: orderTemplate },
+        }),
+      }),
+    [orderTemplate],
+  );
   const { messages, sendMessage, status, setMessages, error } = useChat({
     transport,
     onError: (err) => toast.error(err.message || "Kuch masla ho gaya"),
@@ -128,6 +140,15 @@ function OrderChat() {
         description="Paste any customer order and instantly convert it into a clean standard format."
         meta={["Urdu", "Roman Urdu", "English"]}
       />
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-3 py-2.5 shadow-sm sm:px-4">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground">Order format</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {orderTemplate === DEFAULT_ORDER_TEMPLATE ? "Default template active" : "Aapki custom template active"}
+          </p>
+        </div>
+        <OrderTemplateDialog template={orderTemplate} onTemplateChange={handleTemplateChange} />
+      </div>
       <Conversation className="flex-1">
         <ConversationContent className="gap-4 px-0 pb-4 pt-3 sm:gap-6 sm:pb-6 sm:pt-5">
           {messages.length === 0 ? <EmptyState /> : null}
