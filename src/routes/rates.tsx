@@ -121,8 +121,8 @@ function RatesPage() {
         meta={[`${ITEMS.length} products`, "Vyapar synced"]}
         className="pb-4"
       />
-      <div className="sticky top-0 z-10 bg-background/95 pb-3 pt-4 backdrop-blur-sm">
-        <div className="mb-3 inline-flex min-h-11 w-full gap-1 rounded-lg border border-border bg-card p-1 sm:w-auto">
+      <div className="sticky top-0 z-10 bg-background/95 pb-2 pt-3 backdrop-blur-sm sm:pb-3 sm:pt-4">
+        <div className="mb-2 inline-flex min-h-11 w-full gap-1 rounded-lg border border-border bg-card p-1 sm:mb-3 sm:w-auto">
           <Button
             variant={mode === "view" ? "default" : "ghost"}
             onClick={() => setMode("view")}
@@ -140,7 +140,7 @@ function RatesPage() {
             Price Customize
           </Button>
         </div>
-        <label className="glass-panel flex min-h-12 items-center gap-2 rounded-lg px-4 focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/20">
+        <label className="glass-panel flex min-h-12 items-center gap-2 rounded-lg px-3 focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/20 sm:px-4">
           <Search className="h-4 w-4 shrink-0 text-primary" />
           <span className="sr-only">Search product rates</span>
           <input
@@ -189,7 +189,7 @@ function RatesPage() {
             {results.map((item) => (
               <li
                 key={item.name}
-                className="glass-panel rounded-xl px-4 py-4 transition-colors hover:border-primary/40"
+                className="glass-panel rounded-xl px-3 py-3 transition-colors hover:border-primary/40 sm:px-4 sm:py-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -215,7 +215,7 @@ function RatesPage() {
                   </Button>
                 </div>
 
-                <div className="mt-3 grid grid-cols-3 gap-2">
+                <div className="mt-3 grid grid-cols-3 gap-1.5 sm:gap-2">
                   <Stat label={`Per ${item.unit || "unit"}`} value={money(item.sale)} accent />
                   <Stat label="100 gram" value={money(item.p100)} />
                   <Stat label="250 gram" value={money(item.p250 ?? null)} />
@@ -269,14 +269,14 @@ function Stat({
 function EmptyState({ total, onPick }: { total: number; onPick: (q: string) => void }) {
   const quick = ["Glycerine", "Cocobetain", "BTMS", "Vitamin E", "Bee wax", "Alpha Arbutin"];
   return (
-    <div className="glass-panel mx-auto mt-6 w-full max-w-2xl rounded-xl p-6 text-center sm:p-8">
-      <p className="font-display text-[11px] font-bold uppercase text-primary">
+    <div className="glass-panel mx-auto mt-4 w-full max-w-2xl rounded-xl p-4 text-center sm:mt-6 sm:p-8">
+      <p className="font-display text-[10px] font-bold uppercase text-primary sm:text-[11px]">
         Staff only
       </p>
-      <h2 className="mt-2 font-display text-xl font-bold text-foreground">
+      <h2 className="mt-1.5 font-display text-lg font-bold text-foreground sm:mt-2 sm:text-xl">
         {total} items ki rate list
       </h2>
-      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+      <p className="mt-1.5 text-[13px] leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-relaxed">
         Item ka naam likhein — sale rate, 100 gram rate aur available quantity foran samne aa jayegi.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -384,7 +384,7 @@ function EditItemCard({ item }: { item: Item }) {
     item.customP500 != null;
 
   return (
-    <li className="glass-panel rounded-xl px-4 py-4">
+    <li className="glass-panel rounded-xl px-3 py-3 sm:px-4 sm:py-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-display text-[15px] font-bold leading-tight text-foreground">
