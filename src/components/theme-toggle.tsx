@@ -12,7 +12,7 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
     let stored: string | null = null;
@@ -21,7 +21,7 @@ export function ThemeToggle() {
     } catch {
       // ignore
     }
-    const initial: Theme = stored === "light" ? "light" : "dark";
+    const initial: Theme = stored === "dark" ? "dark" : "light";
     setTheme(initial);
     applyTheme(initial);
   }, []);
