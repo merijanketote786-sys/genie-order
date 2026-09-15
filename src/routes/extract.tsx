@@ -213,7 +213,7 @@ function ExtractChat() {
         meta={["Images", "PDF", "15 MB max"]}
       />
       <Conversation className="flex-1">
-        <ConversationContent className="gap-6 px-0 pb-4 pt-5">
+        <ConversationContent className="gap-4 px-0 pb-3 pt-3 sm:gap-6 sm:pb-4 sm:pt-5">
           {messages.length === 0 ? <EmptyState /> : null}
 
           {messages.map((msg) => {
@@ -258,7 +258,7 @@ function ExtractChat() {
         <ConversationScrollButton />
       </Conversation>
 
-      <div className="sticky bottom-0 bg-background/95 pb-4 pt-3 backdrop-blur-sm">
+      <div className="sticky bottom-0 bg-background/95 pb-2 pt-2 backdrop-blur-sm sm:pb-4 sm:pt-3">
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/20">
           {pendingFile ? (
             <div className="m-3 mb-0 flex items-center gap-2 rounded-lg border border-border bg-surface-2/60 p-2">
@@ -303,9 +303,9 @@ function ExtractChat() {
             disabled={busy}
             rows={2}
             aria-label="Extraction instructions"
-            className="min-h-20 w-full resize-none bg-transparent px-4 py-3 text-sm leading-6 outline-none placeholder:text-muted-foreground"
+            className="min-h-16 w-full resize-none bg-transparent px-3 py-2.5 text-sm leading-6 outline-none placeholder:text-muted-foreground sm:min-h-20 sm:px-4 sm:py-3"
           />
-          <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-3">
+          <div className="flex items-center justify-between gap-2 border-t border-border px-2.5 py-2 sm:px-3 sm:py-3">
             <input
               ref={fileInputRef}
               type="file"
@@ -334,7 +334,7 @@ function ExtractChat() {
             </Button>
           </div>
         </div>
-        <p className="mt-2 text-center text-xs text-muted-foreground">
+        <p className="mt-2 hidden text-center text-xs text-muted-foreground sm:block">
           Image ya PDF (max 15MB) attach karein → text extract ho jayegi.
         </p>
       </div>
@@ -344,10 +344,10 @@ function ExtractChat() {
 
 function EmptyState() {
   return (
-    <div className="glass-panel mx-auto mt-2 flex w-full max-w-3xl flex-col items-center rounded-xl border-dashed p-8 text-center sm:p-12">
-      <span className="grid size-12 place-items-center rounded-lg bg-accent text-accent-foreground"><FileText className="size-6" /></span>
-      <h3 className="mt-4 font-display text-lg font-bold text-foreground">No document selected</h3>
-      <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">Attach a screenshot, receipt, order slip or PDF below to extract readable Urdu, Roman Urdu or English text.</p>
+    <div className="glass-panel mx-auto mt-2 flex w-full max-w-3xl flex-col items-center rounded-xl border-dashed p-5 text-center sm:p-12">
+      <span className="grid size-10 place-items-center rounded-lg bg-accent text-accent-foreground sm:size-12"><FileText className="size-5 sm:size-6" /></span>
+      <h3 className="mt-3 font-display text-base font-bold text-foreground sm:mt-4 sm:text-lg">No document selected</h3>
+      <p className="mt-1.5 max-w-md text-[13px] leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">Attach a screenshot, receipt, order slip or PDF below to extract readable Urdu, Roman Urdu or English text.</p>
     </div>
   );
 }
