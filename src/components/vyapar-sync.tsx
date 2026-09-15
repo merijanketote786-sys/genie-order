@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { getSyncStatus, syncProductsFromSheet } from "@/lib/products.functions";
+import { getAutoSyncSetup, getMyAccess } from "@/lib/admin.functions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileSpreadsheet, Loader2, Upload } from "lucide-react";
+import { Download, FileSpreadsheet, Loader2, Upload, Zap } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -167,6 +168,88 @@ export function VyaparUploadCard() {
           ) : null}
         </div>
       ) : null}
+    </section>
+  );
+}
+
+export function AutoSyncCard() {
+  const { data: access } = useQuery({ queryKey: ["my-access"], queryFn: () => getMyAccess() });
+  const [folder, setFolder] = useState("C:\\VyaparExport");
+
+  const download = useMutation({
+    mutationFn: () => getAutoSyncSetup({ data: { folder } }),
+    onSuccess: (res) => {
+      if (!res.ok) {
+        toast.error(res.message);
+        return;
+      }
+      const blob = new Blob([res.content], { type: "application/octet-stream" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = res.fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Setup file download ho gayi");
+    },
+    onError: () => toast.error("File ban nahi saki"),
+  });
+
+  if (!access?.isAdmin) return null;
+
+  return (
+    <section className="glass-panel mb-3 rounded-2xl px-3 py-3 sm:px-4 sm:py-4">
+      <div className="flex items-start gap-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
+          <Zap className="h-4 w-4" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="font-display text-[15px] font-bold leading-tight">
+            Auto sync (single click)
+          </h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Aik dafa ye file computer par chalayein. Uske baad sirf Vyapar se export karein is
+            folder me — rates khud ba khud yahan update ho jayenge.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <input
+          value={folder}
+          onChange={(e) => setFolder(e.target.value)}
+          spellCheck={false}
+          aria-label="Export folder"
+          className="min-h-11 flex-1 rounded-lg border border-border bg-surface-2/60 px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
+        <Button
+          onClick={() => download.mutate()}
+          disabled={download.isPending}
+          className="gap-2 sm:min-w-44"
+        >
+          {download.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          Setup file download
+        </Button>
+      </div>
+
+      <ol className="mt-3 list-decimal space-y-1 pl-5 text-xs text-muted-foreground">
+        <li>File download karein aur computer par double-click karein (aik hi baar).</li>
+        <li>
+          Vyapar → Reports → Item / Stock Summary → Export to Excel, aur file{" "}
+          <span className="text-foreground">{folder}</span> me save karein.
+        </li>
+        <li>Bas — rates 10 second ke andar khud update ho jate hain, har baar.</li>
+      </ol>
+      <p className="mt-2 text-[11px] text-muted-foreground">
+        Ye file aapki private sync key rakhti hai — kisi ko na bhejein. Windows par Excel install
+        hona zaroori hai.
+      </p>
     </section>
   );
 }
