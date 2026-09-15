@@ -57,9 +57,13 @@ export function ResultCard({
         {text}
       </pre>
       <div className="flex flex-wrap gap-2 border-t border-border/50 bg-black/15 px-3 py-2.5">
-        <Button size="sm" onClick={() => shareOnWhatsApp(text)} className="gap-1.5 rounded-full">
+        <Button
+          size="sm"
+          onClick={() => shareOnWhatsApp(text, phone)}
+          className="gap-1.5 rounded-full"
+        >
           <Share2 className="h-4 w-4" />
-          WhatsApp par bhejo
+          {toWhatsAppNumber(phone) ? "Customer ko bhejo" : "WhatsApp par bhejo"}
         </Button>
         <Button
           size="sm"
