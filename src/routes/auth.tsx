@@ -6,7 +6,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Loader2, LogIn } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.webp";
 import { GoogleButton } from "@/components/google-button";
 
 export const Route = createFileRoute("/auth")({
@@ -92,7 +92,7 @@ function AuthPage() {
     <main className="grid min-h-dvh place-items-center bg-background px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <img src={logo} alt="HB Chemicals Pakistan" className="h-12 w-auto" />
+          <img src={logo} alt="HB Chemicals Pakistan" width={48} height={48} className="h-12 w-auto" />
           <div>
             <h1 className="font-display text-xl font-bold text-foreground">OrderBot</h1>
             <p className="text-sm text-muted-foreground">HB Chemicals Pakistan — staff workspace</p>
