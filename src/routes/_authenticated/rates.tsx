@@ -5,7 +5,18 @@ import priceList from "@/data/price-list.json";
 import { getProducts, saveProductPrices } from "@/lib/products.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, RotateCcw, Save, Search, SlidersHorizontal, Tag, X } from "lucide-react";
+import {
+  Check,
+  Copy,
+  ListChecks,
+  Percent,
+  RotateCcw,
+  Save,
+  Search,
+  SlidersHorizontal,
+  Tag,
+  X,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { WorkspaceHeader } from "@/components/workspace-header";
