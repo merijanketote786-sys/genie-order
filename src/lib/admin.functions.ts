@@ -146,3 +146,44 @@ export const updateUserAccess = createServerFn({ method: "POST" })
 
     return { ok: true as const, message: "Update ho gaya" };
   });
+
+/** Admin sets a new password for a user. Existing passwords are hashed and can never be read back. */
+export const setUserPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        userId: z.string().uuid(),
+        password: z.string().min(8).max(72),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    if (!(await isAdminUser(context.supabase, context.userId))) {
+      return { ok: false as const, message: "Sirf admin ye change kar sakta hai." };
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      password: data.password,
+    });
+    if (error) return { ok: false as const, message: error.message };
+    return { ok: true as const, message: "Naya password set ho gaya" };
+  });
+
+/** Sends the user an email with a password reset link. */
+export const sendPasswordReset = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ email: z.string().email(), redirectTo: z.string().url() }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    if (!(await isAdminUser(context.supabase, context.userId))) {
+      return { ok: false as const, message: "Sirf admin ye kar sakta hai." };
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(data.email, {
+      redirectTo: data.redirectTo,
+    });
+    if (error) return { ok: false as const, message: error.message };
+    return { ok: true as const, message: "Reset link email par bhej diya" };
+  });
