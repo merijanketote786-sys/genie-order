@@ -63,6 +63,11 @@ export async function syncProductRows(products: unknown[]): Promise<{
       errors.push({ index, reason: "empty name" });
       return;
     }
+    // Never wipe an existing rate with 0 — skip rows without a real price.
+    if (!(row.data.sale_price > 0)) {
+      skipped += 1;
+      return;
+    }
     if (byName.has(normalized)) skipped += 1;
     byName.set(normalized, {
       name: row.data.name.trim(),
