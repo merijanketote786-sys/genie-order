@@ -29,6 +29,80 @@ Rules:
 
 type ChatRequestBody = { messages?: unknown };
 
+const STOP_WORDS = new Set([
+  "kg", "kilogram", "kilograms", "gram", "grams", "gm", "gms", "g", "ml", "litre", "liter", "ltr", "l",
+  "pcs", "piece", "pieces", "bottle", "bottles", "bundle", "bundles", "pack", "packs",
+  "ka", "ki", "ke", "aur", "and", "or", "invoice", "banao", "bana", "do", "de", "den", "rate", "rates",
+  "price", "prices", "total", "order", "chahye", "chahiye", "mujhe", "please", "the", "for", "of", "with",
+]);
+
+function textFromMessage(m: unknown): string {
+  const msg = m as { content?: unknown; parts?: Array<{ type?: string; text?: string }> };
+  if (typeof msg?.content === "string") return msg.content;
+  if (Array.isArray(msg?.parts)) {
+    return msg.parts.filter((p) => p?.type === "text" && p.text).map((p) => p.text).join(" ");
+  }
+  return "";
+}
+
+function tokenize(s: string): string[] {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !STOP_WORDS.has(w) && !/^\d+$/.test(w));
+}
+
+async function buildRateContext(messages: unknown[]): Promise<string> {
+  try {
+    const userText = messages
+      .filter((m) => (m as { role?: string }).role === "user")
+      .slice(-3)
+      .map(textFromMessage)
+      .join(" ");
+    const tokens = tokenize(userText);
+    if (tokens.length === 0) return "";
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("products")
+      .select("name, unit, sale_price, p100_staff_price, p250_staff_price, p500_staff_price, stock")
+      .eq("is_active", true)
+      .limit(5000);
+    if (!data || data.length === 0) return "";
+
+    const scored = (data as Array<Record<string, unknown>>)
+      .map((r) => {
+        const nameTokens = tokenize(String(r["name"]));
+        const hits = nameTokens.filter((t) => tokens.includes(t)).length;
+        return { r, score: nameTokens.length ? hits / nameTokens.length + hits * 0.1 : 0, hits };
+      })
+      .filter((x) => x.hits > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 30);
+
+    if (scored.length === 0) return "";
+
+    const lines = scored.map(({ r }) => {
+      const unit = String(r["unit"]);
+      const sale = r["sale_price"] == null ? null : Number(r["sale_price"]);
+      const p100 = r["p100_staff_price"] == null ? null : Number(r["p100_staff_price"]);
+      const p250 = r["p250_staff_price"] == null ? null : Number(r["p250_staff_price"]);
+      const p500 = r["p500_staff_price"] == null ? null : Number(r["p500_staff_price"]);
+      const parts = [`${String(r["name"])} | unit: ${unit}`];
+      if (sale != null) parts.push(`1 ${unit} = ${sale}`);
+      if (p100 != null) parts.push(`100g = ${p100}`);
+      if (p250 != null) parts.push(`250g = ${p250}`);
+      if (p500 != null) parts.push(`500g = ${p500}`);
+      return `- ${parts.join(" | ")}`;
+    });
+
+    return `\n\nOFFICIAL RATE LIST (sirf ye rates use karo, khud se price mat banao):\n${lines.join("\n")}`;
+  } catch {
+    return "";
+  }
+}
+
 export const Route = createFileRoute("/api/invoice")({
   server: {
     handlers: {
