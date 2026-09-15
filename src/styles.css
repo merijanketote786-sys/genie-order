@@ -184,14 +184,22 @@
 @utility bubble-out {
   background: var(--bubble-out);
   color: var(--color-foreground);
-  border-radius: 0.9rem 0.25rem 0.9rem 0.9rem;
+  border-radius: 1.25rem 0.5rem 1.25rem 1.25rem;
   box-shadow: var(--shadow-elegant);
+}
+
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @utility bubble-in {
   background: var(--bubble-in);
   color: var(--color-foreground);
-  border-radius: 0.25rem 0.9rem 0.9rem 0.9rem;
+  border-radius: 1.25rem;
   box-shadow: var(--shadow-elegant);
 }
 

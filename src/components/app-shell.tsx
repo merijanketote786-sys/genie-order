@@ -148,7 +148,9 @@ export function AppShell({
           </div>
 
           <nav
-            className={cn("grid border-t border-border lg:hidden", tabs.length > 5 ? "grid-cols-6" : "grid-cols-5")} aria-label="Main navigation">
+            className="no-scrollbar flex gap-2 overflow-x-auto border-t border-border px-3 py-2.5 lg:hidden"
+            aria-label="Main navigation"
+          >
             {tabs.map((tab) => {
               const isActive = tab.to === active;
               const Icon = tab.icon;
@@ -158,13 +160,13 @@ export function AppShell({
                   to={tab.to}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "flex min-h-12 flex-col items-center justify-center gap-0.5 border-b-2 px-1 text-[10px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                    "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-2 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     isActive
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-surface-2 text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  <Icon className="size-4" />
+                  <Icon className="size-4 shrink-0" />
                   {tab.label}
                 </Link>
               );
@@ -172,9 +174,9 @@ export function AppShell({
           </nav>
         </header>
 
-        <main className="mx-auto flex min-h-0 w-full max-w-[1180px] flex-1 flex-col px-3 pb-[env(safe-area-inset-bottom)] sm:px-6 lg:px-8">
+        <main className="mx-auto flex min-h-0 w-full max-w-[1180px] flex-1 flex-col px-2.5 pb-[env(safe-area-inset-bottom)] sm:px-6 lg:px-8">
           {access.data && access.data.isActive === false ? (
-            <div className="glass-panel my-6 rounded-xl px-4 py-10 text-center">
+            <div className="glass-panel my-6 rounded-3xl px-4 py-10 text-center">
               <h2 className="font-display text-base font-bold text-foreground">Access band hai</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Aapka account admin ne block kar diya hai. Rabta karein: hhtraders008@gmail.com
