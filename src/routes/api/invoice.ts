@@ -79,7 +79,9 @@ async function buildRateContext(messages: unknown[]): Promise<string> {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data } = await supabaseAdmin
       .from("products")
-      .select("name, unit, sale_price, p100_staff_price, p250_staff_price, p500_staff_price, stock")
+      .select(
+        "name, unit, sale_price, p100_staff_price, p250_staff_price, p500_staff_price, custom_sale_price, custom_p100_price, custom_p250_price, custom_p500_price, stock",
+      )
       .eq("is_active", true)
       .limit(5000);
     if (!data || data.length === 0) return "";
