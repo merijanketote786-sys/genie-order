@@ -194,7 +194,9 @@ function RatesPage() {
 
       <div className="min-h-0 flex-1 overflow-y-auto pb-6">
         {admin === "1" ? <SyncStatusPanel /> : null}
-        {!query ? (
+        {mode === "bulk" ? (
+          <BulkEditor items={query ? results : ITEMS} searching={Boolean(query)} />
+        ) : !query ? (
           <EmptyState total={ITEMS.length} onPick={setQuery} />
         ) : results.length === 0 ? (
           <div className="glass-panel mx-auto mt-6 w-full max-w-xl rounded-2xl p-6 text-center">
