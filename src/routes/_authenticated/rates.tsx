@@ -451,3 +451,200 @@ function PriceField({
     </label>
   );
 }
+
+type Draft = { sale: string; p100: string; p250: string; p500: string };
+
+const toDraft = (item: Item): Draft => ({
+  sale: item.customSale == null ? "" : String(item.customSale),
+  p100: item.customP100 == null ? "" : String(item.customP100),
+  p250: item.customP250 == null ? "" : String(item.customP250),
+  p500: item.customP500 == null ? "" : String(item.customP500),
+});
+
+const sameDraft = (a: Draft, b: Draft) =>
+  a.sale === b.sale && a.p100 === b.p100 && a.p250 === b.p250 && a.p500 === b.p500;
+
+function BulkEditor({ items, searching }: { items: Item[]; searching: boolean }) {
+  const queryClient = useQueryClient();
+  const [drafts, setDrafts] = useState<Record<string, Draft>>({});
+  const [visible, setVisible] = useState(50);
+  const [pct, setPct] = useState("");
+
+  const shown = items.slice(0, visible);
+
+  const draftOf = (item: Item) => drafts[item.name] ?? toDraft(item);
+
+  const setField = (item: Item, field: keyof Draft, value: string) => {
+    setDrafts((prev) => ({
+      ...prev,
+      [item.name]: { ...(prev[item.name] ?? toDraft(item)), [field]: value },
+    }));
+  };
+
+  const dirty = items.filter((item) => {
+    const d = drafts[item.name];
+    return d && !sameDraft(d, toDraft(item));
+  });
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      saveProductPricesBulk({
+        data: {
+          items: dirty.map((item) => ({ name: item.name, ...draftOf(item) })),
+        },
+      }),
+    onSuccess: (res) => {
+      if (res?.ok) toast.success(res.message || "Save ho gaya");
+      else toast.error(res?.message || "Kuch items save nahi ho sake");
+      setDrafts({});
+      void queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: () => toast.error("Save nahi ho saka"),
+  });
+
+  const applyPercent = () => {
+    const p = Number(pct);
+    if (!Number.isFinite(p) || p === 0) {
+      toast.error("Percent likhein (e.g. 10 ya -5)");
+      return;
+    }
+    const factor = 1 + p / 100;
+    const calc = (base: number | null | undefined, current: string) => {
+      const start = current !== "" ? Number(current) : base;
+      if (start == null || !Number.isFinite(Number(start)) || Number(start) <= 0) return current;
+      return String(Math.round(Number(start) * factor));
+    };
+    setDrafts((prev) => {
+      const next = { ...prev };
+      for (const item of shown) {
+        const d = next[item.name] ?? toDraft(item);
+        next[item.name] = {
+          sale: calc(item.sale, d.sale),
+          p100: calc(item.p100, d.p100),
+          p250: calc(item.p250 ?? null, d.p250),
+          p500: calc(item.p500 ?? null, d.p500),
+        };
+      }
+      return next;
+    });
+    toast.success(`${shown.length} items par ${p > 0 ? "+" : ""}${p}% laga diya`);
+  };
+
+  return (
+    <div className="pb-24">
+      <div className="glass-panel mb-3 rounded-2xl px-3 py-3 sm:px-4">
+        <p className="font-display text-sm font-bold text-foreground">Bulk price editing</p>
+        <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
+          {searching ? "Search ke mutabiq items" : "Saare products"} — jitne chahein rates edit
+          karein, phir neeche "Save all" dabayen. Khali field ka matlab automatic rate.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <label className="flex min-h-11 flex-1 items-center gap-2 rounded-lg border border-border bg-surface-2/60 px-3 sm:max-w-56">
+            <Percent className="h-4 w-4 shrink-0 text-primary" />
+            <input
+              inputMode="decimal"
+              value={pct}
+              onChange={(e) => setPct(e.target.value.replace(/[^0-9.-]/g, ""))}
+              placeholder="% (e.g. 10 ya -5)"
+              className="w-full bg-transparent text-base outline-none placeholder:text-muted-foreground sm:text-sm"
+            />
+          </label>
+          <Button variant="outline" onClick={applyPercent} className="border-border bg-card">
+            Apply to {shown.length}
+          </Button>
+        </div>
+      </div>
+
+      <ul className="flex flex-col gap-2.5">
+        {shown.map((item) => {
+          const d = draftOf(item);
+          const changed = !sameDraft(d, toDraft(item));
+          return (
+            <li
+              key={item.name}
+              className={
+                changed
+                  ? "glass-panel rounded-2xl border-primary/50 px-3 py-3 sm:px-4"
+                  : "glass-panel rounded-2xl px-3 py-3 sm:px-4"
+              }
+            >
+              <div className="flex items-start justify-between gap-3">
+                <p className="min-w-0 font-display text-[14px] font-bold leading-tight text-foreground">
+                  {cleanName(item.name)}
+                </p>
+                <span className="shrink-0 rounded-md border border-border px-2 py-0.5 text-[10px] uppercase text-muted-foreground">
+                  {item.unit || "unit"}
+                </span>
+              </div>
+              <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <PriceField
+                  label={`Per ${item.unit || "unit"}`}
+                  value={d.sale}
+                  onChange={(v) => setField(item, "sale", v)}
+                  placeholder={item.sale == null ? "—" : String(item.sale)}
+                />
+                <PriceField
+                  label="100 gram"
+                  value={d.p100}
+                  onChange={(v) => setField(item, "p100", v)}
+                  placeholder={item.p100 == null ? "—" : String(item.p100)}
+                />
+                <PriceField
+                  label="250 gram"
+                  value={d.p250}
+                  onChange={(v) => setField(item, "p250", v)}
+                  placeholder={item.p250 == null ? "—" : String(item.p250)}
+                />
+                <PriceField
+                  label="500 gram"
+                  value={d.p500}
+                  onChange={(v) => setField(item, "p500", v)}
+                  placeholder={item.p500 == null ? "—" : String(item.p500)}
+                />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      {visible < items.length ? (
+        <div className="mt-3 flex justify-center">
+          <Button
+            variant="outline"
+            onClick={() => setVisible((v) => v + 50)}
+            className="border-border bg-card"
+          >
+            Aur {Math.min(50, items.length - visible)} items dikhayen
+          </Button>
+        </div>
+      ) : null}
+
+      {dirty.length > 0 ? (
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
+          <div className="mx-auto flex max-w-3xl items-center gap-2">
+            <p className="flex-1 text-[12px] font-semibold text-foreground">
+              {dirty.length} item{dirty.length === 1 ? "" : "s"} change hue
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => setDrafts({})}
+              disabled={mutation.isPending}
+              className="gap-1.5 border-border bg-card"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Undo
+            </Button>
+            <Button
+              onClick={() => mutation.mutate()}
+              disabled={mutation.isPending}
+              className="gap-1.5"
+            >
+              <Save className="h-4 w-4" />
+              {mutation.isPending ? "Saving…" : "Save all"}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
