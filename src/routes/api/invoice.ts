@@ -14,18 +14,23 @@ Format:
 
 ... (jitne products hain sab number karo)
 
-*Grand Total: <sum>*
+Product Total: <sum>
 
-Delivery Charges: 
+Delivery Charges:
+
+Grand Total:
 
 Rules:
 - Har product ki line par: number, product name (size/volume ke sath agar diya hai), phir dots (........), phir price (sirf number, currency symbol nahi).
 - Dots ki length approximately aisi rakho k prices right-align dikhein (roughly 40 characters wide total line width se pehle price).
 - Har product ke darmiyan aik blank line rakho (jaise example mein hai).
-- Grand Total sab prices ka sum ho, comma separator ke sath (e.g. 7,300). Bold asterisks ke sath: *Grand Total: 7,300*
-- Delivery Charges ki line HAMESHA add karo lekin uska value BLANK chhor do (sirf "Delivery Charges: " likho, kuch amount na daalo) — ye baad mein manually add hoga.
+- Invoice ke END par yeh 3 fields HAMESHA isi exact sequence mein aane chahye:
+  1) "Product Total: <sum>" — sab product prices ka total, comma separator ke sath (e.g. Product Total: 7,300). Yeh HAMESHA filled hoga.
+  2) "Delivery Charges:" — value HAMESHA BLANK chhor do, kuch amount na likho — ye baad mein manually add hoga.
+  3) "Grand Total:" — value HAMESHA BLANK chhor do, kuch amount na likho — ye baad mein manually add hoga.
 - Agar user ne quantity di ho (2x, 3 pcs) to us product ki price ko qty se multiply karke line par likho.
 - Response ki pehli line *INVOICE* honi chahiye, uske baad blank line, phir products.
+- EDIT/AMENDMENT RULE: Agar user invoice banne ke baad koi addition, removal, qty change, price change, ya koi aur amendment bole (jaise "ye item hata do", "2kg kar do", "delivery 200 laga do"), to poori invoice DOBARA banao wohi exact format mein, requested changes apply karke. Kabhi sirf summary ya explanation mat do — hamesha poori updated invoice do. Agar user khud Delivery Charges ya Grand Total ki value de to wohi value use karo; warna blank hi rakho.
 
 RATE RULES (agar neeche OFFICIAL RATE LIST di gayi ho):
 - User agar price na de to rate HAMESHA official rate list se lo, apni taraf se price mat banao.
@@ -33,7 +38,7 @@ RATE RULES (agar neeche OFFICIAL RATE LIST di gayi ho):
 - Koi aur weight (jaise 300g, 2kg, 750ml) ho to: nearest slab ya unit rate se proportionally calculate karo (e.g. 2kg = 2 x unit rate, 300g = 3 x 100g rate) aur round karo.
 - Quantity (2x, 3 pcs) ho to line price = rate x qty.
 - Agar user ne khud price di ho to user ki price ko tarjeeh do.
-- Agar koi product rate list mein na mile to us ki price blank chhor do (dots ke baad kuch na likho) aur Grand Total mein usay count na karo.`;
+- Agar koi product rate list mein na mile to us ki price blank chhor do (dots ke baad kuch na likho) aur Product Total mein usay count na karo.`;
 
 type ChatRequestBody = { messages?: unknown };
 
