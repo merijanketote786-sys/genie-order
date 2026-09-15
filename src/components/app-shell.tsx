@@ -85,14 +85,16 @@ export function AppShell({
 
       <section className="flex min-h-0 min-w-0 flex-col">
         <header className="shrink-0 border-b border-border bg-surface/95 backdrop-blur-sm">
-          <div className="grid min-h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 sm:px-6 lg:px-8">
-            <div className="flex min-w-0 items-center gap-3 lg:hidden">
-              <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-card">
+          <div className="grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 sm:min-h-16 sm:gap-3 sm:px-6 lg:px-8">
+            <div className="flex min-w-0 items-center gap-2.5 lg:hidden">
+              <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-card">
                 <img
                   src={logoUrl}
                   alt="HB Chemicals Pakistan"
-                  width={36}
-                  height={36}
+                  width={32}
+                  height={32}
+                  loading="eager"
+                  decoding="async"
                   className="size-full object-contain"
                 />
               </span>
