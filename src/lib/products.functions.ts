@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
 export type DbProduct = {
@@ -18,7 +19,15 @@ export type DbProduct = {
 
 const num = (v: unknown) => (v == null ? null : Number(v));
 
-export const getProducts = createServerFn({ method: "GET" }).handler(async () => {
+async function blocked(context: { supabase: unknown; userId: string }) {
+  const { isActiveProfile } = await import("@/lib/access.server");
+  return !(await isActiveProfile(context.supabase as never, context.userId));
+}
+
+export const getProducts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    if (await blocked(context)) return { products: [] as DbProduct[], ok: false };
   const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabase
     .from("products")
@@ -65,6 +74,7 @@ const priceField = z
   });
 
 export const saveProductPrices = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -76,7 +86,8 @@ export const saveProductPrices = createServerFn({ method: "POST" })
       })
       .parse(data),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    if (await blocked(context)) return { ok: false, message: "Access blocked" };
     const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
     const { error } = await supabase
       .from("products")
@@ -93,6 +104,7 @@ export const saveProductPrices = createServerFn({ method: "POST" })
   });
 
 export const syncProductsFromSheet = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -101,7 +113,10 @@ export const syncProductsFromSheet = createServerFn({ method: "POST" })
       })
       .parse(data),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    if (await blocked(context)) {
+      return { ok: false as const, message: "Aapka access band hai. Admin se rabta karein." };
+    }
     let bytes: Uint8Array;
     try {
       const bin = atob(data.fileBase64);
@@ -132,7 +147,10 @@ export const syncProductsFromSheet = createServerFn({ method: "POST" })
     };
   });
 
-export const getSyncStatus = createServerFn({ method: "GET" }).handler(async () => {
+export const getSyncStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    if (await blocked(context)) return { productCount: 0, last: null };
   const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
 
 

@@ -4,7 +4,9 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
-import { ClipboardList, FileScan, ReceiptText, RefreshCw, RotateCcw, Tag } from "lucide-react";
+import { ClipboardList, FileScan, ReceiptText, RefreshCw, RotateCcw, Shield, Tag } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getMyAccess } from "@/lib/admin.functions";
 import type { ReactNode } from "react";
 
 const TABS = [
@@ -15,10 +17,17 @@ const TABS = [
   { to: "/sync", label: "Sync", description: "Vyapar rates update", icon: RefreshCw },
 ] as const;
 
+const ADMIN_TAB = {
+  to: "/admin",
+  label: "Admin",
+  description: "Users aur access",
+  icon: Shield,
+} as const;
+
 type AppShellProps = {
   title: string;
   subtitle: string;
-  active: "/" | "/invoice" | "/extract" | "/rates" | "/sync";
+  active: "/" | "/invoice" | "/extract" | "/rates" | "/sync" | "/admin";
   onClear?: () => void;
   showClear?: boolean;
   children: ReactNode;
@@ -32,6 +41,13 @@ export function AppShell({
   showClear,
   children,
 }: AppShellProps) {
+  const access = useQuery({
+    queryKey: ["my-access"],
+    queryFn: () => getMyAccess(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const tabs = access.data?.isAdmin ? [...TABS, ADMIN_TAB] : [...TABS];
+
   return (
     <div className="grid h-[100dvh] min-h-0 overflow-hidden bg-background lg:grid-cols-[264px_minmax(0,1fr)]">
       <aside className="hidden min-h-0 flex-col border-r border-border bg-sidebar lg:flex">
@@ -47,7 +63,7 @@ export function AppShell({
 
         <nav className="flex-1 space-y-1 px-3 py-5" aria-label="Main navigation">
           <p className="mb-3 px-3 text-[10px] font-bold uppercase text-sidebar-muted">Operations</p>
-          {TABS.map((tab) => {
+          {tabs.map((tab) => {
             const isActive = tab.to === active;
             const Icon = tab.icon;
             return (
@@ -131,8 +147,9 @@ export function AppShell({
             </div>
           </div>
 
-          <nav className="grid grid-cols-5 border-t border-border lg:hidden" aria-label="Main navigation">
-            {TABS.map((tab) => {
+          <nav
+            className={cn("grid border-t border-border lg:hidden", tabs.length > 5 ? "grid-cols-6" : "grid-cols-5")} aria-label="Main navigation">
+            {tabs.map((tab) => {
               const isActive = tab.to === active;
               const Icon = tab.icon;
               return (
@@ -156,7 +173,16 @@ export function AppShell({
         </header>
 
         <main className="mx-auto flex min-h-0 w-full max-w-[1180px] flex-1 flex-col px-3 pb-[env(safe-area-inset-bottom)] sm:px-6 lg:px-8">
-          {children}
+          {access.data && access.data.isActive === false ? (
+            <div className="glass-panel my-6 rounded-xl px-4 py-10 text-center">
+              <h2 className="font-display text-base font-bold text-foreground">Access band hai</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Aapka account admin ne block kar diya hai. Rabta karein: hhtraders008@gmail.com
+              </p>
+            </div>
+          ) : (
+            children
+          )}
         </main>
       </section>
     </div>
