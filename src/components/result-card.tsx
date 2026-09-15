@@ -68,16 +68,6 @@ export function ResultCard({
             {toWhatsAppNumber(phone) ? "Customer ko bhejo" : "WhatsApp par bhejo"}
           </a>
         </Button>
-        <Button asChild size="sm" variant="outline" className="gap-1.5 border-border bg-card">
-          <a
-            href="https://web.whatsapp.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <QrCode className="h-4 w-4" />
-            WhatsApp QR
-          </a>
-        </Button>
         <Button
           size="sm"
           variant="outline"
