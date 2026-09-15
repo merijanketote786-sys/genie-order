@@ -172,6 +172,12 @@ function RatesPage() {
               Spelling check karein ya thoda chhota naam likhein (e.g. "glycer").
             </p>
           </div>
+        ) : mode === "edit" ? (
+          <ul className="flex flex-col gap-2.5">
+            {results.map((item) => (
+              <EditItemCard key={item.name} item={item} />
+            ))}
+          </ul>
         ) : (
           <ul className="flex flex-col gap-2.5">
             {results.map((item) => (
