@@ -1,5 +1,21 @@
 import { Button } from "@/components/ui/button";
-import { Check, Copy, MessageCircle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  applyDeliveryChoice,
+  exportInvoiceExcel,
+  exportInvoicePdf,
+} from "@/lib/invoice-export";
+import { Check, Copy, FileSpreadsheet, FileText, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -26,12 +42,15 @@ export function ResultCard({
   text,
   label,
   phone,
+  exportable = false,
 }: {
   text: string;
   label: string;
   phone?: string | null;
+  exportable?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"pdf" | "xlsx" | null>(null);
 
   const copy = async () => {
     try {
@@ -77,7 +96,114 @@ export function ResultCard({
           {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           {copied ? "Copied" : "Copy"}
         </Button>
+        {exportable ? (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setExportFormat("pdf")}
+              className="h-11 flex-1 gap-1.5 rounded-xl border-border bg-card sm:h-9 sm:flex-none"
+            >
+              <FileText className="h-4 w-4" /> PDF
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setExportFormat("xlsx")}
+              className="h-11 flex-1 gap-1.5 rounded-xl border-border bg-card sm:h-9 sm:flex-none"
+            >
+              <FileSpreadsheet className="h-4 w-4" /> Excel
+            </Button>
+          </>
+        ) : null}
       </div>
+      {exportable ? (
+        <ExportDialog
+          text={text}
+          format={exportFormat}
+          onClose={() => setExportFormat(null)}
+        />
+      ) : null}
     </article>
+  );
+}
+
+function ExportDialog({
+  text,
+  format,
+  onClose,
+}: {
+  text: string;
+  format: "pdf" | "xlsx" | null;
+  onClose: () => void;
+}) {
+  const [delivery, setDelivery] = useState("");
+  const [showDelivery, setShowDelivery] = useState(true);
+  const [busy, setBusy] = useState(false);
+
+  const run = async () => {
+    if (!format) return;
+    setBusy(true);
+    try {
+      const finalText = applyDeliveryChoice(text, { delivery, showDelivery });
+      if (format === "pdf") await exportInvoicePdf(finalText);
+      else await exportInvoiceExcel(finalText);
+      toast.success(format === "pdf" ? "PDF download ho gaya" : "Excel download ho gaya");
+      onClose();
+    } catch {
+      toast.error("Export nahi ho saka");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={format !== null} onOpenChange={(open) => (!open ? onClose() : null)}>
+      <DialogContent className="rounded-3xl sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {format === "xlsx" ? "Excel export" : "PDF export"}
+          </DialogTitle>
+          <DialogDescription>
+            Delivery charges ki tafseel confirm karein, phir file download hogi.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="export-delivery">Delivery charges</Label>
+            <Input
+              id="export-delivery"
+              value={delivery}
+              onChange={(e) => setDelivery(e.target.value)}
+              inputMode="numeric"
+              placeholder="Khali chorr dein ya amount likhein (e.g. 250)"
+              disabled={!showDelivery}
+            />
+            <p className="text-xs text-muted-foreground">
+              Amount likhne par Grand Total us hisaab se update ho jayega.
+            </p>
+          </div>
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface-2/60 px-3 py-3">
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                Invoice mein delivery charges dikhayen?
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Off karne par ye line invoice se hat jayegi.
+              </p>
+            </div>
+            <Switch checked={showDelivery} onCheckedChange={setShowDelivery} />
+          </div>
+        </div>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose} className="rounded-xl">
+            Cancel
+          </Button>
+          <Button onClick={run} disabled={busy} className="rounded-xl">
+            {busy ? "Ban rahi hai…" : format === "xlsx" ? "Excel download" : "PDF download"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
