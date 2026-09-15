@@ -178,7 +178,7 @@ function RatesPage() {
         {!query ? (
           <EmptyState total={ITEMS.length} onPick={setQuery} />
         ) : results.length === 0 ? (
-          <div className="glass-panel mx-auto mt-6 w-full max-w-xl rounded-xl p-6 text-center">
+          <div className="glass-panel mx-auto mt-6 w-full max-w-xl rounded-2xl p-6 text-center">
             <h2 className="font-display text-lg font-bold">Koi item nahi mila</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Spelling check karein ya thoda chhota naam likhein (e.g. "glycer").
@@ -195,7 +195,7 @@ function RatesPage() {
             {results.map((item) => (
               <li
                 key={item.name}
-                className="glass-panel rounded-xl px-3 py-3 transition-colors hover:border-primary/40 sm:px-4 sm:py-4"
+                className="glass-panel rounded-2xl px-3 py-3 transition-colors hover:border-primary/40 sm:px-4 sm:py-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -273,7 +273,7 @@ function Stat({
 function EmptyState({ total, onPick }: { total: number; onPick: (q: string) => void }) {
   const quick = ["Glycerine", "Cocobetain", "BTMS", "Vitamin E", "Bee wax", "Alpha Arbutin"];
   return (
-    <div className="glass-panel mx-auto mt-4 w-full max-w-2xl rounded-xl p-4 text-center sm:mt-6 sm:p-8">
+    <div className="glass-panel mx-auto mt-4 w-full max-w-2xl rounded-2xl p-4 text-center sm:mt-6 sm:p-8">
       <p className="font-display text-[10px] font-bold uppercase text-primary sm:text-[11px]">
         Staff only
       </p>
@@ -339,7 +339,7 @@ function EditItemCard({ item }: { item: Item }) {
     item.customP500 != null;
 
   return (
-    <li className="glass-panel rounded-xl px-3 py-3 sm:px-4 sm:py-4">
+    <li className="glass-panel rounded-2xl px-3 py-3 sm:px-4 sm:py-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-display text-[15px] font-bold leading-tight text-foreground">

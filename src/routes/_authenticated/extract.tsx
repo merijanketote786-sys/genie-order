@@ -344,7 +344,7 @@ function ExtractChat() {
 
 function EmptyState() {
   return (
-    <div className="glass-panel mx-auto mt-2 flex w-full max-w-3xl flex-col items-center rounded-xl border-dashed p-5 text-center sm:p-12">
+    <div className="glass-panel mx-auto mt-2 flex w-full max-w-3xl flex-col items-center rounded-2xl border-dashed p-5 text-center sm:p-12">
       <span className="grid size-10 place-items-center rounded-lg bg-accent text-accent-foreground sm:size-12"><FileText className="size-5 sm:size-6" /></span>
       <h3 className="mt-3 font-display text-base font-bold text-foreground sm:mt-4 sm:text-lg">No document selected</h3>
       <p className="mt-1.5 max-w-md text-[13px] leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">Attach a screenshot, receipt, order slip or PDF below to extract readable Urdu, Roman Urdu or English text.</p>

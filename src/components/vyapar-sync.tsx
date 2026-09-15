@@ -15,7 +15,7 @@ export function SyncStatusPanel() {
   const last = data?.last ?? null;
 
   return (
-    <div className="glass-panel mb-3 rounded-xl px-4 py-3 text-xs">
+    <div className="glass-panel mb-3 rounded-2xl px-4 py-3 text-xs">
       <p className="font-display text-[11px] font-bold uppercase text-primary">Sync status</p>
       {isLoading ? (
         <p className="mt-2 text-muted-foreground">Loading…</p>
@@ -96,7 +96,7 @@ export function VyaparUploadCard() {
   });
 
   return (
-    <section className="glass-panel mb-3 rounded-xl px-3 py-3 sm:px-4 sm:py-4">
+    <section className="glass-panel mb-3 rounded-2xl px-3 py-3 sm:px-4 sm:py-4">
       <div className="flex items-start gap-3">
         <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
           <Upload className="h-4 w-4" />

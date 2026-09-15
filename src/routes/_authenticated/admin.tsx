@@ -83,11 +83,11 @@ function AdminPage() {
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-8 pt-3">
         {access.isLoading ? (
-          <div className="glass-panel flex items-center gap-2 rounded-xl px-4 py-6 text-sm text-muted-foreground">
+          <div className="glass-panel flex items-center gap-2 rounded-2xl px-4 py-6 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" /> Checking access…
           </div>
         ) : !isAdmin ? (
-          <div className="glass-panel rounded-xl px-4 py-8 text-center">
+          <div className="glass-panel rounded-2xl px-4 py-8 text-center">
             <ShieldOff className="mx-auto size-8 text-muted-foreground" />
             <h2 className="mt-3 font-display text-base font-bold">Access nahi hai</h2>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -95,11 +95,11 @@ function AdminPage() {
             </p>
           </div>
         ) : users.isLoading ? (
-          <div className="glass-panel flex items-center gap-2 rounded-xl px-4 py-6 text-sm text-muted-foreground">
+          <div className="glass-panel flex items-center gap-2 rounded-2xl px-4 py-6 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" /> Users load ho rahe hain…
           </div>
         ) : !users.data?.ok ? (
-          <div className="glass-panel rounded-xl px-4 py-6 text-sm text-destructive">
+          <div className="glass-panel rounded-2xl px-4 py-6 text-sm text-destructive">
             Users load nahi ho sake. {users.data?.message}
           </div>
         ) : (
@@ -116,7 +116,7 @@ function AdminPage() {
               />
             </div>
 
-            <div className="glass-panel overflow-hidden rounded-xl">
+            <div className="glass-panel overflow-hidden rounded-2xl">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[640px] text-sm">
                   <thead>
@@ -213,7 +213,7 @@ function AdminPage() {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="glass-panel rounded-xl px-3 py-3 sm:px-4">
+    <div className="glass-panel rounded-2xl px-3 py-3 sm:px-4">
       <p className="text-[10px] font-bold uppercase text-muted-foreground">{label}</p>
       <p className="font-display text-2xl font-bold text-foreground">{value}</p>
     </div>
