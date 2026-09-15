@@ -138,7 +138,7 @@ export function AppShell({
                   to={tab.to}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "flex min-h-14 flex-col items-center justify-center gap-1 border-b-2 px-1 text-[10px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                    "flex min-h-12 flex-col items-center justify-center gap-0.5 border-b-2 px-1 text-[10px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                     isActive
                       ? "border-primary text-primary"
                       : "border-transparent text-muted-foreground hover:text-foreground"
@@ -152,7 +152,7 @@ export function AppShell({
           </nav>
         </header>
 
-        <main className="mx-auto flex min-h-0 w-full max-w-[1180px] flex-1 flex-col px-3 sm:px-6 lg:px-8">
+        <main className="mx-auto flex min-h-0 w-full max-w-[1180px] flex-1 flex-col px-3 pb-[env(safe-area-inset-bottom)] sm:px-6 lg:px-8">
           {children}
         </main>
       </section>
