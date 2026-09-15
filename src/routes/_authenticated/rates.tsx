@@ -646,32 +646,7 @@ function BulkEditor({ items, searching }: { items: Item[]; searching: boolean })
         </div>
       ) : null}
 
-      {dirty.length > 0 ? (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
-          <div className="mx-auto flex max-w-3xl items-center gap-2">
-            <p className="flex-1 text-[12px] font-semibold text-foreground">
-              {dirty.length} item{dirty.length === 1 ? "" : "s"} change hue
-            </p>
-            <Button
-              variant="outline"
-              onClick={() => setDrafts({})}
-              disabled={mutation.isPending}
-              className="gap-1.5 border-border bg-card"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Undo
-            </Button>
-            <Button
-              onClick={() => mutation.mutate()}
-              disabled={mutation.isPending}
-              className="gap-1.5"
-            >
-              <Save className="h-4 w-4" />
-              {mutation.isPending ? "Saving…" : "Save all"}
-            </Button>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
+
