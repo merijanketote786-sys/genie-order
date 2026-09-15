@@ -112,7 +112,7 @@ export function parseInvoiceText(text: string, now = new Date()): ParsedInvoice 
     const line = cleanPdfText(rawLine);
     if (!line || /^invoice$/i.test(line)) continue;
 
-    const item = line.match(/^(\d+)[.)]\s*(.*?)(?:\.{2,}|\s{2,})([\d,]+(?:\.\d+)?)\s*$/);
+    const item = line.match(/^(\d+)[.)]\s*(.*?)(?:\.{2,}|\s{2,})\s*([\d,]+(?:\.\d+)?)\s*$/);
     if (item) {
       items.push({ number: item[1], description: item[2].trim(), amount: item[3].trim() });
       continue;
@@ -299,7 +299,7 @@ export async function buildInvoicePdfFile(text: string, fileBase = "invoice"): P
       0: { cellWidth: 138, fontStyle: "bold" },
       1: { cellWidth: 100, halign: "right", fontStyle: "bold" },
     },
-    willDrawCell: (data) => {
+    didParseCell: (data) => {
       if (data.row.index === totalsRows.length - 1) {
         data.cell.styles.fillColor = navy;
         data.cell.styles.textColor = white;
