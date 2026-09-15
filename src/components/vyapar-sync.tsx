@@ -153,7 +153,8 @@ export function VyaparUploadCard() {
           <p className="font-semibold">{result.message}</p>
           {result.ok ? (
             <p className="mt-1 text-muted-foreground">
-              {result.total_rows} rows • {result.inserted_count} naye • {result.updated_count} update
+              {result.total_rows} rows • {result.inserted_count} naye • {result.updated_count}{" "}
+              update
               {result.error_count ? ` • ${result.error_count} rows me masla` : ""}
             </p>
           ) : null}

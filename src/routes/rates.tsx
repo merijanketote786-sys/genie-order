@@ -5,16 +5,7 @@ import priceList from "@/data/price-list.json";
 import { getProducts, saveProductPrices } from "@/lib/products.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Check,
-  Copy,
-  RotateCcw,
-  Save,
-  Search,
-  SlidersHorizontal,
-  Tag,
-  X,
-} from "lucide-react";
+import { Check, Copy, RotateCcw, Save, Search, SlidersHorizontal, Tag, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { WorkspaceHeader } from "@/components/workspace-header";
@@ -122,7 +113,11 @@ function RatesPage() {
   };
 
   return (
-    <AppShell title="Staff Rate List" subtitle="Item ka naam likho → rate + quantity" active="/rates">
+    <AppShell
+      title="Staff Rate List"
+      subtitle="Item ka naam likho → rate + quantity"
+      active="/rates"
+    >
       <WorkspaceHeader
         icon={Tag}
         eyebrow="Staff pricing"
@@ -161,7 +156,8 @@ function RatesPage() {
             autoComplete="off"
           />
           {query ? (
-            <button type="button"
+            <button
+              type="button"
               onClick={() => setQuery("")}
               aria-label="Clear search"
               className="grid size-10 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -258,9 +254,7 @@ function Stat({
 }) {
   return (
     <div className="rounded-lg border border-border bg-surface-2/60 px-2.5 py-2 text-center">
-      <p className="text-[9px] font-bold uppercase text-muted-foreground">
-        {label}
-      </p>
+      <p className="text-[9px] font-bold uppercase text-muted-foreground">{label}</p>
       <p
         className={
           accent
@@ -287,7 +281,8 @@ function EmptyState({ total, onPick }: { total: number; onPick: (q: string) => v
         {total} items ki rate list
       </h2>
       <p className="mt-1.5 text-[13px] leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-relaxed">
-        Item ka naam likhein — sale rate, 100 gram rate aur available quantity foran samne aa jayegi.
+        Item ka naam likhein — sale rate, 100 gram rate aur available quantity foran samne aa
+        jayegi.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
         {quick.map((q) => (
@@ -424,9 +419,7 @@ function PriceField({
 }) {
   return (
     <label className="rounded-lg border border-border bg-surface-2/60 px-2.5 py-2 focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20">
-      <span className="block text-[9px] font-bold uppercase text-muted-foreground">
-        {label}
-      </span>
+      <span className="block text-[9px] font-bold uppercase text-muted-foreground">{label}</span>
       <input
         inputMode="decimal"
         value={value}
@@ -437,4 +430,3 @@ function PriceField({
     </label>
   );
 }
-
