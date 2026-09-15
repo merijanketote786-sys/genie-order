@@ -12,10 +12,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   applyDeliveryChoice,
+  buildInvoiceExcelFile,
+  buildInvoicePdfFile,
   exportInvoiceExcel,
   exportInvoicePdf,
+  shareInvoiceFile,
 } from "@/lib/invoice-export";
-import { Check, Copy, FileSpreadsheet, FileText, MessageCircle } from "lucide-react";
+import { Check, Copy, FileSpreadsheet, FileText, MessageCircle, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
