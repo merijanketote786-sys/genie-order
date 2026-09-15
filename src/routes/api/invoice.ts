@@ -125,10 +125,12 @@ export const Route = createFileRoute("/api/invoice")({
           return new Response("Missing LOVABLE_API_KEY", { status: 500 });
         }
 
+        const rateContext = await buildRateContext(messages);
+
         const gateway = createLovableAiGatewayProvider(key);
         const result = streamText({
           model: gateway("google/gemini-3-flash-preview"),
-          system: SYSTEM_PROMPT,
+          system: SYSTEM_PROMPT + rateContext,
           messages: await convertToModelMessages(messages as UIMessage[]),
         });
 
