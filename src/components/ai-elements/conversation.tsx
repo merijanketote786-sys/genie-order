@@ -86,7 +86,7 @@ export const ConversationScrollButton = ({
     !isAtBottom && (
       <Button
         className={cn(
-          "absolute bottom-4 left-[50%] translate-x-[-50%] rounded-full dark:bg-background dark:hover:bg-muted",
+          "absolute bottom-4 left-[50%] min-h-11 min-w-11 translate-x-[-50%] dark:bg-background dark:hover:bg-muted",
           className
         )}
         onClick={handleScrollToBottom}
@@ -96,6 +96,7 @@ export const ConversationScrollButton = ({
         {...props}
       >
         <ArrowDownIcon className="size-4" />
+        <span className="sr-only">Scroll to latest message</span>
       </Button>
     )
   );

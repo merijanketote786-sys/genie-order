@@ -17,7 +17,8 @@ import { useChat } from "@ai-sdk/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { ScrollToEnd } from "@/components/scroll-to-end";
-import { Phone, X } from "lucide-react";
+import { WorkspaceHeader } from "@/components/workspace-header";
+import { Phone, ReceiptText, ShieldCheck, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -35,6 +36,8 @@ export const Route = createFileRoute("/invoice")({
         property: "og:description",
         content: "Products paste karein aur foran professional invoice hasil karein.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: InvoiceChat,
@@ -88,7 +91,9 @@ function InvoiceChat() {
   }, [messages, status]);
 
   useEffect(() => {
-    if (status === "ready") textareaRef.current?.focus();
+    if (status === "ready" && window.matchMedia("(min-width: 768px)").matches) {
+      textareaRef.current?.focus({ preventScroll: true });
+    }
   }, [status, messages.length]);
 
   useEffect(() => {
@@ -135,6 +140,13 @@ function InvoiceChat() {
       onClear={handleClear}
       showClear={messages.length > 0}
     >
+      <WorkspaceHeader
+        icon={ReceiptText}
+        eyebrow="Billing operations"
+        title="Invoice Workspace"
+        description="Create a clean item invoice using live staff rates, then amend it through the same conversation."
+        meta={["Live rates", "Editable", "WhatsApp ready"]}
+      />
       <Conversation className="flex-1">
         <ConversationContent className="gap-6 px-0 pb-4 pt-5">
           {messages.length === 0 ? <EmptyState /> : null}
@@ -176,40 +188,39 @@ function InvoiceChat() {
         <ConversationScrollButton />
       </Conversation>
 
-      <div className="sticky bottom-0 bg-gradient-to-t from-background via-background/95 to-transparent pb-4 pt-3">
-        <div className="mb-2 flex items-center gap-2 rounded-full border border-border/50 bg-surface-2 px-4 py-2">
-          <Phone className="h-4 w-4 shrink-0 text-primary" />
-          <input
-            value={phone}
-            onChange={(e) => updatePhone(e.target.value)}
-            inputMode="tel"
-            placeholder="Customer ka WhatsApp number (03xxxxxxxxx)"
-            className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            autoComplete="tel"
-          />
-          {phone ? (
-            <button
-              onClick={() => updatePhone("")}
-              aria-label="Clear number"
-              className="shrink-0 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          ) : null}
-        </div>
-        <div className="rounded-3xl border border-border/50 bg-surface-2 p-1.5 shadow-lg">
+      <div className="sticky bottom-0 bg-background/95 pb-4 pt-3 backdrop-blur-sm">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/20">
+          <label className="grid min-h-12 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-border px-4">
+            <Phone className="size-4 shrink-0 text-primary" />
+            <span className="sr-only">Customer WhatsApp number</span>
+            <input
+              value={phone}
+              onChange={(e) => updatePhone(e.target.value)}
+              inputMode="tel"
+              placeholder="Customer WhatsApp number (03xxxxxxxxx)"
+              className="min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              autoComplete="tel"
+            />
+            {phone ? (
+              <button type="button" onClick={() => updatePhone("")} aria-label="Clear number" className="grid size-10 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <X className="size-4" />
+              </button>
+            ) : null}
+          </label>
           <PromptInput onSubmit={handleSubmit} className="border-0 bg-transparent shadow-none">
             <PromptInputTextarea
               ref={textareaRef}
               placeholder="Products + prices paste karein... (e.g. Conditioner 250ml 750, Glycerine 250ml 250 ...)"
               disabled={isBusy}
+              className="min-h-24 px-4 py-3 text-sm leading-6 sm:min-h-28"
             />
-            <PromptInputFooter className="justify-end border-0">
+            <PromptInputFooter className="justify-end border-0 px-3 pb-3">
               <PromptInputSubmit status={status} disabled={isBusy} />
             </PromptInputFooter>
           </PromptInput>
         </div>
-        <p className="mt-2 text-center text-[11px] text-muted-foreground">
+        <p className="mt-2 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
+          <ShieldCheck className="size-3.5" />
           Delivery Charges blank rehti hain — baad mein manually add karain.
         </p>
       </div>
@@ -220,20 +231,15 @@ function InvoiceChat() {
 function EmptyState() {
   const example = `Conditioner 250ml 750\nGlycerine 250ml 250\nLanolin 100ml 450\nCocobetaine 500ml 500`;
   return (
-    <div className="glass-panel mx-auto mt-6 w-full max-w-xl rounded-3xl p-6 text-center">
-      <p className="font-display text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
-        Billing desk
-      </p>
-      <h2 className="mt-2 font-display text-xl font-bold text-foreground">Invoice banayein</h2>
-      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-        Products aur prices kisi bhi format mein paste karein. Clean invoice format wapas milega —
-        Delivery Charges blank rahengi taake aap baad mein add kar sakein.
-      </p>
-      <div className="mt-4 rounded-2xl border border-border/70 bg-surface-2/50 p-3 text-left">
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          Example
-        </p>
-        <pre className="mt-1.5 whitespace-pre-wrap font-mono text-xs text-foreground">{example}</pre>
+    <div className="mx-auto grid w-full max-w-4xl gap-3 md:grid-cols-[0.8fr_1.2fr]">
+      <div className="glass-panel flex flex-col justify-center rounded-xl p-5 sm:p-6">
+        <span className="grid size-10 place-items-center rounded-lg bg-accent text-accent-foreground"><ReceiptText className="size-5" /></span>
+        <h3 className="mt-4 font-display text-lg font-bold text-foreground">No invoice yet</h3>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">Paste product details below. Delivery and grand total remain blank until you provide them.</p>
+      </div>
+      <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
+        <p className="text-[11px] font-bold uppercase text-muted-foreground">Example input</p>
+        <pre className="mt-3 whitespace-pre-wrap rounded-lg bg-surface-2 p-4 font-mono text-xs leading-6 text-foreground">{example}</pre>
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { FileText, Paperclip, Send, X } from "lucide-react";
 import { ScrollToEnd } from "@/components/scroll-to-end";
+import { WorkspaceHeader } from "@/components/workspace-header";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -28,6 +29,8 @@ export const Route = createFileRoute("/extract")({
         property: "og:description",
         content: "Image ya PDF upload karein aur accurate text foran hasil karein.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: ExtractChat,
@@ -202,6 +205,13 @@ function ExtractChat() {
       onClear={handleClear}
       showClear={messages.length > 0}
     >
+      <WorkspaceHeader
+        icon={FileText}
+        eyebrow="Document operations"
+        title="Data Extraction"
+        description="Upload an image or PDF, add optional instructions, and review clean extracted text."
+        meta={["Images", "PDF", "15 MB max"]}
+      />
       <Conversation className="flex-1">
         <ConversationContent className="gap-6 px-0 pb-4 pt-5">
           {messages.length === 0 ? <EmptyState /> : null}
@@ -248,18 +258,18 @@ function ExtractChat() {
         <ConversationScrollButton />
       </Conversation>
 
-      <div className="sticky bottom-0 bg-gradient-to-t from-background via-background/95 to-transparent pb-4 pt-3">
-        <div className="glass-panel rounded-2xl p-3">
+      <div className="sticky bottom-0 bg-background/95 pb-4 pt-3 backdrop-blur-sm">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/20">
           {pendingFile ? (
-            <div className="mb-2 flex items-center gap-2 rounded-xl border border-border/70 bg-surface-2/60 p-2">
+            <div className="m-3 mb-0 flex items-center gap-2 rounded-lg border border-border bg-surface-2/60 p-2">
               {pendingPreview ? (
                 <img
                   src={pendingPreview}
                   alt={pendingFile.name}
-                  className="h-12 w-12 shrink-0 rounded-lg object-cover"
+                  className="h-12 w-12 shrink-0 rounded-md object-cover"
                 />
               ) : (
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-background text-[10px] font-bold text-primary">
+                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-md bg-background text-[10px] font-bold text-primary">
                   PDF
                 </div>
               )}
@@ -292,9 +302,10 @@ function ExtractChat() {
             placeholder="Optional: kuch specific batao (e.g. sirf phone numbers nikalo)"
             disabled={busy}
             rows={2}
-            className="w-full resize-none bg-transparent px-1 text-sm outline-none placeholder:text-muted-foreground"
+            aria-label="Extraction instructions"
+            className="min-h-20 w-full resize-none bg-transparent px-4 py-3 text-sm leading-6 outline-none placeholder:text-muted-foreground"
           />
-          <div className="mt-2 flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-3">
             <input
               ref={fileInputRef}
               type="file"
@@ -307,7 +318,7 @@ function ExtractChat() {
               size="sm"
               onClick={handlePick}
               disabled={busy}
-              className="gap-1.5 rounded-full border-border/70 bg-transparent"
+              className="gap-1.5 border-border bg-card"
             >
               <Paperclip className="h-4 w-4" />
               {pendingFile ? "Change" : "Attach"}
@@ -316,14 +327,14 @@ function ExtractChat() {
               size="sm"
               onClick={handleSend}
               disabled={!pendingFile || busy}
-              className="gap-1.5 rounded-full"
+              className="gap-1.5"
             >
               <Send className="h-4 w-4" />
               {busy ? "Extracting..." : "Extract"}
             </Button>
           </div>
         </div>
-        <p className="mt-2 text-center text-[11px] text-muted-foreground">
+        <p className="mt-2 text-center text-xs text-muted-foreground">
           Image ya PDF (max 15MB) attach karein → text extract ho jayegi.
         </p>
       </div>
@@ -333,17 +344,10 @@ function ExtractChat() {
 
 function EmptyState() {
   return (
-    <div className="glass-panel mx-auto mt-6 w-full max-w-xl rounded-3xl p-6 text-center">
-      <p className="font-display text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
-        Document reader
-      </p>
-      <h2 className="mt-2 font-display text-xl font-bold text-foreground">
-        Image ya PDF upload karein
-      </h2>
-      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-        Screenshot, receipt, order slip ya PDF — main us me se saari text accurately nikaal ke doon
-        ga. Roman Urdu, Urdu, English — sab support hai.
-      </p>
+    <div className="glass-panel mx-auto mt-2 flex w-full max-w-3xl flex-col items-center rounded-xl border-dashed p-8 text-center sm:p-12">
+      <span className="grid size-12 place-items-center rounded-lg bg-accent text-accent-foreground"><FileText className="size-6" /></span>
+      <h3 className="mt-4 font-display text-lg font-bold text-foreground">No document selected</h3>
+      <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">Attach a screenshot, receipt, order slip or PDF below to extract readable Urdu, Roman Urdu or English text.</p>
     </div>
   );
 }

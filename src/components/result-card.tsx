@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Check, Copy, QrCode, Share2 } from "lucide-react";
+import { Check, Copy, MessageCircle, QrCode } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -45,28 +45,30 @@ export function ResultCard({
   };
 
   return (
-    <div className="bubble-in w-full overflow-hidden">
-      <div className="flex items-center justify-between border-b border-border/50 px-4 py-2">
-        <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
+    <article className="bubble-in w-full overflow-hidden border border-border bg-card">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 py-3 sm:px-5">
+        <span className="truncate text-[11px] font-bold uppercase text-primary">
           {label}
         </span>
-        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-success">
+          <span className="size-1.5 rounded-full bg-success" /> Ready
+        </span>
       </div>
-      <pre className="max-w-full overflow-x-auto whitespace-pre-wrap break-words px-4 py-3 font-mono text-[13px] leading-relaxed text-foreground">
+      <pre className="max-w-full overflow-x-auto whitespace-pre-wrap break-words px-4 py-5 font-mono text-[13px] leading-7 text-foreground sm:px-5">
         {text}
       </pre>
-      <div className="flex flex-wrap gap-2 border-t border-border/50 bg-black/15 px-3 py-2.5">
-        <Button asChild size="sm" className="gap-1.5 rounded-full">
+      <div className="flex flex-wrap gap-2 border-t border-border bg-surface-2/60 px-3 py-3 sm:px-5">
+        <Button asChild size="sm" className="gap-1.5 bg-success text-primary-foreground hover:bg-success/90">
           <a
             href={whatsappUrl(text, phone)}
             target="_blank"
             rel="noopener noreferrer"
           >
-            <Share2 className="h-4 w-4" />
+            <MessageCircle className="h-4 w-4" />
             {toWhatsAppNumber(phone) ? "Customer ko bhejo" : "WhatsApp par bhejo"}
           </a>
         </Button>
-        <Button asChild size="sm" variant="outline" className="gap-1.5 rounded-full border-border/70 bg-transparent">
+        <Button asChild size="sm" variant="outline" className="gap-1.5 border-border bg-card">
           <a
             href="https://web.whatsapp.com/"
             target="_blank"
@@ -80,12 +82,12 @@ export function ResultCard({
           size="sm"
           variant="outline"
           onClick={copy}
-          className="gap-1.5 rounded-full border-border/70 bg-transparent"
+          className="gap-1.5 border-border bg-card"
         >
           {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           {copied ? "Copied" : "Copy"}
         </Button>
       </div>
-    </div>
+    </article>
   );
 }

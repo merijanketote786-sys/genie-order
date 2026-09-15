@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Copy, RotateCcw, Save, Search, SlidersHorizontal, Tag, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { WorkspaceHeader } from "@/components/workspace-header";
 
 export const Route = createFileRoute("/rates")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -25,6 +26,8 @@ export const Route = createFileRoute("/rates")({
         property: "og:description",
         content: "Item search karein aur rates with quantities foran dekhein.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: RatesPage,
@@ -110,33 +113,36 @@ function RatesPage() {
 
   return (
     <AppShell title="Staff Rate List" subtitle="Item ka naam likho → rate + quantity" active="/rates">
-      <div className="sticky top-0 z-10 bg-gradient-to-b from-background via-background/95 to-transparent pb-3 pt-4">
-        <div className="mb-2.5 flex gap-1.5 rounded-full border border-border/60 bg-surface-2/60 p-1">
-          <button
+      <WorkspaceHeader
+        icon={Tag}
+        eyebrow="Staff pricing"
+        title="Product Rate Manager"
+        description="Search current product rates, review stock, and manage protected custom pricing."
+        meta={[`${ITEMS.length} products`, "Vyapar synced"]}
+        className="pb-4"
+      />
+      <div className="sticky top-0 z-10 bg-background/95 pb-3 pt-4 backdrop-blur-sm">
+        <div className="mb-3 inline-flex min-h-11 w-full gap-1 rounded-lg border border-border bg-card p-1 sm:w-auto">
+          <Button
+            variant={mode === "view" ? "default" : "ghost"}
             onClick={() => setMode("view")}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
-              mode === "view"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className="h-9 flex-1 gap-1.5 sm:min-w-36"
           >
             <Tag className="h-3.5 w-3.5" />
             Rate List
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={mode === "edit" ? "default" : "ghost"}
             onClick={() => setMode("edit")}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
-              mode === "edit"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className="h-9 flex-1 gap-1.5 sm:min-w-36"
           >
             <SlidersHorizontal className="h-3.5 w-3.5" />
             Price Customize
-          </button>
+          </Button>
         </div>
-        <div className="glass-panel flex items-center gap-2 rounded-full px-4 py-2.5">
+        <label className="glass-panel flex min-h-12 items-center gap-2 rounded-lg px-4 focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/20">
           <Search className="h-4 w-4 shrink-0 text-primary" />
+          <span className="sr-only">Search product rates</span>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -145,15 +151,15 @@ function RatesPage() {
             autoComplete="off"
           />
           {query ? (
-            <button
+            <button type="button"
               onClick={() => setQuery("")}
               aria-label="Clear search"
-              className="shrink-0 text-muted-foreground hover:text-foreground"
+              className="grid size-10 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <X className="h-4 w-4" />
             </button>
           ) : null}
-        </div>
+        </label>
         {query ? (
           <p className="mt-2 px-2 text-[11px] text-muted-foreground">
             {results.length} item{results.length === 1 ? "" : "s"} mile
@@ -166,7 +172,7 @@ function RatesPage() {
         {!query ? (
           <EmptyState total={ITEMS.length} onPick={setQuery} />
         ) : results.length === 0 ? (
-          <div className="glass-panel mx-auto mt-6 w-full max-w-xl rounded-3xl p-6 text-center">
+          <div className="glass-panel mx-auto mt-6 w-full max-w-xl rounded-xl p-6 text-center">
             <h2 className="font-display text-lg font-bold">Koi item nahi mila</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Spelling check karein ya thoda chhota naam likhein (e.g. "glycer").
@@ -183,14 +189,14 @@ function RatesPage() {
             {results.map((item) => (
               <li
                 key={item.name}
-                className="glass-panel rounded-2xl px-4 py-3 transition-colors hover:border-primary/40"
+                className="glass-panel rounded-xl px-4 py-4 transition-colors hover:border-primary/40"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-display text-[15px] font-bold leading-tight text-foreground">
                       {cleanName(item.name)}
                     </p>
-                    <span className="mt-1 inline-block rounded-full border border-border/70 px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                    <span className="mt-1 inline-block rounded-md border border-border px-2 py-0.5 text-[10px] uppercase text-muted-foreground">
                       {item.unit || "unit"}
                     </span>
                   </div>
@@ -241,8 +247,8 @@ function Stat({
   muted?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-border/60 bg-surface-2/60 px-2.5 py-2 text-center">
-      <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+    <div className="rounded-lg border border-border bg-surface-2/60 px-2.5 py-2 text-center">
+      <p className="text-[9px] font-bold uppercase text-muted-foreground">
         {label}
       </p>
       <p
@@ -263,8 +269,8 @@ function Stat({
 function EmptyState({ total, onPick }: { total: number; onPick: (q: string) => void }) {
   const quick = ["Glycerine", "Cocobetain", "BTMS", "Vitamin E", "Bee wax", "Alpha Arbutin"];
   return (
-    <div className="glass-panel mx-auto mt-6 w-full max-w-xl rounded-3xl p-6 text-center">
-      <p className="font-display text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+    <div className="glass-panel mx-auto mt-6 w-full max-w-2xl rounded-xl p-6 text-center sm:p-8">
+      <p className="font-display text-[11px] font-bold uppercase text-primary">
         Staff only
       </p>
       <h2 className="mt-2 font-display text-xl font-bold text-foreground">
@@ -278,7 +284,7 @@ function EmptyState({ total, onPick }: { total: number; onPick: (q: string) => v
           <button
             key={q}
             onClick={() => onPick(q)}
-            className="rounded-full border border-border/70 bg-surface-2/60 px-3 py-1.5 text-xs text-foreground hover:border-primary/50 hover:text-primary"
+            className="min-h-10 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:border-primary/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {q}
           </button>
@@ -298,8 +304,8 @@ function SyncStatusPanel() {
   const last = data?.last ?? null;
 
   return (
-    <div className="glass-panel mb-3 rounded-2xl px-4 py-3 text-xs">
-      <p className="font-display text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
+    <div className="glass-panel mb-3 rounded-xl px-4 py-3 text-xs">
+      <p className="font-display text-[11px] font-bold uppercase text-primary">
         Sync status
       </p>
       {isLoading ? (
@@ -378,18 +384,18 @@ function EditItemCard({ item }: { item: Item }) {
     item.customP500 != null;
 
   return (
-    <li className="glass-panel rounded-2xl px-4 py-3">
+    <li className="glass-panel rounded-xl px-4 py-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-display text-[15px] font-bold leading-tight text-foreground">
             {cleanName(item.name)}
           </p>
-          <span className="mt-1 inline-block rounded-full border border-border/70 px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+          <span className="mt-1 inline-block rounded-md border border-border px-2 py-0.5 text-[10px] uppercase text-muted-foreground">
             {item.unit || "unit"}
           </span>
         </div>
         {hasCustom ? (
-          <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
+          <span className="shrink-0 rounded-md bg-primary/15 px-2 py-1 text-[10px] font-bold uppercase text-primary">
             Custom
           </span>
         ) : null}
@@ -423,7 +429,7 @@ function EditItemCard({ item }: { item: Item }) {
       </div>
 
       <div className="mt-3 flex items-center gap-2">
-        <Button size="sm" onClick={save} disabled={mutation.isPending} className="gap-1.5 rounded-full">
+        <Button size="sm" onClick={save} disabled={mutation.isPending} className="gap-1.5">
           <Save className="h-4 w-4" />
           {mutation.isPending ? "Saving…" : "Save"}
         </Button>
@@ -432,7 +438,7 @@ function EditItemCard({ item }: { item: Item }) {
           variant="outline"
           onClick={reset}
           disabled={mutation.isPending || !hasCustom}
-          className="gap-1.5 rounded-full border-border/70 bg-transparent"
+          className="gap-1.5 border-border bg-card"
         >
           <RotateCcw className="h-4 w-4" />
           Auto rate
@@ -457,8 +463,8 @@ function PriceField({
   placeholder: string;
 }) {
   return (
-    <label className="rounded-xl border border-border/60 bg-surface-2/60 px-2.5 py-2">
-      <span className="block text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+    <label className="rounded-lg border border-border bg-surface-2/60 px-2.5 py-2 focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20">
+      <span className="block text-[9px] font-bold uppercase text-muted-foreground">
         {label}
       </span>
       <input
