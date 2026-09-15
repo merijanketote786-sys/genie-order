@@ -175,12 +175,16 @@ function ExportDialog({
           ? await buildInvoicePdfFile(built)
           : await buildInvoiceExcelFile(built);
       const outcome = await shareInvoiceFile(file, () => {
-        window.open(whatsappUrl("Invoice file attached hai — please check.", phone), "_blank", "noopener,noreferrer");
+        window.open(
+          whatsappUrl("Invoice file download ho gayi hai — yahan attach kar ke bhej dein.", phone),
+          "_blank",
+          "noopener,noreferrer",
+        );
       });
       toast.success(
         outcome === "shared"
-          ? `${label} share ho gaya`
-          : `${label} download ho gaya — WhatsApp mein attach kar dein`,
+          ? `${label} WhatsApp par share ho gaya`
+          : `${label} download ho gaya — WhatsApp chat mein attach kar dein`,
       );
       onClose();
     } catch {

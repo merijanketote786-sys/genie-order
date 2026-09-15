@@ -153,22 +153,27 @@ export function downloadFile(file: File) {
 
 /**
  * File ko WhatsApp par bhejta hai.
- * Mobile (Web Share Level 2) par share sheet khulti hai jahan WhatsApp chuna ja sakta hai.
- * Warna file download ho jati hai aur WhatsApp chat khul jati hai (file wahan attach karni hoti hai).
+ * Mobile (Web Share Level 2) par share sheet khulti hai jahan file ke saath WhatsApp chuna ja sakta hai.
+ * Desktop par browser file ko WhatsApp chat mein directly attach nahi kar sakta —
+ * is liye file download hoti hai aur chat khul jati hai jahan ek tap se attach ki ja sakti hai.
  */
 export async function shareInvoiceFile(file: File, whatsappOpen: () => void): Promise<"shared" | "downloaded"> {
   const nav = navigator as Navigator & {
     canShare?: (data: { files: File[] }) => boolean;
     share?: (data: { files: File[]; title?: string; text?: string }) => Promise<void>;
   };
-  try {
-    if (nav.canShare?.({ files: [file] }) && nav.share) {
-      await nav.share({ files: [file], title: file.name, text: "HB Chemicals Pakistan — Invoice" });
-      return "shared";
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile && nav.share) {
+    try {
+      // Pehle file-only share try karein — kuch devices text ke saath files reject karte hain
+      if (nav.canShare?.({ files: [file] })) {
+        await nav.share({ files: [file] });
+        return "shared";
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return "shared";
+      // share fail — neeche download fallback
     }
-  } catch (err) {
-    if (err instanceof DOMException && err.name === "AbortError") return "shared";
-    // share fail — fallback download
   }
   downloadFile(file);
   whatsappOpen();
