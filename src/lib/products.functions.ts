@@ -103,6 +103,54 @@ export const saveProductPrices = createServerFn({ method: "POST" })
     return { ok: true, message: "Saved" };
   });
 
+export const saveProductPricesBulk = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        items: z
+          .array(
+            z.object({
+              name: z.string().min(1),
+              sale: priceField,
+              p100: priceField,
+              p250: priceField,
+              p500: priceField,
+            }),
+          )
+          .min(1)
+          .max(500),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    if (await blocked(context)) return { ok: false, saved: 0, message: "Access blocked" };
+    const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
+
+    let saved = 0;
+    let failed = 0;
+    for (const item of data.items) {
+      const { error } = await supabase
+        .from("products")
+        .update({
+          custom_sale_price: item.sale,
+          custom_p100_price: item.p100,
+          custom_p250_price: item.p250,
+          custom_p500_price: item.p500,
+        })
+        .eq("name", item.name);
+      if (error) failed += 1;
+      else saved += 1;
+    }
+
+    return {
+      ok: failed === 0,
+      saved,
+      failed,
+      message: failed === 0 ? `${saved} products save ho gaye` : `${saved} save, ${failed} fail`,
+    };
+  });
+
 export const syncProductsFromSheet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
