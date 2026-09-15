@@ -36,6 +36,8 @@ export const Route = createFileRoute("/invoice")({
         property: "og:description",
         content: "Products paste karein aur foran professional invoice hasil karein.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: InvoiceChat,

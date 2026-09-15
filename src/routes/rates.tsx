@@ -26,6 +26,8 @@ export const Route = createFileRoute("/rates")({
         property: "og:description",
         content: "Item search karein aur rates with quantities foran dekhein.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: RatesPage,

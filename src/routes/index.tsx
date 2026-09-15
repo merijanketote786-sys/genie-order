@@ -37,6 +37,8 @@ export const Route = createFileRoute("/")({
         content:
           "Kisi bhi format mein order likho aur foran clean, WhatsApp-ready order format hasil karo.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: OrderChat,

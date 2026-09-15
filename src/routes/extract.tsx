@@ -29,6 +29,8 @@ export const Route = createFileRoute("/extract")({
         property: "og:description",
         content: "Image ya PDF upload karein aur accurate text foran hasil karein.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: ExtractChat,
