@@ -177,6 +177,10 @@ export function parseVyaparSheet(bytes: Uint8Array): ParseResult {
       continue;
     }
     const price = toNumber(r[priceCol]);
+    if (price <= 0) {
+      skipped += 1;
+      continue;
+    }
     rows.push({
       name,
       unit: mapUnit(unitCol === -1 ? "" : r[unitCol], name),
