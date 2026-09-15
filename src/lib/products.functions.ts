@@ -92,6 +92,46 @@ export const saveProductPrices = createServerFn({ method: "POST" })
     return { ok: true, message: "Saved" };
   });
 
+export const syncProductsFromSheet = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        fileName: z.string().min(1).max(260),
+        fileBase64: z.string().min(1).max(14_000_000),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data }) => {
+    let bytes: Uint8Array;
+    try {
+      const bin = atob(data.fileBase64);
+      bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+    } catch {
+      return { ok: false as const, message: "File parh nahi saka. Dobara upload karein." };
+    }
+    if (bytes.length > 10 * 1024 * 1024) {
+      return { ok: false as const, message: "File 10MB se bari hai." };
+    }
+
+    const { parseVyaparSheet } = await import("@/lib/vyapar-sheet.server");
+    const parsed = parseVyaparSheet(bytes);
+    if (!parsed.ok) return { ok: false as const, message: parsed.error };
+
+    const { syncProductRows } = await import("@/lib/product-sync.server");
+    const { result, errors } = await syncProductRows(parsed.rows);
+
+    return {
+      ok: true as const,
+      message: "Rates update ho gaye",
+      fileName: data.fileName,
+      sheetName: parsed.sheetName,
+      emptyRows: parsed.skipped,
+      ...result,
+      errors: errors.slice(0, 10).map((e) => `Row ${e.index + 2}: ${e.reason}`),
+    };
+  });
+
 export const getSyncStatus = createServerFn({ method: "GET" }).handler(async () => {
   const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
 
