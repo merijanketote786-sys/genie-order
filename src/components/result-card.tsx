@@ -15,11 +15,11 @@ export function toWhatsAppNumber(input?: string | null): string | null {
   return n.length >= 11 ? n : null;
 }
 
+/** wa.me: mobile par installed WhatsApp app, desktop par WhatsApp app/web khud khul jata hai */
 export function whatsappUrl(text: string, phone?: string | null) {
   const to = toWhatsAppNumber(phone);
-  return to
-    ? `https://web.whatsapp.com/send?phone=${to}&text=${encodeURIComponent(text)}`
-    : `https://web.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+  const t = encodeURIComponent(text);
+  return to ? `https://wa.me/${to}?text=${t}` : `https://wa.me/?text=${t}`;
 }
 
 export function ResultCard({
