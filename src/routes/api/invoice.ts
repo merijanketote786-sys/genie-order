@@ -38,7 +38,7 @@ RATE RULES (agar neeche OFFICIAL RATE LIST di gayi ho):
 - Koi aur weight (jaise 300g, 2kg, 750ml) ho to: nearest slab ya unit rate se proportionally calculate karo (e.g. 2kg = 2 x unit rate, 300g = 3 x 100g rate) aur round karo.
 - Quantity (2x, 3 pcs) ho to line price = rate x qty.
 - Agar user ne khud price di ho to user ki price ko tarjeeh do.
-- Agar koi product rate list mein na mile to us ki price blank chhor do (dots ke baad kuch na likho) aur Grand Total mein usay count na karo.`;
+- Agar koi product rate list mein na mile to us ki price blank chhor do (dots ke baad kuch na likho) aur Product Total mein usay count na karo.`;
 
 type ChatRequestBody = { messages?: unknown };
 
