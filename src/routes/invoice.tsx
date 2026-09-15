@@ -148,7 +148,7 @@ function InvoiceChat() {
         meta={["Live rates", "Editable", "WhatsApp ready"]}
       />
       <Conversation className="flex-1">
-        <ConversationContent className="gap-6 px-0 pb-4 pt-5">
+        <ConversationContent className="gap-4 px-0 pb-3 pt-3 sm:gap-6 sm:pb-4 sm:pt-5">
           {messages.length === 0 ? <EmptyState /> : null}
 
           {messages.map((msg) => {
