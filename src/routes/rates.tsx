@@ -69,6 +69,7 @@ function RatesPage() {
   const { admin } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
+  const [mode, setMode] = useState<"view" | "edit">("view");
 
   const { data } = useQuery({
     queryKey: ["products"],
