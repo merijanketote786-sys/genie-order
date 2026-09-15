@@ -3,7 +3,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
-import { ClipboardList, FileScan, ReceiptText, RotateCcw, Tag } from "lucide-react";
+import { ClipboardList, FileScan, ReceiptText, RefreshCw, RotateCcw, Tag } from "lucide-react";
 import type { ReactNode } from "react";
 
 const TABS = [
@@ -11,12 +11,13 @@ const TABS = [
   { to: "/invoice", label: "Invoice", description: "Create item invoices", icon: ReceiptText },
   { to: "/extract", label: "Extract", description: "Read images and PDFs", icon: FileScan },
   { to: "/rates", label: "Rates", description: "Search staff prices", icon: Tag },
+  { to: "/sync", label: "Sync", description: "Vyapar rates update", icon: RefreshCw },
 ] as const;
 
 type AppShellProps = {
   title: string;
   subtitle: string;
-  active: "/" | "/invoice" | "/extract" | "/rates";
+  active: "/" | "/invoice" | "/extract" | "/rates" | "/sync";
   onClear?: () => void;
   showClear?: boolean;
   children: ReactNode;
@@ -128,7 +129,7 @@ export function AppShell({
             </div>
           </div>
 
-          <nav className="grid grid-cols-4 border-t border-border lg:hidden" aria-label="Main navigation">
+          <nav className="grid grid-cols-5 border-t border-border lg:hidden" aria-label="Main navigation">
             {TABS.map((tab) => {
               const isActive = tab.to === active;
               const Icon = tab.icon;
