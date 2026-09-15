@@ -12,10 +12,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   applyDeliveryChoice,
+  buildInvoiceExcelFile,
+  buildInvoicePdfFile,
   exportInvoiceExcel,
   exportInvoicePdf,
+  shareInvoiceFile,
 } from "@/lib/invoice-export";
-import { Check, Copy, FileSpreadsheet, FileText, MessageCircle } from "lucide-react";
+import { Check, Copy, FileSpreadsheet, FileText, MessageCircle, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -121,6 +124,7 @@ export function ResultCard({
         <ExportDialog
           text={text}
           format={exportFormat}
+          phone={phone}
           onClose={() => setExportFormat(null)}
         />
       ) : null}
@@ -131,24 +135,53 @@ export function ResultCard({
 function ExportDialog({
   text,
   format,
+  phone,
   onClose,
 }: {
   text: string;
   format: "pdf" | "xlsx" | null;
+  phone?: string | null;
   onClose: () => void;
 }) {
   const [delivery, setDelivery] = useState("");
   const [showDelivery, setShowDelivery] = useState(true);
   const [busy, setBusy] = useState(false);
 
+  const finalText = () => applyDeliveryChoice(text, { delivery, showDelivery });
+  const label = format === "xlsx" ? "Excel" : "PDF";
+
   const run = async () => {
     if (!format) return;
     setBusy(true);
     try {
-      const finalText = applyDeliveryChoice(text, { delivery, showDelivery });
-      if (format === "pdf") await exportInvoicePdf(finalText);
-      else await exportInvoiceExcel(finalText);
-      toast.success(format === "pdf" ? "PDF download ho gaya" : "Excel download ho gaya");
+      if (format === "pdf") await exportInvoicePdf(finalText());
+      else await exportInvoiceExcel(finalText());
+      toast.success(`${label} download ho gaya`);
+      onClose();
+    } catch {
+      toast.error("Export nahi ho saka");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const runWhatsApp = async () => {
+    if (!format) return;
+    setBusy(true);
+    try {
+      const built = finalText();
+      const file =
+        format === "pdf"
+          ? await buildInvoicePdfFile(built)
+          : await buildInvoiceExcelFile(built);
+      const outcome = await shareInvoiceFile(file, () => {
+        window.open(whatsappUrl("Invoice file attached hai — please check.", phone), "_blank", "noopener,noreferrer");
+      });
+      toast.success(
+        outcome === "shared"
+          ? `${label} share ho gaya`
+          : `${label} download ho gaya — WhatsApp mein attach kar dein`,
+      );
       onClose();
     } catch {
       toast.error("Export nahi ho saka");
@@ -195,13 +228,23 @@ function ExportDialog({
             <Switch checked={showDelivery} onCheckedChange={setShowDelivery} />
           </div>
         </div>
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose} className="rounded-xl">
-            Cancel
+        <DialogFooter className="flex-col gap-2 sm:flex-col">
+          <Button
+            onClick={runWhatsApp}
+            disabled={busy}
+            className="w-full gap-1.5 rounded-xl bg-success text-primary-foreground hover:bg-success/90"
+          >
+            <Send className="h-4 w-4" />
+            {busy ? "Ban rahi hai…" : `${format === "xlsx" ? "Excel" : "PDF"} WhatsApp par bhejo`}
           </Button>
-          <Button onClick={run} disabled={busy} className="rounded-xl">
-            {busy ? "Ban rahi hai…" : format === "xlsx" ? "Excel download" : "PDF download"}
-          </Button>
+          <div className="flex w-full gap-2">
+            <Button variant="outline" onClick={onClose} className="flex-1 rounded-xl">
+              Cancel
+            </Button>
+            <Button onClick={run} disabled={busy} variant="secondary" className="flex-1 rounded-xl">
+              {busy ? "Ban rahi hai…" : "Sirf download"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

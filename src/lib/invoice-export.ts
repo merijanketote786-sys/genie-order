@@ -58,7 +58,7 @@ function fileStamp(): string {
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
 }
 
-export async function exportInvoicePdf(text: string, fileBase = "invoice") {
+export async function buildInvoicePdfFile(text: string, fileBase = "invoice"): Promise<File> {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const margin = 48;
@@ -88,10 +88,17 @@ export async function exportInvoicePdf(text: string, fileBase = "invoice") {
     doc.text(line, margin, y);
     y += 16;
   }
-  doc.save(`${fileBase}-${fileStamp()}.pdf`);
+  const name = `${fileBase}-${fileStamp()}.pdf`;
+  const blob = doc.output("blob");
+  return new File([blob], name, { type: "application/pdf" });
 }
 
-export async function exportInvoiceExcel(text: string, fileBase = "invoice") {
+export async function exportInvoicePdf(text: string, fileBase = "invoice") {
+  const file = await buildInvoicePdfFile(text, fileBase);
+  downloadFile(file);
+}
+
+export async function buildInvoiceExcelFile(text: string, fileBase = "invoice"): Promise<File> {
   const XLSX = await import("xlsx");
   const rows: (string | number)[][] = [["HB Chemicals Pakistan"], ["Invoice"], []];
 
@@ -121,5 +128,49 @@ export async function exportInvoiceExcel(text: string, fileBase = "invoice") {
   sheet["!cols"] = [{ wch: 48 }, { wch: 16 }];
   const book = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(book, sheet, "Invoice");
-  XLSX.writeFile(book, `${fileBase}-${fileStamp()}.xlsx`);
+  const data = XLSX.write(book, { type: "array", bookType: "xlsx" }) as ArrayBuffer;
+  const name = `${fileBase}-${fileStamp()}.xlsx`;
+  return new File([data], name, {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+}
+
+export async function exportInvoiceExcel(text: string, fileBase = "invoice") {
+  const file = await buildInvoiceExcelFile(text, fileBase);
+  downloadFile(file);
+}
+
+export function downloadFile(file: File) {
+  const url = URL.createObjectURL(file);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = file.name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+/**
+ * File ko WhatsApp par bhejta hai.
+ * Mobile (Web Share Level 2) par share sheet khulti hai jahan WhatsApp chuna ja sakta hai.
+ * Warna file download ho jati hai aur WhatsApp chat khul jati hai (file wahan attach karni hoti hai).
+ */
+export async function shareInvoiceFile(file: File, whatsappOpen: () => void): Promise<"shared" | "downloaded"> {
+  const nav = navigator as Navigator & {
+    canShare?: (data: { files: File[] }) => boolean;
+    share?: (data: { files: File[]; title?: string; text?: string }) => Promise<void>;
+  };
+  try {
+    if (nav.canShare?.({ files: [file] }) && nav.share) {
+      await nav.share({ files: [file], title: file.name, text: "HB Chemicals Pakistan — Invoice" });
+      return "shared";
+    }
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") return "shared";
+    // share fail — fallback download
+  }
+  downloadFile(file);
+  whatsappOpen();
+  return "downloaded";
 }
