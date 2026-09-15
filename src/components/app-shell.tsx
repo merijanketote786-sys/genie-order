@@ -173,7 +173,16 @@ export function AppShell({
         </header>
 
         <main className="mx-auto flex min-h-0 w-full max-w-[1180px] flex-1 flex-col px-3 pb-[env(safe-area-inset-bottom)] sm:px-6 lg:px-8">
-          {children}
+          {access.data && access.data.isActive === false ? (
+            <div className="glass-panel my-6 rounded-xl px-4 py-10 text-center">
+              <h2 className="font-display text-base font-bold text-foreground">Access band hai</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Aapka account admin ne block kar diya hai. Rabta karein: hhtraders008@gmail.com
+              </p>
+            </div>
+          ) : (
+            children
+          )}
         </main>
       </section>
     </div>
