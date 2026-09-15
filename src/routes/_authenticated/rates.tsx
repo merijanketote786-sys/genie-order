@@ -155,6 +155,14 @@ function RatesPage() {
             <SlidersHorizontal className="h-3.5 w-3.5" />
             Price Customize
           </Button>
+          <Button
+            variant={mode === "bulk" ? "default" : "ghost"}
+            onClick={() => setMode("bulk")}
+            className="h-9 flex-1 gap-1.5 sm:min-w-36"
+          >
+            <ListChecks className="h-3.5 w-3.5" />
+            Bulk Edit
+          </Button>
         </div>
         <label className="glass-panel flex min-h-12 items-center gap-2 rounded-lg px-3 focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/20 sm:px-4">
           <Search className="h-4 w-4 shrink-0 text-primary" />
