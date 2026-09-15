@@ -4,13 +4,7 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
-import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
-import {
-  PromptInput,
-  PromptInputFooter,
-  PromptInputSubmit,
-  PromptInputTextarea,
-} from "@/components/ai-elements/prompt-input";
+import { ChatComposer, ChatMessage, ChatMessageContent, PlainMessageText } from "@/components/lightweight-chat";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { ResultCard } from "@/components/result-card";
 import { useChat } from "@ai-sdk/react";
@@ -156,30 +150,30 @@ function OrderChat() {
           {messages.map((msg) => {
             const text = messageText(msg);
             return (
-              <Message key={msg.id} from={msg.role}>
+              <ChatMessage key={msg.id} from={msg.role}>
                 {msg.role === "assistant" ? (
                   text ? (
                     <ResultCard text={text} label="Formatted order" />
                   ) : (
-                    <MessageContent>
+                    <ChatMessageContent>
                       <Shimmer>Format ho raha hai...</Shimmer>
-                    </MessageContent>
+                    </ChatMessageContent>
                   )
                 ) : (
-                  <MessageContent className="bubble-out group-[.is-user]:bg-bubble-out group-[.is-user]:text-foreground">
-                    <MessageResponse>{text}</MessageResponse>
-                  </MessageContent>
+                  <ChatMessageContent>
+                    <PlainMessageText>{text}</PlainMessageText>
+                  </ChatMessageContent>
                 )}
-              </Message>
+              </ChatMessage>
             );
           })}
 
           {status === "submitted" ? (
-            <Message from="assistant">
-              <MessageContent>
+            <ChatMessage from="assistant">
+              <ChatMessageContent>
                 <Shimmer>Format ho raha hai...</Shimmer>
-              </MessageContent>
-            </Message>
+              </ChatMessageContent>
+            </ChatMessage>
           ) : null}
 
           {error ? (
@@ -196,17 +190,14 @@ function OrderChat() {
             <MessageSquareText className="size-4 text-primary" /> Customer order
             <span className="ml-auto hidden text-[11px] font-normal text-muted-foreground sm:inline">Enter to process · Shift+Enter for new line</span>
           </div>
-          <PromptInput onSubmit={handleSubmit} className="border-0 bg-transparent shadow-none">
-            <PromptInputTextarea
-              ref={textareaRef}
-              placeholder="Order details paste karein... (name, phone, city, address, product, total)"
-              disabled={isBusy}
-              className="min-h-20 px-3 py-2.5 text-sm leading-6 sm:min-h-32 sm:px-4 sm:py-3"
-            />
-            <PromptInputFooter className="justify-end border-0 px-2 pb-2 sm:px-3 sm:pb-3">
-              <PromptInputSubmit status={status} disabled={isBusy} />
-            </PromptInputFooter>
-          </PromptInput>
+          <ChatComposer
+            ref={textareaRef}
+            onSubmit={handleSubmit}
+            status={status}
+            disabled={isBusy}
+            placeholder="Order details paste karein... (name, phone, city, address, product, total)"
+            textareaClassName="min-h-20 px-3 py-2.5 text-sm leading-6 sm:min-h-32 sm:px-4 sm:py-3"
+          />
         </div>
         <p className="mt-2 hidden text-center text-xs text-muted-foreground sm:block">
           "WhatsApp par bhejo" dabao → WhatsApp khulega → apna group choose karo.
