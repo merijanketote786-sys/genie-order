@@ -502,6 +502,34 @@ function BulkEditor({ items, searching }: { items: Item[]; searching: boolean })
     onError: () => toast.error("Save nahi ho saka"),
   });
 
+  const [savingOne, setSavingOne] = useState<string | null>(null);
+  const singleMutation = useMutation({
+    mutationFn: (payload: { name: string; draft: Draft }) =>
+      saveProductPrices({ data: { name: payload.name, ...payload.draft } }),
+    onSuccess: (res, payload) => {
+      if (res?.ok) toast.success("Price save ho gayi");
+      else toast.error(res?.message || "Save nahi ho saka");
+      setDrafts((prev) => {
+        const next = { ...prev };
+        delete next[payload.name];
+        return next;
+      });
+      setSavingOne(null);
+      void queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: () => {
+      toast.error("Save nahi ho saka");
+      setSavingOne(null);
+    },
+  });
+
+  const saveOne = (item: Item) => {
+    const d = draftOf(item);
+    if (sameDraft(d, toDraft(item))) return;
+    setSavingOne(item.name);
+    singleMutation.mutate({ name: item.name, draft: d });
+  };
+
   const applyPercent = () => {
     const p = Number(pct);
     if (!Number.isFinite(p) || p === 0) {
