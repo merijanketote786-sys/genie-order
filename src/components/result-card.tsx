@@ -124,6 +124,7 @@ export function ResultCard({
         <ExportDialog
           text={text}
           format={exportFormat}
+          phone={phone}
           onClose={() => setExportFormat(null)}
         />
       ) : null}
