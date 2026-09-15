@@ -3,14 +3,14 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
-import { RotateCcw } from "lucide-react";
+import { ClipboardList, FileScan, ReceiptText, RotateCcw, Tag } from "lucide-react";
 import type { ReactNode } from "react";
 
 const TABS = [
-  { to: "/", label: "Order" },
-  { to: "/invoice", label: "Invoice" },
-  { to: "/extract", label: "Extract" },
-  { to: "/rates", label: "Rates" },
+  { to: "/", label: "Order", description: "Format customer orders", icon: ClipboardList },
+  { to: "/invoice", label: "Invoice", description: "Create item invoices", icon: ReceiptText },
+  { to: "/extract", label: "Extract", description: "Read images and PDFs", icon: FileScan },
+  { to: "/rates", label: "Rates", description: "Search staff prices", icon: Tag },
 ] as const;
 
 type AppShellProps = {
@@ -31,26 +31,79 @@ export function AppShell({
   children,
 }: AppShellProps) {
   return (
-    <div className="flex h-[100dvh] min-h-0 flex-col overflow-hidden">
-      <header className="shrink-0 border-b border-border/60 bg-surface-2 shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
-        <div className="mx-auto w-full max-w-3xl px-4 pb-2 pt-3">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="brand-glow grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl bg-surface-2">
+    <div className="grid h-[100dvh] min-h-0 overflow-hidden bg-background lg:grid-cols-[264px_minmax(0,1fr)]">
+      <aside className="hidden min-h-0 flex-col border-r border-border bg-sidebar lg:flex">
+        <div className="flex h-20 shrink-0 items-center gap-3 border-b border-sidebar-border px-5">
+          <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg border border-sidebar-border bg-card">
+            <img src={logoUrl} alt="HB Chemicals Pakistan" width={40} height={40} className="size-full object-contain" />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-[10px] font-bold uppercase text-sidebar-muted">HB Chemicals Pakistan</p>
+            <p className="truncate font-display text-base font-bold text-sidebar-foreground">OrderBot</p>
+          </div>
+        </div>
+
+        <nav className="flex-1 space-y-1 px-3 py-5" aria-label="Main navigation">
+          <p className="mb-3 px-3 text-[10px] font-bold uppercase text-sidebar-muted">Operations</p>
+          {TABS.map((tab) => {
+            const isActive = tab.to === active;
+            const Icon = tab.icon;
+            return (
+              <Link
+                key={tab.to}
+                to={tab.to}
+                aria-current={isActive ? "page" : undefined}
+                className={cn(
+                  "grid min-h-14 grid-cols-[36px_minmax(0,1fr)] items-center gap-3 rounded-lg px-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-muted hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+                )}
+              >
+                <span className={cn("grid size-9 place-items-center rounded-md", isActive && "bg-sidebar-primary text-sidebar-primary-foreground")}>
+                  <Icon className="size-4.5" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-semibold">{tab.label}</span>
+                  <span className="block truncate text-[11px] text-sidebar-muted">{tab.description}</span>
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="border-t border-sidebar-border p-4">
+          <div className="flex items-center gap-2 rounded-lg border border-sidebar-border bg-sidebar-accent/50 px-3 py-2.5">
+            <span className="size-2 shrink-0 rounded-full bg-success" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-sidebar-foreground">System online</p>
+              <p className="truncate text-[10px] text-sidebar-muted">Ready for operations</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <section className="flex min-h-0 min-w-0 flex-col">
+        <header className="shrink-0 border-b border-border bg-surface/95 backdrop-blur-sm">
+          <div className="grid min-h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 sm:px-6 lg:px-8">
+            <div className="flex min-w-0 items-center gap-3 lg:hidden">
+              <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-card">
                 <img
                   src={logoUrl}
-                  alt=""
-                  width={40}
-                  height={40}
-                  className="h-full w-full object-contain"
+                  alt="HB Chemicals Pakistan"
+                  width={36}
+                  height={36}
+                  className="size-full object-contain"
                 />
               </span>
               <div className="min-w-0">
-                <h1 className="truncate font-display text-[15px] font-bold leading-tight tracking-tight text-foreground">
-                  {title}
-                </h1>
-                <p className="truncate text-[11px] text-muted-foreground">{subtitle}</p>
+                <p className="truncate text-[9px] font-bold uppercase text-muted-foreground">HB Chemicals Pakistan</p>
+                <p className="truncate font-display text-sm font-bold text-foreground">OrderBot</p>
               </div>
+            </div>
+            <div className="hidden min-w-0 lg:block">
+              <h1 className="truncate font-display text-xl font-bold text-foreground">{title}</h1>
+              <p className="truncate text-sm text-muted-foreground">{subtitle}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <ThemeToggle />
@@ -59,46 +112,49 @@ export function AppShell({
                   variant="outline"
                   size="sm"
                   onClick={onClear}
-                  className="h-8 shrink-0 gap-1.5 rounded-full border-border/70 bg-surface-2 text-xs"
+                  className="h-10 shrink-0 gap-1.5 border-border bg-card text-xs"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">New chat</span>
                 </Button>
               ) : (
-                <span className="hidden items-center gap-1.5 rounded-full border border-border/70 bg-surface-2 px-3 py-1 text-[11px] text-muted-foreground sm:flex">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                <span className="hidden items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground sm:flex lg:hidden">
+                  <span className="h-1.5 w-1.5 rounded-full bg-success" />
                   Online
                 </span>
               )}
             </div>
           </div>
 
-
-          <nav className="mt-3 flex">
+          <nav className="grid grid-cols-4 border-t border-border lg:hidden" aria-label="Main navigation">
             {TABS.map((tab) => {
               const isActive = tab.to === active;
+              const Icon = tab.icon;
               return (
                 <Link
                   key={tab.to}
                   to={tab.to}
+                  aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "flex-1 border-b-[3px] px-3 pb-2 pt-1.5 text-center text-xs font-semibold uppercase tracking-wide transition-colors",
+                    "flex min-h-14 flex-col items-center justify-center gap-1 border-b-2 px-1 text-[10px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                     isActive
                       ? "border-primary text-primary"
                       : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
+                  <Icon className="size-4" />
                   {tab.label}
                 </Link>
               );
             })}
           </nav>
         </div>
-      </header>
+        </header>
 
-      <main className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col px-3 sm:px-4">
-        {children}
-      </main>
+        <main className="mx-auto flex min-h-0 w-full max-w-[1180px] flex-1 flex-col px-3 sm:px-6 lg:px-8">
+          {children}
+        </main>
+      </section>
     </div>
   );
 }
