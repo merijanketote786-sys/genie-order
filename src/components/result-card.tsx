@@ -135,24 +135,53 @@ export function ResultCard({
 function ExportDialog({
   text,
   format,
+  phone,
   onClose,
 }: {
   text: string;
   format: "pdf" | "xlsx" | null;
+  phone?: string | null;
   onClose: () => void;
 }) {
   const [delivery, setDelivery] = useState("");
   const [showDelivery, setShowDelivery] = useState(true);
   const [busy, setBusy] = useState(false);
 
+  const finalText = () => applyDeliveryChoice(text, { delivery, showDelivery });
+  const label = format === "xlsx" ? "Excel" : "PDF";
+
   const run = async () => {
     if (!format) return;
     setBusy(true);
     try {
-      const finalText = applyDeliveryChoice(text, { delivery, showDelivery });
-      if (format === "pdf") await exportInvoicePdf(finalText);
-      else await exportInvoiceExcel(finalText);
-      toast.success(format === "pdf" ? "PDF download ho gaya" : "Excel download ho gaya");
+      if (format === "pdf") await exportInvoicePdf(finalText());
+      else await exportInvoiceExcel(finalText());
+      toast.success(`${label} download ho gaya`);
+      onClose();
+    } catch {
+      toast.error("Export nahi ho saka");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const runWhatsApp = async () => {
+    if (!format) return;
+    setBusy(true);
+    try {
+      const built = finalText();
+      const file =
+        format === "pdf"
+          ? await buildInvoicePdfFile(built)
+          : await buildInvoiceExcelFile(built);
+      const outcome = await shareInvoiceFile(file, () => {
+        window.open(whatsappUrl("Invoice file attached hai — please check.", phone), "_blank", "noopener,noreferrer");
+      });
+      toast.success(
+        outcome === "shared"
+          ? `${label} share ho gaya`
+          : `${label} download ho gaya — WhatsApp mein attach kar dein`,
+      );
       onClose();
     } catch {
       toast.error("Export nahi ho saka");
