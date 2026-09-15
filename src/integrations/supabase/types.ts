@@ -17,6 +17,10 @@ export type Database = {
       products: {
         Row: {
           created_at: string
+          custom_p100_price: number | null
+          custom_p250_price: number | null
+          custom_p500_price: number | null
+          custom_sale_price: number | null
           id: string
           is_active: boolean
           name: string
@@ -31,6 +35,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          custom_p100_price?: number | null
+          custom_p250_price?: number | null
+          custom_p500_price?: number | null
+          custom_sale_price?: number | null
           id?: string
           is_active?: boolean
           name: string
@@ -45,6 +53,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          custom_p100_price?: number | null
+          custom_p250_price?: number | null
+          custom_p500_price?: number | null
+          custom_sale_price?: number | null
           id?: string
           is_active?: boolean
           name?: string
