@@ -90,15 +90,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "theme-color", content: "#faf6f2" },
+      { name: "theme-color", content: "#172554" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "OrderBot" },
       { name: "twitter:title", content: "Order Format Bot — Instant Order Formatter" },
       { name: "twitter:description", content: "Kisi bhi format mein order likho aur foran clean, WhatsApp-ready order format hasil karo." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/0081841b-1e31-44ac-b10d-55ed532ad134" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/0081841b-1e31-44ac-b10d-55ed532ad134" },
     ],
 
 
