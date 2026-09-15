@@ -91,7 +91,9 @@ function OrderChat() {
   }, [messages, status]);
 
   useEffect(() => {
-    if (status === "ready") textareaRef.current?.focus();
+    if (status === "ready" && window.matchMedia("(min-width: 768px)").matches) {
+      textareaRef.current?.focus({ preventScroll: true });
+    }
   }, [status, messages.length]);
 
   const isBusy = status === "submitted" || status === "streaming";
