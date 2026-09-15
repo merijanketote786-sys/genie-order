@@ -111,6 +111,30 @@ function RatesPage() {
   return (
     <AppShell title="Staff Rate List" subtitle="Item ka naam likho → rate + quantity" active="/rates">
       <div className="sticky top-0 z-10 bg-gradient-to-b from-background via-background/95 to-transparent pb-3 pt-4">
+        <div className="mb-2.5 flex gap-1.5 rounded-full border border-border/60 bg-surface-2/60 p-1">
+          <button
+            onClick={() => setMode("view")}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+              mode === "view"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Tag className="h-3.5 w-3.5" />
+            Rate List
+          </button>
+          <button
+            onClick={() => setMode("edit")}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+              mode === "edit"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            Price Customize
+          </button>
+        </div>
         <div className="glass-panel flex items-center gap-2 rounded-full px-4 py-2.5">
           <Search className="h-4 w-4 shrink-0 text-primary" />
           <input
