@@ -2,7 +2,7 @@ import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { SyncStatusPanel } from "@/components/vyapar-sync";
 import priceList from "@/data/price-list.json";
-import { getProducts, saveProductPrices } from "@/lib/products.functions";
+import { getProducts, saveProductPrices, saveProductPricesBulk } from "@/lib/products.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -84,7 +84,7 @@ function RatesPage() {
   const { admin } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
-  const [mode, setMode] = useState<"view" | "edit">("view");
+  const [mode, setMode] = useState<"view" | "edit" | "bulk">("view");
 
   const { data } = useQuery({
     queryKey: ["products"],
