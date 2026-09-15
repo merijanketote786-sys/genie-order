@@ -9,41 +9,38 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SyncRouteImport } from './routes/sync'
-import { Route as RatesRouteImport } from './routes/rates'
-import { Route as InvoiceRouteImport } from './routes/invoice'
-import { Route as ExtractRouteImport } from './routes/extract'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as ApiInvoiceRouteImport } from './routes/api/invoice'
 import { Route as ApiExtractRouteImport } from './routes/api/extract'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as AuthenticatedSyncRouteImport } from './routes/_authenticated/sync'
+import { Route as AuthenticatedRatesRouteImport } from './routes/_authenticated/rates'
+import { Route as AuthenticatedInvoiceRouteImport } from './routes/_authenticated/invoice'
+import { Route as AuthenticatedExtractRouteImport } from './routes/_authenticated/extract'
 import { Route as ApiSyncProductsRouteImport } from './routes/api/sync/products'
 import { Route as ApiPublicSyncProductsRouteImport } from './routes/api/public/sync/products'
 
-const SyncRoute = SyncRouteImport.update({
-  id: '/sync',
-  path: '/sync',
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RatesRoute = RatesRouteImport.update({
-  id: '/rates',
-  path: '/rates',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InvoiceRoute = InvoiceRouteImport.update({
-  id: '/invoice',
-  path: '/invoice',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ExtractRoute = ExtractRouteImport.update({
-  id: '/extract',
-  path: '/extract',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndexRoute = IndexRouteImport.update({
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const ApiInvoiceRoute = ApiInvoiceRouteImport.update({
   id: '/api/invoice',
@@ -60,6 +57,26 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedSyncRoute = AuthenticatedSyncRouteImport.update({
+  id: '/sync',
+  path: '/sync',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRatesRoute = AuthenticatedRatesRouteImport.update({
+  id: '/rates',
+  path: '/rates',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedInvoiceRoute = AuthenticatedInvoiceRouteImport.update({
+  id: '/invoice',
+  path: '/invoice',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedExtractRoute = AuthenticatedExtractRouteImport.update({
+  id: '/extract',
+  path: '/extract',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiSyncProductsRoute = ApiSyncProductsRouteImport.update({
   id: '/api/sync/products',
   path: '/api/sync/products',
@@ -72,11 +89,13 @@ const ApiPublicSyncProductsRoute = ApiPublicSyncProductsRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/extract': typeof ExtractRoute
-  '/invoice': typeof InvoiceRoute
-  '/rates': typeof RatesRoute
-  '/sync': typeof SyncRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/extract': typeof AuthenticatedExtractRoute
+  '/invoice': typeof AuthenticatedInvoiceRoute
+  '/rates': typeof AuthenticatedRatesRoute
+  '/sync': typeof AuthenticatedSyncRoute
   '/api/chat': typeof ApiChatRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
@@ -84,27 +103,32 @@ export interface FileRoutesByFullPath {
   '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/extract': typeof ExtractRoute
-  '/invoice': typeof InvoiceRoute
-  '/rates': typeof RatesRoute
-  '/sync': typeof SyncRoute
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/extract': typeof AuthenticatedExtractRoute
+  '/invoice': typeof AuthenticatedInvoiceRoute
+  '/rates': typeof AuthenticatedRatesRoute
+  '/sync': typeof AuthenticatedSyncRoute
   '/api/chat': typeof ApiChatRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
+  '/': typeof AuthenticatedIndexRoute
   '/api/sync/products': typeof ApiSyncProductsRoute
   '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/extract': typeof ExtractRoute
-  '/invoice': typeof InvoiceRoute
-  '/rates': typeof RatesRoute
-  '/sync': typeof SyncRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/_authenticated/extract': typeof AuthenticatedExtractRoute
+  '/_authenticated/invoice': typeof AuthenticatedInvoiceRoute
+  '/_authenticated/rates': typeof AuthenticatedRatesRoute
+  '/_authenticated/sync': typeof AuthenticatedSyncRoute
   '/api/chat': typeof ApiChatRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
   '/api/sync/products': typeof ApiSyncProductsRoute
   '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
 }
@@ -112,6 +136,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
+    | '/reset-password'
     | '/extract'
     | '/invoice'
     | '/rates'
@@ -123,7 +149,8 @@ export interface FileRouteTypes {
     | '/api/public/sync/products'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
+    | '/auth'
+    | '/reset-password'
     | '/extract'
     | '/invoice'
     | '/rates'
@@ -131,28 +158,30 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/extract'
     | '/api/invoice'
+    | '/'
     | '/api/sync/products'
     | '/api/public/sync/products'
   id:
     | '__root__'
-    | '/'
-    | '/extract'
-    | '/invoice'
-    | '/rates'
-    | '/sync'
+    | '/_authenticated'
+    | '/auth'
+    | '/reset-password'
+    | '/_authenticated/extract'
+    | '/_authenticated/invoice'
+    | '/_authenticated/rates'
+    | '/_authenticated/sync'
     | '/api/chat'
     | '/api/extract'
     | '/api/invoice'
+    | '/_authenticated/'
     | '/api/sync/products'
     | '/api/public/sync/products'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  ExtractRoute: typeof ExtractRoute
-  InvoiceRoute: typeof InvoiceRoute
-  RatesRoute: typeof RatesRoute
-  SyncRoute: typeof SyncRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiExtractRoute: typeof ApiExtractRoute
   ApiInvoiceRoute: typeof ApiInvoiceRoute
@@ -162,40 +191,33 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/sync': {
-      id: '/sync'
-      path: '/sync'
-      fullPath: '/sync'
-      preLoaderRoute: typeof SyncRouteImport
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/rates': {
-      id: '/rates'
-      path: '/rates'
-      fullPath: '/rates'
-      preLoaderRoute: typeof RatesRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/invoice': {
-      id: '/invoice'
-      path: '/invoice'
-      fullPath: '/invoice'
-      preLoaderRoute: typeof InvoiceRouteImport
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/extract': {
-      id: '/extract'
-      path: '/extract'
-      fullPath: '/extract'
-      preLoaderRoute: typeof ExtractRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/invoice': {
       id: '/api/invoice'
@@ -218,6 +240,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/sync': {
+      id: '/_authenticated/sync'
+      path: '/sync'
+      fullPath: '/sync'
+      preLoaderRoute: typeof AuthenticatedSyncRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/rates': {
+      id: '/_authenticated/rates'
+      path: '/rates'
+      fullPath: '/rates'
+      preLoaderRoute: typeof AuthenticatedRatesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/invoice': {
+      id: '/_authenticated/invoice'
+      path: '/invoice'
+      fullPath: '/invoice'
+      preLoaderRoute: typeof AuthenticatedInvoiceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/extract': {
+      id: '/_authenticated/extract'
+      path: '/extract'
+      fullPath: '/extract'
+      preLoaderRoute: typeof AuthenticatedExtractRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/sync/products': {
       id: '/api/sync/products'
       path: '/api/sync/products'
@@ -235,12 +285,29 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedExtractRoute: typeof AuthenticatedExtractRoute
+  AuthenticatedInvoiceRoute: typeof AuthenticatedInvoiceRoute
+  AuthenticatedRatesRoute: typeof AuthenticatedRatesRoute
+  AuthenticatedSyncRoute: typeof AuthenticatedSyncRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedExtractRoute: AuthenticatedExtractRoute,
+  AuthenticatedInvoiceRoute: AuthenticatedInvoiceRoute,
+  AuthenticatedRatesRoute: AuthenticatedRatesRoute,
+  AuthenticatedSyncRoute: AuthenticatedSyncRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  ExtractRoute: ExtractRoute,
-  InvoiceRoute: InvoiceRoute,
-  RatesRoute: RatesRoute,
-  SyncRoute: SyncRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   ApiChatRoute: ApiChatRoute,
   ApiExtractRoute: ApiExtractRoute,
   ApiInvoiceRoute: ApiInvoiceRoute,
