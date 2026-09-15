@@ -168,6 +168,7 @@ function RatesPage() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto pb-6">
+        <VyaparUploadCard />
         {admin === "1" ? <SyncStatusPanel /> : null}
         {!query ? (
           <EmptyState total={ITEMS.length} onPick={setQuery} />
