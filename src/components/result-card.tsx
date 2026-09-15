@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Check, Copy, Share2 } from "lucide-react";
+import { Check, Copy, QrCode, Share2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -18,21 +18,8 @@ export function toWhatsAppNumber(input?: string | null): string | null {
 export function whatsappUrl(text: string, phone?: string | null) {
   const to = toWhatsAppNumber(phone);
   return to
-    ? `https://wa.me/${to}?text=${encodeURIComponent(text)}`
-    : `https://wa.me/?text=${encodeURIComponent(text)}`;
-}
-
-export function shareOnWhatsApp(text: string, phone?: string | null) {
-  const url = whatsappUrl(text, phone);
-  const win = window.open(url, "_blank", "noopener,noreferrer");
-  if (!win) {
-    try {
-      window.top?.location.assign(url);
-    } catch {
-      void navigator.clipboard?.writeText(url);
-      toast.error("Browser ne WhatsApp block kiya — link copy ho gaya, paste karein");
-    }
-  }
+    ? `https://web.whatsapp.com/send?phone=${to}&text=${encodeURIComponent(text)}`
+    : `https://web.whatsapp.com/send?text=${encodeURIComponent(text)}`;
 }
 
 export function ResultCard({
@@ -74,15 +61,19 @@ export function ResultCard({
             href={whatsappUrl(text, phone)}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={(e) => {
-              if (window.self !== window.top) {
-                e.preventDefault();
-                shareOnWhatsApp(text, phone);
-              }
-            }}
           >
             <Share2 className="h-4 w-4" />
             {toWhatsAppNumber(phone) ? "Customer ko bhejo" : "WhatsApp par bhejo"}
+          </a>
+        </Button>
+        <Button asChild size="sm" variant="outline" className="gap-1.5 rounded-full border-border/70 bg-transparent">
+          <a
+            href="https://web.whatsapp.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <QrCode className="h-4 w-4" />
+            WhatsApp QR
           </a>
         </Button>
         <Button
