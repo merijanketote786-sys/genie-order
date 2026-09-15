@@ -42,12 +42,15 @@ export function ResultCard({
   text,
   label,
   phone,
+  exportable = false,
 }: {
   text: string;
   label: string;
   phone?: string | null;
+  exportable?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"pdf" | "xlsx" | null>(null);
 
   const copy = async () => {
     try {
