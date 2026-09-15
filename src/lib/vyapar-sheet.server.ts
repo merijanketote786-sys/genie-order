@@ -150,8 +150,17 @@ export function parseVyaparSheet(bytes: Uint8Array): ParseResult {
     };
   }
 
-  const unitCol = findCol(headers, UNIT_KEYS);
-  const stockCol = findCol(headers, STOCK_KEYS);
+  if (priceCol === nameCol) {
+    return {
+      ok: false,
+      error: "Sheet me rate ka alag column nahi mila. Vyapar se 'Item Details' export karein jis me Sale Price column ho.",
+    };
+  }
+
+  const unitColRaw = findCol(headers, UNIT_KEYS);
+  const stockColRaw = findCol(headers, STOCK_KEYS);
+  const unitCol = unitColRaw === nameCol || unitColRaw === priceCol ? -1 : unitColRaw;
+  const stockCol = stockColRaw === nameCol || stockColRaw === priceCol ? -1 : stockColRaw;
 
   const rows: SheetRow[] = [];
   let skipped = 0;
@@ -168,6 +177,10 @@ export function parseVyaparSheet(bytes: Uint8Array): ParseResult {
       continue;
     }
     const price = toNumber(r[priceCol]);
+    if (price <= 0) {
+      skipped += 1;
+      continue;
+    }
     rows.push({
       name,
       unit: mapUnit(unitCol === -1 ? "" : r[unitCol], name),
