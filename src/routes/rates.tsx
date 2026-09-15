@@ -38,6 +38,10 @@ type Item = {
   p500?: number | null;
   sale: number | null;
   stock: number | null;
+  customSale?: number | null;
+  customP100?: number | null;
+  customP250?: number | null;
+  customP500?: number | null;
 };
 
 const FALLBACK_ITEMS = priceList as Item[];
