@@ -9,7 +9,7 @@ import { AppShell } from "@/components/app-shell";
 import { ResultCard } from "@/components/result-card";
 import { Button } from "@/components/ui/button";
 import { createFileRoute } from "@tanstack/react-router";
-import { FileText, Paperclip, Send, X } from "lucide-react";
+import { ClipboardPaste, FileText, Paperclip, Send, X } from "lucide-react";
 import { ScrollToEnd } from "@/components/scroll-to-end";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { useEffect, useRef, useState } from "react";
@@ -67,6 +67,22 @@ function ExtractChat() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const hydratedRef = useRef(false);
 
+  const attachFile = (file: File) => {
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error("File 15MB se kam honi chahiye");
+      return false;
+    }
+    const isSupported = file.type.startsWith("image/") || file.type === "application/pdf";
+    if (!isSupported) {
+      toast.error("Sirf image ya PDF file support hai");
+      return false;
+    }
+    if (pendingPreview?.startsWith("blob:")) URL.revokeObjectURL(pendingPreview);
+    setPendingFile(file);
+    setPendingPreview(file.type.startsWith("image/") ? URL.createObjectURL(file) : null);
+    return true;
+  };
+
   useEffect(() => {
     if (hydratedRef.current) return;
     hydratedRef.current = true;
@@ -112,18 +128,22 @@ function ExtractChat() {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (file.size > 15 * 1024 * 1024) {
-      toast.error("File 15MB se kam honi chahiye");
-      return;
-    }
-    const ok = file.type.startsWith("image/") || file.type === "application/pdf";
-    if (!ok) {
-      toast.error("Sirf image ya PDF file support hai");
-      return;
-    }
-    if (pendingPreview?.startsWith("blob:")) URL.revokeObjectURL(pendingPreview);
-    setPendingFile(file);
-    setPendingPreview(file.type.startsWith("image/") ? URL.createObjectURL(file) : null);
+    attachFile(file);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = Array.from(e.clipboardData.items);
+    const pastedFile = items
+      .find((item) => item.kind === "file" && (item.type.startsWith("image/") || item.type === "application/pdf"))
+      ?.getAsFile();
+    if (!pastedFile) return;
+
+    e.preventDefault();
+    const extension = pastedFile.type === "application/pdf" ? "pdf" : pastedFile.type.split("/")[1] || "png";
+    const namedFile = pastedFile.name
+      ? pastedFile
+      : new File([pastedFile], `pasted-${Date.now()}.${extension}`, { type: pastedFile.type });
+    if (attachFile(namedFile)) toast.success("Copied file attach ho gayi");
   };
 
   const clearPending = () => {
@@ -210,7 +230,7 @@ function ExtractChat() {
         eyebrow="Document operations"
         title="Data Extraction"
         description="Upload an image or PDF, add optional instructions, and review clean extracted text."
-        meta={["Images", "PDF", "15 MB max"]}
+        meta={["Paste", "Images", "PDF", "15 MB max"]}
       />
       <Conversation className="flex-1">
         <ConversationContent className="gap-4 px-0 pb-3 pt-3 sm:gap-6 sm:pb-4 sm:pt-5">
@@ -293,13 +313,14 @@ function ExtractChat() {
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
+            onPaste={handlePaste}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 void handleSend();
               }
             }}
-            placeholder="Optional: kuch specific batao (e.g. sirf phone numbers nikalo)"
+            placeholder="Image/PDF yahan paste karein, ya optional instruction likhein"
             disabled={busy}
             rows={2}
             aria-label="Extraction instructions"
@@ -323,6 +344,9 @@ function ExtractChat() {
               <Paperclip className="h-4 w-4" />
               {pendingFile ? "Change" : "Attach"}
             </Button>
+            <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
+              <ClipboardPaste className="size-3.5" /> Ctrl+V se paste
+            </span>
             <Button
               size="sm"
               onClick={handleSend}
@@ -335,7 +359,7 @@ function ExtractChat() {
           </div>
         </div>
         <p className="mt-2 hidden text-center text-xs text-muted-foreground sm:block">
-          Image ya PDF (max 15MB) attach karein → text extract ho jayegi.
+          Image ya PDF paste/attach karein → text extract ho jayegi.
         </p>
       </div>
     </AppShell>
@@ -347,7 +371,7 @@ function EmptyState() {
     <div className="glass-panel mx-auto mt-2 flex w-full max-w-3xl flex-col items-center rounded-2xl border-dashed p-5 text-center sm:p-12">
       <span className="grid size-10 place-items-center rounded-lg bg-accent text-accent-foreground sm:size-12"><FileText className="size-5 sm:size-6" /></span>
       <h3 className="mt-3 font-display text-base font-bold text-foreground sm:mt-4 sm:text-lg">No document selected</h3>
-      <p className="mt-1.5 max-w-md text-[13px] leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">Attach a screenshot, receipt, order slip or PDF below to extract readable Urdu, Roman Urdu or English text.</p>
+      <p className="mt-1.5 max-w-md text-[13px] leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">Copy-paste or attach a screenshot, receipt, order slip or PDF to extract readable Urdu, Roman Urdu or English text.</p>
     </div>
   );
 }
