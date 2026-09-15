@@ -37,36 +37,14 @@ function json(body: unknown, status: number) {
   });
 }
 
-export async function handleProductSync(request: Request): Promise<Response> {
-  const expected = process.env["PRODUCT_SYNC_API_KEY"];
-  if (!expected) {
-    return json({ error: "Sync is not configured on the server." }, 503);
-  }
-
-  const provided =
-    request.headers.get("x-api-key") ??
-    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ??
-    "";
-
-  if (provided.length !== expected.length || provided !== expected) {
-    return json({ error: "Unauthorized" }, 401);
-  }
-
-  let raw: unknown;
-  try {
-    raw = await request.json();
-  } catch {
-    return json({ error: "Invalid JSON body" }, 400);
-  }
-
-  const parsed = payloadSchema.safeParse(raw);
-  if (!parsed.success) {
-    return json({ error: "Invalid payload: expected { products: [...] }" }, 400);
-  }
-
+export async function syncProductRows(products: unknown[]): Promise<{
+  result: SyncResult;
+  status: "success" | "partial" | "failed";
+  errors: Array<{ index: number; reason: string }>;
+}> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  const totalRows = parsed.data.products.length;
+  const totalRows = products.length;
   const errors: Array<{ index: number; reason: string }> = [];
   const byName = new Map<
     string,
@@ -74,7 +52,7 @@ export async function handleProductSync(request: Request): Promise<Response> {
   >();
   let skipped = 0;
 
-  parsed.data.products.forEach((item, index) => {
+  products.forEach((item, index) => {
     const row = productSchema.safeParse(item);
     if (!row.success) {
       errors.push({ index, reason: row.error.issues[0]?.message ?? "invalid row" });
@@ -151,14 +129,48 @@ export async function handleProductSync(request: Request): Promise<Response> {
     .select("id")
     .single();
 
-  const result: SyncResult = {
-    total_rows: totalRows,
-    updated_count: updated,
-    inserted_count: inserted,
-    skipped_count: skipped,
-    error_count: errorCount,
-    sync_id: log?.id ?? null,
+  return {
+    status,
+    errors,
+    result: {
+      total_rows: totalRows,
+      updated_count: updated,
+      inserted_count: inserted,
+      skipped_count: skipped,
+      error_count: errorCount,
+      sync_id: log?.id ?? null,
+    },
   };
+}
+
+export async function handleProductSync(request: Request): Promise<Response> {
+  const expected = process.env["PRODUCT_SYNC_API_KEY"];
+  if (!expected) {
+    return json({ error: "Sync is not configured on the server." }, 503);
+  }
+
+  const provided =
+    request.headers.get("x-api-key") ??
+    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ??
+    "";
+
+  if (provided.length !== expected.length || provided !== expected) {
+    return json({ error: "Unauthorized" }, 401);
+  }
+
+  let raw: unknown;
+  try {
+    raw = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400);
+  }
+
+  const parsed = payloadSchema.safeParse(raw);
+  if (!parsed.success) {
+    return json({ error: "Invalid payload: expected { products: [...] }" }, 400);
+  }
+
+  const { result, status } = await syncProductRows(parsed.data.products);
 
   return json(result, status === "failed" ? 500 : 200);
 }
