@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Check, Copy, MessageCircle, QrCode } from "lucide-react";
+import { Check, Copy, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
