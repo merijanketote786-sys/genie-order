@@ -45,7 +45,7 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-label={theme === "dark" ? "Light theme on karein" : "Dark theme on karein"}
       title={theme === "dark" ? "Light theme" : "Dark theme"}
-      className="h-8 w-8 shrink-0 rounded-full border-border/70 bg-surface-2 p-0"
+      className="size-10 shrink-0 border-border bg-card p-0"
     >
       {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </Button>
