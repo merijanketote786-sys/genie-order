@@ -20,6 +20,7 @@ import { Route as AuthenticatedSyncRouteImport } from './routes/_authenticated/s
 import { Route as AuthenticatedRatesRouteImport } from './routes/_authenticated/rates'
 import { Route as AuthenticatedInvoiceRouteImport } from './routes/_authenticated/invoice'
 import { Route as AuthenticatedExtractRouteImport } from './routes/_authenticated/extract'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as ApiSyncProductsRouteImport } from './routes/api/sync/products'
 import { Route as ApiPublicSyncProductsRouteImport } from './routes/api/public/sync/products'
 
@@ -77,6 +78,11 @@ const AuthenticatedExtractRoute = AuthenticatedExtractRouteImport.update({
   path: '/extract',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiSyncProductsRoute = ApiSyncProductsRouteImport.update({
   id: '/api/sync/products',
   path: '/api/sync/products',
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/extract': typeof AuthenticatedExtractRoute
   '/invoice': typeof AuthenticatedInvoiceRoute
   '/rates': typeof AuthenticatedRatesRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/extract': typeof AuthenticatedExtractRoute
   '/invoice': typeof AuthenticatedInvoiceRoute
   '/rates': typeof AuthenticatedRatesRoute
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/extract': typeof AuthenticatedExtractRoute
   '/_authenticated/invoice': typeof AuthenticatedInvoiceRoute
   '/_authenticated/rates': typeof AuthenticatedRatesRoute
@@ -138,6 +147,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/reset-password'
+    | '/admin'
     | '/extract'
     | '/invoice'
     | '/rates'
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/reset-password'
+    | '/admin'
     | '/extract'
     | '/invoice'
     | '/rates'
@@ -166,6 +177,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/reset-password'
+    | '/_authenticated/admin'
     | '/_authenticated/extract'
     | '/_authenticated/invoice'
     | '/_authenticated/rates'
@@ -268,6 +280,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedExtractRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/sync/products': {
       id: '/api/sync/products'
       path: '/api/sync/products'
@@ -286,6 +305,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedExtractRoute: typeof AuthenticatedExtractRoute
   AuthenticatedInvoiceRoute: typeof AuthenticatedInvoiceRoute
   AuthenticatedRatesRoute: typeof AuthenticatedRatesRoute
@@ -294,6 +314,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedExtractRoute: AuthenticatedExtractRoute,
   AuthenticatedInvoiceRoute: AuthenticatedInvoiceRoute,
   AuthenticatedRatesRoute: AuthenticatedRatesRoute,
