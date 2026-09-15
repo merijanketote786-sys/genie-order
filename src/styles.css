@@ -213,3 +213,13 @@
 @utility brand-glow {
   box-shadow: var(--shadow-glow);
 }
+
+/* Prevent mobile browsers from auto-zooming when an input/textarea is focused:
+   touch devices zoom in whenever the focused field's font-size is below 16px. */
+@media (max-width: 640px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
