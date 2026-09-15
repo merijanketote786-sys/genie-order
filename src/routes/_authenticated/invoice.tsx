@@ -4,13 +4,7 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
-import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
-import {
-  PromptInput,
-  PromptInputFooter,
-  PromptInputSubmit,
-  PromptInputTextarea,
-} from "@/components/ai-elements/prompt-input";
+import { ChatComposer, ChatMessage, ChatMessageContent, PlainMessageText } from "@/components/lightweight-chat";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { ResultCard } from "@/components/result-card";
 import { useChat } from "@ai-sdk/react";
@@ -154,30 +148,30 @@ function InvoiceChat() {
           {messages.map((msg) => {
             const text = messageText(msg);
             return (
-              <Message key={msg.id} from={msg.role}>
+              <ChatMessage key={msg.id} from={msg.role}>
                 {msg.role === "assistant" ? (
                   text ? (
                     <ResultCard text={text} label="Invoice" phone={phone} exportable />
                   ) : (
-                    <MessageContent>
+                    <ChatMessageContent>
                       <Shimmer>Invoice ban rahi hai...</Shimmer>
-                    </MessageContent>
+                    </ChatMessageContent>
                   )
                 ) : (
-                  <MessageContent className="bubble-out group-[.is-user]:bg-bubble-out group-[.is-user]:text-foreground">
-                    <MessageResponse>{text}</MessageResponse>
-                  </MessageContent>
+                  <ChatMessageContent>
+                    <PlainMessageText>{text}</PlainMessageText>
+                  </ChatMessageContent>
                 )}
-              </Message>
+              </ChatMessage>
             );
           })}
 
           {status === "submitted" ? (
-            <Message from="assistant">
-              <MessageContent>
+            <ChatMessage from="assistant">
+              <ChatMessageContent>
                 <Shimmer>Invoice ban rahi hai...</Shimmer>
-              </MessageContent>
-            </Message>
+              </ChatMessageContent>
+            </ChatMessage>
           ) : null}
 
           {error ? (
@@ -207,17 +201,14 @@ function InvoiceChat() {
               </button>
             ) : null}
           </label>
-          <PromptInput onSubmit={handleSubmit} className="border-0 bg-transparent shadow-none">
-            <PromptInputTextarea
-              ref={textareaRef}
-              placeholder="Products + prices paste karein... (e.g. Conditioner 250ml 750, Glycerine 250ml 250 ...)"
-              disabled={isBusy}
-              className="min-h-20 px-3 py-2.5 text-sm leading-6 sm:min-h-28 sm:px-4 sm:py-3"
-            />
-            <PromptInputFooter className="justify-end border-0 px-2 pb-2 sm:px-3 sm:pb-3">
-              <PromptInputSubmit status={status} disabled={isBusy} />
-            </PromptInputFooter>
-          </PromptInput>
+          <ChatComposer
+            ref={textareaRef}
+            onSubmit={handleSubmit}
+            status={status}
+            disabled={isBusy}
+            placeholder="Products + prices paste karein... (e.g. Conditioner 250ml 750, Glycerine 250ml 250 ...)"
+            textareaClassName="min-h-20 px-3 py-2.5 text-sm leading-6 sm:min-h-28 sm:px-4 sm:py-3"
+          />
         </div>
         <p className="mt-2 hidden items-center justify-center gap-1.5 text-center text-xs text-muted-foreground sm:flex">
           <ShieldCheck className="size-3.5" />

@@ -3,7 +3,7 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
-import { Message, MessageContent } from "@/components/ai-elements/message";
+import { ChatMessage, ChatMessageContent } from "@/components/lightweight-chat";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { AppShell } from "@/components/app-shell";
 import { ResultCard } from "@/components/result-card";
@@ -219,8 +219,8 @@ function ExtractChat() {
           {messages.map((msg) => {
             if (msg.role === "user") {
               return (
-                <Message key={msg.id} from="user">
-                  <MessageContent className="bubble-out group-[.is-user]:bg-bubble-out group-[.is-user]:text-foreground">
+                <ChatMessage key={msg.id} from="user">
+                  <ChatMessageContent>
                     <div className="flex flex-col gap-2">
                       {msg.previewUrl && msg.fileType.startsWith("image/") ? (
                         <img
@@ -237,20 +237,20 @@ function ExtractChat() {
                       )}
                       {msg.prompt ? <p className="text-sm">{msg.prompt}</p> : null}
                     </div>
-                  </MessageContent>
-                </Message>
+                  </ChatMessageContent>
+                </ChatMessage>
               );
             }
             return (
-              <Message key={msg.id} from="assistant">
+              <ChatMessage key={msg.id} from="assistant">
                 {msg.loading || !msg.text ? (
-                  <MessageContent>
+                  <ChatMessageContent>
                     <Shimmer>Text extract ho rahi hai...</Shimmer>
-                  </MessageContent>
+                  </ChatMessageContent>
                 ) : (
                   <ResultCard text={msg.text} label="Extracted text" />
                 )}
-              </Message>
+              </ChatMessage>
             );
           })}
         </ConversationContent>

@@ -1,4 +1,4 @@
-import logoUrl from "@/assets/logo.png";
+import logoUrl from "@/assets/logo.webp";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Button } from "@/components/ui/button";
