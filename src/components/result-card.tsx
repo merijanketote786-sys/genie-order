@@ -15,12 +15,24 @@ export function toWhatsAppNumber(input?: string | null): string | null {
   return n.length >= 11 ? n : null;
 }
 
-export function shareOnWhatsApp(text: string, phone?: string | null) {
+export function whatsappUrl(text: string, phone?: string | null) {
   const to = toWhatsAppNumber(phone);
-  const url = to
+  return to
     ? `https://wa.me/${to}?text=${encodeURIComponent(text)}`
     : `https://wa.me/?text=${encodeURIComponent(text)}`;
-  window.open(url, "_blank", "noopener,noreferrer");
+}
+
+export function shareOnWhatsApp(text: string, phone?: string | null) {
+  const url = whatsappUrl(text, phone);
+  const win = window.open(url, "_blank", "noopener,noreferrer");
+  if (!win) {
+    try {
+      window.top?.location.assign(url);
+    } catch {
+      void navigator.clipboard?.writeText(url);
+      toast.error("Browser ne WhatsApp block kiya — link copy ho gaya, paste karein");
+    }
+  }
 }
 
 export function ResultCard({
