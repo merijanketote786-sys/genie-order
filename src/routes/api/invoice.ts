@@ -100,10 +100,14 @@ async function buildRateContext(messages: unknown[]): Promise<string> {
 
     const lines = scored.map(({ r }) => {
       const unit = String(r["unit"]);
-      const sale = r["sale_price"] == null ? null : Number(r["sale_price"]);
-      const p100 = r["p100_staff_price"] == null ? null : Number(r["p100_staff_price"]);
-      const p250 = r["p250_staff_price"] == null ? null : Number(r["p250_staff_price"]);
-      const p500 = r["p500_staff_price"] == null ? null : Number(r["p500_staff_price"]);
+      const pick = (custom: string, auto: string) => {
+        const v = r[custom] ?? r[auto];
+        return v == null ? null : Number(v);
+      };
+      const sale = pick("custom_sale_price", "sale_price");
+      const p100 = pick("custom_p100_price", "p100_staff_price");
+      const p250 = pick("custom_p250_price", "p250_staff_price");
+      const p500 = pick("custom_p500_price", "p500_staff_price");
       const parts = [`${String(r["name"])} | unit: ${unit}`];
       if (sale != null) parts.push(`1 ${unit} = ${sale}`);
       if (p100 != null) parts.push(`100g = ${p100}`);
