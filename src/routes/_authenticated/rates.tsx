@@ -502,6 +502,34 @@ function BulkEditor({ items, searching }: { items: Item[]; searching: boolean })
     onError: () => toast.error("Save nahi ho saka"),
   });
 
+  const [savingOne, setSavingOne] = useState<string | null>(null);
+  const singleMutation = useMutation({
+    mutationFn: (payload: { name: string; draft: Draft }) =>
+      saveProductPrices({ data: { name: payload.name, ...payload.draft } }),
+    onSuccess: (res, payload) => {
+      if (res?.ok) toast.success("Price save ho gayi");
+      else toast.error(res?.message || "Save nahi ho saka");
+      setDrafts((prev) => {
+        const next = { ...prev };
+        delete next[payload.name];
+        return next;
+      });
+      setSavingOne(null);
+      void queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: () => {
+      toast.error("Save nahi ho saka");
+      setSavingOne(null);
+    },
+  });
+
+  const saveOne = (item: Item) => {
+    const d = draftOf(item);
+    if (sameDraft(d, toDraft(item))) return;
+    setSavingOne(item.name);
+    singleMutation.mutate({ name: item.name, draft: d });
+  };
+
   const applyPercent = () => {
     const p = Number(pct);
     if (!Number.isFinite(p) || p === 0) {
@@ -596,12 +624,31 @@ function BulkEditor({ items, searching }: { items: Item[]; searching: boolean })
               }
             >
               <div className="flex items-start justify-between gap-3">
-                <p className="min-w-0 font-display text-[14px] font-bold leading-tight text-foreground">
+                <p className="min-w-0 flex-1 font-display text-[14px] font-bold leading-tight text-foreground">
                   {cleanName(item.name)}
                 </p>
                 <span className="shrink-0 rounded-md border border-border px-2 py-0.5 text-[10px] uppercase text-muted-foreground">
                   {item.unit || "unit"}
                 </span>
+                <Button
+                  size="sm"
+                  variant={changed ? "default" : "outline"}
+                  onClick={() => saveOne(item)}
+                  disabled={!changed || savingOne === item.name || singleMutation.isPending}
+                  className="h-8 shrink-0 gap-1 border-border bg-card px-2.5 sm:px-3"
+                >
+                  {savingOne === item.name ? (
+                    <>
+                      <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      Saving…
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-3.5 w-3.5" />
+                      Save
+                    </>
+                  )}
+                </Button>
               </div>
               <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <PriceField
