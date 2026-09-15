@@ -170,7 +170,7 @@ function OrderChat() {
       </Conversation>
 
       <div className="sticky bottom-0 bg-background/95 pb-2 pt-2 backdrop-blur-sm sm:pb-4 sm:pt-3">
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/20">
+        <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/20">
           <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-xs font-semibold text-foreground sm:px-4 sm:py-2.5">
             <MessageSquareText className="size-4 text-primary" /> Customer order
             <span className="ml-auto hidden text-[11px] font-normal text-muted-foreground sm:inline">Enter to process · Shift+Enter for new line</span>
@@ -198,14 +198,14 @@ function OrderChat() {
 function EmptyState() {
   const example = `Ahmad ali\n03001234567\nLahore, model town H block ghar 42\niPhone case black\nTotal 1500, delivery 200, advance 500`;
   return (
-    <div className="mx-auto grid w-full max-w-4xl gap-3 md:grid-cols-[0.8fr_1.2fr]">
-      <div className="glass-panel flex flex-col justify-center rounded-xl p-4 sm:p-6">
-        <span className="grid size-9 place-items-center rounded-lg bg-accent text-accent-foreground sm:size-10"><Sparkles className="size-4.5 sm:size-5" /></span>
+    <div className="mx-auto grid w-full max-w-4xl gap-3 py-6 md:grid-cols-[0.8fr_1.2fr]">
+      <div className="glass-panel flex flex-col justify-center rounded-3xl p-5 sm:p-6">
+        <span className="grid size-12 place-items-center rounded-2xl bg-accent text-accent-foreground sm:size-10"><Sparkles className="size-4.5 sm:size-5" /></span>
         <h3 className="mt-3 font-display text-base font-bold text-foreground sm:mt-4 sm:text-lg">No order yet</h3>
         <p className="mt-1.5 text-[13px] leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">Paste an order below to standardize customer, delivery and payment details.</p>
         <div className="mt-3 flex items-center gap-2 text-[11px] font-medium text-muted-foreground sm:mt-4 sm:text-xs"><Languages className="size-4 shrink-0 text-primary" /> Urdu, Roman Urdu and English supported</div>
       </div>
-      <div className="hidden rounded-xl border border-border bg-card p-5 sm:block sm:p-6">
+      <div className="hidden rounded-3xl border border-border bg-card p-5 sm:block sm:p-6">
         <p className="text-[11px] font-bold uppercase text-muted-foreground">Example input</p>
         <pre className="mt-3 whitespace-pre-wrap rounded-lg bg-surface-2 p-4 font-mono text-xs leading-6 text-foreground">{example}</pre>
       </div>

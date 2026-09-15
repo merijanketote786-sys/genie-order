@@ -259,7 +259,7 @@ function ExtractChat() {
       </Conversation>
 
       <div className="sticky bottom-0 bg-background/95 pb-2 pt-2 backdrop-blur-sm sm:pb-4 sm:pt-3">
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/20">
+        <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/20">
           {pendingFile ? (
             <div className="m-3 mb-0 flex items-center gap-2 rounded-lg border border-border bg-surface-2/60 p-2">
               {pendingPreview ? (
@@ -344,7 +344,7 @@ function ExtractChat() {
 
 function EmptyState() {
   return (
-    <div className="glass-panel mx-auto mt-2 flex w-full max-w-3xl flex-col items-center rounded-xl border-dashed p-5 text-center sm:p-12">
+    <div className="glass-panel mx-auto mt-2 flex w-full max-w-3xl flex-col items-center rounded-2xl border-dashed p-5 text-center sm:p-12">
       <span className="grid size-10 place-items-center rounded-lg bg-accent text-accent-foreground sm:size-12"><FileText className="size-5 sm:size-6" /></span>
       <h3 className="mt-3 font-display text-base font-bold text-foreground sm:mt-4 sm:text-lg">No document selected</h3>
       <p className="mt-1.5 max-w-md text-[13px] leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">Attach a screenshot, receipt, order slip or PDF below to extract readable Urdu, Roman Urdu or English text.</p>

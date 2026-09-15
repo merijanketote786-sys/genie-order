@@ -45,7 +45,7 @@ function SyncPage() {
         <VyaparUploadCard />
         <SyncStatusPanel />
 
-        <section className="glass-panel rounded-xl px-4 py-4 text-sm">
+        <section className="glass-panel rounded-2xl px-4 py-4 text-sm">
           <h2 className="font-display text-[15px] font-bold">Vyapar se export kaise karein</h2>
           <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
             <li>Vyapar Desktop kholein → Reports → Item / Stock Summary.</li>

@@ -45,7 +45,7 @@ export function ResultCard({
   };
 
   return (
-    <article className="bubble-in w-full overflow-hidden border border-border bg-card">
+    <article className="bubble-in w-full overflow-hidden rounded-3xl border border-border bg-card">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 py-3 sm:px-5">
         <span className="truncate text-[11px] font-bold uppercase text-primary">
           {label}
@@ -58,7 +58,7 @@ export function ResultCard({
         {text}
       </pre>
       <div className="flex flex-wrap gap-2 border-t border-border bg-surface-2/60 px-3 py-3 sm:px-5">
-        <Button asChild size="sm" className="gap-1.5 bg-success text-primary-foreground hover:bg-success/90">
+        <Button asChild size="sm" className="h-11 flex-1 gap-1.5 rounded-xl bg-success sm:h-9 sm:flex-none text-primary-foreground hover:bg-success/90">
           <a
             href={whatsappUrl(text, phone)}
             target="_blank"
@@ -72,7 +72,7 @@ export function ResultCard({
           size="sm"
           variant="outline"
           onClick={copy}
-          className="gap-1.5 border-border bg-card"
+          className="h-11 flex-1 gap-1.5 rounded-xl border-border bg-card sm:h-9 sm:flex-none"
         >
           {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           {copied ? "Copied" : "Copy"}

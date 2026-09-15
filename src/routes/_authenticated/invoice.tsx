@@ -189,7 +189,7 @@ function InvoiceChat() {
       </Conversation>
 
       <div className="sticky bottom-0 bg-background/95 pb-2 pt-2 backdrop-blur-sm sm:pb-4 sm:pt-3">
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/20">
+        <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/20">
           <label className="grid min-h-12 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-border px-3 sm:px-4">
             <Phone className="size-4 shrink-0 text-primary" />
             <span className="sr-only">Customer WhatsApp number</span>
@@ -231,13 +231,13 @@ function InvoiceChat() {
 function EmptyState() {
   const example = `Conditioner 250ml 750\nGlycerine 250ml 250\nLanolin 100ml 450\nCocobetaine 500ml 500`;
   return (
-    <div className="mx-auto grid w-full max-w-4xl gap-3 md:grid-cols-[0.8fr_1.2fr]">
-      <div className="glass-panel flex flex-col justify-center rounded-xl p-4 sm:p-6">
-        <span className="grid size-9 place-items-center rounded-lg bg-accent text-accent-foreground sm:size-10"><ReceiptText className="size-4.5 sm:size-5" /></span>
+    <div className="mx-auto grid w-full max-w-4xl gap-3 py-6 md:grid-cols-[0.8fr_1.2fr]">
+      <div className="glass-panel flex flex-col justify-center rounded-3xl p-5 sm:p-6">
+        <span className="grid size-12 place-items-center rounded-2xl bg-accent text-accent-foreground sm:size-10"><ReceiptText className="size-4.5 sm:size-5" /></span>
         <h3 className="mt-3 font-display text-base font-bold text-foreground sm:mt-4 sm:text-lg">No invoice yet</h3>
         <p className="mt-1.5 text-[13px] leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">Paste product details below. Delivery and grand total remain blank until you provide them.</p>
       </div>
-      <div className="hidden rounded-xl border border-border bg-card p-5 sm:block sm:p-6">
+      <div className="hidden rounded-3xl border border-border bg-card p-5 sm:block sm:p-6">
         <p className="text-[11px] font-bold uppercase text-muted-foreground">Example input</p>
         <pre className="mt-3 whitespace-pre-wrap rounded-lg bg-surface-2 p-4 font-mono text-xs leading-6 text-foreground">{example}</pre>
       </div>
