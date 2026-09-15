@@ -17,7 +17,7 @@ import { useChat } from "@ai-sdk/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { ScrollToEnd } from "@/components/scroll-to-end";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/invoice")({
@@ -89,6 +89,25 @@ function InvoiceChat() {
   useEffect(() => {
     if (status === "ready") textareaRef.current?.focus();
   }, [status, messages.length]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(PHONE_KEY);
+      if (saved) setPhone(saved);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const updatePhone = (value: string) => {
+    const cleaned = value.replace(/[^\d+\s-]/g, "");
+    setPhone(cleaned);
+    try {
+      localStorage.setItem(PHONE_KEY, cleaned);
+    } catch {
+      // ignore
+    }
+  };
 
   const isBusy = status === "submitted" || status === "streaming";
 
