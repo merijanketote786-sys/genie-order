@@ -176,6 +176,26 @@ function InvoiceChat() {
       </Conversation>
 
       <div className="sticky bottom-0 bg-gradient-to-t from-background via-background/95 to-transparent pb-4 pt-3">
+        <div className="mb-2 flex items-center gap-2 rounded-full border border-border/50 bg-surface-2 px-4 py-2">
+          <Phone className="h-4 w-4 shrink-0 text-primary" />
+          <input
+            value={phone}
+            onChange={(e) => updatePhone(e.target.value)}
+            inputMode="tel"
+            placeholder="Customer ka WhatsApp number (03xxxxxxxxx)"
+            className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            autoComplete="tel"
+          />
+          {phone ? (
+            <button
+              onClick={() => updatePhone("")}
+              aria-label="Clear number"
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : null}
+        </div>
         <div className="rounded-3xl border border-border/50 bg-surface-2 p-1.5 shadow-lg">
           <PromptInput onSubmit={handleSubmit} className="border-0 bg-transparent shadow-none">
             <PromptInputTextarea
