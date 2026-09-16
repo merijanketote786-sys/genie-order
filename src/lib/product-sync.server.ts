@@ -37,7 +37,18 @@ function json(body: unknown, status: number) {
   });
 }
 
-export async function syncProductRows(products: unknown[]): Promise<{
+/** HB (owner) workspace — auto-sync/API key isi list ko update karta hai. */
+export async function getOwnerWorkspaceId(): Promise<string | null> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+  const owner = data?.users.find((u) => (u.email ?? "").toLowerCase() === "hhtraders008@gmail.com");
+  return owner?.id ?? null;
+}
+
+export async function syncProductRows(
+  products: unknown[],
+  workspaceId: string,
+): Promise<{
   result: SyncResult;
   status: "success" | "partial" | "failed";
   errors: Array<{ index: number; reason: string }>;
