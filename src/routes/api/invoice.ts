@@ -112,6 +112,7 @@ async function buildRateContext(messages: unknown[], workspaceId: string): Promi
         "name, unit, sale_price, p100_staff_price, p250_staff_price, p500_staff_price, custom_sale_price, custom_p100_price, custom_p250_price, custom_p500_price, stock",
       )
       .eq("is_active", true)
+      .eq("workspace_id", workspaceId)
       .limit(5000);
     if (!data || data.length === 0) return "";
 
@@ -165,7 +166,8 @@ export const Route = createFileRoute("/api/invoice")({
           return new Response("Missing LOVABLE_API_KEY", { status: 500 });
         }
 
-        const rateContext = await buildRateContext(messages);
+        const workspaceId = await workspaceFromRequest(request);
+        const rateContext = workspaceId ? await buildRateContext(messages, workspaceId) : "";
 
         const gateway = createLovableAiGatewayProvider(key);
         const result = streamText({
