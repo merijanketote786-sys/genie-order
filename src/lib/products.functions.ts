@@ -204,7 +204,7 @@ export const syncProductsFromSheet = createServerFn({ method: "POST" })
     const parsed = parseVyaparSheet(bytes);
     if (!parsed.ok) return { ok: false as const, message: parsed.error };
 
-    return applyRows(parsed.rows, {
+    return applyRows(parsed.rows, await workspaceOf(context.userId), {
       fileName: data.fileName,
       sheetName: parsed.sheetName,
       emptyRows: parsed.skipped,
