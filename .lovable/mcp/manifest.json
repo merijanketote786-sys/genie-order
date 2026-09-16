@@ -1,0 +1,184 @@
+{
+  "version": 1,
+  "sdk_version": "2.1.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://vpeitquqajzepwmjkqmn.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "order-buddy",
+      "version": "0.1.0",
+      "title": "Order Buddy"
+    },
+    "tools": [
+      {
+        "name": "search_products",
+        "title": "Search product rates",
+        "description": "Search the workspace rate list by product name and return unit, sale price, 100g/250g/500g staff rates and stock.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Product name or part of it."
+            },
+            "limit": {
+              "description": "Max rows (default 10).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          "required": [
+            "query"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_orders",
+        "title": "List orders",
+        "description": "List saved orders for the workspace, newest first. Optionally filter by customer name, phone or status.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "search": {
+              "description": "Customer name or phone to filter by.",
+              "type": "string",
+              "minLength": 1
+            },
+            "status": {
+              "description": "Order status, e.g. Confirmed.",
+              "type": "string",
+              "minLength": 1
+            },
+            "limit": {
+              "description": "Max rows (default 20).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_invoices",
+        "title": "List invoices",
+        "description": "List saved invoices for the workspace, newest first, with payment status and totals.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "search": {
+              "description": "Customer name, phone or invoice number.",
+              "type": "string",
+              "minLength": 1
+            },
+            "payment_status": {
+              "description": "Filter by payment status.",
+              "type": "string",
+              "enum": [
+                "paid",
+                "unpaid"
+              ]
+            },
+            "limit": {
+              "description": "Max rows (default 20).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "search_customers",
+        "title": "Search customers",
+        "description": "Search workspace customers by name, phone or city and return their saved details.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "query": {
+              "description": "Name, phone or city to search for.",
+              "type": "string",
+              "minLength": 1
+            },
+            "limit": {
+              "description": "Max rows (default 20).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "set_invoice_status",
+        "title": "Set invoice payment status",
+        "description": "Mark an invoice as paid or unpaid using its invoice number.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "invoice_number": {
+              "type": "string",
+              "minLength": 3,
+              "description": "Invoice number, e.g. INV-2609-0012."
+            },
+            "payment_status": {
+              "type": "string",
+              "enum": [
+                "paid",
+                "unpaid"
+              ],
+              "description": "New payment status."
+            }
+          },
+          "required": [
+            "invoice_number",
+            "payment_status"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
