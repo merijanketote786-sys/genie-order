@@ -27,7 +27,7 @@ export default defineTool({
 
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
 
-    const rows = (data ?? []).map((r: Record<string, unknown>) => ({
+    const rows = (data ?? []).map((r: Record<string, any>) => ({
       name: r["name"],
       unit: r["unit"],
       sale: r["custom_sale_price"] ?? r["sale_price"],

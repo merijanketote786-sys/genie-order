@@ -25,6 +25,7 @@ import { Route as AuthenticatedExtractRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as ApiSyncProductsRouteImport } from './routes/api/sync/products'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicSyncProductsRouteImport } from './routes/api/public/sync/products'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -106,6 +107,11 @@ const ApiSyncProductsRoute = ApiSyncProductsRouteImport.update({
   path: '/api/sync/products',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicSyncProductsRoute = ApiPublicSyncProductsRouteImport.update({
   id: '/api/public/sync/products',
   path: '/api/public/sync/products',
@@ -127,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/sync/products': typeof ApiSyncProductsRoute
   '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
 }
@@ -145,6 +152,7 @@ export interface FileRoutesByTo {
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
   '/': typeof AuthenticatedIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/sync/products': typeof ApiSyncProductsRoute
   '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
 }
@@ -165,6 +173,7 @@ export interface FileRoutesById {
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/sync/products': typeof ApiSyncProductsRoute
   '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
 }
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/extract'
     | '/api/invoice'
+    | '/.lovable/oauth/consent'
     | '/api/sync/products'
     | '/api/public/sync/products'
   fileRoutesByTo: FileRoutesByTo
@@ -203,6 +213,7 @@ export interface FileRouteTypes {
     | '/api/extract'
     | '/api/invoice'
     | '/'
+    | '/.lovable/oauth/consent'
     | '/api/sync/products'
     | '/api/public/sync/products'
   id:
@@ -222,6 +233,7 @@ export interface FileRouteTypes {
     | '/api/extract'
     | '/api/invoice'
     | '/_authenticated/'
+    | '/.lovable/oauth/consent'
     | '/api/sync/products'
     | '/api/public/sync/products'
   fileRoutesById: FileRoutesById
@@ -233,6 +245,7 @@ export interface RootRouteChildren {
   ApiChatRoute: typeof ApiChatRoute
   ApiExtractRoute: typeof ApiExtractRoute
   ApiInvoiceRoute: typeof ApiInvoiceRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   ApiSyncProductsRoute: typeof ApiSyncProductsRoute
   ApiPublicSyncProductsRoute: typeof ApiPublicSyncProductsRoute
 }
@@ -351,6 +364,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSyncProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/sync/products': {
       id: '/api/public/sync/products'
       path: '/api/public/sync/products'
@@ -395,6 +415,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiChatRoute: ApiChatRoute,
   ApiExtractRoute: ApiExtractRoute,
   ApiInvoiceRoute: ApiInvoiceRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   ApiSyncProductsRoute: ApiSyncProductsRoute,
   ApiPublicSyncProductsRoute: ApiPublicSyncProductsRoute,
 }
