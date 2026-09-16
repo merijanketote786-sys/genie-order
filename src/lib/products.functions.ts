@@ -109,6 +109,7 @@ export const saveProductPrices = createServerFn({ method: "POST" })
         custom_p250_price: data.p250,
         custom_p500_price: data.p500,
       })
+      .eq("workspace_id", await workspaceOf(context.userId))
       .eq("name", data.name);
 
     if (error) return { ok: false, message: error.message };
