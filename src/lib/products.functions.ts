@@ -379,7 +379,9 @@ export const applyProductRows = createServerFn({ method: "POST" })
     if (await blocked(context)) {
       return { ok: false as const, message: "Aapka access band hai. Admin se rabta karein." };
     }
-    return applyRows(data.rows, { sheetName: "Document import" });
+    return applyRows(data.rows, await workspaceOf(context.userId), {
+      sheetName: "Document import",
+    });
   });
 
 export const getSyncStatus = createServerFn({ method: "GET" })
