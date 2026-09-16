@@ -84,6 +84,7 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
     setSaving(true);
     try {
       const result = await resetTemplate();
+      queryClient.setQueryData(["order-template"], result);
       onTemplateChange(result.template);
       setDraft(result.template);
       setOpen(false);
