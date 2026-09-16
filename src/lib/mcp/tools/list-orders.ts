@@ -1,6 +1,7 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { notAuthenticated, supabaseForUser } from "../supabase";
+import { likeTerm } from "../filter";
 
 export default defineTool({
   name: "list_orders",
@@ -23,8 +24,11 @@ export default defineTool({
       .order("created_at", { ascending: false })
       .limit(limit ?? 20);
 
-    if (status) q = q.ilike("status", status);
-    if (search) q = q.or(`customer_name.ilike.%${search}%,phone.ilike.%${search}%`);
+    if (status) q = q.ilike("status", status.replace(/[%(),."\\]/g, ""));
+    if (search) {
+      const like = likeTerm(search);
+      q = q.or(`customer_name.ilike.${like},phone.ilike.${like}`);
+    }
 
     const { data, error } = await q;
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };

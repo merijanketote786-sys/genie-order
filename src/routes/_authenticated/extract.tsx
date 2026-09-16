@@ -168,9 +168,16 @@ function ExtractChat() {
         { id: loadingId, role: "assistant", text: "", loading: true },
       ]);
 
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
       const res = await fetch("/api/extract", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           prompt: currentPrompt,
           file: { name: file.name, type: file.type, dataUrl },

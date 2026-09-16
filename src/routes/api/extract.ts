@@ -22,6 +22,12 @@ export const Route = createFileRoute("/api/extract")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const { requireUserId } = await import("@/lib/api-auth.server");
+        const userId = await requireUserId(request);
+        if (!userId) {
+          return new Response("Unauthorized", { status: 401 });
+        }
+
         const body = (await request.json()) as ExtractBody;
         const file = body.file;
         if (!file?.dataUrl || !file?.type) {
