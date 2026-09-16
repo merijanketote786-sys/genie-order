@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
 
-export function GoogleButton({ disabled }: { disabled?: boolean }) {
+export function GoogleButton({ disabled, next }: { disabled?: boolean; next?: string }) {
   const [busy, setBusy] = useState(false);
 
   const signIn = async () => {
@@ -19,7 +19,7 @@ export function GoogleButton({ disabled }: { disabled?: boolean }) {
         };
       };
       const result = await mod.lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: next ? window.location.origin + next : window.location.origin,
       });
       if (result.error) throw new Error(String(result.error));
     } catch (err) {
