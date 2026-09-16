@@ -152,6 +152,7 @@ export const saveProductPricesBulk = createServerFn({ method: "POST" })
           custom_p250_price: item.p250,
           custom_p500_price: item.p500,
         })
+        .eq("workspace_id", ws)
         .eq("name", item.name);
       if (error) failed += 1;
       else saved += 1;
