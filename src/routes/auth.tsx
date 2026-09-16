@@ -10,6 +10,8 @@ import logo from "@/assets/logo.webp";
 import { GoogleButton } from "@/components/google-button";
 
 export const Route = createFileRoute("/auth")({
+  // Auth state sirf browser me hoti hai — SSR karne se hydration mismatch hota tha.
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Sign In — OrderBot | HB Chemicals Pakistan" },

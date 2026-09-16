@@ -11,6 +11,7 @@ import { useChat } from "@ai-sdk/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { ScrollToEnd } from "@/components/scroll-to-end";
+import { loadChatHistory, saveChatHistory } from "@/lib/chat-history";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { OrderTemplateDialog } from "@/components/order-template-dialog";
 import { DEFAULT_ORDER_TEMPLATE } from "@/lib/order-template";
@@ -75,15 +76,8 @@ function OrderChat() {
   useEffect(() => {
     if (hydratedRef.current) return;
     hydratedRef.current = true;
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as UIMessage[];
-        if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed);
-      }
-    } catch {
-      // ignore
-    }
+    const saved = loadChatHistory<UIMessage>(STORAGE_KEY);
+    if (saved) setMessages(saved);
   }, [setMessages]);
 
   useEffect(() => {
@@ -91,11 +85,7 @@ function OrderChat() {
     if (status === "streaming" || status === "submitted") return;
     // Never overwrite saved history with an empty array (clearing removes the key directly)
     if (messages.length === 0) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-    } catch {
-      // ignore quota errors
-    }
+    saveChatHistory(STORAGE_KEY, messages);
   }, [messages, status]);
 
   useEffect(() => {

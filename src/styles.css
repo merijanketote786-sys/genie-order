@@ -159,6 +159,13 @@
     border-color: var(--color-border);
   }
 
+  html,
+  body {
+    /* Mobile par rubber-band scroll aur address-bar resize loop rokta hai
+       (isi se poori screen blink karti thi). */
+    overscroll-behavior: none;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
