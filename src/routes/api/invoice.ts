@@ -167,7 +167,10 @@ export const Route = createFileRoute("/api/invoice")({
         }
 
         const workspaceId = await workspaceFromRequest(request);
-        const rateContext = workspaceId ? await buildRateContext(messages, workspaceId) : "";
+        if (!workspaceId) {
+          return new Response("Unauthorized", { status: 401 });
+        }
+        const rateContext = await buildRateContext(messages, workspaceId);
 
         const gateway = createLovableAiGatewayProvider(key);
         const result = streamText({
