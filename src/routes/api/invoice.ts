@@ -74,7 +74,28 @@ function tokenize(s: string): string[] {
     .filter((w) => w.length > 2 && !STOP_WORDS.has(w) && !/^\d+$/.test(w));
 }
 
-async function buildRateContext(messages: unknown[]): Promise<string> {
+/** Bearer token se user nikaal kar uske workspace ki rate list choose karta hai. */
+async function workspaceFromRequest(request: Request): Promise<string | null> {
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  if (!token) return null;
+  try {
+    const { createPublicSupabase } = await import("@/lib/product-sync.server");
+    const { data } = await createPublicSupabase().auth.getUser(token);
+    const userId = data.user?.id;
+    if (!userId) return null;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("workspace_id")
+      .eq("id", userId)
+      .maybeSingle();
+    return profile?.workspace_id ?? userId;
+  } catch {
+    return null;
+  }
+}
+
+async function buildRateContext(messages: unknown[], workspaceId: string): Promise<string> {
   try {
     const userText = messages
       .filter((m) => (m as { role?: string }).role === "user")
