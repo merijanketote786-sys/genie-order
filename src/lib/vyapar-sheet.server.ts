@@ -105,7 +105,7 @@ export function mapUnit(raw: unknown, name: string) {
 }
 
 export type ParseResult =
-  | { ok: true; rows: SheetRow[]; skipped: number; sheetName: string }
+  | { ok: true; rows: SheetRow[]; skipped: number; sheetName: string; notes: string[] }
   | { ok: false; error: string };
 
 export function parseVyaparSheet(bytes: Uint8Array): ParseResult {
@@ -207,6 +207,8 @@ function parseMatrix(matrix: unknown[][], sheetName: string): ParseResult {
 
   const rows: SheetRow[] = [];
   let skipped = 0;
+  let noPrice = 0;
+  const noPriceNames: string[] = [];
 
   for (let i = headerIdx + 1; i < matrix.length; i += 1) {
     const r = matrix[i] ?? [];
@@ -222,6 +224,8 @@ function parseMatrix(matrix: unknown[][], sheetName: string): ParseResult {
     const price = toNumber(r[priceCol]);
     if (price <= 0) {
       skipped += 1;
+      noPrice += 1;
+      if (noPriceNames.length < 10) noPriceNames.push(name);
       continue;
     }
     rows.push({
@@ -233,11 +237,25 @@ function parseMatrix(matrix: unknown[][], sheetName: string): ParseResult {
   }
 
   if (rows.length === 0) {
-    return { ok: false, error: "Sheet me koi product row nahi mili." };
+    return {
+      ok: false,
+      error: noPrice
+        ? `Har row ka rate 0 ya khali hai (${noPrice} rows) — kuch bhi update nahi kiya gaya.`
+        : "Sheet me koi product row nahi mili.",
+    };
   }
   if (rows.length > 5000) {
     return { ok: false, error: "5000 se zyada rows hain. File chhoti karein." };
   }
 
-  return { ok: true, rows, skipped, sheetName };
+  const notes: string[] = [];
+  if (noPrice) {
+    notes.push(
+      `${noPrice} rows ka rate 0 ya khali tha — chhoR di gayin (purane rate mehfooz hain): ${noPriceNames
+        .slice(0, 5)
+        .join(", ")}`,
+    );
+  }
+
+  return { ok: true, rows, skipped, sheetName, notes };
 }
