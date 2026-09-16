@@ -115,8 +115,8 @@ export async function syncProductRows(
       const { error } = await supabaseAdmin
         .from("products")
         .upsert(
-          chunk.map((r) => ({ ...r, is_active: true })),
-          { onConflict: "normalized_name" },
+          chunk.map((r) => ({ ...r, is_active: true, workspace_id: workspaceId })),
+          { onConflict: "workspace_id,normalized_name" },
         );
       if (error) {
         errors.push({ index: i, reason: error.message });
