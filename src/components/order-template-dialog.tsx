@@ -68,6 +68,7 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
     setSaving(true);
     try {
       const result = await saveTemplate({ data: { template: clean } });
+      queryClient.setQueryData(["order-template"], result);
       onTemplateChange(result.template);
       setOpen(false);
       toast.success("Order template save ho gayi");
