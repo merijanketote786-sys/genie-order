@@ -24,6 +24,17 @@ async function blocked(context: { supabase: unknown; userId: string }) {
   return !(await isActiveProfile(context.supabase as never, context.userId));
 }
 
+/** Har user apni rate list dekhta hai; kuch accounts aik shared workspace me hote hain. */
+async function workspaceOf(userId: string): Promise<string> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("profiles")
+    .select("workspace_id")
+    .eq("id", userId)
+    .maybeSingle();
+  return data?.workspace_id ?? userId;
+}
+
 export const getProducts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -35,6 +46,7 @@ export const getProducts = createServerFn({ method: "GET" })
       "name, unit, sale_price, p100_staff_price, p250_staff_price, p500_staff_price, stock, custom_sale_price, custom_p100_price, custom_p250_price, custom_p500_price",
     )
     .eq("is_active", true)
+    .eq("workspace_id", await workspaceOf(context.userId))
     .order("name", { ascending: true })
     .limit(5000);
 
@@ -97,6 +109,7 @@ export const saveProductPrices = createServerFn({ method: "POST" })
         custom_p250_price: data.p250,
         custom_p500_price: data.p500,
       })
+      .eq("workspace_id", await workspaceOf(context.userId))
       .eq("name", data.name);
 
     if (error) return { ok: false, message: error.message };
@@ -127,6 +140,7 @@ export const saveProductPricesBulk = createServerFn({ method: "POST" })
     if (await blocked(context)) return { ok: false, saved: 0, message: "Access blocked" };
     const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
 
+    const ws = await workspaceOf(context.userId);
     let saved = 0;
     let failed = 0;
     for (const item of data.items) {
@@ -138,6 +152,7 @@ export const saveProductPricesBulk = createServerFn({ method: "POST" })
           custom_p250_price: item.p250,
           custom_p500_price: item.p500,
         })
+        .eq("workspace_id", ws)
         .eq("name", item.name);
       if (error) failed += 1;
       else saved += 1;
@@ -189,7 +204,7 @@ export const syncProductsFromSheet = createServerFn({ method: "POST" })
     const parsed = parseVyaparSheet(bytes);
     if (!parsed.ok) return { ok: false as const, message: parsed.error };
 
-    return applyRows(parsed.rows, {
+    return applyRows(parsed.rows, await workspaceOf(context.userId), {
       fileName: data.fileName,
       sheetName: parsed.sheetName,
       emptyRows: parsed.skipped,
@@ -206,10 +221,11 @@ type RowsMeta = {
 
 async function applyRows(
   rows: Array<{ name: string; unit: string; sale_price: number; stock: number }>,
+  workspaceId: string,
   meta: RowsMeta = {},
 ) {
   const { syncProductRows } = await import("@/lib/product-sync.server");
-  const { result, errors } = await syncProductRows(rows);
+  const { result, errors } = await syncProductRows(rows, workspaceId);
 
   return {
     ok: true as const,
@@ -238,7 +254,7 @@ export const syncProductsFromText = createServerFn({ method: "POST" })
     const { parseDelimitedText } = await import("@/lib/vyapar-sheet.server");
     const parsed = parseDelimitedText(data.text);
     if (!parsed.ok) return { ok: false as const, message: parsed.error };
-    return applyRows(parsed.rows, {
+    return applyRows(parsed.rows, await workspaceOf(context.userId), {
       sheetName: parsed.sheetName,
       emptyRows: parsed.skipped,
       notes: parsed.notes,
@@ -363,7 +379,9 @@ export const applyProductRows = createServerFn({ method: "POST" })
     if (await blocked(context)) {
       return { ok: false as const, message: "Aapka access band hai. Admin se rabta karein." };
     }
-    return applyRows(data.rows, { sheetName: "Document import" });
+    return applyRows(data.rows, await workspaceOf(context.userId), {
+      sheetName: "Document import",
+    });
   });
 
 export const getSyncStatus = createServerFn({ method: "GET" })
@@ -373,11 +391,17 @@ export const getSyncStatus = createServerFn({ method: "GET" })
   const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
 
 
+  const ws = await workspaceOf(context.userId);
   const [{ count }, { data: logs }] = await Promise.all([
-    supabase.from("products").select("id", { count: "exact", head: true }).eq("is_active", true),
+    supabase
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true)
+      .eq("workspace_id", ws),
     supabase
       .from("sync_logs")
       .select("synced_at, total_rows, updated_count, inserted_count, skipped_count, error_count, status")
+      .eq("workspace_id", ws)
       .order("synced_at", { ascending: false })
       .limit(1),
   ]);

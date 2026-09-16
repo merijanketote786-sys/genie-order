@@ -210,6 +210,7 @@ export type Database = {
           stock: number
           unit: string
           updated_at: string
+          workspace_id: string
         }
         Insert: {
           created_at?: string
@@ -228,6 +229,7 @@ export type Database = {
           stock?: number
           unit: string
           updated_at?: string
+          workspace_id: string
         }
         Update: {
           created_at?: string
@@ -246,6 +248,7 @@ export type Database = {
           stock?: number
           unit?: string
           updated_at?: string
+          workspace_id?: string
         }
         Relationships: []
       }
@@ -257,6 +260,7 @@ export type Database = {
           is_active: boolean
           role: string
           updated_at: string
+          workspace_id: string
         }
         Insert: {
           created_at?: string
@@ -265,6 +269,7 @@ export type Database = {
           is_active?: boolean
           role?: string
           updated_at?: string
+          workspace_id: string
         }
         Update: {
           created_at?: string
@@ -273,6 +278,7 @@ export type Database = {
           is_active?: boolean
           role?: string
           updated_at?: string
+          workspace_id?: string
         }
         Relationships: []
       }
@@ -287,6 +293,7 @@ export type Database = {
           synced_at: string
           total_rows: number
           updated_count: number
+          workspace_id: string | null
         }
         Insert: {
           error_count?: number
@@ -298,6 +305,7 @@ export type Database = {
           synced_at?: string
           total_rows?: number
           updated_count?: number
+          workspace_id?: string | null
         }
         Update: {
           error_count?: number
@@ -309,6 +317,7 @@ export type Database = {
           synced_at?: string
           total_rows?: number
           updated_count?: number
+          workspace_id?: string | null
         }
         Relationships: []
       }
@@ -338,6 +347,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_workspace: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

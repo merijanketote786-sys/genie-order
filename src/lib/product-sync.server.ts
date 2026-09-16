@@ -37,7 +37,18 @@ function json(body: unknown, status: number) {
   });
 }
 
-export async function syncProductRows(products: unknown[]): Promise<{
+/** HB (owner) workspace — auto-sync/API key isi list ko update karta hai. */
+export async function getOwnerWorkspaceId(): Promise<string | null> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+  const owner = data?.users.find((u) => (u.email ?? "").toLowerCase() === "hhtraders008@gmail.com");
+  return owner?.id ?? null;
+}
+
+export async function syncProductRows(
+  products: unknown[],
+  workspaceId: string,
+): Promise<{
   result: SyncResult;
   status: "success" | "partial" | "failed";
   errors: Array<{ index: number; reason: string }>;
@@ -87,6 +98,7 @@ export async function syncProductRows(products: unknown[]): Promise<{
     const { data: existing, error: existingError } = await supabaseAdmin
       .from("products")
       .select("normalized_name")
+      .eq("workspace_id", workspaceId)
       .in(
         "normalized_name",
         rows.map((r) => r.normalized_name),
@@ -103,8 +115,8 @@ export async function syncProductRows(products: unknown[]): Promise<{
       const { error } = await supabaseAdmin
         .from("products")
         .upsert(
-          chunk.map((r) => ({ ...r, is_active: true })),
-          { onConflict: "normalized_name" },
+          chunk.map((r) => ({ ...r, is_active: true, workspace_id: workspaceId })),
+          { onConflict: "workspace_id,normalized_name" },
         );
       if (error) {
         errors.push({ index: i, reason: error.message });
@@ -130,6 +142,7 @@ export async function syncProductRows(products: unknown[]): Promise<{
       error_count: errorCount,
       status,
       error_details: errorCount ? errors.slice(0, 50) : null,
+      workspace_id: workspaceId,
     })
     .select("id")
     .single();
@@ -175,7 +188,12 @@ export async function handleProductSync(request: Request): Promise<Response> {
     return json({ error: "Invalid payload: expected { products: [...] }" }, 400);
   }
 
-  const { result, status } = await syncProductRows(parsed.data.products);
+  const workspaceId = await getOwnerWorkspaceId();
+  if (!workspaceId) {
+    return json({ error: "Owner workspace not found" }, 503);
+  }
+
+  const { result, status } = await syncProductRows(parsed.data.products, workspaceId);
 
   return json(result, status === "failed" ? 500 : 200);
 }

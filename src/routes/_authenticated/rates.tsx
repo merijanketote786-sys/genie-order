@@ -1,7 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { SyncStatusPanel } from "@/components/vyapar-sync";
-import priceList from "@/data/price-list.json";
 import { getProducts, saveProductPrices, saveProductPricesBulk } from "@/lib/products.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -59,7 +58,6 @@ type Item = {
   customP500?: number | null;
 };
 
-const FALLBACK_ITEMS = priceList as Item[];
 
 function cleanName(name: string) {
   return name.replace(/\s*\/(kg|piece|ltr|litre|gram|g)\s*$/i, "").trim();
@@ -92,7 +90,8 @@ function RatesPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const ITEMS = data?.products?.length ? (data.products as Item[]) : FALLBACK_ITEMS;
+  // Har account sirf apne workspace ka data dekhta hai — koi shared fallback list nahi.
+  const ITEMS = (data?.products ?? []) as Item[];
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -194,7 +193,14 @@ function RatesPage() {
 
       <div className="min-h-0 flex-1 overflow-y-auto pb-6">
         {admin === "1" ? <SyncStatusPanel /> : null}
-        {mode === "bulk" ? (
+        {ITEMS.length === 0 ? (
+          <div className="glass-panel mx-auto mt-6 w-full max-w-xl rounded-2xl p-6 text-center">
+            <h2 className="font-display text-lg font-bold">Abhi koi product nahi</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Sync page se apni rate list add karein — Excel upload, paste ya document import.
+            </p>
+          </div>
+        ) : mode === "bulk" ? (
           <BulkEditor items={query ? results : ITEMS} searching={Boolean(query)} />
         ) : !query ? (
           <EmptyState total={ITEMS.length} onPick={setQuery} />
