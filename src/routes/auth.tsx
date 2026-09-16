@@ -18,7 +18,10 @@ function safeNext(value: unknown): string | undefined {
 export const Route = createFileRoute("/auth")({
   // Auth state sirf browser me hoti hai — SSR karne se hydration mismatch hota tha.
   ssr: false,
-  validateSearch: (s: Record<string, unknown>) => ({ next: safeNext(s["next"]) }),
+  validateSearch: (s: Record<string, unknown>): { next?: string } => {
+    const next = safeNext(s["next"]);
+    return next ? { next } : {};
+  },
   head: () => ({
     meta: [
       { title: "Sign In — OrderBot | HB Chemicals Pakistan" },
