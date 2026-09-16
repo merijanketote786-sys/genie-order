@@ -1,6 +1,7 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { notAuthenticated, supabaseForUser } from "../supabase";
+import { likeTerm } from "../filter";
 
 export default defineTool({
   name: "search_customers",
@@ -19,7 +20,10 @@ export default defineTool({
       .order("created_at", { ascending: false })
       .limit(limit ?? 20);
 
-    if (query) q = q.or(`name.ilike.%${query}%,phone.ilike.%${query}%,city.ilike.%${query}%`);
+    if (query) {
+      const like = likeTerm(query);
+      q = q.or(`name.ilike.${like},phone.ilike.${like},city.ilike.${like}`);
+    }
 
     const { data, error } = await q;
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
