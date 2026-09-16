@@ -383,7 +383,10 @@ export const listInvoices = createServerFn({ method: "GET" })
     }
 
     const { data: rows, error } = await query;
-    if (error) throw new Error("Invoices load nahi ho sakin");
+    if (error) {
+      console.error("listInvoices failed", error);
+      throw new Error(`Invoices load nahi ho sakin: ${error.message ?? "unknown"}`);
+    }
 
     const names = await profileNames(supabase, (rows ?? []).map((r: any) => r.created_by));
 
