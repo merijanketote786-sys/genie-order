@@ -140,6 +140,7 @@ export const saveProductPricesBulk = createServerFn({ method: "POST" })
     if (await blocked(context)) return { ok: false, saved: 0, message: "Access blocked" };
     const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
 
+    const ws = await workspaceOf(context.userId);
     let saved = 0;
     let failed = 0;
     for (const item of data.items) {
