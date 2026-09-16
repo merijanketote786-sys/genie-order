@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { ClipboardPaste, FileText, Paperclip, Send, X } from "lucide-react";
 import { ScrollToEnd } from "@/components/scroll-to-end";
+import { loadChatHistory, saveChatHistory } from "@/lib/chat-history";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -86,33 +87,22 @@ function ExtractChat() {
   useEffect(() => {
     if (hydratedRef.current) return;
     hydratedRef.current = true;
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as ChatMessage[];
-        if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed);
-      }
-    } catch {
-      // ignore
-    }
+    const saved = loadChatHistory<ChatMessage>(STORAGE_KEY);
+    if (saved) setMessages(saved);
   }, []);
 
   useEffect(() => {
     if (!hydratedRef.current || busy) return;
     if (messages.length === 0) return;
-    try {
-      // Drop blob: previews (invalid after reload) and oversized data URLs
-      const light = messages.map((m) =>
-        m.role === "user" &&
-        m.previewUrl &&
-        (m.previewUrl.startsWith("blob:") || m.previewUrl.length > 200_000)
-          ? { ...m, previewUrl: undefined }
-          : m
-      );
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(light));
-    } catch {
-      // ignore
-    }
+    // Drop blob: previews (invalid after reload) and oversized data URLs
+    const light = messages.map((m) =>
+      m.role === "user" &&
+      m.previewUrl &&
+      (m.previewUrl.startsWith("blob:") || m.previewUrl.length > 200_000)
+        ? { ...m, previewUrl: undefined }
+        : m
+    );
+    saveChatHistory(STORAGE_KEY, light);
   }, [messages, busy]);
 
   // Revoke any live object URL when unmounting
