@@ -1,6 +1,13 @@
 import { AppShell } from "@/components/app-shell";
 import { WorkspaceHeader } from "@/components/workspace-header";
-import { AutoSyncCard, SyncStatusPanel, VyaparUploadCard } from "@/components/vyapar-sync";
+import {
+  AutoSyncCard,
+  ConnectApiCard,
+  DocumentImportCard,
+  PasteRatesCard,
+  SyncStatusPanel,
+  VyaparUploadCard,
+} from "@/components/vyapar-sync";
 import { createFileRoute } from "@tanstack/react-router";
 import { RefreshCw } from "lucide-react";
 
@@ -44,6 +51,9 @@ function SyncPage() {
       <div className="min-h-0 flex-1 overflow-y-auto pb-6 pt-3">
         <AutoSyncCard />
         <VyaparUploadCard />
+        <PasteRatesCard />
+        <DocumentImportCard />
+        <ConnectApiCard />
         <SyncStatusPanel />
 
         <section className="glass-panel rounded-2xl px-4 py-4 text-sm">
