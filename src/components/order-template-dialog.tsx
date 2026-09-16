@@ -35,22 +35,26 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
   const [saving, setSaving] = useState(false);
   const isCustom = template !== DEFAULT_ORDER_TEMPLATE;
 
+  // Cached across pages/navigations — ek hi request, baar baar nahi
+  const templateQuery = useQuery({
+    queryKey: ["order-template"],
+    queryFn: () => loadTemplate(),
+    staleTime: 10 * 60 * 1000,
+    retry: 0,
+  });
+
   useEffect(() => {
-    let active = true;
-    loadTemplate()
-      .then((result) => {
-        if (!active) return;
-        onTemplateChange(result.template);
-        setDraft(result.template);
-      })
-      .catch(() => toast.error("Order template load nahi ho saki"))
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [loadTemplate, onTemplateChange]);
+    if (!templateQuery.data) return;
+    onTemplateChange(templateQuery.data.template);
+    setDraft(templateQuery.data.template);
+    setLoading(false);
+  }, [templateQuery.data, onTemplateChange]);
+
+  useEffect(() => {
+    if (!templateQuery.isError) return;
+    setLoading(false);
+    toast.error("Order template load nahi ho saki");
+  }, [templateQuery.isError]);
 
   useEffect(() => setDraft(template), [template]);
 
