@@ -121,6 +121,49 @@ export function parseVyaparSheet(bytes: Uint8Array): ParseResult {
     return { ok: false, error: "File parh nahi saka. Vyapar se Excel (.xlsx) ya CSV export karein." };
   }
 
+  return parseMatrix(matrix, sheetName);
+}
+
+/** Splits a pasted table (tab / comma / pipe / semicolon separated) into a matrix. */
+export function parseDelimitedText(text: string): ParseResult {
+  const lines = text
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .filter((l) => l.trim().length > 0);
+
+  if (lines.length < 2) {
+    return {
+      ok: false,
+      error: "Paste kiya hua data bohat kam hai. Pehli line column names ki honi chahiye (Item Name, Sale Price).",
+    };
+  }
+
+  const candidates: Array<{ sep: RegExp; score: number }> = [
+    { sep: /\t/, score: 0 },
+    { sep: /\|/, score: 0 },
+    { sep: /;/, score: 0 },
+    { sep: /,/, score: 0 },
+  ];
+  for (const c of candidates) {
+    c.score = lines
+      .slice(0, 10)
+      .reduce((s, l) => s + (l.split(c.sep).length - 1), 0);
+  }
+  const best = candidates.sort((a, b) => b.score - a.score)[0];
+  if (!best || best.score === 0) {
+    return {
+      ok: false,
+      error: "Columns alag nahi ho sake. Excel se rows copy karein ya comma se alag karein.",
+    };
+  }
+
+  const matrix = lines.map((l) =>
+    l.split(best.sep).map((cell) => cell.trim().replace(/^"(.*)"$/, "$1")),
+  );
+  return parseMatrix(matrix, "Pasted data");
+}
+
+function parseMatrix(matrix: unknown[][], sheetName: string): ParseResult {
   let headerIdx = -1;
   let headers: string[] = [];
   let nameCol = -1;
