@@ -345,6 +345,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_active_team_member: { Args: { _user_id: string }; Returns: boolean }
       next_invoice_number: { Args: never; Returns: string }
     }
     Enums: {
