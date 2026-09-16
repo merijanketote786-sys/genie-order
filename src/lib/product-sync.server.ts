@@ -98,6 +98,7 @@ export async function syncProductRows(
     const { data: existing, error: existingError } = await supabaseAdmin
       .from("products")
       .select("normalized_name")
+      .eq("workspace_id", workspaceId)
       .in(
         "normalized_name",
         rows.map((r) => r.normalized_name),
