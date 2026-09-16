@@ -177,22 +177,193 @@ export const syncProductsFromSheet = createServerFn({ method: "POST" })
       return { ok: false as const, message: "File 10MB se bari hai." };
     }
 
+    const ext = (data.fileName.split(".").pop() ?? "").toLowerCase();
+    if (!["xlsx", "xls", "csv", "txt"].includes(ext)) {
+      return {
+        ok: false as const,
+        message: `".${ext}" file support nahi hoti. Sirf Excel (.xlsx/.xls) ya CSV upload karein — PDF/tasveer ke liye neeche wala card use karein.`,
+      };
+    }
+
     const { parseVyaparSheet } = await import("@/lib/vyapar-sheet.server");
     const parsed = parseVyaparSheet(bytes);
     if (!parsed.ok) return { ok: false as const, message: parsed.error };
 
-    const { syncProductRows } = await import("@/lib/product-sync.server");
-    const { result, errors } = await syncProductRows(parsed.rows);
-
-    return {
-      ok: true as const,
-      message: "Rates update ho gaye",
+    return applyRows(parsed.rows, {
       fileName: data.fileName,
       sheetName: parsed.sheetName,
       emptyRows: parsed.skipped,
-      ...result,
-      errors: errors.slice(0, 10).map((e) => `Row ${e.index + 2}: ${e.reason}`),
+      notes: parsed.notes,
+    });
+  });
+
+type RowsMeta = {
+  fileName?: string;
+  sheetName?: string;
+  emptyRows?: number;
+  notes?: string[];
+};
+
+async function applyRows(
+  rows: Array<{ name: string; unit: string; sale_price: number; stock: number }>,
+  meta: RowsMeta = {},
+) {
+  const { syncProductRows } = await import("@/lib/product-sync.server");
+  const { result, errors } = await syncProductRows(rows);
+
+  return {
+    ok: true as const,
+    message: "Rates update ho gaye",
+    fileName: meta.fileName,
+    sheetName: meta.sheetName,
+    emptyRows: meta.emptyRows ?? 0,
+    ...result,
+    errors: [
+      ...(meta.notes ?? []),
+      ...errors.slice(0, 10).map((e) => `Row ${e.index + 2}: ${e.reason}`),
+    ],
+  };
+}
+
+/** Kisi bhi software se copy ki hui table paste kar ke rates update karna. */
+export const syncProductsFromText = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ text: z.string().min(10).max(2_000_000) }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    if (await blocked(context)) {
+      return { ok: false as const, message: "Aapka access band hai. Admin se rabta karein." };
+    }
+    const { parseDelimitedText } = await import("@/lib/vyapar-sheet.server");
+    const parsed = parseDelimitedText(data.text);
+    if (!parsed.ok) return { ok: false as const, message: parsed.error };
+    return applyRows(parsed.rows, {
+      sheetName: parsed.sheetName,
+      emptyRows: parsed.skipped,
+      notes: parsed.notes,
+    });
+  });
+
+const DOC_PROMPT = `Aap aik rate-list extractor hain. Di gayi file (PDF ya tasveer) me se products ki rate list nikaalein.
+
+Sirf TSV (tab separated) output dein, koi baat nahi, koi code fence nahi.
+Pehli line bilkul ye ho:
+Item Name\tSale Price\tUnit\tStock
+
+Phir har product ki aik line. Rules:
+- Sirf wahi rows jo file me likhi hain — kuch guess mat karein.
+- Sale Price sirf number (currency symbol, comma ke bagair).
+- Unit me kg, grammes, litre, pcs, piece, bottles, bundles me se jo laagu ho; na pata ho to khali chhorein.
+- Stock na ho to 0.
+- Agar file me rate list ka table nahi hai to sirf ye likhein: NO_TABLE`;
+
+/** PDF ya tasveer se rate list padh kar preview banata hai (save nahi karta). */
+export const previewProductsFromDocument = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        fileName: z.string().min(1).max(260),
+        fileType: z.string().min(1).max(120),
+        dataUrl: z.string().min(1).max(14_000_000),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    if (await blocked(context)) {
+      return { ok: false as const, message: "Aapka access band hai. Admin se rabta karein." };
+    }
+    const isImage = data.fileType.startsWith("image/");
+    const isPdf = data.fileType === "application/pdf";
+    if (!isImage && !isPdf) {
+      return {
+        ok: false as const,
+        message: "Sirf PDF ya tasveer (JPG/PNG) support hoti hai.",
+      };
+    }
+
+    const key = process.env["LOVABLE_API_KEY"];
+    if (!key) return { ok: false as const, message: "AI service configure nahi hai." };
+
+    const content: unknown[] = [{ type: "text", text: "Is file ki rate list TSV me dein." }];
+    if (isImage) content.push({ type: "image_url", image_url: { url: data.dataUrl } });
+    else
+      content.push({
+        type: "file",
+        file: { filename: data.fileName, file_data: data.dataUrl },
+      });
+
+    let text = "";
+    try {
+      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: DOC_PROMPT },
+            { role: "user", content },
+          ],
+        }),
+      });
+      if (res.status === 429) {
+        return { ok: false as const, message: "Abhi requests zyada hain — thori dair baad koshish karein." };
+      }
+      if (res.status === 402) {
+        return { ok: false as const, message: "AI credits khatam ho gaye hain. Credits add karein." };
+      }
+      if (!res.ok) {
+        return { ok: false as const, message: "File parhne me masla hua. Dobara koshish karein." };
+      }
+      const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+      text = json.choices?.[0]?.message?.content ?? "";
+    } catch {
+      return { ok: false as const, message: "File parhne me masla hua. Dobara koshish karein." };
+    }
+
+    const cleaned = text.replace(/```[a-z]*/gi, "").trim();
+    if (!cleaned || /NO_TABLE/i.test(cleaned)) {
+      return { ok: false as const, message: "File me rate list ka table nahi mila." };
+    }
+
+    const { parseDelimitedText } = await import("@/lib/vyapar-sheet.server");
+    const parsed = parseDelimitedText(cleaned);
+    if (!parsed.ok) return { ok: false as const, message: parsed.error };
+
+    return {
+      ok: true as const,
+      rows: parsed.rows.slice(0, 5000),
+      skipped: parsed.skipped,
+      notes: parsed.notes,
     };
+  });
+
+/** Preview confirm hone ke baad rows save karta hai. */
+export const applyProductRows = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        rows: z
+          .array(
+            z.object({
+              name: z.string().min(1).max(300),
+              unit: z.string().min(1).max(40),
+              sale_price: z.number().finite().positive(),
+              stock: z.number().finite().min(0).default(0),
+            }),
+          )
+          .min(1)
+          .max(5000),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    if (await blocked(context)) {
+      return { ok: false as const, message: "Aapka access band hai. Admin se rabta karein." };
+    }
+    return applyRows(data.rows, { sheetName: "Document import" });
   });
 
 export const getSyncStatus = createServerFn({ method: "GET" })
