@@ -391,11 +391,17 @@ export const getSyncStatus = createServerFn({ method: "GET" })
   const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
 
 
+  const ws = await workspaceOf(context.userId);
   const [{ count }, { data: logs }] = await Promise.all([
-    supabase.from("products").select("id", { count: "exact", head: true }).eq("is_active", true),
+    supabase
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true)
+      .eq("workspace_id", ws),
     supabase
       .from("sync_logs")
       .select("synced_at, total_rows, updated_count, inserted_count, skipped_count, error_count, status")
+      .eq("workspace_id", ws)
       .order("synced_at", { ascending: false })
       .limit(1),
   ]);
