@@ -14,6 +14,7 @@ import { ScrollToEnd } from "@/components/scroll-to-end";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { OrderTemplateDialog } from "@/components/order-template-dialog";
 import { DEFAULT_ORDER_TEMPLATE } from "@/lib/order-template";
+import { saveOrder } from "@/lib/records.functions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ClipboardList, Languages, MessageSquareText, Sparkles } from "lucide-react";
@@ -69,6 +70,7 @@ function OrderChat() {
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const hydratedRef = useRef(false);
+  const savedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (hydratedRef.current) return;
@@ -101,6 +103,19 @@ function OrderChat() {
       textareaRef.current?.focus({ preventScroll: true });
     }
   }, [status, messages.length]);
+
+  // Har mukammal order khud record ho jata hai (History page)
+  useEffect(() => {
+    if (status !== "ready") return;
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "assistant") return;
+    const text = messageText(last);
+    if (text.length < 10 || savedRef.current.has(text)) return;
+    savedRef.current.add(text);
+    saveOrder({ data: { orderText: text } }).catch(() => {
+      savedRef.current.delete(text);
+    });
+  }, [status, messages]);
 
   const isBusy = status === "submitted" || status === "streaming";
 

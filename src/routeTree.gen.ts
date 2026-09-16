@@ -18,8 +18,11 @@ import { Route as ApiExtractRouteImport } from './routes/api/extract'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedSyncRouteImport } from './routes/_authenticated/sync'
 import { Route as AuthenticatedRatesRouteImport } from './routes/_authenticated/rates'
+import { Route as AuthenticatedInvoicesRouteImport } from './routes/_authenticated/invoices'
 import { Route as AuthenticatedInvoiceRouteImport } from './routes/_authenticated/invoice'
+import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedExtractRouteImport } from './routes/_authenticated/extract'
+import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as ApiSyncProductsRouteImport } from './routes/api/sync/products'
 import { Route as ApiPublicSyncProductsRouteImport } from './routes/api/public/sync/products'
@@ -68,14 +71,29 @@ const AuthenticatedRatesRoute = AuthenticatedRatesRouteImport.update({
   path: '/rates',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedInvoicesRoute = AuthenticatedInvoicesRouteImport.update({
+  id: '/invoices',
+  path: '/invoices',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedInvoiceRoute = AuthenticatedInvoiceRouteImport.update({
   id: '/invoice',
   path: '/invoice',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedExtractRoute = AuthenticatedExtractRouteImport.update({
   id: '/extract',
   path: '/extract',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCustomersRoute = AuthenticatedCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -99,8 +117,11 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/customers': typeof AuthenticatedCustomersRoute
   '/extract': typeof AuthenticatedExtractRoute
+  '/history': typeof AuthenticatedHistoryRoute
   '/invoice': typeof AuthenticatedInvoiceRoute
+  '/invoices': typeof AuthenticatedInvoicesRoute
   '/rates': typeof AuthenticatedRatesRoute
   '/sync': typeof AuthenticatedSyncRoute
   '/api/chat': typeof ApiChatRoute
@@ -113,8 +134,11 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/customers': typeof AuthenticatedCustomersRoute
   '/extract': typeof AuthenticatedExtractRoute
+  '/history': typeof AuthenticatedHistoryRoute
   '/invoice': typeof AuthenticatedInvoiceRoute
+  '/invoices': typeof AuthenticatedInvoicesRoute
   '/rates': typeof AuthenticatedRatesRoute
   '/sync': typeof AuthenticatedSyncRoute
   '/api/chat': typeof ApiChatRoute
@@ -130,8 +154,11 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/extract': typeof AuthenticatedExtractRoute
+  '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/invoice': typeof AuthenticatedInvoiceRoute
+  '/_authenticated/invoices': typeof AuthenticatedInvoicesRoute
   '/_authenticated/rates': typeof AuthenticatedRatesRoute
   '/_authenticated/sync': typeof AuthenticatedSyncRoute
   '/api/chat': typeof ApiChatRoute
@@ -148,8 +175,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/admin'
+    | '/customers'
     | '/extract'
+    | '/history'
     | '/invoice'
+    | '/invoices'
     | '/rates'
     | '/sync'
     | '/api/chat'
@@ -162,8 +192,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/admin'
+    | '/customers'
     | '/extract'
+    | '/history'
     | '/invoice'
+    | '/invoices'
     | '/rates'
     | '/sync'
     | '/api/chat'
@@ -178,8 +211,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/_authenticated/admin'
+    | '/_authenticated/customers'
     | '/_authenticated/extract'
+    | '/_authenticated/history'
     | '/_authenticated/invoice'
+    | '/_authenticated/invoices'
     | '/_authenticated/rates'
     | '/_authenticated/sync'
     | '/api/chat'
@@ -266,6 +302,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRatesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/invoices': {
+      id: '/_authenticated/invoices'
+      path: '/invoices'
+      fullPath: '/invoices'
+      preLoaderRoute: typeof AuthenticatedInvoicesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/invoice': {
       id: '/_authenticated/invoice'
       path: '/invoice'
@@ -273,11 +316,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInvoiceRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/history': {
+      id: '/_authenticated/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof AuthenticatedHistoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/extract': {
       id: '/_authenticated/extract'
       path: '/extract'
       fullPath: '/extract'
       preLoaderRoute: typeof AuthenticatedExtractRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/customers': {
+      id: '/_authenticated/customers'
+      path: '/customers'
+      fullPath: '/customers'
+      preLoaderRoute: typeof AuthenticatedCustomersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin': {
@@ -306,8 +363,11 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedExtractRoute: typeof AuthenticatedExtractRoute
+  AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
   AuthenticatedInvoiceRoute: typeof AuthenticatedInvoiceRoute
+  AuthenticatedInvoicesRoute: typeof AuthenticatedInvoicesRoute
   AuthenticatedRatesRoute: typeof AuthenticatedRatesRoute
   AuthenticatedSyncRoute: typeof AuthenticatedSyncRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -315,8 +375,11 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedExtractRoute: AuthenticatedExtractRoute,
+  AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
   AuthenticatedInvoiceRoute: AuthenticatedInvoiceRoute,
+  AuthenticatedInvoicesRoute: AuthenticatedInvoicesRoute,
   AuthenticatedRatesRoute: AuthenticatedRatesRoute,
   AuthenticatedSyncRoute: AuthenticatedSyncRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

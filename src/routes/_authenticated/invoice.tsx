@@ -7,6 +7,7 @@ import {
 import { ChatComposer, ChatMessage, ChatMessageContent, PlainMessageText } from "@/components/lightweight-chat";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { ResultCard } from "@/components/result-card";
+import { saveInvoice } from "@/lib/records.functions";
 import { useChat } from "@ai-sdk/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
@@ -151,7 +152,22 @@ function InvoiceChat() {
               <ChatMessage key={msg.id} from={msg.role}>
                 {msg.role === "assistant" ? (
                   text ? (
-                    <ResultCard text={text} label="Invoice" phone={phone} exportable />
+                    <ResultCard
+                      text={text}
+                      label="Invoice"
+                      phone={phone}
+                      exportable
+                      onSave={async (value) => {
+                        const res = await saveInvoice({
+                          data: { invoiceText: value, phone: phone || undefined },
+                        });
+                        toast.success(
+                          res.duplicate
+                            ? `Pehle se saved: ${res.invoiceNumber}`
+                            : `Save ho gayi: ${res.invoiceNumber}`,
+                        );
+                      }}
+                    />
                   ) : (
                     <ChatMessageContent>
                       <Shimmer>Invoice ban rahi hai...</Shimmer>
