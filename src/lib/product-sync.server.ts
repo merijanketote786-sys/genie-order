@@ -188,7 +188,12 @@ export async function handleProductSync(request: Request): Promise<Response> {
     return json({ error: "Invalid payload: expected { products: [...] }" }, 400);
   }
 
-  const { result, status } = await syncProductRows(parsed.data.products);
+  const workspaceId = await getOwnerWorkspaceId();
+  if (!workspaceId) {
+    return json({ error: "Owner workspace not found" }, 503);
+  }
+
+  const { result, status } = await syncProductRows(parsed.data.products, workspaceId);
 
   return json(result, status === "failed" ? 500 : 200);
 }
