@@ -92,7 +92,8 @@ function RatesPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const ITEMS = data?.products?.length ? (data.products as Item[]) : FALLBACK_ITEMS;
+  // Har account sirf apne workspace ka data dekhta hai — koi shared fallback list nahi.
+  const ITEMS = (data?.products ?? []) as Item[];
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
