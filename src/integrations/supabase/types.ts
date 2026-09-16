@@ -356,9 +356,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      current_workspace:
-        | { Args: never; Returns: string }
-        | { Args: { _user_id: string }; Returns: string }
+      current_workspace: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
