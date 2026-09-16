@@ -4,7 +4,18 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
-import { ClipboardList, FileScan, ReceiptText, RefreshCw, RotateCcw, Shield, Tag } from "lucide-react";
+import {
+  ClipboardList,
+  FileCheck2,
+  FileScan,
+  History,
+  ReceiptText,
+  RefreshCw,
+  RotateCcw,
+  Shield,
+  Tag,
+  Users,
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getMyAccess } from "@/lib/admin.functions";
 import type { ReactNode } from "react";
@@ -14,6 +25,9 @@ const TABS = [
   { to: "/invoice", label: "Invoice", description: "Create item invoices", icon: ReceiptText },
   { to: "/extract", label: "Extract", description: "Read images and PDFs", icon: FileScan },
   { to: "/rates", label: "Rates", description: "Search staff prices", icon: Tag },
+  { to: "/history", label: "History", description: "Saved orders record", icon: History },
+  { to: "/invoices", label: "Invoices", description: "Invoice record aur status", icon: FileCheck2 },
+  { to: "/customers", label: "Customers", description: "Customer record", icon: Users },
   { to: "/sync", label: "Sync", description: "Vyapar rates update", icon: RefreshCw },
 ] as const;
 
@@ -27,7 +41,16 @@ const ADMIN_TAB = {
 type AppShellProps = {
   title: string;
   subtitle: string;
-  active: "/" | "/invoice" | "/extract" | "/rates" | "/sync" | "/admin";
+  active:
+    | "/"
+    | "/invoice"
+    | "/extract"
+    | "/rates"
+    | "/history"
+    | "/invoices"
+    | "/customers"
+    | "/sync"
+    | "/admin";
   onClear?: () => void;
   showClear?: boolean;
   children: ReactNode;

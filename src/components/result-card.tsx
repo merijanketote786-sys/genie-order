@@ -18,7 +18,7 @@ import {
   exportInvoicePdf,
   shareInvoiceFile,
 } from "@/lib/invoice-export";
-import { Check, Copy, FileSpreadsheet, FileText, MessageCircle, Send } from "lucide-react";
+import { Check, Copy, FileSpreadsheet, FileText, MessageCircle, Save, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -46,14 +46,31 @@ export function ResultCard({
   label,
   phone,
   exportable = false,
+  onSave,
 }: {
   text: string;
   label: string;
   phone?: string | null;
   exportable?: boolean;
+  onSave?: (text: string) => Promise<void>;
 }) {
   const [copied, setCopied] = useState(false);
   const [exportFormat, setExportFormat] = useState<"pdf" | "xlsx" | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const save = async () => {
+    if (!onSave || saving) return;
+    setSaving(true);
+    try {
+      await onSave(text);
+      setSaved(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Save nahi ho saka");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const copy = async () => {
     try {
@@ -99,6 +116,18 @@ export function ResultCard({
           {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           {copied ? "Copied" : "Copy"}
         </Button>
+        {onSave ? (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={save}
+            disabled={saving || saved}
+            className="h-11 flex-1 gap-1.5 rounded-xl border-border bg-card sm:h-9 sm:flex-none"
+          >
+            {saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+            {saved ? "Saved" : saving ? "Saving…" : "Save"}
+          </Button>
+        ) : null}
         {exportable ? (
           <>
             <Button
