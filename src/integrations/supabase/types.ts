@@ -24,6 +24,7 @@ export type Database = {
           name: string | null
           phone: string
           updated_at: string
+          workspace_id: string
         }
         Insert: {
           address?: string | null
@@ -34,6 +35,7 @@ export type Database = {
           name?: string | null
           phone: string
           updated_at?: string
+          workspace_id?: string
         }
         Update: {
           address?: string | null
@@ -44,6 +46,7 @@ export type Database = {
           name?: string | null
           phone?: string
           updated_at?: string
+          workspace_id?: string
         }
         Relationships: []
       }
@@ -61,6 +64,7 @@ export type Database = {
           phone: string | null
           total: number | null
           updated_at: string
+          workspace_id: string
         }
         Insert: {
           created_at?: string
@@ -75,6 +79,7 @@ export type Database = {
           phone?: string | null
           total?: number | null
           updated_at?: string
+          workspace_id?: string
         }
         Update: {
           created_at?: string
@@ -89,6 +94,7 @@ export type Database = {
           phone?: string | null
           total?: number | null
           updated_at?: string
+          workspace_id?: string
         }
         Relationships: [
           {
@@ -143,6 +149,7 @@ export type Database = {
           qty: string | null
           status: string | null
           updated_at: string
+          workspace_id: string
         }
         Insert: {
           address?: string | null
@@ -162,6 +169,7 @@ export type Database = {
           qty?: string | null
           status?: string | null
           updated_at?: string
+          workspace_id?: string
         }
         Update: {
           address?: string | null
@@ -181,6 +189,7 @@ export type Database = {
           qty?: string | null
           status?: string | null
           updated_at?: string
+          workspace_id?: string
         }
         Relationships: [
           {
@@ -347,7 +356,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      current_workspace: { Args: { _user_id: string }; Returns: string }
+      current_workspace: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
