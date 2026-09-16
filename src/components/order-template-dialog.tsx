@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FilePenLine, RotateCcw, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ type OrderTemplateDialogProps = {
 };
 
 export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplateDialogProps) {
+  const queryClient = useQueryClient();
   const loadTemplate = useServerFn(getOrderTemplate);
   const saveTemplate = useServerFn(saveOrderTemplate);
   const resetTemplate = useServerFn(resetOrderTemplate);
@@ -35,22 +37,26 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
   const [saving, setSaving] = useState(false);
   const isCustom = template !== DEFAULT_ORDER_TEMPLATE;
 
+  // Cached across pages/navigations — ek hi request, baar baar nahi
+  const templateQuery = useQuery({
+    queryKey: ["order-template"],
+    queryFn: () => loadTemplate(),
+    staleTime: 10 * 60 * 1000,
+    retry: 0,
+  });
+
   useEffect(() => {
-    let active = true;
-    loadTemplate()
-      .then((result) => {
-        if (!active) return;
-        onTemplateChange(result.template);
-        setDraft(result.template);
-      })
-      .catch(() => toast.error("Order template load nahi ho saki"))
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [loadTemplate, onTemplateChange]);
+    if (!templateQuery.data) return;
+    onTemplateChange(templateQuery.data.template);
+    setDraft(templateQuery.data.template);
+    setLoading(false);
+  }, [templateQuery.data, onTemplateChange]);
+
+  useEffect(() => {
+    if (!templateQuery.isError) return;
+    setLoading(false);
+    toast.error("Order template load nahi ho saki");
+  }, [templateQuery.isError]);
 
   useEffect(() => setDraft(template), [template]);
 
@@ -63,6 +69,7 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
     setSaving(true);
     try {
       const result = await saveTemplate({ data: { template: clean } });
+      queryClient.setQueryData(["order-template"], result);
       onTemplateChange(result.template);
       setOpen(false);
       toast.success("Order template save ho gayi");
@@ -77,6 +84,7 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
     setSaving(true);
     try {
       const result = await resetTemplate();
+      queryClient.setQueryData(["order-template"], result);
       onTemplateChange(result.template);
       setDraft(result.template);
       setOpen(false);

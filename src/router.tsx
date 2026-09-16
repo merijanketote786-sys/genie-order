@@ -21,7 +21,8 @@ export const getRouter = () => {
     // Prefetch the route chunk as soon as the user hovers/taps a nav item.
     defaultPreload: "intent",
     defaultPreloadDelay: 30,
-    defaultPreloadStaleTime: 0,
+    // Preloaded route data 30s tak dobara fetch nahi hoti
+    defaultPreloadStaleTime: 30 * 1000,
   });
 
   return router;
