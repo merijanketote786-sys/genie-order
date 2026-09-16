@@ -105,7 +105,7 @@ export function mapUnit(raw: unknown, name: string) {
 }
 
 export type ParseResult =
-  | { ok: true; rows: SheetRow[]; skipped: number; sheetName: string }
+  | { ok: true; rows: SheetRow[]; skipped: number; sheetName: string; notes: string[] }
   | { ok: false; error: string };
 
 export function parseVyaparSheet(bytes: Uint8Array): ParseResult {
@@ -121,6 +121,49 @@ export function parseVyaparSheet(bytes: Uint8Array): ParseResult {
     return { ok: false, error: "File parh nahi saka. Vyapar se Excel (.xlsx) ya CSV export karein." };
   }
 
+  return parseMatrix(matrix, sheetName);
+}
+
+/** Splits a pasted table (tab / comma / pipe / semicolon separated) into a matrix. */
+export function parseDelimitedText(text: string): ParseResult {
+  const lines = text
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .filter((l) => l.trim().length > 0);
+
+  if (lines.length < 2) {
+    return {
+      ok: false,
+      error: "Paste kiya hua data bohat kam hai. Pehli line column names ki honi chahiye (Item Name, Sale Price).",
+    };
+  }
+
+  const candidates: Array<{ sep: RegExp; score: number }> = [
+    { sep: /\t/, score: 0 },
+    { sep: /\|/, score: 0 },
+    { sep: /;/, score: 0 },
+    { sep: /,/, score: 0 },
+  ];
+  for (const c of candidates) {
+    c.score = lines
+      .slice(0, 10)
+      .reduce((s, l) => s + (l.split(c.sep).length - 1), 0);
+  }
+  const best = candidates.sort((a, b) => b.score - a.score)[0];
+  if (!best || best.score === 0) {
+    return {
+      ok: false,
+      error: "Columns alag nahi ho sake. Excel se rows copy karein ya comma se alag karein.",
+    };
+  }
+
+  const matrix = lines.map((l) =>
+    l.split(best.sep).map((cell) => cell.trim().replace(/^"(.*)"$/, "$1")),
+  );
+  return parseMatrix(matrix, "Pasted data");
+}
+
+function parseMatrix(matrix: unknown[][], sheetName: string): ParseResult {
   let headerIdx = -1;
   let headers: string[] = [];
   let nameCol = -1;
@@ -164,6 +207,8 @@ export function parseVyaparSheet(bytes: Uint8Array): ParseResult {
 
   const rows: SheetRow[] = [];
   let skipped = 0;
+  let noPrice = 0;
+  const noPriceNames: string[] = [];
 
   for (let i = headerIdx + 1; i < matrix.length; i += 1) {
     const r = matrix[i] ?? [];
@@ -179,6 +224,8 @@ export function parseVyaparSheet(bytes: Uint8Array): ParseResult {
     const price = toNumber(r[priceCol]);
     if (price <= 0) {
       skipped += 1;
+      noPrice += 1;
+      if (noPriceNames.length < 10) noPriceNames.push(name);
       continue;
     }
     rows.push({
@@ -190,11 +237,25 @@ export function parseVyaparSheet(bytes: Uint8Array): ParseResult {
   }
 
   if (rows.length === 0) {
-    return { ok: false, error: "Sheet me koi product row nahi mili." };
+    return {
+      ok: false,
+      error: noPrice
+        ? `Har row ka rate 0 ya khali hai (${noPrice} rows) — kuch bhi update nahi kiya gaya.`
+        : "Sheet me koi product row nahi mili.",
+    };
   }
   if (rows.length > 5000) {
     return { ok: false, error: "5000 se zyada rows hain. File chhoti karein." };
   }
 
-  return { ok: true, rows, skipped, sheetName };
+  const notes: string[] = [];
+  if (noPrice) {
+    notes.push(
+      `${noPrice} rows ka rate 0 ya khali tha — chhoR di gayin (purane rate mehfooz hain): ${noPriceNames
+        .slice(0, 5)
+        .join(", ")}`,
+    );
+  }
+
+  return { ok: true, rows, skipped, sheetName, notes };
 }

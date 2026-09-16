@@ -215,3 +215,19 @@ export const getAutoSyncSetup = createServerFn({ method: "POST" })
       }),
     };
   });
+
+/** Admin-only: endpoint + key so any other software can push rates directly. */
+export const getSyncConnectInfo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    if (!(await isAdminUser(context.supabase, context.userId))) {
+      return { ok: false as const, message: "Sirf admin ye maloomat dekh sakta hai." };
+    }
+    const apiKey = process.env["PRODUCT_SYNC_API_KEY"];
+    if (!apiKey) return { ok: false as const, message: "Sync key server par set nahi hai." };
+    return {
+      ok: true as const,
+      endpoint: "https://orderbot.hbchemicalspakistan.com/api/public/sync/products",
+      apiKey,
+    };
+  });
