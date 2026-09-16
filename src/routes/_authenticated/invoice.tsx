@@ -38,7 +38,16 @@ export const Route = createFileRoute("/_authenticated/invoice")({
   component: InvoiceChat,
 });
 
-const transport = new DefaultChatTransport({ api: "/api/invoice" });
+const transport = new DefaultChatTransport({
+  api: "/api/invoice",
+  // Rate list usi user ke workspace se aati hai, isliye token bhejte hain.
+  headers: async () => {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  },
+});
 
 function messageText(msg: UIMessage): string {
   return msg.parts
