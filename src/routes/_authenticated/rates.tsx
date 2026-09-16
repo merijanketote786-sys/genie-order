@@ -194,7 +194,14 @@ function RatesPage() {
 
       <div className="min-h-0 flex-1 overflow-y-auto pb-6">
         {admin === "1" ? <SyncStatusPanel /> : null}
-        {mode === "bulk" ? (
+        {ITEMS.length === 0 ? (
+          <div className="glass-panel mx-auto mt-6 w-full max-w-xl rounded-2xl p-6 text-center">
+            <h2 className="font-display text-lg font-bold">Abhi koi product nahi</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Sync page se apni rate list add karein — Excel upload, paste ya document import.
+            </p>
+          </div>
+        ) : mode === "bulk" ? (
           <BulkEditor items={query ? results : ITEMS} searching={Boolean(query)} />
         ) : !query ? (
           <EmptyState total={ITEMS.length} onPick={setQuery} />
