@@ -12,6 +12,7 @@ import { useChat } from "@ai-sdk/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { ScrollToEnd } from "@/components/scroll-to-end";
+import { loadChatHistory, saveChatHistory } from "@/lib/chat-history";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { Phone, ReceiptText, ShieldCheck, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -72,26 +73,15 @@ function InvoiceChat() {
   useEffect(() => {
     if (hydratedRef.current) return;
     hydratedRef.current = true;
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as UIMessage[];
-        if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed);
-      }
-    } catch {
-      // ignore
-    }
+    const saved = loadChatHistory<UIMessage>(STORAGE_KEY);
+    if (saved) setMessages(saved);
   }, [setMessages]);
 
   useEffect(() => {
     if (!hydratedRef.current) return;
     if (status === "streaming" || status === "submitted") return;
     if (messages.length === 0) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-    } catch {
-      // ignore
-    }
+    saveChatHistory(STORAGE_KEY, messages);
   }, [messages, status]);
 
   useEffect(() => {
