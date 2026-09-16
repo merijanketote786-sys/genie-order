@@ -254,7 +254,7 @@ export const syncProductsFromText = createServerFn({ method: "POST" })
     const { parseDelimitedText } = await import("@/lib/vyapar-sheet.server");
     const parsed = parseDelimitedText(data.text);
     if (!parsed.ok) return { ok: false as const, message: parsed.error };
-    return applyRows(parsed.rows, {
+    return applyRows(parsed.rows, await workspaceOf(context.userId), {
       sheetName: parsed.sheetName,
       emptyRows: parsed.skipped,
       notes: parsed.notes,
