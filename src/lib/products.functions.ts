@@ -46,6 +46,7 @@ export const getProducts = createServerFn({ method: "GET" })
       "name, unit, sale_price, p100_staff_price, p250_staff_price, p500_staff_price, stock, custom_sale_price, custom_p100_price, custom_p250_price, custom_p500_price",
     )
     .eq("is_active", true)
+    .eq("workspace_id", await workspaceOf(context.userId))
     .order("name", { ascending: true })
     .limit(5000);
 
