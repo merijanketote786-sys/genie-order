@@ -1,7 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { SyncStatusPanel } from "@/components/vyapar-sync";
-import priceList from "@/data/price-list.json";
 import { getProducts, saveProductPrices, saveProductPricesBulk } from "@/lib/products.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -59,7 +58,6 @@ type Item = {
   customP500?: number | null;
 };
 
-const FALLBACK_ITEMS = priceList as Item[];
 
 function cleanName(name: string) {
   return name.replace(/\s*\/(kg|piece|ltr|litre|gram|g)\s*$/i, "").trim();
