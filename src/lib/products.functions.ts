@@ -221,10 +221,11 @@ type RowsMeta = {
 
 async function applyRows(
   rows: Array<{ name: string; unit: string; sale_price: number; stock: number }>,
+  workspaceId: string,
   meta: RowsMeta = {},
 ) {
   const { syncProductRows } = await import("@/lib/product-sync.server");
-  const { result, errors } = await syncProductRows(rows);
+  const { result, errors } = await syncProductRows(rows, workspaceId);
 
   return {
     ok: true as const,
