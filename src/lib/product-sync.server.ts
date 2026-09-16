@@ -142,6 +142,7 @@ export async function syncProductRows(
       error_count: errorCount,
       status,
       error_details: errorCount ? errors.slice(0, 50) : null,
+      workspace_id: workspaceId,
     })
     .select("id")
     .single();
