@@ -27,6 +27,7 @@ type OrderTemplateDialogProps = {
 };
 
 export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplateDialogProps) {
+  const queryClient = useQueryClient();
   const loadTemplate = useServerFn(getOrderTemplate);
   const saveTemplate = useServerFn(saveOrderTemplate);
   const resetTemplate = useServerFn(resetOrderTemplate);
