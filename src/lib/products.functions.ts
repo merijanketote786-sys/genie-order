@@ -24,6 +24,17 @@ async function blocked(context: { supabase: unknown; userId: string }) {
   return !(await isActiveProfile(context.supabase as never, context.userId));
 }
 
+/** Har user apni rate list dekhta hai; kuch accounts aik shared workspace me hote hain. */
+async function workspaceOf(userId: string): Promise<string> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("profiles")
+    .select("workspace_id")
+    .eq("id", userId)
+    .maybeSingle();
+  return data?.workspace_id ?? userId;
+}
+
 export const getProducts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
