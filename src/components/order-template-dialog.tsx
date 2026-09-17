@@ -243,9 +243,10 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
           <p className="text-right text-xs text-muted-foreground">
             {draft.length}/{ORDER_TEMPLATE_MAX_LENGTH}
           </p>
+          {formError ? <p className="text-sm font-medium text-destructive">{formError}</p> : null}
         </div>
 
-        <DialogFooter className="gap-2 sm:space-x-0">
+        <DialogFooter className="sticky bottom-0 -mx-4 gap-2 border-t border-border bg-background px-4 py-3 sm:-mx-6 sm:space-x-0 sm:px-6">
           <Button
             type="button"
             variant="outline"
@@ -254,7 +255,7 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
           >
             <RotateCcw /> Default template
           </Button>
-          <Button type="button" onClick={handleSave} disabled={saving || draft.trim().length < 10}>
+          <Button type="button" onClick={handleSave} disabled={saving}>
             <Save /> {saving ? "Saving..." : editingId ? "Update template" : "Save template"}
           </Button>
         </DialogFooter>
