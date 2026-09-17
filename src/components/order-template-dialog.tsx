@@ -274,9 +274,15 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
           >
             <RotateCcw /> Default template
           </Button>
-          <Button type="button" onClick={handleSave} disabled={saving}>
-            <Save /> {saving ? "Saving..." : editingId ? "Update template" : "Save template"}
-          </Button>
+          {editorOpen ? (
+            <Button type="button" onClick={handleSave} disabled={saving}>
+              <Save /> {saving ? "Saving..." : editingId ? "Update template" : "Save template"}
+            </Button>
+          ) : (
+            <Button type="button" onClick={startNew} disabled={saving}>
+              <Plus /> Nayi template
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
