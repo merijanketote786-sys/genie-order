@@ -262,6 +262,8 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
           </p>
           {formError ? <p className="text-sm font-medium text-destructive">{formError}</p> : null}
         </div>
+        ) : null}
+
 
         <DialogFooter className="sticky bottom-0 -mx-4 gap-2 border-t border-border bg-background px-4 py-3 sm:-mx-6 sm:space-x-0 sm:px-6">
           <Button
