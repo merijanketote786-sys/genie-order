@@ -104,6 +104,8 @@ export const saveOrder = createServerFn({ method: "POST" })
         delivery: p.delivery || null,
         advance: p.advance || null,
         status: p.status || null,
+        payment_method: data.paymentMethod ?? null,
+        cod_amount: data.paymentMethod === "COD" ? (data.codAmount ?? null) : null,
         order_text: data.orderText,
         customer_id: customerId,
         created_by: context.userId,
@@ -314,6 +316,8 @@ export const saveInvoice = createServerFn({ method: "POST" })
       .object({
         invoiceText: z.string().trim().min(5).max(20000),
         phone: z.string().trim().max(30).optional(),
+        paymentMethod: z.enum(["COD", "CC"]).optional(),
+        codAmount: z.number().nonnegative().max(100000000).optional(),
       })
       .parse(data),
   )
@@ -347,6 +351,8 @@ export const saveInvoice = createServerFn({ method: "POST" })
         customer_name: p.customerName || null,
         phone: normalizePhone(phone) ?? (phone || null),
         total: p.total,
+        payment_method: data.paymentMethod ?? null,
+        cod_amount: data.paymentMethod === "COD" ? (data.codAmount ?? null) : null,
         invoice_text: data.invoiceText,
         customer_id: customerId,
         created_by: context.userId,
