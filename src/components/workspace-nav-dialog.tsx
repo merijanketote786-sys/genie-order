@@ -12,7 +12,19 @@ import { Link } from "@tanstack/react-router";
 import { Grid2X2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-type NavItem = { to: string; label: string; description: string; icon: LucideIcon };
+type WorkspacePath =
+  | "/"
+  | "/invoice"
+  | "/extract"
+  | "/rates"
+  | "/calculator"
+  | "/history"
+  | "/invoices"
+  | "/customers"
+  | "/sync"
+  | "/admin";
+
+type NavItem = { to: WorkspacePath; label: string; description: string; icon: LucideIcon };
 
 export function WorkspaceNavDialog({ tabs, active }: { tabs: readonly NavItem[]; active: string }) {
   return (

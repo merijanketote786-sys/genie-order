@@ -13,8 +13,8 @@
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
 
-  --font-display: Arial, ui-sans-serif, system-ui, sans-serif;
-  --font-sans: Arial, ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 
   --color-background: var(--background);
@@ -71,17 +71,17 @@
   --card-foreground: oklch(0.23 0.025 255);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.23 0.025 255);
-  --primary: oklch(0.31 0.085 255);
+  --primary: oklch(0.28 0.075 251);
   --primary-foreground: oklch(0.99 0.002 250);
   --secondary: oklch(0.94 0.018 250);
   --secondary-foreground: oklch(0.31 0.085 255);
   --muted: oklch(0.95 0.008 250);
   --muted-foreground: oklch(0.5 0.035 255);
-  --accent: oklch(0.93 0.035 245);
-  --accent-foreground: oklch(0.34 0.13 250);
+  --accent: oklch(0.94 0.035 191);
+  --accent-foreground: oklch(0.32 0.07 200);
   --destructive: oklch(0.53 0.2 27);
   --destructive-foreground: oklch(0.99 0.002 250);
-  --success: oklch(0.55 0.15 153);
+  --success: oklch(0.64 0.13 170);
   --warning: oklch(0.7 0.15 75);
   --border: oklch(0.88 0.016 250);
   --input: oklch(0.88 0.016 250);
