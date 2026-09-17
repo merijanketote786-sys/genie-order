@@ -55,6 +55,42 @@ export const Route = createFileRoute("/_authenticated/calculator")({
 });
 
 function CalculatorPage() {
+  const loadMode = useServerFn(getCalculatorMode);
+  const { data, isLoading } = useQuery({
+    queryKey: ["calculator-mode"],
+    queryFn: () => loadMode(),
+    staleTime: 10 * 60_000,
+    retry: 0,
+  });
+  const builtin = data?.builtin ?? false;
+
+  return (
+    <AppShell
+      title="Courier Rate Calculator"
+      subtitle="Parcel charges ka poora breakdown"
+      active="/calculator"
+    >
+      <div className="min-h-0 flex-1 overflow-y-auto pb-6">
+        <WorkspaceHeader
+          icon={CalculatorIcon}
+          eyebrow="Logistics"
+          title="Courier Rate Calculator"
+          description="Weight, pickup aur delivery city se zone detect kar ke freight, fuel, tax, packaging aur COD fee ka itemized total."
+          meta={builtin ? ["PostEx rates", "Standard", "Overland"] : ["Apni rate sheet", "Multi courier"]}
+        />
+        {isLoading ? (
+          <p className="mt-6 text-sm text-muted-foreground">Load ho raha hai…</p>
+        ) : builtin ? (
+          <BuiltinCalculator />
+        ) : (
+          <CustomCourierCalculator />
+        )}
+      </div>
+    </AppShell>
+  );
+}
+
+function BuiltinCalculator() {
   const [weightInput, setWeightInput] = useState("");
   const [service, setService] = useState<ServiceId>("standard");
   const [origin, setOrigin] = useState<City | null>(
@@ -123,21 +159,8 @@ function CalculatorPage() {
     "mt-2 h-12 w-full rounded-xl border border-input bg-background px-4 text-base text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/30";
 
   return (
-    <AppShell
-      title="Courier Rate Calculator"
-      subtitle="Parcel charges ka poora breakdown"
-      active="/calculator"
-    >
-      <div className="min-h-0 flex-1 overflow-y-auto pb-6">
-        <WorkspaceHeader
-          icon={CalculatorIcon}
-          eyebrow="Logistics"
-          title="Courier Rate Calculator"
-          description="Weight, pickup aur delivery city se zone detect kar ke freight, fuel, tax, packaging aur COD fee ka itemized total."
-          meta={["PostEx rates", "Standard", "Overland"]}
-        />
-
-        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+    <>
+      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
           <section className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6">
             {/* Service */}
             <fieldset>
@@ -513,14 +536,13 @@ function CalculatorPage() {
               </div>
             )}
           </section>
-        </div>
-
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          Rates per HB Chemicals PostEx chart, exclusive of {TAX_RATE * 100}% tax;{" "}
-          {FUEL_SURCHARGE_RATE * 100}% fuel surcharge applied on freight. COD fee is an assumed,
-          configurable rate.
-        </p>
       </div>
-    </AppShell>
+
+      <p className="mt-6 text-center text-xs text-muted-foreground">
+        Rates per HB Chemicals PostEx chart, exclusive of {TAX_RATE * 100}% tax;{" "}
+        {FUEL_SURCHARGE_RATE * 100}% fuel surcharge applied on freight. COD fee is an assumed,
+        configurable rate.
+      </p>
+    </>
   );
 }
