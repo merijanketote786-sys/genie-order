@@ -42,6 +42,7 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
   const [templates, setTemplates] = useState<OrderTemplateRow[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [name, setName] = useState("");
   const [draft, setDraft] = useState(template);
   const [loading, setLoading] = useState(true);
@@ -80,11 +81,7 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
     toast.error("Order templates load nahi ho sakin");
   }, [templateQuery.isError]);
 
-  const startNew = () => {
-    setEditingId(null);
-    setName("");
-    setDraft(DEFAULT_ORDER_TEMPLATE);
-    setFormError(null);
+  const focusName = () => {
     requestAnimationFrame(() => {
       const input = document.getElementById("order-template-name") as HTMLInputElement | null;
       input?.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -92,11 +89,22 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
     });
   };
 
+  const startNew = () => {
+    setEditingId(null);
+    setName("");
+    setDraft(DEFAULT_ORDER_TEMPLATE);
+    setFormError(null);
+    setEditorOpen(true);
+    focusName();
+  };
+
   const startEdit = (row: OrderTemplateRow) => {
     setEditingId(row.id);
     setName(row.name);
     setDraft(row.template);
     setFormError(null);
+    setEditorOpen(true);
+    focusName();
   };
 
   const run = async (fn: () => Promise<any>, successMessage: string, fallback: string) => {
@@ -139,8 +147,17 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
     );
     if (result) {
       setEditingId(result.selectedId);
-      setOpen(false);
+      setEditorOpen(false);
     }
+  };
+
+  const handleRowSave = (row: OrderTemplateRow) => {
+    if (editingId === row.id && editorOpen) {
+      void handleSave();
+      return;
+    }
+    startEdit(row);
+    toast.info("Template khul gayi — tabdeeli ke baad Save dabayein");
   };
 
   return (
@@ -149,9 +166,8 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
       onOpenChange={(next) => {
         setOpen(next);
         if (next) {
-          const current = templates.find((t) => t.id === selectedId);
-          if (current) startEdit(current);
-          else startNew();
+          setEditorOpen(false);
+          setFormError(null);
         }
       }}
     >
@@ -199,8 +215,8 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
                   {row.id === selectedId ? <Check className="size-4 shrink-0 text-primary" /> : <span className="size-4 shrink-0" />}
                   <span className="truncate font-medium">{row.name}</span>
                 </button>
-                <Button type="button" variant="ghost" size="sm" disabled={saving} onClick={() => startEdit(row)}>
-                  <FilePenLine />
+                <Button type="button" variant="ghost" size="sm" disabled={saving} onClick={() => handleRowSave(row)}>
+                  <Save />
                 </Button>
                 <Button
                   type="button"
@@ -219,6 +235,7 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
           </Button>
         </div>
 
+        {editorOpen ? (
         <div className="space-y-2 border-t border-border pt-3">
           <label htmlFor="order-template-name" className="text-sm font-semibold text-foreground">
             {editingId ? "Template edit karein" : "Nayi template"}
@@ -245,6 +262,8 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
           </p>
           {formError ? <p className="text-sm font-medium text-destructive">{formError}</p> : null}
         </div>
+        ) : null}
+
 
         <DialogFooter className="sticky bottom-0 -mx-4 gap-2 border-t border-border bg-background px-4 py-3 sm:-mx-6 sm:space-x-0 sm:px-6">
           <Button
@@ -255,9 +274,15 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
           >
             <RotateCcw /> Default template
           </Button>
-          <Button type="button" onClick={handleSave} disabled={saving}>
-            <Save /> {saving ? "Saving..." : editingId ? "Update template" : "Save template"}
-          </Button>
+          {editorOpen ? (
+            <Button type="button" onClick={handleSave} disabled={saving}>
+              <Save /> {saving ? "Saving..." : editingId ? "Update template" : "Save template"}
+            </Button>
+          ) : (
+            <Button type="button" onClick={startNew} disabled={saving}>
+              <Plus /> Nayi template
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
