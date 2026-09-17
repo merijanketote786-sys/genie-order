@@ -9,19 +9,22 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { ResultCard } from "@/components/result-card";
 import { saveInvoice } from "@/lib/records.functions";
 import { useChat } from "@ai-sdk/react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { ScrollToEnd } from "@/components/scroll-to-end";
 import { loadChatHistory, saveChatHistory } from "@/lib/chat-history";
+import { setHandoff, takeHandoff } from "@/lib/handoff";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { RateMiniCalculatorBody } from "@/components/rate-mini-calculator";
 import { CustomerPickerBody } from "@/components/customer-picker";
+import { ProductPickerBody } from "@/components/product-picker";
 import { WorkspaceTool, WorkspaceToolDock } from "@/components/workspace-tool";
 import { Button } from "@/components/ui/button";
 import { PaymentModeField, paymentLine, stripPaymentLines, upsertPaymentLine, type PaymentMethod } from "@/components/payment-mode-field";
-import { Calculator, CreditCard, Phone, ReceiptText, ShieldCheck, Users, X } from "lucide-react";
+import { Calculator, CreditCard, Package, Phone, ReceiptText, ShieldCheck, Users, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/_authenticated/invoice")({
   head: () => ({
