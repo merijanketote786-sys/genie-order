@@ -45,10 +45,13 @@ export const getMyAccess = createServerFn({ method: "GET" })
 
     const email = (claims as Record<string, unknown>)["email"];
 
+    const emailStr = typeof email === "string" ? email : "";
+
     return {
       isAdmin,
+      isOwner: emailStr.toLowerCase() === OWNER_EMAIL,
       isActive: profile.data?.is_active !== false,
-      email: typeof email === "string" ? email : "",
+      email: emailStr,
       fullName: profile.data?.full_name ?? "",
     } satisfies AccessInfo;
   });
