@@ -2,8 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
+export const OWNER_EMAIL = "hhtraders008@gmail.com";
+
 export type AccessInfo = {
   isAdmin: boolean;
+  isOwner: boolean;
   isActive: boolean;
   email: string;
   fullName: string;
