@@ -46,6 +46,7 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
   const [draft, setDraft] = useState(template);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const selectedName = templates.find((t) => t.id === selectedId)?.name;
 
@@ -83,12 +84,19 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
     setEditingId(null);
     setName("");
     setDraft(DEFAULT_ORDER_TEMPLATE);
+    setFormError(null);
+    requestAnimationFrame(() => {
+      const input = document.getElementById("order-template-name") as HTMLInputElement | null;
+      input?.scrollIntoView({ block: "center", behavior: "smooth" });
+      input?.focus();
+    });
   };
 
   const startEdit = (row: OrderTemplateRow) => {
     setEditingId(row.id);
     setName(row.name);
     setDraft(row.template);
+    setFormError(null);
   };
 
   const run = async (fn: () => Promise<any>, successMessage: string, fallback: string) => {
@@ -97,10 +105,13 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
       const result = await fn();
       queryClient.setQueryData(["order-template"], result);
       applyResult(result);
+      setFormError(null);
       toast.success(successMessage);
       return result;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : fallback);
+      const message = error instanceof Error ? error.message : fallback;
+      setFormError(message);
+      toast.error(message);
       return null;
     } finally {
       setSaving(false);
@@ -111,10 +122,13 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
     const cleanName = name.trim();
     const clean = draft.trim();
     if (cleanName.length < 2) {
+      setFormError("Template ka naam likhein");
       toast.error("Template ka naam likhein");
+      document.getElementById("order-template-name")?.focus();
       return;
     }
     if (clean.length < 10) {
+      setFormError("Template mein kam az kam ek mukammal field likhein");
       toast.error("Template mein kam az kam ek mukammal field likhein");
       return;
     }
@@ -229,9 +243,10 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
           <p className="text-right text-xs text-muted-foreground">
             {draft.length}/{ORDER_TEMPLATE_MAX_LENGTH}
           </p>
+          {formError ? <p className="text-sm font-medium text-destructive">{formError}</p> : null}
         </div>
 
-        <DialogFooter className="gap-2 sm:space-x-0">
+        <DialogFooter className="sticky bottom-0 -mx-4 gap-2 border-t border-border bg-background px-4 py-3 sm:-mx-6 sm:space-x-0 sm:px-6">
           <Button
             type="button"
             variant="outline"
@@ -240,7 +255,7 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
           >
             <RotateCcw /> Default template
           </Button>
-          <Button type="button" onClick={handleSave} disabled={saving || draft.trim().length < 10}>
+          <Button type="button" onClick={handleSave} disabled={saving}>
             <Save /> {saving ? "Saving..." : editingId ? "Update template" : "Save template"}
           </Button>
         </DialogFooter>
