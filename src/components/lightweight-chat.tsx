@@ -50,11 +50,22 @@ type ChatComposerProps = {
   disabled?: boolean;
   placeholder: string;
   textareaClassName?: string;
+  /** Optional controlled value (e.g. rate calculator se text insert karne ke liye). */
+  value?: string;
+  onValueChange?: (value: string) => void;
 };
 
 export const ChatComposer = forwardRef<HTMLTextAreaElement, ChatComposerProps>(
-  ({ onSubmit, status, disabled, placeholder, textareaClassName }, ref) => {
-    const [value, setValue] = useState("");
+  (
+    { onSubmit, status, disabled, placeholder, textareaClassName, value: controlled, onValueChange },
+    ref,
+  ) => {
+    const [inner, setInner] = useState("");
+    const value = controlled ?? inner;
+    const setValue = (next: string) => {
+      if (onValueChange) onValueChange(next);
+      else setInner(next);
+    };
     const busy = disabled || status === "submitted" || status === "streaming";
 
     const submit = async (event: FormEvent<HTMLFormElement>) => {
