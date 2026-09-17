@@ -42,6 +42,7 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
   const [templates, setTemplates] = useState<OrderTemplateRow[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [name, setName] = useState("");
   const [draft, setDraft] = useState(template);
   const [loading, setLoading] = useState(true);
