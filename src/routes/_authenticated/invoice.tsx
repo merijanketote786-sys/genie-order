@@ -69,6 +69,7 @@ const STORAGE_KEY = "invoice-bot:messages:v1";
 const PHONE_KEY = "invoice-bot:phone:v1";
 
 function InvoiceChat() {
+  const navigate = useNavigate();
   const [phone, setPhone] = useState("");
   const [composerText, setComposerText] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
@@ -78,6 +79,7 @@ function InvoiceChat() {
   const appendToComposer = useCallback((block: string) => {
     setComposerText((prev) => `${prev.trimEnd()}${prev.trim() ? "\n" : ""}${block}\n`);
   }, []);
+
   const { messages, sendMessage, status, setMessages, error } = useChat({
     transport,
     onError: (err) => toast.error(err.message || "Kuch masla ho gaya"),
