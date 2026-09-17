@@ -215,8 +215,8 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
                   {row.id === selectedId ? <Check className="size-4 shrink-0 text-primary" /> : <span className="size-4 shrink-0" />}
                   <span className="truncate font-medium">{row.name}</span>
                 </button>
-                <Button type="button" variant="ghost" size="sm" disabled={saving} onClick={() => startEdit(row)}>
-                  <FilePenLine />
+                <Button type="button" variant="ghost" size="sm" disabled={saving} onClick={() => handleRowSave(row)}>
+                  <Save />
                 </Button>
                 <Button
                   type="button"
