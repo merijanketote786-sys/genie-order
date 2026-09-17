@@ -152,6 +152,16 @@ export function AppShell({
               <p className="truncate text-sm text-muted-foreground">{subtitle}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => window.location.reload()}
+                className="h-10 w-10 shrink-0 border-border bg-card"
+                title="Workspace refresh karein (data mehfooz rahega)"
+                aria-label="Refresh workspace"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
               <ThemeToggle />
               <SignOutButton />
               {showClear && onClear ? (
