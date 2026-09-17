@@ -7,4 +7,4 @@
 - [x] Compact secondary page controls, sync methods, rates, and admin sections
 - [x] Apply Premium Navy tokens with Sora/Manrope typography
 - [x] Verify compilation and runtime health without changing saved data or business logic
-- [ ] Add touch-insert variables to order template creation and editing
+- [x] Add touch-insert variables to order template creation and editing
