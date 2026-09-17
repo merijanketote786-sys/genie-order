@@ -16,7 +16,7 @@ import { WorkspaceHeader } from "@/components/workspace-header";
 import { OrderTemplateDialog } from "@/components/order-template-dialog";
 import { RateMiniCalculator } from "@/components/rate-mini-calculator";
 import { CustomerPicker } from "@/components/customer-picker";
-import { PaymentModeField, paymentLine, type PaymentMethod } from "@/components/payment-mode-field";
+import { PaymentModeField, paymentLine, stripPaymentLines, upsertPaymentLine, type PaymentMethod } from "@/components/payment-mode-field";
 import { DEFAULT_ORDER_TEMPLATE } from "@/lib/order-template";
 import { saveOrder } from "@/lib/records.functions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -247,12 +247,18 @@ function OrderChat() {
             enabled={paymentEnabled}
             onEnabledChange={(on) => {
               setPaymentEnabled(on);
-              if (on) appendToComposer(paymentLine(paymentMethod, paymentMethod === "COD" ? codAmount : ""));
+              if (on) {
+                const line = paymentLine(paymentMethod, paymentMethod === "COD" ? codAmount : "");
+                setComposerText((prev) => upsertPaymentLine(prev, line));
+              } else {
+                setComposerText((prev) => `${stripPaymentLines(prev)}${stripPaymentLines(prev).trim() ? "\n" : ""}`);
+              }
             }}
             method={paymentMethod}
             onMethodChange={(m) => {
               setPaymentMethod(m);
-              appendToComposer(paymentLine(m, m === "COD" ? codAmount : ""));
+              const line = paymentLine(m, m === "COD" ? codAmount : "");
+              setComposerText((prev) => upsertPaymentLine(prev, line));
             }}
             codAmount={codAmount}
             onCodAmountChange={setCodAmount}
