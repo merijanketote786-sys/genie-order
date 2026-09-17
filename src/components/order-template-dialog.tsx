@@ -84,12 +84,19 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
     setEditingId(null);
     setName("");
     setDraft(DEFAULT_ORDER_TEMPLATE);
+    setFormError(null);
+    requestAnimationFrame(() => {
+      const input = document.getElementById("order-template-name") as HTMLInputElement | null;
+      input?.scrollIntoView({ block: "center", behavior: "smooth" });
+      input?.focus();
+    });
   };
 
   const startEdit = (row: OrderTemplateRow) => {
     setEditingId(row.id);
     setName(row.name);
     setDraft(row.template);
+    setFormError(null);
   };
 
   const run = async (fn: () => Promise<any>, successMessage: string, fallback: string) => {
@@ -98,10 +105,13 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
       const result = await fn();
       queryClient.setQueryData(["order-template"], result);
       applyResult(result);
+      setFormError(null);
       toast.success(successMessage);
       return result;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : fallback);
+      const message = error instanceof Error ? error.message : fallback;
+      setFormError(message);
+      toast.error(message);
       return null;
     } finally {
       setSaving(false);
@@ -112,10 +122,13 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
     const cleanName = name.trim();
     const clean = draft.trim();
     if (cleanName.length < 2) {
+      setFormError("Template ka naam likhein");
       toast.error("Template ka naam likhein");
+      document.getElementById("order-template-name")?.focus();
       return;
     }
     if (clean.length < 10) {
+      setFormError("Template mein kam az kam ek mukammal field likhein");
       toast.error("Template mein kam az kam ek mukammal field likhein");
       return;
     }
