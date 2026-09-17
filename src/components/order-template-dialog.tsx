@@ -151,13 +151,13 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
     }
   };
 
-  const handleRowSave = (row: OrderTemplateRow) => {
+  const handleRowEdit = (row: OrderTemplateRow) => {
     if (editingId === row.id && editorOpen) {
       void handleSave();
       return;
     }
     startEdit(row);
-    toast.info("Template khul gayi — tabdeeli ke baad Save dabayein");
+    toast.info(`"${row.name}" khul gayi — tabdeeli ke baad Update dabayein`);
   };
 
   return (
@@ -215,8 +215,16 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
                   {row.id === selectedId ? <Check className="size-4 shrink-0 text-primary" /> : <span className="size-4 shrink-0" />}
                   <span className="truncate font-medium">{row.name}</span>
                 </button>
-                <Button type="button" variant="ghost" size="sm" disabled={saving} onClick={() => handleRowSave(row)}>
-                  <Save />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={saving}
+                  aria-label={`"${row.name}" edit karein`}
+                  title="Edit template"
+                  onClick={() => handleRowEdit(row)}
+                >
+                  {editingId === row.id && editorOpen ? <Save /> : <FilePenLine />}
                 </Button>
                 <Button
                   type="button"
