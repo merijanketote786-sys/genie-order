@@ -61,8 +61,15 @@ async function upsertCustomer(
 export const saveOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({ orderText: z.string().trim().min(5).max(8000) }).parse(data),
+    z
+      .object({
+        orderText: z.string().trim().min(5).max(8000),
+        paymentMethod: z.enum(["COD", "CC"]).optional(),
+        codAmount: z.number().nonnegative().max(100000000).optional(),
+      })
+      .parse(data),
   )
+
   .handler(async ({ data, context }) => {
     if (await blocked(context)) throw new Error("Access band hai");
     const supabase = context.supabase as any;
