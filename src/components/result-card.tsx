@@ -47,13 +47,17 @@ export function ResultCard({
   phone,
   exportable = false,
   onSave,
+  forward,
 }: {
   text: string;
   label: string;
   phone?: string | null;
   exportable?: boolean;
   onSave?: (text: string) => Promise<void>;
+  /** Doosre section (Order/Invoice) me forward karne ka button. */
+  forward?: { label: string; onClick: (text: string) => void };
 }) {
+
   const [copied, setCopied] = useState(false);
   const [exportFormat, setExportFormat] = useState<"pdf" | "xlsx" | null>(null);
   const [saving, setSaving] = useState(false);
