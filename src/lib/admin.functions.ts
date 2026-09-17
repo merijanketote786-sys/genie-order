@@ -120,10 +120,22 @@ export const updateUserAccess = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     if (data.role) {
+      const { data: targetProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("workspace_id")
+        .eq("id", data.userId)
+        .maybeSingle();
+      const targetWs = targetProfile?.workspace_id;
+      if (!targetWs) {
+        return { ok: false as const, message: "User ka workspace nahi mila." };
+      }
       if (data.role === "admin") {
         await supabaseAdmin
           .from("user_roles")
-          .upsert({ user_id: data.userId, role: "admin" }, { onConflict: "user_id,role" });
+          .upsert(
+            { user_id: data.userId, role: "admin", workspace_id: targetWs },
+            { onConflict: "user_id,role,workspace_id" },
+          );
       } else {
         await supabaseAdmin
           .from("user_roles")
@@ -133,8 +145,12 @@ export const updateUserAccess = createServerFn({ method: "POST" })
       }
       await supabaseAdmin
         .from("user_roles")
-        .upsert({ user_id: data.userId, role: "staff" }, { onConflict: "user_id,role" });
+        .upsert(
+          { user_id: data.userId, role: "staff", workspace_id: targetWs },
+          { onConflict: "user_id,role,workspace_id" },
+        );
     }
+
 
     const patch: {
       role?: string;
@@ -390,11 +406,18 @@ export const createAppUser = createServerFn({ method: "POST" })
       })
       .eq("id", userId);
 
+    // keep role rows in the same workspace as the profile
+    await supabaseAdmin.from("user_roles").update({ workspace_id: ws }).eq("user_id", userId);
+
     if (data.role === "admin") {
       await supabaseAdmin
         .from("user_roles")
-        .upsert({ user_id: userId, role: "admin" }, { onConflict: "user_id,role" });
+        .upsert(
+          { user_id: userId, role: "admin", workspace_id: ws },
+          { onConflict: "user_id,role,workspace_id" },
+        );
     }
+
 
     return {
       ok: true as const,
