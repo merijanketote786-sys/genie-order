@@ -68,6 +68,7 @@ function InvoiceChat() {
   const [composerText, setComposerText] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
   const [codAmount, setCodAmount] = useState("");
+  const [paymentEnabled, setPaymentEnabled] = useState(false);
 
   const appendToComposer = useCallback((block: string) => {
     setComposerText((prev) => `${prev.trimEnd()}${prev.trim() ? "\n" : ""}${block}\n`);
@@ -172,9 +173,12 @@ function InvoiceChat() {
                           data: {
                             invoiceText: value,
                             phone: phone || undefined,
-                            paymentMethod,
+                            paymentMethod: paymentEnabled ? paymentMethod : undefined,
                             codAmount:
-                              paymentMethod === "COD" && Number.isFinite(amount) && amount > 0
+                              paymentEnabled &&
+                              paymentMethod === "COD" &&
+                              Number.isFinite(amount) &&
+                              amount > 0
                                 ? amount
                                 : undefined,
                           },
@@ -254,6 +258,11 @@ function InvoiceChat() {
             ) : null}
           </label>
           <PaymentModeField
+            enabled={paymentEnabled}
+            onEnabledChange={(on) => {
+              setPaymentEnabled(on);
+              if (on) appendToComposer(paymentLine(paymentMethod, paymentMethod === "COD" ? codAmount : ""));
+            }}
             method={paymentMethod}
             onMethodChange={(m) => {
               setPaymentMethod(m);

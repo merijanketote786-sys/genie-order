@@ -59,8 +59,9 @@ function OrderChat() {
   const [composerText, setComposerText] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
   const [codAmount, setCodAmount] = useState("");
-  const paymentRef = useRef({ method: "COD" as PaymentMethod, cod: "" });
-  paymentRef.current = { method: paymentMethod, cod: codAmount };
+  const [paymentEnabled, setPaymentEnabled] = useState(false);
+  const paymentRef = useRef({ enabled: false, method: "COD" as PaymentMethod, cod: "" });
+  paymentRef.current = { enabled: paymentEnabled, method: paymentMethod, cod: codAmount };
 
   const appendToComposer = useCallback((block: string) => {
     setComposerText((prev) => `${prev.trimEnd()}${prev.trim() ? "\n" : ""}${block}\n`);
@@ -125,8 +126,11 @@ function OrderChat() {
     saveOrder({
       data: {
         orderText: text,
-        paymentMethod: pay.method,
-        codAmount: pay.method === "COD" && Number.isFinite(amount) && amount > 0 ? amount : undefined,
+        paymentMethod: pay.enabled ? pay.method : undefined,
+        codAmount:
+          pay.enabled && pay.method === "COD" && Number.isFinite(amount) && amount > 0
+            ? amount
+            : undefined,
       },
     }).catch(() => {
       savedRef.current.delete(text);
@@ -240,6 +244,11 @@ function OrderChat() {
             <span className="ml-auto hidden text-[11px] font-normal text-muted-foreground sm:inline">Enter to process · Shift+Enter for new line</span>
           </div>
           <PaymentModeField
+            enabled={paymentEnabled}
+            onEnabledChange={(on) => {
+              setPaymentEnabled(on);
+              if (on) appendToComposer(paymentLine(paymentMethod, paymentMethod === "COD" ? codAmount : ""));
+            }}
             method={paymentMethod}
             onMethodChange={(m) => {
               setPaymentMethod(m);
