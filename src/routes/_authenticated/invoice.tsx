@@ -16,7 +16,7 @@ import { loadChatHistory, saveChatHistory } from "@/lib/chat-history";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { RateMiniCalculator } from "@/components/rate-mini-calculator";
 import { CustomerPicker } from "@/components/customer-picker";
-import { PaymentModeField, paymentLine, type PaymentMethod } from "@/components/payment-mode-field";
+import { PaymentModeField, paymentLine, stripPaymentLines, upsertPaymentLine, type PaymentMethod } from "@/components/payment-mode-field";
 import { Phone, ReceiptText, ShieldCheck, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -261,12 +261,18 @@ function InvoiceChat() {
             enabled={paymentEnabled}
             onEnabledChange={(on) => {
               setPaymentEnabled(on);
-              if (on) appendToComposer(paymentLine(paymentMethod, paymentMethod === "COD" ? codAmount : ""));
+              if (on) {
+                const line = paymentLine(paymentMethod, paymentMethod === "COD" ? codAmount : "");
+                setComposerText((prev) => upsertPaymentLine(prev, line));
+              } else {
+                setComposerText((prev) => `${stripPaymentLines(prev)}${stripPaymentLines(prev).trim() ? "\n" : ""}`);
+              }
             }}
             method={paymentMethod}
             onMethodChange={(m) => {
               setPaymentMethod(m);
-              appendToComposer(paymentLine(m, m === "COD" ? codAmount : ""));
+              const line = paymentLine(m, m === "COD" ? codAmount : "");
+              setComposerText((prev) => upsertPaymentLine(prev, line));
             }}
             codAmount={codAmount}
             onCodAmountChange={setCodAmount}

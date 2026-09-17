@@ -26,6 +26,22 @@ export function paymentLine(method: PaymentMethod, codAmount: string): string {
   return "Payment Status: CC";
 }
 
+/** Composer text se purani Payment Status / COD Amount lines hata deta hai. */
+export function stripPaymentLines(text: string): string {
+  return text
+    .split("\n")
+    .filter((line) => !/^(payment status|cod amount)\s*:/i.test(line.trim()))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trimEnd();
+}
+
+/** Purani payment lines erase kar ke sirf nayi line likhta hai. */
+export function upsertPaymentLine(text: string, line: string): string {
+  const base = stripPaymentLines(text);
+  return `${base}${base.trim() ? "\n" : ""}${line}\n`;
+}
+
 export function PaymentModeField({
   enabled,
   onEnabledChange,
