@@ -19,6 +19,8 @@ import {
   listInvoices,
   listOrders,
   setInvoiceStatus,
+  type InvoiceRow,
+  type OrderRow,
 } from "@/lib/records.functions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -569,7 +571,7 @@ function RecordsSection() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(orders.data?.orders ?? []).slice(0, 25).map((o) => (
+                  {((orders.data?.orders ?? []) as OrderRow[]).slice(0, 25).map((o) => (
                     <tr key={o.id} className="border-b border-border/60 last:border-0">
                       <td className="px-4 py-3">
                         <p className="font-semibold">{o.orderNumber || "—"}</p>
@@ -613,7 +615,7 @@ function RecordsSection() {
                 </tr>
               </thead>
               <tbody>
-                {(invoices.data?.invoices ?? []).slice(0, 25).map((i) => (
+                {((invoices.data?.invoices ?? []) as InvoiceRow[]).slice(0, 25).map((i) => (
                   <tr key={i.id} className="border-b border-border/60 last:border-0">
                     <td className="px-4 py-3">
                       <p className="font-semibold">{i.invoiceNumber}</p>
