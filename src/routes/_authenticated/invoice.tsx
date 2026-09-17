@@ -243,6 +243,14 @@ function InvoiceChat() {
                             : `Save ho gayi: ${res.invoiceNumber}`,
                         );
                       }}
+                      forward={{
+                        label: "Order me bhejein",
+                        onClick: (value) => {
+                          setHandoff("order", value);
+                          navigate({ to: "/" });
+                        },
+                      }}
+
                     />
                   ) : (
                     <ChatMessageContent>
