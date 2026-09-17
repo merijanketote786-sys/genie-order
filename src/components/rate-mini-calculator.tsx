@@ -49,12 +49,12 @@ export function RateMiniCalculator({ onUse, useLabel = "Use" }: Props) {
           className={`ml-auto size-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
-      {open ? <MiniBody onUse={onUse} useLabel={useLabel} /> : null}
+      {open ? <RateMiniCalculatorBody onUse={onUse} useLabel={useLabel} /> : null}
     </section>
   );
 }
 
-function MiniBody({ onUse, useLabel }: Props & { useLabel: string }) {
+export function RateMiniCalculatorBody({ onUse, useLabel }: Props & { useLabel: string }) {
   const loadMode = useServerFn(getCalculatorMode);
   const loadCouriers = useServerFn(listCouriers);
 

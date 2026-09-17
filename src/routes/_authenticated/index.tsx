@@ -14,14 +14,15 @@ import { ScrollToEnd } from "@/components/scroll-to-end";
 import { loadChatHistory, saveChatHistory } from "@/lib/chat-history";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { OrderTemplateDialog } from "@/components/order-template-dialog";
-import { RateMiniCalculator } from "@/components/rate-mini-calculator";
-import { CustomerPicker } from "@/components/customer-picker";
+import { RateMiniCalculatorBody } from "@/components/rate-mini-calculator";
+import { CustomerPickerBody } from "@/components/customer-picker";
+import { WorkspaceTool, WorkspaceToolDock } from "@/components/workspace-tool";
 import { PaymentModeField, paymentLine, stripPaymentLines, upsertPaymentLine, type PaymentMethod } from "@/components/payment-mode-field";
 import { DEFAULT_ORDER_TEMPLATE } from "@/lib/order-template";
 import { saveOrder } from "@/lib/records.functions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ClipboardList, Languages, MessageSquareText, Sparkles } from "lucide-react";
+import { Calculator, ClipboardList, CreditCard, Languages, MessageSquareText, Sparkles, Users } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -169,33 +170,40 @@ function OrderChat() {
         description="Paste any customer order and instantly convert it into a clean standard format."
         meta={["Urdu", "Roman Urdu", "English"]}
       />
-      <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-3 py-2.5 shadow-sm sm:px-4">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground">Order format</p>
-          <p className="truncate text-xs text-muted-foreground">
-            {orderTemplate === DEFAULT_ORDER_TEMPLATE ? "Default template active" : "Aapki custom template active"}
-          </p>
-        </div>
-        <OrderTemplateDialog template={orderTemplate} onTemplateChange={handleTemplateChange} />
-      </div>
-      <div className="mt-2 space-y-2">
-        <CustomerPicker
-          useLabel="Order me daalein"
-          onUse={(block) => {
+      <WorkspaceToolDock>
+        <WorkspaceTool icon={Users} label="Customer" title="Customer search" description="Naam, city ya phone se saved customer dhoondein.">
+          <CustomerPickerBody useLabel="Order me daalein" onUse={(block) => {
             appendToComposer(block);
             textareaRef.current?.focus();
             toast.success("Customer detail order me daal diya");
-          }}
-        />
-        <RateMiniCalculator
-          useLabel="Order me daalein"
-          onUse={(amount) => {
+          }} />
+        </WorkspaceTool>
+        <WorkspaceTool icon={Calculator} label="Courier" title="Courier rate" description="Weight aur city se delivery charge calculate karein.">
+          <RateMiniCalculatorBody useLabel="Order me daalein" onUse={(amount) => {
             appendToComposer(`Delivery: ${amount}`);
             textareaRef.current?.focus();
             toast.success(`Delivery Rs ${amount} order me daal diya`);
-          }}
-        />
-      </div>
+          }} />
+        </WorkspaceTool>
+        <WorkspaceTool icon={CreditCard} label="Payment" title="Payment status" active={paymentEnabled}>
+          <PaymentModeField
+            enabled={paymentEnabled}
+            onEnabledChange={(on) => {
+              setPaymentEnabled(on);
+              if (on) setComposerText((prev) => upsertPaymentLine(prev, paymentLine(paymentMethod, paymentMethod === "COD" ? codAmount : "")));
+              else setComposerText((prev) => `${stripPaymentLines(prev)}${stripPaymentLines(prev).trim() ? "\n" : ""}`);
+            }}
+            method={paymentMethod}
+            onMethodChange={(m) => {
+              setPaymentMethod(m);
+              setComposerText((prev) => upsertPaymentLine(prev, paymentLine(m, m === "COD" ? codAmount : "")));
+            }}
+            codAmount={codAmount}
+            onCodAmountChange={setCodAmount}
+          />
+        </WorkspaceTool>
+        <OrderTemplateDialog template={orderTemplate} onTemplateChange={handleTemplateChange} compact />
+      </WorkspaceToolDock>
       <Conversation className="flex-1">
         <ConversationContent className="gap-4 px-0 pb-4 pt-3 sm:gap-6 sm:pb-6 sm:pt-5">
           {messages.length === 0 ? <EmptyState /> : null}
@@ -243,26 +251,6 @@ function OrderChat() {
             <MessageSquareText className="size-4 text-primary" /> Customer order
             <span className="ml-auto hidden text-[11px] font-normal text-muted-foreground sm:inline">Enter to process · Shift+Enter for new line</span>
           </div>
-          <PaymentModeField
-            enabled={paymentEnabled}
-            onEnabledChange={(on) => {
-              setPaymentEnabled(on);
-              if (on) {
-                const line = paymentLine(paymentMethod, paymentMethod === "COD" ? codAmount : "");
-                setComposerText((prev) => upsertPaymentLine(prev, line));
-              } else {
-                setComposerText((prev) => `${stripPaymentLines(prev)}${stripPaymentLines(prev).trim() ? "\n" : ""}`);
-              }
-            }}
-            method={paymentMethod}
-            onMethodChange={(m) => {
-              setPaymentMethod(m);
-              const line = paymentLine(m, m === "COD" ? codAmount : "");
-              setComposerText((prev) => upsertPaymentLine(prev, line));
-            }}
-            codAmount={codAmount}
-            onCodAmountChange={setCodAmount}
-          />
           <ChatComposer
             ref={textareaRef}
             onSubmit={handleSubmit}

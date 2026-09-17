@@ -43,12 +43,12 @@ export function CustomerPicker({ onUse, useLabel = "Add" }: Props) {
           className={`ml-auto size-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
-      {open ? <PickerBody onUse={onUse} useLabel={useLabel} /> : null}
+      {open ? <CustomerPickerBody onUse={onUse} useLabel={useLabel} /> : null}
     </section>
   );
 }
 
-function PickerBody({ onUse, useLabel = "Add" }: Props) {
+export function CustomerPickerBody({ onUse, useLabel = "Add" }: Props) {
   const load = useServerFn(listCustomers);
   const [term, setTerm] = useState("");
   const [search, setSearch] = useState("");

@@ -28,9 +28,10 @@ import { DEFAULT_ORDER_TEMPLATE, ORDER_TEMPLATE_MAX_LENGTH } from "@/lib/order-t
 type OrderTemplateDialogProps = {
   template: string;
   onTemplateChange: (template: string) => void;
+  compact?: boolean;
 };
 
-export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplateDialogProps) {
+export function OrderTemplateDialog({ template, onTemplateChange, compact = false }: OrderTemplateDialogProps) {
   const queryClient = useQueryClient();
   const loadTemplates = useServerFn(getOrderTemplate);
   const saveTemplate = useServerFn(saveOrderTemplate);
@@ -172,8 +173,15 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
       }}
     >
       <DialogTrigger asChild>
-        <Button type="button" variant="outline" size="sm" disabled={loading}>
-          <FilePenLine /> {loading ? "Loading..." : selectedName ? selectedName : "Templates"}
+        <Button
+          type="button"
+          variant={compact ? "ghost" : "outline"}
+          size="sm"
+          disabled={loading}
+          className={compact ? "relative h-14 min-w-0 flex-1 flex-col gap-1 rounded-lg px-2 text-[10px] text-muted-foreground" : undefined}
+        >
+          <FilePenLine /> {compact ? "Template" : loading ? "Loading..." : selectedName ? selectedName : "Templates"}
+          {compact && selectedName ? <span className="absolute right-2 top-2 size-1.5 rounded-full bg-success" /> : null}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[92dvh] w-[calc(100%-1.5rem)] max-w-2xl overflow-y-auto rounded-2xl p-4 sm:p-6">
