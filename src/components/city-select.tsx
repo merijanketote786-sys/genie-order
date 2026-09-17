@@ -100,7 +100,7 @@ export function CitySelect({ id, label, placeholder, value, onChange, compact }:
               setOpen(false);
             }
           }}
-          className="mt-2 h-12 w-full rounded-xl border border-input bg-background px-4 text-base text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/30"
+          className={`w-full border border-input bg-background text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/30 ${compact ? "h-10 rounded-lg px-3 text-sm" : "mt-2 h-12 rounded-xl px-4 text-base"}`}
         />
       )}
 
