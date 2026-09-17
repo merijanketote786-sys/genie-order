@@ -36,6 +36,13 @@
       "when": 1789668136980,
       "tag": "0004_add_payment_method_to_orders_invoices",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789672014790,
+      "tag": "0005_multiple_order_templates",
+      "breakpoints": true
     }
   ]
 }
