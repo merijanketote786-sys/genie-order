@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import {
+  Calculator,
   ClipboardList,
   FileCheck2,
   FileScan,
@@ -25,6 +26,7 @@ const TABS = [
   { to: "/invoice", label: "Invoice", description: "Create item invoices", icon: ReceiptText },
   { to: "/extract", label: "Extract", description: "Read images and PDFs", icon: FileScan },
   { to: "/rates", label: "Rates", description: "Search staff prices", icon: Tag },
+  { to: "/calculator", label: "Calculator", description: "Courier charges calculate", icon: Calculator },
   { to: "/history", label: "History", description: "Saved orders record", icon: History },
   { to: "/invoices", label: "Invoices", description: "Invoice record aur status", icon: FileCheck2 },
   { to: "/customers", label: "Customers", description: "Customer record", icon: Users },
@@ -46,6 +48,7 @@ type AppShellProps = {
     | "/invoice"
     | "/extract"
     | "/rates"
+    | "/calculator"
     | "/history"
     | "/invoices"
     | "/customers"
