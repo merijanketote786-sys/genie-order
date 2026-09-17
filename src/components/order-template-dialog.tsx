@@ -235,6 +235,7 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
           </Button>
         </div>
 
+        {editorOpen ? (
         <div className="space-y-2 border-t border-border pt-3">
           <label htmlFor="order-template-name" className="text-sm font-semibold text-foreground">
             {editingId ? "Template edit karein" : "Nayi template"}
