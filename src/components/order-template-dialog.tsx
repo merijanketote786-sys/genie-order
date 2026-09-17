@@ -166,9 +166,8 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
       onOpenChange={(next) => {
         setOpen(next);
         if (next) {
-          const current = templates.find((t) => t.id === selectedId);
-          if (current) startEdit(current);
-          else startNew();
+          setEditorOpen(false);
+          setFormError(null);
         }
       }}
     >
