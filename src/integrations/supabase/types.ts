@@ -85,6 +85,7 @@ export type Database = {
       }
       invoices: {
         Row: {
+          cod_amount: number | null
           created_at: string
           created_by: string | null
           customer_id: string | null
@@ -93,6 +94,7 @@ export type Database = {
           invoice_number: string
           invoice_text: string
           paid_at: string | null
+          payment_method: string | null
           payment_status: string
           phone: string | null
           total: number | null
@@ -100,6 +102,7 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          cod_amount?: number | null
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
@@ -108,6 +111,7 @@ export type Database = {
           invoice_number: string
           invoice_text: string
           paid_at?: string | null
+          payment_method?: string | null
           payment_status?: string
           phone?: string | null
           total?: number | null
@@ -115,6 +119,7 @@ export type Database = {
           workspace_id?: string
         }
         Update: {
+          cod_amount?: number | null
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
@@ -123,6 +128,7 @@ export type Database = {
           invoice_number?: string
           invoice_text?: string
           paid_at?: string | null
+          payment_method?: string | null
           payment_status?: string
           phone?: string | null
           total?: number | null
@@ -168,6 +174,7 @@ export type Database = {
           address: string | null
           advance: string | null
           city: string | null
+          cod_amount: number | null
           created_at: string
           created_by: string | null
           customer_id: string | null
@@ -176,6 +183,7 @@ export type Database = {
           id: string
           order_number: string | null
           order_text: string
+          payment_method: string | null
           phone: string | null
           product: string | null
           product_total: number | null
@@ -188,6 +196,7 @@ export type Database = {
           address?: string | null
           advance?: string | null
           city?: string | null
+          cod_amount?: number | null
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
@@ -196,6 +205,7 @@ export type Database = {
           id?: string
           order_number?: string | null
           order_text: string
+          payment_method?: string | null
           phone?: string | null
           product?: string | null
           product_total?: number | null
@@ -208,6 +218,7 @@ export type Database = {
           address?: string | null
           advance?: string | null
           city?: string | null
+          cod_amount?: number | null
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
@@ -216,6 +227,7 @@ export type Database = {
           id?: string
           order_number?: string | null
           order_text?: string
+          payment_method?: string | null
           phone?: string | null
           product?: string | null
           product_total?: number | null
