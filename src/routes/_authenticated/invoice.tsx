@@ -14,6 +14,7 @@ import { DefaultChatTransport, type UIMessage } from "ai";
 import { ScrollToEnd } from "@/components/scroll-to-end";
 import { loadChatHistory, saveChatHistory } from "@/lib/chat-history";
 import { WorkspaceHeader } from "@/components/workspace-header";
+import { RateMiniCalculator } from "@/components/rate-mini-calculator";
 import { Phone, ReceiptText, ShieldCheck, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -62,6 +63,7 @@ const PHONE_KEY = "invoice-bot:phone:v1";
 
 function InvoiceChat() {
   const [phone, setPhone] = useState("");
+  const [composerText, setComposerText] = useState("");
   const { messages, sendMessage, status, setMessages, error } = useChat({
     transport,
     onError: (err) => toast.error(err.message || "Kuch masla ho gaya"),
@@ -216,11 +218,23 @@ function InvoiceChat() {
               </button>
             ) : null}
           </label>
+          <RateMiniCalculator
+            useLabel="Invoice me daalein"
+            onUse={(amount) => {
+              setComposerText((prev) =>
+                `${prev.trimEnd()}${prev.trim() ? "\n" : ""}Delivery Charges: ${amount}\n`,
+              );
+              textareaRef.current?.focus();
+              toast.success(`Delivery Rs ${amount} invoice me daal diya`);
+            }}
+          />
           <ChatComposer
             ref={textareaRef}
             onSubmit={handleSubmit}
             status={status}
             disabled={isBusy}
+            value={composerText}
+            onValueChange={setComposerText}
             placeholder="Products + prices paste karein... (e.g. Conditioner 250ml 750, Glycerine 250ml 250 ...)"
             textareaClassName="min-h-20 px-3 py-2.5 text-sm leading-6 sm:min-h-28 sm:px-4 sm:py-3"
           />
