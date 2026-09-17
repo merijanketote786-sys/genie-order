@@ -18,7 +18,7 @@ import {
   exportInvoicePdf,
   shareInvoiceFile,
 } from "@/lib/invoice-export";
-import { Check, Copy, FileSpreadsheet, FileText, MessageCircle, Save, Send } from "lucide-react";
+import { ArrowLeftRight, Check, Copy, FileSpreadsheet, FileText, MessageCircle, Save, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
