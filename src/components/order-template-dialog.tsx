@@ -147,8 +147,17 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
     );
     if (result) {
       setEditingId(result.selectedId);
-      setOpen(false);
+      setEditorOpen(false);
     }
+  };
+
+  const handleRowSave = (row: OrderTemplateRow) => {
+    if (editingId === row.id && editorOpen) {
+      void handleSave();
+      return;
+    }
+    startEdit(row);
+    toast.info("Template khul gayi — tabdeeli ke baad Save dabayein");
   };
 
   return (
