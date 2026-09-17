@@ -200,6 +200,18 @@ function InvoiceChat() {
       </Conversation>
 
       <div className="sticky bottom-0 bg-background/95 pb-2 pt-2 backdrop-blur-sm sm:pb-4 sm:pt-3">
+        <div className="mb-2">
+          <RateMiniCalculator
+            useLabel="Invoice me daalein"
+            onUse={(amount) => {
+              setComposerText((prev) =>
+                `${prev.trimEnd()}${prev.trim() ? "\n" : ""}Delivery Charges: ${amount}\n`,
+              );
+              textareaRef.current?.focus();
+              toast.success(`Delivery Rs ${amount} invoice me daal diya`);
+            }}
+          />
+        </div>
         <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/20">
           <label className="grid min-h-12 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-border px-3 sm:px-4">
             <Phone className="size-4 shrink-0 text-primary" />
@@ -218,16 +230,6 @@ function InvoiceChat() {
               </button>
             ) : null}
           </label>
-          <RateMiniCalculator
-            useLabel="Invoice me daalein"
-            onUse={(amount) => {
-              setComposerText((prev) =>
-                `${prev.trimEnd()}${prev.trim() ? "\n" : ""}Delivery Charges: ${amount}\n`,
-              );
-              textareaRef.current?.focus();
-              toast.success(`Delivery Rs ${amount} invoice me daal diya`);
-            }}
-          />
           <ChatComposer
             ref={textareaRef}
             onSubmit={handleSubmit}
