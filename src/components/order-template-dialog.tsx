@@ -46,6 +46,7 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
   const [draft, setDraft] = useState(template);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const selectedName = templates.find((t) => t.id === selectedId)?.name;
 
