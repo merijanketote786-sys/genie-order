@@ -8,9 +8,11 @@ interface Props {
   placeholder?: string;
   value: City | null;
   onChange: (city: City | null) => void;
+  /** Inline/compact layout (label hidden, chhoti height). */
+  compact?: boolean;
 }
 
-export function CitySelect({ id, label, placeholder, value, onChange }: Props) {
+export function CitySelect({ id, label, placeholder, value, onChange, compact }: Props) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
