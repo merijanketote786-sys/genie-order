@@ -53,9 +53,11 @@ export function CitySelect({ id, label, placeholder, value, onChange, compact }:
         >
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-accent-foreground">{value.n}</p>
-            <p className="truncate text-xs text-muted-foreground">
-              {value.b} branch · {value.p}
-            </p>
+            {compact ? null : (
+              <p className="truncate text-xs text-muted-foreground">
+                {value.b} branch · {value.p}
+              </p>
+            )}
           </div>
           <button
             type="button"
