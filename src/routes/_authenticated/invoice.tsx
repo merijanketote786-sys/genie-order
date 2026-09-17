@@ -15,8 +15,10 @@ import { ScrollToEnd } from "@/components/scroll-to-end";
 import { loadChatHistory, saveChatHistory } from "@/lib/chat-history";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { RateMiniCalculator } from "@/components/rate-mini-calculator";
+import { CustomerPicker } from "@/components/customer-picker";
+import { PaymentModeField, paymentLine, type PaymentMethod } from "@/components/payment-mode-field";
 import { Phone, ReceiptText, ShieldCheck, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/invoice")({
@@ -64,6 +66,12 @@ const PHONE_KEY = "invoice-bot:phone:v1";
 function InvoiceChat() {
   const [phone, setPhone] = useState("");
   const [composerText, setComposerText] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
+  const [codAmount, setCodAmount] = useState("");
+
+  const appendToComposer = useCallback((block: string) => {
+    setComposerText((prev) => `${prev.trimEnd()}${prev.trim() ? "\n" : ""}${block}\n`);
+  }, []);
   const { messages, sendMessage, status, setMessages, error } = useChat({
     transport,
     onError: (err) => toast.error(err.message || "Kuch masla ho gaya"),
@@ -159,8 +167,17 @@ function InvoiceChat() {
                       phone={phone}
                       exportable
                       onSave={async (value) => {
+                        const amount = Number(codAmount.replace(/[^\d.]/g, ""));
                         const res = await saveInvoice({
-                          data: { invoiceText: value, phone: phone || undefined },
+                          data: {
+                            invoiceText: value,
+                            phone: phone || undefined,
+                            paymentMethod,
+                            codAmount:
+                              paymentMethod === "COD" && Number.isFinite(amount) && amount > 0
+                                ? amount
+                                : undefined,
+                          },
                         });
                         toast.success(
                           res.duplicate
@@ -200,13 +217,19 @@ function InvoiceChat() {
       </Conversation>
 
       <div className="sticky bottom-0 bg-background/95 pb-2 pt-2 backdrop-blur-sm sm:pb-4 sm:pt-3">
-        <div className="mb-2">
+        <div className="mb-2 space-y-2">
+          <CustomerPicker
+            useLabel="Invoice me daalein"
+            onUse={(block) => {
+              appendToComposer(block);
+              textareaRef.current?.focus();
+              toast.success("Customer detail invoice me daal diya");
+            }}
+          />
           <RateMiniCalculator
             useLabel="Invoice me daalein"
             onUse={(amount) => {
-              setComposerText((prev) =>
-                `${prev.trimEnd()}${prev.trim() ? "\n" : ""}Delivery Charges: ${amount}\n`,
-              );
+              appendToComposer(`Delivery Charges: ${amount}`);
               textareaRef.current?.focus();
               toast.success(`Delivery Rs ${amount} invoice me daal diya`);
             }}
@@ -230,6 +253,15 @@ function InvoiceChat() {
               </button>
             ) : null}
           </label>
+          <PaymentModeField
+            method={paymentMethod}
+            onMethodChange={(m) => {
+              setPaymentMethod(m);
+              appendToComposer(paymentLine(m, m === "COD" ? codAmount : ""));
+            }}
+            codAmount={codAmount}
+            onCodAmountChange={setCodAmount}
+          />
           <ChatComposer
             ref={textareaRef}
             onSubmit={handleSubmit}
