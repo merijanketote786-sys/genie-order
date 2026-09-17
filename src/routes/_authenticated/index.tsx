@@ -14,6 +14,7 @@ import { ScrollToEnd } from "@/components/scroll-to-end";
 import { loadChatHistory, saveChatHistory } from "@/lib/chat-history";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { OrderTemplateDialog } from "@/components/order-template-dialog";
+import { RateMiniCalculator } from "@/components/rate-mini-calculator";
 import { DEFAULT_ORDER_TEMPLATE } from "@/lib/order-template";
 import { saveOrder } from "@/lib/records.functions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -53,6 +54,7 @@ const STORAGE_KEY = "order-format-bot:messages:v1";
 
 function OrderChat() {
   const [orderTemplate, setOrderTemplate] = useState(DEFAULT_ORDER_TEMPLATE);
+  const [composerText, setComposerText] = useState("");
   const handleTemplateChange = useCallback((template: string) => setOrderTemplate(template), []);
   const transport = useMemo(
     () =>
@@ -154,6 +156,16 @@ function OrderChat() {
         </div>
         <OrderTemplateDialog template={orderTemplate} onTemplateChange={handleTemplateChange} />
       </div>
+      <div className="mt-2">
+        <RateMiniCalculator
+          useLabel="Order me daalein"
+          onUse={(amount) => {
+            setComposerText((prev) => `${prev.trimEnd()}${prev.trim() ? "\n" : ""}Delivery: ${amount}\n`);
+            textareaRef.current?.focus();
+            toast.success(`Delivery Rs ${amount} order me daal diya`);
+          }}
+        />
+      </div>
       <Conversation className="flex-1">
         <ConversationContent className="gap-4 px-0 pb-4 pt-3 sm:gap-6 sm:pb-6 sm:pt-5">
           {messages.length === 0 ? <EmptyState /> : null}
@@ -206,6 +218,8 @@ function OrderChat() {
             onSubmit={handleSubmit}
             status={status}
             disabled={isBusy}
+            value={composerText}
+            onValueChange={setComposerText}
             placeholder="Order details paste karein... (name, phone, city, address, product, total)"
             textareaClassName="min-h-20 px-3 py-2.5 text-sm leading-6 sm:min-h-32 sm:px-4 sm:py-3"
           />

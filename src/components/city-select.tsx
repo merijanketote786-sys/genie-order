@@ -8,9 +8,11 @@ interface Props {
   placeholder?: string;
   value: City | null;
   onChange: (city: City | null) => void;
+  /** Inline/compact layout (label hidden, chhoti height). */
+  compact?: boolean;
 }
 
-export function CitySelect({ id, label, placeholder, value, onChange }: Props) {
+export function CitySelect({ id, label, placeholder, value, onChange, compact }: Props) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
@@ -34,17 +36,28 @@ export function CitySelect({ id, label, placeholder, value, onChange }: Props) {
 
   return (
     <div className="relative" ref={wrapRef}>
-      <label htmlFor={id} className="flex items-center gap-2 text-sm font-semibold text-foreground">
+      <label
+        htmlFor={id}
+        className={
+          compact
+            ? "sr-only"
+            : "flex items-center gap-2 text-sm font-semibold text-foreground"
+        }
+      >
         <MapPin className="h-4 w-4 text-primary" /> {label}
       </label>
 
       {value ? (
-        <div className="mt-2 flex items-center justify-between gap-3 rounded-xl border border-primary bg-accent px-4 py-2.5">
+        <div
+          className={`flex items-center justify-between gap-2 rounded-lg border border-primary bg-accent ${compact ? "h-10 px-3" : "mt-2 rounded-xl px-4 py-2.5"}`}
+        >
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-accent-foreground">{value.n}</p>
-            <p className="truncate text-xs text-muted-foreground">
-              {value.b} branch · {value.p}
-            </p>
+            {compact ? null : (
+              <p className="truncate text-xs text-muted-foreground">
+                {value.b} branch · {value.p}
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -87,7 +100,7 @@ export function CitySelect({ id, label, placeholder, value, onChange }: Props) {
               setOpen(false);
             }
           }}
-          className="mt-2 h-12 w-full rounded-xl border border-input bg-background px-4 text-base text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/30"
+          className={`w-full border border-input bg-background text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/30 ${compact ? "h-10 rounded-lg px-3 text-sm" : "mt-2 h-12 rounded-xl px-4 text-base"}`}
         />
       )}
 

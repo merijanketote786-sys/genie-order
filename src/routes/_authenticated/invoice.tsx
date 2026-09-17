@@ -14,6 +14,7 @@ import { DefaultChatTransport, type UIMessage } from "ai";
 import { ScrollToEnd } from "@/components/scroll-to-end";
 import { loadChatHistory, saveChatHistory } from "@/lib/chat-history";
 import { WorkspaceHeader } from "@/components/workspace-header";
+import { RateMiniCalculator } from "@/components/rate-mini-calculator";
 import { Phone, ReceiptText, ShieldCheck, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -62,6 +63,7 @@ const PHONE_KEY = "invoice-bot:phone:v1";
 
 function InvoiceChat() {
   const [phone, setPhone] = useState("");
+  const [composerText, setComposerText] = useState("");
   const { messages, sendMessage, status, setMessages, error } = useChat({
     transport,
     onError: (err) => toast.error(err.message || "Kuch masla ho gaya"),
@@ -198,6 +200,18 @@ function InvoiceChat() {
       </Conversation>
 
       <div className="sticky bottom-0 bg-background/95 pb-2 pt-2 backdrop-blur-sm sm:pb-4 sm:pt-3">
+        <div className="mb-2">
+          <RateMiniCalculator
+            useLabel="Invoice me daalein"
+            onUse={(amount) => {
+              setComposerText((prev) =>
+                `${prev.trimEnd()}${prev.trim() ? "\n" : ""}Delivery Charges: ${amount}\n`,
+              );
+              textareaRef.current?.focus();
+              toast.success(`Delivery Rs ${amount} invoice me daal diya`);
+            }}
+          />
+        </div>
         <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/20">
           <label className="grid min-h-12 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-border px-3 sm:px-4">
             <Phone className="size-4 shrink-0 text-primary" />
@@ -221,6 +235,8 @@ function InvoiceChat() {
             onSubmit={handleSubmit}
             status={status}
             disabled={isBusy}
+            value={composerText}
+            onValueChange={setComposerText}
             placeholder="Products + prices paste karein... (e.g. Conditioner 250ml 750, Glycerine 250ml 250 ...)"
             textareaClassName="min-h-20 px-3 py-2.5 text-sm leading-6 sm:min-h-28 sm:px-4 sm:py-3"
           />
