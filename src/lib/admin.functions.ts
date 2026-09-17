@@ -406,11 +406,18 @@ export const createAppUser = createServerFn({ method: "POST" })
       })
       .eq("id", userId);
 
+    // keep role rows in the same workspace as the profile
+    await supabaseAdmin.from("user_roles").update({ workspace_id: ws }).eq("user_id", userId);
+
     if (data.role === "admin") {
       await supabaseAdmin
         .from("user_roles")
-        .upsert({ user_id: userId, role: "admin" }, { onConflict: "user_id,role" });
+        .upsert(
+          { user_id: userId, role: "admin", workspace_id: ws },
+          { onConflict: "user_id,role,workspace_id" },
+        );
     }
+
 
     return {
       ok: true as const,
