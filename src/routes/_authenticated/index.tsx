@@ -15,6 +15,8 @@ import { loadChatHistory, saveChatHistory } from "@/lib/chat-history";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { OrderTemplateDialog } from "@/components/order-template-dialog";
 import { RateMiniCalculator } from "@/components/rate-mini-calculator";
+import { CustomerPicker } from "@/components/customer-picker";
+import { PaymentModeField, paymentLine, type PaymentMethod } from "@/components/payment-mode-field";
 import { DEFAULT_ORDER_TEMPLATE } from "@/lib/order-template";
 import { saveOrder } from "@/lib/records.functions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -55,6 +57,14 @@ const STORAGE_KEY = "order-format-bot:messages:v1";
 function OrderChat() {
   const [orderTemplate, setOrderTemplate] = useState(DEFAULT_ORDER_TEMPLATE);
   const [composerText, setComposerText] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
+  const [codAmount, setCodAmount] = useState("");
+  const paymentRef = useRef({ method: "COD" as PaymentMethod, cod: "" });
+  paymentRef.current = { method: paymentMethod, cod: codAmount };
+
+  const appendToComposer = useCallback((block: string) => {
+    setComposerText((prev) => `${prev.trimEnd()}${prev.trim() ? "\n" : ""}${block}\n`);
+  }, []);
   const handleTemplateChange = useCallback((template: string) => setOrderTemplate(template), []);
   const transport = useMemo(
     () =>
@@ -110,7 +120,15 @@ function OrderChat() {
     const text = messageText(last);
     if (text.length < 10 || savedRef.current.has(text)) return;
     savedRef.current.add(text);
-    saveOrder({ data: { orderText: text } }).catch(() => {
+    const pay = paymentRef.current;
+    const amount = Number(pay.cod.replace(/[^\d.]/g, ""));
+    saveOrder({
+      data: {
+        orderText: text,
+        paymentMethod: pay.method,
+        codAmount: pay.method === "COD" && Number.isFinite(amount) && amount > 0 ? amount : undefined,
+      },
+    }).catch(() => {
       savedRef.current.delete(text);
     });
   }, [status, messages]);
@@ -156,11 +174,19 @@ function OrderChat() {
         </div>
         <OrderTemplateDialog template={orderTemplate} onTemplateChange={handleTemplateChange} />
       </div>
-      <div className="mt-2">
+      <div className="mt-2 space-y-2">
+        <CustomerPicker
+          useLabel="Order me daalein"
+          onUse={(block) => {
+            appendToComposer(block);
+            textareaRef.current?.focus();
+            toast.success("Customer detail order me daal diya");
+          }}
+        />
         <RateMiniCalculator
           useLabel="Order me daalein"
           onUse={(amount) => {
-            setComposerText((prev) => `${prev.trimEnd()}${prev.trim() ? "\n" : ""}Delivery: ${amount}\n`);
+            appendToComposer(`Delivery: ${amount}`);
             textareaRef.current?.focus();
             toast.success(`Delivery Rs ${amount} order me daal diya`);
           }}
@@ -213,6 +239,15 @@ function OrderChat() {
             <MessageSquareText className="size-4 text-primary" /> Customer order
             <span className="ml-auto hidden text-[11px] font-normal text-muted-foreground sm:inline">Enter to process · Shift+Enter for new line</span>
           </div>
+          <PaymentModeField
+            method={paymentMethod}
+            onMethodChange={(m) => {
+              setPaymentMethod(m);
+              appendToComposer(paymentLine(m, m === "COD" ? codAmount : ""));
+            }}
+            codAmount={codAmount}
+            onCodAmountChange={setCodAmount}
+          />
           <ChatComposer
             ref={textareaRef}
             onSubmit={handleSubmit}
