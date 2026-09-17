@@ -173,7 +173,15 @@ function InvoiceChat() {
             toast.success("Customer detail invoice me daal diya");
           }} />
         </WorkspaceTool>
+        <WorkspaceTool icon={Package} label="Product" title="Product select" description="Rate list se product, pack aur qty choose karein.">
+          <ProductPickerBody useLabel="Invoice me daalein" onUse={(line) => {
+            appendToComposer(line);
+            textareaRef.current?.focus();
+            toast.success("Product invoice me daal diya");
+          }} />
+        </WorkspaceTool>
         <WorkspaceTool icon={Calculator} label="Courier" title="Courier rate" description="Delivery charge foran calculate karein.">
+
           <RateMiniCalculatorBody useLabel="Invoice me daalein" onUse={(amount) => {
             appendToComposer(`Delivery Charges: ${amount}`);
             textareaRef.current?.focus();
