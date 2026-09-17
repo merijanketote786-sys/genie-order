@@ -178,7 +178,7 @@ export function OrderTemplateDialog({ template, onTemplateChange, compact = fals
           variant={compact ? "ghost" : "outline"}
           size="sm"
           disabled={loading}
-          className={compact ? "relative h-14 min-w-0 flex-1 flex-col gap-1 rounded-lg px-2 text-[10px] text-muted-foreground" : undefined}
+          className={compact ? "relative h-14 w-full min-w-0 flex-col gap-1 rounded-lg px-2 text-[10px] text-muted-foreground" : undefined}
         >
           <FilePenLine /> {compact ? "Template" : loading ? "Loading..." : selectedName ? selectedName : "Templates"}
           {compact && selectedName ? <span className="absolute right-2 top-2 size-1.5 rounded-full bg-success" /> : null}

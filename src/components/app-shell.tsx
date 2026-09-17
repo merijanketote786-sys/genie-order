@@ -100,13 +100,13 @@ export function AppShell({
                 to={tab.to}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                    "grid min-h-12 grid-cols-[34px_minmax(0,1fr)] items-center gap-2.5 rounded-lg px-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+                    "grid min-h-11 grid-cols-[32px_minmax(0,1fr)] items-center gap-2 rounded-lg px-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
                   isActive
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-muted hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
                 )}
               >
-                <span className={cn("grid size-8 place-items-center rounded-md", isActive && "bg-sidebar-primary text-sidebar-primary-foreground")}>
+                <span className={cn("grid size-7 place-items-center rounded-md", isActive && "bg-sidebar-primary text-sidebar-primary-foreground")}>
                   <Icon className="size-4.5" />
                 </span>
                 <span className="min-w-0">

@@ -37,7 +37,7 @@ export function WorkspaceTool({
           type="button"
           variant="ghost"
           className={cn(
-            "relative h-14 min-w-0 flex-1 flex-col gap-1 rounded-lg px-2 text-[10px] text-muted-foreground",
+            "relative h-14 w-full min-w-0 flex-col gap-1 rounded-lg px-2 text-[10px] text-muted-foreground",
             active && "bg-accent text-accent-foreground",
           )}
         >
