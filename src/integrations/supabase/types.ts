@@ -149,6 +149,8 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_selected: boolean
+          name: string
           template_text: string
           updated_at: string
           user_id: string
@@ -156,6 +158,8 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_selected?: boolean
+          name?: string
           template_text: string
           updated_at?: string
           user_id: string
@@ -163,6 +167,8 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_selected?: boolean
+          name?: string
           template_text?: string
           updated_at?: string
           user_id?: string
