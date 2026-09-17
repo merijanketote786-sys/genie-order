@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, FilePenLine, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
@@ -23,7 +23,7 @@ import {
   selectOrderTemplate,
   type OrderTemplateRow,
 } from "@/lib/order-template.functions";
-import { DEFAULT_ORDER_TEMPLATE, ORDER_TEMPLATE_MAX_LENGTH } from "@/lib/order-template";
+import { DEFAULT_ORDER_TEMPLATE, ORDER_TEMPLATE_MAX_LENGTH, ORDER_TEMPLATE_VARIABLES } from "@/lib/order-template";
 
 type OrderTemplateDialogProps = {
   template: string;
@@ -49,6 +49,7 @@ export function OrderTemplateDialog({ template, onTemplateChange, compact = fals
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const editorRef = useRef<HTMLTextAreaElement | null>(null);
 
   const selectedName = templates.find((t) => t.id === selectedId)?.name;
 
@@ -161,6 +162,23 @@ export function OrderTemplateDialog({ template, onTemplateChange, compact = fals
     toast.info(`"${row.name}" khul gayi — tabdeeli ke baad Update dabayein`);
   };
 
+  const insertVariable = (token: string) => {
+    const editor = editorRef.current;
+    const start = editor?.selectionStart ?? draft.length;
+    const end = editor?.selectionEnd ?? start;
+    const next = `${draft.slice(0, start)}${token}${draft.slice(end)}`;
+    if (next.length > ORDER_TEMPLATE_MAX_LENGTH) {
+      toast.error("Template ki maximum length poori ho gayi hai");
+      return;
+    }
+    setDraft(next);
+    requestAnimationFrame(() => {
+      editor?.focus();
+      const cursor = start + token.length;
+      editor?.setSelectionRange(cursor, cursor);
+    });
+  };
+
   return (
     <Dialog
       open={open}
@@ -265,7 +283,28 @@ export function OrderTemplateDialog({ template, onTemplateChange, compact = fals
             placeholder="Template ka naam (jaise: COD orders)"
             className="rounded-xl bg-card"
           />
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground">Variables — touch karke cursor par add karein</p>
+            <div className="flex max-h-24 flex-wrap gap-1.5 overflow-y-auto rounded-xl border border-border bg-surface-2 p-2">
+              {ORDER_TEMPLATE_VARIABLES.map((variable) => (
+                <Button
+                  key={variable.token}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={saving}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => insertVariable(variable.token)}
+                  className="h-8 rounded-md bg-card px-2.5 text-[11px]"
+                  title={`${variable.token} insert karein`}
+                >
+                  {variable.label}
+                </Button>
+              ))}
+            </div>
+          </div>
           <Textarea
+            ref={editorRef}
             id="order-template"
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
