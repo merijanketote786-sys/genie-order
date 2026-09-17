@@ -137,11 +137,11 @@ function RatesPage() {
         className="pb-4"
       />
       <div className="sticky top-0 z-10 bg-background/95 pb-2 pt-3 backdrop-blur-sm sm:pb-3 sm:pt-4">
-        <div className="mb-2 inline-flex min-h-11 w-full gap-1 rounded-lg border border-border bg-card p-1 sm:mb-3 sm:w-auto">
+        <div className="mb-2 grid min-h-11 w-full grid-cols-3 gap-1 rounded-lg border border-border bg-card p-1 sm:mb-3 sm:w-auto">
           <Button
             variant={mode === "view" ? "default" : "ghost"}
             onClick={() => setMode("view")}
-            className="h-9 flex-1 gap-1.5 sm:min-w-36"
+            className="h-11 min-w-0 flex-col gap-0.5 px-1 text-[10px] sm:h-9 sm:min-w-36 sm:flex-row sm:gap-1.5 sm:text-sm"
           >
             <Tag className="h-3.5 w-3.5" />
             Rate List
@@ -149,7 +149,7 @@ function RatesPage() {
           <Button
             variant={mode === "edit" ? "default" : "ghost"}
             onClick={() => setMode("edit")}
-            className="h-9 flex-1 gap-1.5 sm:min-w-36"
+            className="h-11 min-w-0 flex-col gap-0.5 px-1 text-[10px] sm:h-9 sm:min-w-36 sm:flex-row sm:gap-1.5 sm:text-sm"
           >
             <SlidersHorizontal className="h-3.5 w-3.5" />
             Price Customize
@@ -157,7 +157,7 @@ function RatesPage() {
           <Button
             variant={mode === "bulk" ? "default" : "ghost"}
             onClick={() => setMode("bulk")}
-            className="h-9 flex-1 gap-1.5 sm:min-w-36"
+            className="h-11 min-w-0 flex-col gap-0.5 px-1 text-[10px] sm:h-9 sm:min-w-36 sm:flex-row sm:gap-1.5 sm:text-sm"
           >
             <ListChecks className="h-3.5 w-3.5" />
             Bulk Edit

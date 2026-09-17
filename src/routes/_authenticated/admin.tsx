@@ -35,6 +35,8 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
+  BarChart3,
+  Database,
   Download,
   Eye,
   EyeOff,
@@ -75,6 +77,13 @@ export const Route = createFileRoute("/_authenticated/admin")({
 function AdminPage() {
   const access = useQuery({ queryKey: ["my-access"], queryFn: () => getMyAccess() });
   const isOwner = access.data?.isOwner === true;
+  const [section, setSection] = useState<"dashboard" | "users" | "records" | "export">("dashboard");
+  const sections = [
+    { key: "dashboard" as const, label: "Overview", icon: BarChart3 },
+    { key: "users" as const, label: "Users", icon: Users },
+    { key: "records" as const, label: "Records", icon: Database },
+    { key: "export" as const, label: "Export", icon: Download },
+  ];
 
   return (
     <AppShell title="Admin Panel" subtitle="Users, records aur access control" active="/admin">
@@ -102,10 +111,21 @@ function AdminPage() {
           </div>
         ) : (
           <>
-            <StatsSection />
-            <UsersSection />
-            <ExportSection />
-            <RecordsSection />
+            <div className="grid grid-cols-4 gap-1 rounded-xl border border-border bg-card p-1">
+              {sections.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Button key={item.key} variant={section === item.key ? "default" : "ghost"} onClick={() => setSection(item.key)} className="h-14 min-w-0 flex-col gap-1 px-1 text-[10px]">
+                    <Icon className="size-4" />
+                    <span className="max-w-full truncate">{item.label}</span>
+                  </Button>
+                );
+              })}
+            </div>
+            {section === "dashboard" ? <StatsSection /> : null}
+            {section === "users" ? <UsersSection /> : null}
+            {section === "records" ? <RecordsSection /> : null}
+            {section === "export" ? <ExportSection /> : null}
           </>
         )}
       </div>

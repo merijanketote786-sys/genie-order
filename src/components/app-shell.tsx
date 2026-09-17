@@ -2,6 +2,7 @@ import logoUrl from "@/assets/logo.webp";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Button } from "@/components/ui/button";
+import { WorkspaceNavDialog } from "@/components/workspace-nav-dialog";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import {
@@ -73,9 +74,10 @@ export function AppShell({
     staleTime: 5 * 60 * 1000,
   });
   const tabs = access.data?.isOwner ? [...TABS, ADMIN_TAB] : [...TABS];
+  const primaryTabs = TABS.slice(0, 4);
 
   return (
-    <div className="grid h-[100dvh] min-h-0 overflow-hidden bg-background lg:grid-cols-[264px_minmax(0,1fr)]">
+    <div className="grid h-[100dvh] min-h-0 overflow-hidden bg-background lg:grid-cols-[244px_minmax(0,1fr)]">
       <aside className="hidden min-h-0 flex-col border-r border-border bg-sidebar lg:flex">
         <div className="flex h-20 shrink-0 items-center gap-3 border-b border-sidebar-border px-5">
           <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg border border-sidebar-border bg-card">
@@ -87,7 +89,7 @@ export function AppShell({
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1 px-3 py-5" aria-label="Main navigation">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4" aria-label="Main navigation">
           <p className="mb-3 px-3 text-[10px] font-bold uppercase text-sidebar-muted">Operations</p>
           {tabs.map((tab) => {
             const isActive = tab.to === active;
@@ -98,13 +100,13 @@ export function AppShell({
                 to={tab.to}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "grid min-h-14 grid-cols-[36px_minmax(0,1fr)] items-center gap-3 rounded-lg px-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+                    "grid min-h-11 grid-cols-[32px_minmax(0,1fr)] items-center gap-2 rounded-lg px-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
                   isActive
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-muted hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
                 )}
               >
-                <span className={cn("grid size-9 place-items-center rounded-md", isActive && "bg-sidebar-primary text-sidebar-primary-foreground")}>
+                <span className={cn("grid size-7 place-items-center rounded-md", isActive && "bg-sidebar-primary text-sidebar-primary-foreground")}>
                   <Icon className="size-4.5" />
                 </span>
                 <span className="min-w-0">
@@ -144,19 +146,19 @@ export function AppShell({
               </span>
               <div className="min-w-0">
                 <p className="truncate text-[9px] font-bold uppercase text-muted-foreground">HB Chemicals Pakistan</p>
-                <p className="truncate font-display text-sm font-bold text-foreground">OrderBot</p>
+                 <p className="truncate font-display text-sm font-bold text-foreground">{title}</p>
               </div>
             </div>
             <div className="hidden min-w-0 lg:block">
               <h1 className="truncate font-display text-xl font-bold text-foreground">{title}</h1>
               <p className="truncate text-sm text-muted-foreground">{subtitle}</p>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               <Button
                 variant="outline"
                 size="icon"
                 onClick={() => window.location.reload()}
-                className="h-10 w-10 shrink-0 border-border bg-card"
+                  className="size-10 shrink-0 border-border bg-card"
                 title="Workspace refresh karein (data mehfooz rahega)"
                 aria-label="Refresh workspace"
               >
@@ -183,34 +185,9 @@ export function AppShell({
             </div>
           </div>
 
-          <nav
-            className="no-scrollbar flex gap-2 overflow-x-auto border-t border-border px-3 py-2.5 lg:hidden"
-            aria-label="Main navigation"
-          >
-            {tabs.map((tab) => {
-              const isActive = tab.to === active;
-              const Icon = tab.icon;
-              return (
-                <Link
-                  key={tab.to}
-                  to={tab.to}
-                  aria-current={isActive ? "page" : undefined}
-                  className={cn(
-                    "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-2 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    isActive
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "bg-surface-2 text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <Icon className="size-4 shrink-0" />
-                  {tab.label}
-                </Link>
-              );
-            })}
-          </nav>
         </header>
 
-        <main className="mx-auto flex min-h-0 w-full max-w-[1180px] flex-1 flex-col px-2.5 pb-[env(safe-area-inset-bottom)] sm:px-6 lg:px-8">
+        <main className="mx-auto flex min-h-0 w-full max-w-[1180px] flex-1 flex-col px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8 lg:pb-0">
           {access.data && access.data.isActive === false ? (
             <div className="glass-panel my-6 rounded-3xl px-4 py-10 text-center">
               <h2 className="font-display text-base font-bold text-foreground">Access band hai</h2>
@@ -222,6 +199,29 @@ export function AppShell({
             children
           )}
         </main>
+        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg lg:hidden" aria-label="Mobile navigation">
+          <div className="mx-auto grid max-w-lg grid-cols-5 gap-1 p-1.5">
+            {primaryTabs.map((tab) => {
+              const isActive = tab.to === active;
+              const Icon = tab.icon;
+              return (
+                <Link
+                  key={tab.to}
+                  to={tab.to}
+                  aria-current={isActive ? "page" : undefined}
+                  className={cn(
+                    "flex h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 text-[10px] font-semibold transition-colors",
+                    isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                  )}
+                >
+                  <Icon className="size-4.5 shrink-0" />
+                  <span className="max-w-full truncate">{tab.label}</span>
+                </Link>
+              );
+            })}
+            <WorkspaceNavDialog tabs={tabs} active={active} />
+          </div>
+        </nav>
       </section>
     </div>
   );

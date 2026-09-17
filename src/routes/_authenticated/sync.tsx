@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { WorkspaceHeader } from "@/components/workspace-header";
+import { WorkspaceTool } from "@/components/workspace-tool";
 import {
   AutoSyncCard,
   ConnectApiCard,
@@ -9,7 +10,7 @@ import {
   VyaparUploadCard,
 } from "@/components/vyapar-sync";
 import { createFileRoute } from "@tanstack/react-router";
-import { RefreshCw } from "lucide-react";
+import { ClipboardPaste, FileScan, FileSpreadsheet, HelpCircle, Plug, RefreshCw, Zap } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/sync")({
   head: () => ({
@@ -49,25 +50,22 @@ function SyncPage() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto pb-6 pt-3">
-        <AutoSyncCard />
-        <VyaparUploadCard />
-        <PasteRatesCard />
-        <DocumentImportCard />
-        <ConnectApiCard />
         <SyncStatusPanel />
-
-        <section className="glass-panel rounded-2xl px-4 py-4 text-sm">
-          <h2 className="font-display text-[15px] font-bold">Vyapar se export kaise karein</h2>
-          <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
-            <li>Vyapar Desktop kholein → Reports → Item / Stock Summary.</li>
-            <li>Export to Excel dabayein (file me Item Name aur Sale Price column zaroor hon).</li>
-            <li>Yahan wahi file choose kar ke "Rates update karein" dabayein.</li>
-          </ol>
-          <p className="mt-3 text-xs text-muted-foreground">
-            Note: jis row me rate khaali ya 0 ho, woh chhoR di jati hai — purana rate kabhi zaya
-            nahi hota.
-          </p>
-        </section>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <WorkspaceTool icon={FileSpreadsheet} label="Excel / CSV" title="Excel / CSV upload"><VyaparUploadCard /></WorkspaceTool>
+          <WorkspaceTool icon={ClipboardPaste} label="Paste rates" title="Rate list paste karein"><PasteRatesCard /></WorkspaceTool>
+          <WorkspaceTool icon={FileScan} label="PDF / Image" title="Document se rates"><DocumentImportCard /></WorkspaceTool>
+          <WorkspaceTool icon={Zap} label="Auto sync" title="Automatic sync"><AutoSyncCard /></WorkspaceTool>
+          <WorkspaceTool icon={Plug} label="API connect" title="Software connection"><ConnectApiCard /></WorkspaceTool>
+          <WorkspaceTool icon={HelpCircle} label="Help" title="Vyapar se export">
+            <ol className="list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
+              <li>Vyapar Desktop kholein → Reports → Item / Stock Summary.</li>
+              <li>Export to Excel dabayein; Item Name aur Sale Price columns zaroor hon.</li>
+              <li>Excel / CSV icon se file choose karke rates update karein.</li>
+            </ol>
+            <p className="mt-4 text-xs text-muted-foreground">Zero ya khaali rate wali row skip hoti hai; purana rate mehfooz rehta hai.</p>
+          </WorkspaceTool>
+        </div>
       </div>
     </AppShell>
   );

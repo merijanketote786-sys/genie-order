@@ -14,10 +14,12 @@ import { DefaultChatTransport, type UIMessage } from "ai";
 import { ScrollToEnd } from "@/components/scroll-to-end";
 import { loadChatHistory, saveChatHistory } from "@/lib/chat-history";
 import { WorkspaceHeader } from "@/components/workspace-header";
-import { RateMiniCalculator } from "@/components/rate-mini-calculator";
-import { CustomerPicker } from "@/components/customer-picker";
+import { RateMiniCalculatorBody } from "@/components/rate-mini-calculator";
+import { CustomerPickerBody } from "@/components/customer-picker";
+import { WorkspaceTool, WorkspaceToolDock } from "@/components/workspace-tool";
+import { Button } from "@/components/ui/button";
 import { PaymentModeField, paymentLine, stripPaymentLines, upsertPaymentLine, type PaymentMethod } from "@/components/payment-mode-field";
-import { Phone, ReceiptText, ShieldCheck, X } from "lucide-react";
+import { Calculator, CreditCard, Phone, ReceiptText, ShieldCheck, Users, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -152,6 +154,39 @@ function InvoiceChat() {
         description="Create a clean item invoice using live staff rates, then amend it through the same conversation."
         meta={["Live rates", "Editable", "WhatsApp ready"]}
       />
+      <WorkspaceToolDock>
+        <WorkspaceTool icon={Users} label="Customer" title="Customer search" description="Saved customer ko invoice mein add karein.">
+          <CustomerPickerBody useLabel="Invoice me daalein" onUse={(block) => {
+            appendToComposer(block);
+            textareaRef.current?.focus();
+            toast.success("Customer detail invoice me daal diya");
+          }} />
+        </WorkspaceTool>
+        <WorkspaceTool icon={Calculator} label="Courier" title="Courier rate" description="Delivery charge foran calculate karein.">
+          <RateMiniCalculatorBody useLabel="Invoice me daalein" onUse={(amount) => {
+            appendToComposer(`Delivery Charges: ${amount}`);
+            textareaRef.current?.focus();
+            toast.success(`Delivery Rs ${amount} invoice me daal diya`);
+          }} />
+        </WorkspaceTool>
+        <WorkspaceTool icon={CreditCard} label="Payment" title="Payment status" active={paymentEnabled}>
+          <PaymentModeField enabled={paymentEnabled} onEnabledChange={(on) => {
+            setPaymentEnabled(on);
+            if (on) setComposerText((prev) => upsertPaymentLine(prev, paymentLine(paymentMethod, paymentMethod === "COD" ? codAmount : "")));
+            else setComposerText((prev) => `${stripPaymentLines(prev)}${stripPaymentLines(prev).trim() ? "\n" : ""}`);
+          }} method={paymentMethod} onMethodChange={(m) => {
+            setPaymentMethod(m);
+            setComposerText((prev) => upsertPaymentLine(prev, paymentLine(m, m === "COD" ? codAmount : "")));
+          }} codAmount={codAmount} onCodAmountChange={setCodAmount} />
+        </WorkspaceTool>
+        <WorkspaceTool icon={Phone} label="WhatsApp" title="WhatsApp number" active={Boolean(phone)}>
+          <label className="grid min-h-12 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-border px-3">
+            <Phone className="size-4 shrink-0 text-primary" />
+            <input value={phone} onChange={(e) => updatePhone(e.target.value)} inputMode="tel" placeholder="03xxxxxxxxx" className="min-w-0 bg-transparent text-sm outline-none" autoComplete="tel" />
+            {phone ? <Button type="button" variant="ghost" size="icon-sm" onClick={() => updatePhone("")} aria-label="Clear number"><X /></Button> : null}
+          </label>
+        </WorkspaceTool>
+      </WorkspaceToolDock>
       <Conversation className="flex-1">
         <ConversationContent className="gap-4 px-0 pb-3 pt-3 sm:gap-6 sm:pb-4 sm:pt-5">
           {messages.length === 0 ? <EmptyState /> : null}
@@ -221,62 +256,7 @@ function InvoiceChat() {
       </Conversation>
 
       <div className="sticky bottom-0 bg-background/95 pb-2 pt-2 backdrop-blur-sm sm:pb-4 sm:pt-3">
-        <div className="mb-2 space-y-2">
-          <CustomerPicker
-            useLabel="Invoice me daalein"
-            onUse={(block) => {
-              appendToComposer(block);
-              textareaRef.current?.focus();
-              toast.success("Customer detail invoice me daal diya");
-            }}
-          />
-          <RateMiniCalculator
-            useLabel="Invoice me daalein"
-            onUse={(amount) => {
-              appendToComposer(`Delivery Charges: ${amount}`);
-              textareaRef.current?.focus();
-              toast.success(`Delivery Rs ${amount} invoice me daal diya`);
-            }}
-          />
-        </div>
         <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/20">
-          <label className="grid min-h-12 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-border px-3 sm:px-4">
-            <Phone className="size-4 shrink-0 text-primary" />
-            <span className="sr-only">Customer WhatsApp number</span>
-            <input
-              value={phone}
-              onChange={(e) => updatePhone(e.target.value)}
-              inputMode="tel"
-              placeholder="Customer WhatsApp number (03xxxxxxxxx)"
-              className="min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-              autoComplete="tel"
-            />
-            {phone ? (
-              <button type="button" onClick={() => updatePhone("")} aria-label="Clear number" className="grid size-10 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                <X className="size-4" />
-              </button>
-            ) : null}
-          </label>
-          <PaymentModeField
-            enabled={paymentEnabled}
-            onEnabledChange={(on) => {
-              setPaymentEnabled(on);
-              if (on) {
-                const line = paymentLine(paymentMethod, paymentMethod === "COD" ? codAmount : "");
-                setComposerText((prev) => upsertPaymentLine(prev, line));
-              } else {
-                setComposerText((prev) => `${stripPaymentLines(prev)}${stripPaymentLines(prev).trim() ? "\n" : ""}`);
-              }
-            }}
-            method={paymentMethod}
-            onMethodChange={(m) => {
-              setPaymentMethod(m);
-              const line = paymentLine(m, m === "COD" ? codAmount : "");
-              setComposerText((prev) => upsertPaymentLine(prev, line));
-            }}
-            codAmount={codAmount}
-            onCodAmountChange={setCodAmount}
-          />
           <ChatComposer
             ref={textareaRef}
             onSubmit={handleSubmit}
