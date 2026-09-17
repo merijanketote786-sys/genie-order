@@ -15,6 +15,8 @@ Rules:
 - Phone number ko Pakistani local format me likho: 03000000000 (11 digits, 0 se start). Agar user ne country code ke sath diya ho (jaise +923001234567 ya 923001234567 ya +92 300 1234567), to country code (+92 ya 92) hata do aur uski jagah 0 laga do. Spaces, dashes ya koi bhi separator hatao — sirf 11 continuous digits.
 - Numbers (Product Total, Delivery, Advance) me sirf digits/currency rakho jaisa user ne diya.
 - Agar user ne payment status "cc" (cash on delivery / COD wali cc) mention ki ho, to Product Total, Delivery, aur Advance teeno fields me sirf "0" likho (chahe user ne koi bhi amount di ho).
+- Template variables ko extracted values se replace karo: {{order_number}}, {{name}}, {{phone}}, {{city}}, {{address}}, {{product}}, {{qty}}, {{product_total}}, {{delivery}}, {{advance}}, {{status}}. Variable token output mein kabhi na chhorna; missing value ho to uski jagah blank rakho.
+- Variables template mein kisi bhi text ya line ke andar ho sakte hain. Baqi text, labels, line order aur punctuation bilkul template jaisi rakho.
 - Response template ki pehli line se seedha start karo.`;
 
 type ChatRequestBody = { messages?: unknown; template?: unknown };
