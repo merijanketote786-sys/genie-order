@@ -17,6 +17,7 @@ import { WorkspaceHeader } from "@/components/workspace-header";
 import { RateMiniCalculatorBody } from "@/components/rate-mini-calculator";
 import { CustomerPickerBody } from "@/components/customer-picker";
 import { WorkspaceTool, WorkspaceToolDock } from "@/components/workspace-tool";
+import { Button } from "@/components/ui/button";
 import { PaymentModeField, paymentLine, stripPaymentLines, upsertPaymentLine, type PaymentMethod } from "@/components/payment-mode-field";
 import { Calculator, CreditCard, Phone, ReceiptText, ShieldCheck, Users, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
