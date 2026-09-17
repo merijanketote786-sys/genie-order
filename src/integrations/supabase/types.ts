@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      courier_profiles: {
+        Row: {
+          config: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          source_file: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          config: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          source_file?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          source_file?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           address: string | null
