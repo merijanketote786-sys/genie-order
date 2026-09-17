@@ -81,11 +81,7 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
     toast.error("Order templates load nahi ho sakin");
   }, [templateQuery.isError]);
 
-  const startNew = () => {
-    setEditingId(null);
-    setName("");
-    setDraft(DEFAULT_ORDER_TEMPLATE);
-    setFormError(null);
+  const focusName = () => {
     requestAnimationFrame(() => {
       const input = document.getElementById("order-template-name") as HTMLInputElement | null;
       input?.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -93,11 +89,22 @@ export function OrderTemplateDialog({ template, onTemplateChange }: OrderTemplat
     });
   };
 
+  const startNew = () => {
+    setEditingId(null);
+    setName("");
+    setDraft(DEFAULT_ORDER_TEMPLATE);
+    setFormError(null);
+    setEditorOpen(true);
+    focusName();
+  };
+
   const startEdit = (row: OrderTemplateRow) => {
     setEditingId(row.id);
     setName(row.name);
     setDraft(row.template);
     setFormError(null);
+    setEditorOpen(true);
+    focusName();
   };
 
   const run = async (fn: () => Promise<any>, successMessage: string, fallback: string) => {
