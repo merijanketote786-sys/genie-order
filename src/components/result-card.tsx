@@ -132,6 +132,17 @@ export function ResultCard({
             {saved ? "Saved" : saving ? "Saving…" : "Save"}
           </Button>
         ) : null}
+        {forward ? (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => forward.onClick(text)}
+            className="h-11 flex-1 gap-1.5 rounded-xl border-border bg-card sm:h-9 sm:flex-none"
+          >
+            <ArrowLeftRight className="h-4 w-4" /> {forward.label}
+          </Button>
+        ) : null}
+
         {exportable ? (
           <>
             <Button
