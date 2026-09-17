@@ -115,7 +115,13 @@ function InvoiceChat() {
     } catch {
       // ignore
     }
+    const incoming = takeHandoff("invoice");
+    if (incoming) {
+      setComposerText(`${incoming.trim()}\n\nIs order ki invoice banayein.\n`);
+      toast.success("Order invoice section me aa gaya");
+    }
   }, []);
+
 
   const updatePhone = (value: string) => {
     const cleaned = value.replace(/[^\d+\s-]/g, "");
