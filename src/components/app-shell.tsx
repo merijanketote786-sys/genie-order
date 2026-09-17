@@ -72,7 +72,7 @@ export function AppShell({
     queryFn: () => getMyAccess(),
     staleTime: 5 * 60 * 1000,
   });
-  const tabs = access.data?.isAdmin ? [...TABS, ADMIN_TAB] : [...TABS];
+  const tabs = access.data?.isOwner ? [...TABS, ADMIN_TAB] : [...TABS];
 
   return (
     <div className="grid h-[100dvh] min-h-0 overflow-hidden bg-background lg:grid-cols-[264px_minmax(0,1fr)]">

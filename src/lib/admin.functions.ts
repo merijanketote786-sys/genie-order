@@ -2,8 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
+export const OWNER_EMAIL = "hhtraders008@gmail.com";
+
 export type AccessInfo = {
   isAdmin: boolean;
+  isOwner: boolean;
   isActive: boolean;
   email: string;
   fullName: string;
@@ -42,10 +45,13 @@ export const getMyAccess = createServerFn({ method: "GET" })
 
     const email = (claims as Record<string, unknown>)["email"];
 
+    const emailStr = typeof email === "string" ? email : "";
+
     return {
       isAdmin,
+      isOwner: emailStr.toLowerCase() === OWNER_EMAIL,
       isActive: profile.data?.is_active !== false,
-      email: typeof email === "string" ? email : "",
+      email: emailStr,
       fullName: profile.data?.full_name ?? "",
     } satisfies AccessInfo;
   });
@@ -229,5 +235,241 @@ export const getSyncConnectInfo = createServerFn({ method: "POST" })
       ok: true as const,
       endpoint: "https://orderbot.hbchemicalspakistan.com/api/public/sync/products",
       apiKey,
+    };
+  });
+
+/* ---------------------------- dashboard stats --------------------------- */
+
+async function workspaceOf(userId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("profiles")
+    .select("workspace_id")
+    .eq("id", userId)
+    .maybeSingle();
+  return data?.workspace_id ?? userId;
+}
+
+export type AdminStats = {
+  users: number;
+  activeUsers: number;
+  blockedUsers: number;
+  admins: number;
+  orders: number;
+  ordersToday: number;
+  customers: number;
+  invoices: number;
+  unpaidInvoices: number;
+  unpaidAmount: number;
+  products: number;
+  lastSyncAt: string | null;
+};
+
+export const getAdminStats = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    if (!(await isAdminUser(context.supabase, context.userId))) {
+      return { ok: false as const, stats: null, message: "Sirf admin" };
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const ws = await workspaceOf(context.userId);
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const count = async (table: "orders" | "customers" | "invoices" | "products") => {
+      const { count: c } = await supabaseAdmin
+        .from(table)
+        .select("id", { count: "exact", head: true })
+        .eq("workspace_id", ws);
+      return c ?? 0;
+    };
+
+    const [orders, customers, invoices, products] = await Promise.all([
+      count("orders"),
+      count("customers"),
+      count("invoices"),
+      count("products"),
+    ]);
+
+    const [{ count: ordersToday }, { data: unpaid }, { data: lastSync }, { data: profiles }, { data: roles }] =
+      await Promise.all([
+        supabaseAdmin
+          .from("orders")
+          .select("id", { count: "exact", head: true })
+          .eq("workspace_id", ws)
+          .gte("created_at", startOfDay.toISOString()),
+        supabaseAdmin
+          .from("invoices")
+          .select("total")
+          .eq("workspace_id", ws)
+          .neq("payment_status", "paid"),
+        supabaseAdmin
+          .from("sync_logs")
+          .select("synced_at")
+          .eq("workspace_id", ws)
+          .order("synced_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabaseAdmin.from("profiles").select("id, is_active").eq("workspace_id", ws),
+        supabaseAdmin.from("user_roles").select("user_id, role").eq("role", "admin"),
+      ]);
+
+    const memberIds = new Set((profiles ?? []).map((p) => p.id));
+    const stats: AdminStats = {
+      users: profiles?.length ?? 0,
+      activeUsers: (profiles ?? []).filter((p) => p.is_active !== false).length,
+      blockedUsers: (profiles ?? []).filter((p) => p.is_active === false).length,
+      admins: (roles ?? []).filter((r) => memberIds.has(r.user_id)).length,
+      orders,
+      ordersToday: ordersToday ?? 0,
+      customers,
+      invoices,
+      unpaidInvoices: unpaid?.length ?? 0,
+      unpaidAmount: (unpaid ?? []).reduce((sum, r) => sum + Number(r.total ?? 0), 0),
+      products,
+      lastSyncAt: lastSync?.synced_at ?? null,
+    };
+
+    return { ok: true as const, stats, message: "" };
+  });
+
+/* --------------------------- user create/delete -------------------------- */
+
+export const createAppUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        email: z.string().email(),
+        fullName: z.string().max(120).optional(),
+        password: z.string().min(8).max(72).optional(),
+        role: z.enum(["admin", "staff"]).default("staff"),
+        invite: z.boolean().default(false),
+        redirectTo: z.string().url().optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    if (!(await isAdminUser(context.supabase, context.userId))) {
+      return { ok: false as const, message: "Sirf admin naya user bana sakta hai." };
+    }
+    if (!data.invite && !data.password) {
+      return { ok: false as const, message: "Password likhein ya invite email bhejein." };
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const ws = await workspaceOf(context.userId);
+
+    let userId: string | null = null;
+    if (data.invite) {
+      const { data: res, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
+        redirectTo: data.redirectTo,
+        data: { full_name: data.fullName ?? "" },
+      });
+      if (error) return { ok: false as const, message: error.message };
+      userId = res.user?.id ?? null;
+    } else {
+      const { data: res, error } = await supabaseAdmin.auth.admin.createUser({
+        email: data.email,
+        password: data.password!,
+        email_confirm: true,
+        user_metadata: { full_name: data.fullName ?? "" },
+      });
+      if (error) return { ok: false as const, message: error.message };
+      userId = res.user?.id ?? null;
+    }
+
+    if (!userId) return { ok: false as const, message: "User ban to gaya, magar id nahi mili." };
+
+    await supabaseAdmin
+      .from("profiles")
+      .update({
+        workspace_id: ws,
+        full_name: data.fullName ?? "",
+        role: data.role,
+      })
+      .eq("id", userId);
+
+    if (data.role === "admin") {
+      await supabaseAdmin
+        .from("user_roles")
+        .upsert({ user_id: userId, role: "admin" }, { onConflict: "user_id,role" });
+    }
+
+    return {
+      ok: true as const,
+      message: data.invite ? "Invite email bhej diya" : "Naya user ban gaya",
+    };
+  });
+
+export const deleteAppUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ userId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    if (!(await isAdminUser(context.supabase, context.userId))) {
+      return { ok: false as const, message: "Sirf admin user delete kar sakta hai." };
+    }
+    if (data.userId === context.userId) {
+      return { ok: false as const, message: "Apna hi account delete nahi kar sakte." };
+    }
+    const email = (context.claims as Record<string, unknown>)["email"];
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: target } = await supabaseAdmin.auth.admin.getUserById(data.userId);
+    if (target.user?.email?.toLowerCase() === OWNER_EMAIL) {
+      return { ok: false as const, message: "Owner account delete nahi ho sakta." };
+    }
+    if (typeof email === "string" && email.toLowerCase() !== OWNER_EMAIL) {
+      return { ok: false as const, message: "User delete sirf owner account kar sakta hai." };
+    }
+
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    if (error) return { ok: false as const, message: error.message };
+    return { ok: true as const, message: "User delete ho gaya" };
+  });
+
+/* ------------------------------ CSV export ------------------------------ */
+
+function toCsv(rows: Record<string, unknown>[]) {
+  if (rows.length === 0) return "";
+  const headers = Object.keys(rows[0]!);
+  const esc = (v: unknown) => {
+    const s = v == null ? "" : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  return [headers.join(","), ...rows.map((r) => headers.map((h) => esc(r[h])).join(","))].join("\n");
+}
+
+export const exportRecordsCsv = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ kind: z.enum(["orders", "invoices", "customers", "products"]) }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    if (!(await isAdminUser(context.supabase, context.userId))) {
+      return { ok: false as const, message: "Sirf admin export kar sakta hai." };
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const ws = await workspaceOf(context.userId);
+
+    const columns: Record<string, string> = {
+      orders: "order_number, customer_name, phone, city, address, product, qty, product_total, delivery, advance, status, created_at",
+      invoices: "invoice_number, customer_name, phone, total, payment_status, paid_at, created_at",
+      customers: "name, phone, city, address, created_at",
+      products: "name, unit, sale_price, p100_staff_price, p250_staff_price, p500_staff_price, stock, updated_at",
+    };
+
+    const { data: rows, error } = await supabaseAdmin
+      .from(data.kind)
+      .select(columns[data.kind]!)
+      .eq("workspace_id", ws)
+      .limit(5000);
+    if (error) return { ok: false as const, message: error.message };
+
+    return {
+      ok: true as const,
+      fileName: `${data.kind}-${new Date().toISOString().slice(0, 10)}.csv`,
+      csv: toCsv((rows ?? []) as unknown as Record<string, unknown>[]),
+      rows: rows?.length ?? 0,
+      message: "",
     };
   });
