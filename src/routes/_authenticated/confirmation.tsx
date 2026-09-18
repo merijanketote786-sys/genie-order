@@ -21,7 +21,7 @@ import {
   type ConfirmationValues,
 } from "@/lib/confirmation";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { CreditCard, Eraser, FileSignature, Sparkles, Users } from "lucide-react";
+import { CreditCard, Eraser, FileSignature, Sparkles, Trash2, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -74,22 +74,32 @@ function ConfirmationPage() {
   };
 
 
-  const set = <K extends keyof ConfirmationValues>(key: K, value: ConfirmationValues[K]) =>
+  const set = <K extends keyof ConfirmationValues>(key: K, value: ConfirmationValues[K]) => {
+    // Koi bhi field badle to neeche para purana performa foran hata dein —
+    // naya performa sirf "Performa banayein" se bane ga.
+    setPerforma("");
     setValues((prev) => ({ ...prev, [key]: value }));
+  };
 
   useEffect(() => {
+    let draft = EMPTY_CONFIRMATION;
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) setValues({ ...EMPTY_CONFIRMATION, ...JSON.parse(saved) });
+      if (saved) draft = { ...EMPTY_CONFIRMATION, ...JSON.parse(saved) };
     } catch {
       // ignore
     }
     // Peek (remove nahi): agar page remount ho jaye to dobara apply ho jaye.
     const incoming = peekHandoff("confirmation");
     if (incoming) {
-      const { invoice } = applyInvoiceText(incoming);
-      setValues((prev) => ({ ...prev, invoice }));
+      const { invoice, pay } = applyInvoiceText(incoming);
+      const merged = { ...draft, invoice };
+      setValues(merged);
+      // Nayi invoice par purana performa hata kar naya foran bana dein.
+      buildFrom(merged, pay.method ? { method: pay.method, codAmount: pay.codAmount, status: pay.status } : undefined);
       toast.success("Invoice confirmation section me aa gayi");
+    } else {
+      setValues(draft);
     }
   }, []);
 
@@ -211,6 +221,7 @@ function ConfirmationPage() {
             <CustomerPickerBody
               useLabel="Confirmation me daalein"
               onUse={(_text, customer) => {
+                setPerforma("");
                 setValues((prev) => ({
                   ...prev,
                   name: customer.name || prev.name,
@@ -333,18 +344,35 @@ function ConfirmationPage() {
         </section>
 
         {performa ? (
-          <ResultCard
-            text={performa}
-            label="Order performa"
-            phone={values.phone}
-            forward={{
-              label: "Order me bhejein",
-              onClick: (value) => {
-                setHandoff("order", value);
-                navigate({ to: "/" });
-              },
-            }}
-          />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] font-bold uppercase text-muted-foreground">Order performa</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setPerforma("");
+                  toast.success("Performa delete ho gaya");
+                }}
+                className="h-8 gap-1.5 rounded-lg text-xs"
+              >
+                <Trash2 className="size-3.5" /> Delete
+              </Button>
+            </div>
+            <ResultCard
+              text={performa}
+              label="Order performa"
+              phone={values.phone}
+              forward={{
+                label: "Order me bhejein",
+                onClick: (value) => {
+                  setHandoff("order", value);
+                  navigate({ to: "/" });
+                },
+              }}
+            />
+          </div>
         ) : (
           <p className="pb-4 text-center text-xs text-muted-foreground">
             Performa banane ke baad yahan preview aur WhatsApp share button aa jayega.
