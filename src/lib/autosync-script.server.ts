@@ -157,6 +157,7 @@ Get-Process powershell -ErrorAction SilentlyContinue | Where-Object { $_.Path -a
 Start-Process powershell -ArgumentList ('-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + $watch + '"')
 Write-Host ''
 Write-Host 'OrderBot auto-sync ready.'
+if ($autoStart) { Write-Host 'Windows start hote hi sync khud chalu ho jayega.' } else { Write-Host 'Note: auto-start set nahi ho saka. Setup file ko har restart ke baad ek baar chala lein (ya right-click > Run as administrator).' }
 Write-Host 'Vyapar se export hamesha is folder me save karein: ${opts.folder}'
 Write-Host 'Rates khud ba khud update ho jayenge. Ye window band kar sakte hain.'
 Start-Sleep -Seconds 8
