@@ -223,6 +223,7 @@ function ConfirmationPage() {
             <CustomerPickerBody
               useLabel="Confirmation me daalein"
               onUse={(_text, customer) => {
+                setPerforma("");
                 setValues((prev) => ({
                   ...prev,
                   name: customer.name || prev.name,
