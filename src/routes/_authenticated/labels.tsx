@@ -13,7 +13,9 @@ import { getMySettings } from "@/lib/settings.functions";
 import { getMyLabelSettings, saveMyLabelSettings } from "@/lib/label-settings.functions";
 import {
   BARCODE_FORMATS,
+  DEFAULT_FONT_FAMILY,
   FIELD_VARIABLES,
+  FONT_FAMILIES,
   PRINTER_PRESETS,
   defaultConfig,
   renderTemplate,
@@ -241,23 +243,26 @@ function LabelsPage() {
   const patchField = (id: string, patch: Partial<LabelField>) =>
     setConfig((c) => ({ ...c, fields: c.fields.map((f) => (f.id === id ? { ...f, ...patch } : f)) }));
 
-  const addField = () => {
+  const addField = (kind: "text" | "headline" = "text") => {
     const id = crypto.randomUUID();
+    const headline = kind === "headline";
     setConfig((c) => ({
       ...c,
       fields: [
         ...c.fields,
         {
           id,
-          label: `Custom text ${c.fields.length + 1}`,
-          template: "Apna text likhein",
+          label: headline ? `Headline ${c.fields.length + 1}` : `Custom text ${c.fields.length + 1}`,
+          template: headline ? "NAYI HEADLINE" : "Apna text likhein",
           enabled: true,
           xMm: 1,
           yMm: Math.min(printer.heightMm - 3, 2 + c.fields.length * 3.5),
           widthMm: Math.max(10, printer.widthMm - 2),
-          fontPt: 7,
-          bold: false,
-          uppercase: false,
+          fontPt: headline ? 12 : 7,
+          fontFamily: DEFAULT_FONT_FAMILY,
+          bold: headline,
+          italic: false,
+          uppercase: headline,
           underline: false,
           align: "center",
         },
@@ -413,7 +418,8 @@ function LabelsPage() {
             <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-[11px] font-semibold text-muted-foreground">
-                  Text ko drag karke move karein; corner ko tircha drag karke font aur width chhoti bari karein.
+                  Text pe double-click karke seedha yahin likhein; drag karke move karein; corner ko tircha drag
+                  karke font aur width chhoti bari karein.
                 </p>
                 <label className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
                   Zoom
@@ -438,6 +444,7 @@ function LabelsPage() {
                   onSelect={setSelection}
                   onPatchField={(id, patch) => patchField(id, patch as Partial<LabelField>)}
                   onPatchBarcode={(patch) => setConfig((c) => ({ ...c, barcode: { ...c.barcode, ...patch } }))}
+                  onEditText={(id, template) => patchField(id, { template })}
                 />
               </div>
 
@@ -476,6 +483,16 @@ function LabelsPage() {
                   className="inline-flex h-8 items-center gap-1 rounded-lg border border-dashed border-border px-2.5 text-[11px] font-semibold text-foreground hover:bg-muted"
                 >
                   <Plus className="size-3.5" /> Custom text
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const id = addField("headline");
+                    setSelection({ kind: "field", id });
+                  }}
+                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-dashed border-primary px-2.5 text-[11px] font-semibold text-primary hover:bg-primary/10"
+                >
+                  <Plus className="size-3.5" /> Nayi headline
                 </button>
               </div>
             </div>
@@ -556,6 +573,21 @@ function LabelsPage() {
                 </div>
 
                 <div className="mt-2 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                  <Labeled title="Font style">
+                    <select
+                      className={smallInput}
+                      value={selectedField.fontFamily || DEFAULT_FONT_FAMILY}
+                      aria-label="Font style"
+                      style={{ fontFamily: selectedField.fontFamily || DEFAULT_FONT_FAMILY }}
+                      onChange={(e) => patchField(selectedField.id, { fontFamily: e.target.value })}
+                    >
+                      {FONT_FAMILIES.map((f) => (
+                        <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>
+                          {f.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Labeled>
                   <Labeled title="Font (pt)">
                     <NumInput
                       value={selectedField.fontPt}
@@ -607,6 +639,14 @@ function LabelsPage() {
                           onChange={(e) => patchField(selectedField.id, { bold: e.target.checked })}
                         />
                         Bold
+                      </label>
+                      <label className="flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedField.italic}
+                          onChange={(e) => patchField(selectedField.id, { italic: e.target.checked })}
+                        />
+                        Italic
                       </label>
                       <label className="flex items-center gap-1">
                         <input
@@ -1076,7 +1116,9 @@ function LabelCard({
                 top: `${f.yMm}mm`,
                 width: `${f.widthMm}mm`,
                 fontSize: `${f.fontPt}pt`,
+                fontFamily: f.fontFamily,
                 fontWeight: f.bold ? 700 : 400,
+                fontStyle: f.italic ? "italic" : "normal",
                 textTransform: f.uppercase ? "uppercase" : "none",
                 textDecoration: f.underline ? "underline" : "none",
                 textAlign: f.align,

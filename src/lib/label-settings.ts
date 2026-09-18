@@ -28,6 +28,21 @@ export type PrinterProfile = {
 
 export type TextAlign = "left" | "center" | "right";
 
+/** Print-safe font families — thermal printers pe reliably render hote hain. */
+export const FONT_FAMILIES = [
+  { label: "Arial", value: "Arial, Helvetica, sans-serif" },
+  { label: "Helvetica", value: "Helvetica, Arial, sans-serif" },
+  { label: "Verdana", value: "Verdana, Geneva, sans-serif" },
+  { label: "Tahoma", value: "Tahoma, Verdana, sans-serif" },
+  { label: "Trebuchet", value: "'Trebuchet MS', Tahoma, sans-serif" },
+  { label: "Times", value: "'Times New Roman', Times, serif" },
+  { label: "Georgia", value: "Georgia, 'Times New Roman', serif" },
+  { label: "Courier", value: "'Courier New', Courier, monospace" },
+  { label: "Impact", value: "Impact, Haettenschweiler, sans-serif" },
+] as const;
+
+export const DEFAULT_FONT_FAMILY = FONT_FAMILIES[0].value;
+
 export type LabelField = {
   id: string;
   label: string;
@@ -37,7 +52,9 @@ export type LabelField = {
   yMm: number;
   widthMm: number;
   fontPt: number;
+  fontFamily: string;
   bold: boolean;
+  italic: boolean;
   uppercase: boolean;
   underline: boolean;
   align: TextAlign;
@@ -101,7 +118,9 @@ export function defaultConfig(): LabelConfig {
         yMm: 1.5,
         widthMm: 46,
         fontPt: 11,
+        fontFamily: DEFAULT_FONT_FAMILY,
         bold: true,
+        italic: false,
         uppercase: true,
         underline: true,
         align: "center",
@@ -115,7 +134,9 @@ export function defaultConfig(): LabelConfig {
         yMm: 8.5,
         widthMm: 46,
         fontPt: 13,
+        fontFamily: DEFAULT_FONT_FAMILY,
         bold: true,
+        italic: false,
         uppercase: true,
         underline: false,
         align: "center",
@@ -129,7 +150,9 @@ export function defaultConfig(): LabelConfig {
         yMm: 16.5,
         widthMm: 46,
         fontPt: 10,
+        fontFamily: DEFAULT_FONT_FAMILY,
         bold: true,
+        italic: false,
         uppercase: false,
         underline: false,
         align: "center",
@@ -177,7 +200,9 @@ export function normalizeConfig(raw: unknown): LabelConfig {
           yMm: num(f?.yMm, 1, -50, 300),
           widthMm: num(f?.widthMm, 40, 2, 300),
           fontPt: num(f?.fontPt, 7, 3, 72),
+          fontFamily: String(f?.fontFamily ?? DEFAULT_FONT_FAMILY) || DEFAULT_FONT_FAMILY,
           bold: Boolean(f?.bold),
+          italic: Boolean(f?.italic),
           uppercase: Boolean(f?.uppercase),
           underline: Boolean(f?.underline),
           align: (["left", "center", "right"] as string[]).includes(String(f?.align))
