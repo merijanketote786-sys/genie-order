@@ -796,18 +796,21 @@ function LabelsPage() {
                     <div className="grid gap-2 sm:grid-cols-4">
                       <input
                         className={`${inputCls} sm:col-span-2`}
+                        placeholder="Product naam"
                         value={r.name}
                         aria-label="Naam"
                         onChange={(e) => update(r.id, { name: e.target.value })}
                       />
                       <input
                         className={inputCls}
+                        placeholder="Barcode code"
                         value={r.code}
                         aria-label="Barcode code"
                         onChange={(e) => update(r.id, { code: e.target.value })}
                       />
                       <input
                         className={inputCls}
+                        placeholder="Price"
                         value={r.price}
                         aria-label="Price"
                         inputMode="numeric"
@@ -815,6 +818,7 @@ function LabelsPage() {
                       />
                       <input
                         className={inputCls}
+                        placeholder="Pack (250 gram)"
                         value={r.pack}
                         aria-label="Pack"
                         onChange={(e) => update(r.id, { pack: e.target.value })}
@@ -829,6 +833,9 @@ function LabelsPage() {
                           onChange={(e) =>
                             update(r.id, { qty: Number(e.target.value.replace(/[^\d]/g, "")) || 0 })
                           }
+                          onBlur={() => {
+                            if (r.qty < 1) update(r.id, { qty: 1 });
+                          }}
                         />
                       </label>
                     </div>
