@@ -258,6 +258,7 @@ function LabelsPage() {
           fontPt: 7,
           bold: false,
           uppercase: false,
+          underline: false,
           align: "center",
         },
       ],
@@ -611,6 +612,14 @@ function LabelsPage() {
                           onChange={(e) => patchField(selectedField.id, { uppercase: e.target.checked })}
                         />
                         CAPS
+                      </label>
+                      <label className="flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedField.underline}
+                          onChange={(e) => patchField(selectedField.id, { underline: e.target.checked })}
+                        />
+                        Underline
                       </label>
                     </div>
                   </Labeled>
@@ -1057,6 +1066,7 @@ function LabelCard({
                 fontSize: `${f.fontPt}pt`,
                 fontWeight: f.bold ? 700 : 400,
                 textTransform: f.uppercase ? "uppercase" : "none",
+                textDecoration: f.underline ? "underline" : "none",
                 textAlign: f.align,
                 lineHeight: 1.1,
                 whiteSpace: "nowrap",

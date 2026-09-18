@@ -109,6 +109,7 @@ export function LabelCanvas({
                 fontSize: f.fontPt * PT_TO_MM * scale,
                 fontWeight: f.bold ? 700 : 400,
                 textTransform: f.uppercase ? "uppercase" : "none",
+                textDecoration: f.underline ? "underline" : "none",
                 textAlign: f.align,
                 lineHeight: 1.1,
                 whiteSpace: "nowrap",
