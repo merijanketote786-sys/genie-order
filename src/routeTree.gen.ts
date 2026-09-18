@@ -26,6 +26,7 @@ import { Route as AuthenticatedInvoiceRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedExtractRouteImport } from './routes/_authenticated/extract'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
+import { Route as AuthenticatedConfirmationRouteImport } from './routes/_authenticated/confirmation'
 import { Route as AuthenticatedCalculatorRouteImport } from './routes/_authenticated/calculator'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
@@ -117,6 +118,12 @@ const AuthenticatedCustomersRoute = AuthenticatedCustomersRouteImport.update({
   path: '/customers',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedConfirmationRoute =
+  AuthenticatedConfirmationRouteImport.update({
+    id: '/confirmation',
+    path: '/confirmation',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCalculatorRoute = AuthenticatedCalculatorRouteImport.update({
   id: '/calculator',
   path: '/calculator',
@@ -157,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/calculator': typeof AuthenticatedCalculatorRoute
+  '/confirmation': typeof AuthenticatedConfirmationRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/extract': typeof AuthenticatedExtractRoute
   '/history': typeof AuthenticatedHistoryRoute
@@ -180,6 +188,7 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/calculator': typeof AuthenticatedCalculatorRoute
+  '/confirmation': typeof AuthenticatedConfirmationRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/extract': typeof AuthenticatedExtractRoute
   '/history': typeof AuthenticatedHistoryRoute
@@ -206,6 +215,7 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/calculator': typeof AuthenticatedCalculatorRoute
+  '/_authenticated/confirmation': typeof AuthenticatedConfirmationRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/extract': typeof AuthenticatedExtractRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
@@ -233,6 +243,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/admin'
     | '/calculator'
+    | '/confirmation'
     | '/customers'
     | '/extract'
     | '/history'
@@ -256,6 +267,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/admin'
     | '/calculator'
+    | '/confirmation'
     | '/customers'
     | '/extract'
     | '/history'
@@ -281,6 +293,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/admin'
     | '/_authenticated/calculator'
+    | '/_authenticated/confirmation'
     | '/_authenticated/customers'
     | '/_authenticated/extract'
     | '/_authenticated/history'
@@ -434,6 +447,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCustomersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/confirmation': {
+      id: '/_authenticated/confirmation'
+      path: '/confirmation'
+      fullPath: '/confirmation'
+      preLoaderRoute: typeof AuthenticatedConfirmationRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/calculator': {
       id: '/_authenticated/calculator'
       path: '/calculator'
@@ -482,6 +502,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedCalculatorRoute: typeof AuthenticatedCalculatorRoute
+  AuthenticatedConfirmationRoute: typeof AuthenticatedConfirmationRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedExtractRoute: typeof AuthenticatedExtractRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
@@ -497,6 +518,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedCalculatorRoute: AuthenticatedCalculatorRoute,
+  AuthenticatedConfirmationRoute: AuthenticatedConfirmationRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedExtractRoute: AuthenticatedExtractRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
