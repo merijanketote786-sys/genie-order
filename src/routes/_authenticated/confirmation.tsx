@@ -61,9 +61,9 @@ function ConfirmationPage() {
   const navigate = useNavigate();
 
   /** Invoice text ko number-wise sort karta hai aur COD/CC status set karta hai. */
-  const applyInvoiceText = (raw: string) => {
+  const applyInvoiceText = (raw: string, detectSource = raw) => {
     const invoice = numberInvoiceItems(raw);
-    const pay = detectInvoicePayment(raw);
+    const pay = detectInvoicePayment(detectSource);
     if (pay.method) {
       setPaymentEnabled(true);
       setPaymentMethod(pay.method);
