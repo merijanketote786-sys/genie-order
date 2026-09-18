@@ -64,26 +64,11 @@ export const Route = createFileRoute("/_authenticated/labels")({
 });
 
 type LabelRow = { id: string; name: string; code: string; price: string; pack: string; qty: number };
-type Pack = "100" | "250" | "500" | "unit";
-
-const PACKS: Array<{ id: Pack; label: string }> = [
-  { id: "100", label: "100 gram" },
-  { id: "250", label: "250 gram" },
-  { id: "500", label: "500 gram" },
-  { id: "unit", label: "1 unit" },
-];
 
 function cleanName(name: string) {
   return name
     .replace(/\s*\/\s*(kg|kilogram|g|gm|gram|ml|ltr|litre|liter|pcs|pc|piece|bottle)s?\b/gi, "")
     .trim();
-}
-
-function priceFor(p: DbProduct, pack: Pack): number | null {
-  if (pack === "100") return p.p100;
-  if (pack === "250") return p.p250;
-  if (pack === "500") return p.p500;
-  return p.sale;
 }
 
 function autoCode(name: string, pack: string) {
@@ -98,13 +83,10 @@ const smallInput =
   "h-9 w-full rounded-lg border border-input bg-background px-2 text-xs text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/30";
 
 function LabelsPage() {
-  const loadProducts = useServerFn(getProducts);
   const loadLabelSettings = useServerFn(getMyLabelSettings);
   const persistLabelSettings = useServerFn(saveMyLabelSettings);
 
   const [rows, setRows] = useState<LabelRow[]>([]);
-  const [term, setTerm] = useState("");
-  const [pack, setPack] = useState<Pack>("250");
   const [manual, setManual] = useState({ name: "", code: "", price: "", pack: "", qty: "1" });
   const [config, setConfig] = useState<LabelConfig>(() => defaultConfig());
   const [showDesign, setShowDesign] = useState(false);
