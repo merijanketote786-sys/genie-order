@@ -7,6 +7,7 @@ export const APP_SECTIONS = [
   { key: "/history", label: "History" },
   { key: "/invoices", label: "Invoices" },
   { key: "/customers", label: "Customers" },
+  { key: "/labels", label: "Labels" },
   { key: "/sync", label: "Sync" },
 ] as const;
 

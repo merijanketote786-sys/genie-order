@@ -11,6 +11,7 @@ import {
   FileCheck2,
   FileScan,
   History,
+  QrCode,
   ReceiptText,
   RefreshCw,
   RotateCcw,
@@ -34,6 +35,7 @@ const TABS = [
   { to: "/history", label: "History", description: "Saved orders record", icon: History },
   { to: "/invoices", label: "Invoices", description: "Invoice record aur status", icon: FileCheck2 },
   { to: "/customers", label: "Customers", description: "Customer record", icon: Users },
+  { to: "/labels", label: "Labels", description: "Barcode labels print", icon: QrCode },
   { to: "/sync", label: "Sync", description: "Vyapar rates update", icon: RefreshCw },
 ] as const;
 
@@ -63,6 +65,7 @@ type AppShellProps = {
     | "/history"
     | "/invoices"
     | "/customers"
+    | "/labels"
     | "/sync"
     | "/settings"
     | "/admin";
