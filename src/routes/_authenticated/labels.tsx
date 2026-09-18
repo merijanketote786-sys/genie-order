@@ -149,7 +149,7 @@ function LabelsPage() {
   const remove = (id: string) => setRows((prev) => prev.filter((r) => r.id !== id));
 
   const printLabels = useMemo(
-    () => rows.flatMap((r) => Array.from({ length: r.qty }, (_, i) => ({ ...r, key: `${r.id}-${i}` }))),
+    () => rows.flatMap((r) => Array.from({ length: Math.max(1, r.qty) }, (_, i) => ({ ...r, key: `${r.id}-${i}` }))),
     [rows],
   );
 
@@ -823,10 +823,11 @@ function LabelsPage() {
                         Qty
                         <input
                           className={`${inputCls} w-20`}
-                          value={String(r.qty)}
+                          value={r.qty === 0 ? "" : String(r.qty)}
                           inputMode="numeric"
+                          placeholder="1"
                           onChange={(e) =>
-                            update(r.id, { qty: Math.max(1, Number(e.target.value.replace(/[^\d]/g, "")) || 1) })
+                            update(r.id, { qty: Number(e.target.value.replace(/[^\d]/g, "")) || 0 })
                           }
                         />
                       </label>
