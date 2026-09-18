@@ -39,6 +39,7 @@ export type LabelField = {
   fontPt: number;
   bold: boolean;
   uppercase: boolean;
+  underline: boolean;
   align: TextAlign;
 };
 
