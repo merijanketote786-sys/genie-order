@@ -10,15 +10,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ChatComposer } from "@/components/lightweight-chat";
 import { supabase } from "@/integrations/supabase/client";
-import { takeHandoff } from "@/lib/handoff";
+import { setHandoff, takeHandoff } from "@/lib/handoff";
 import { DEFAULT_CONFIRMATION_TEMPLATE } from "@/lib/order-template";
 import {
   EMPTY_CONFIRMATION,
+  detectInvoicePayment,
   grandTotal,
+  numberInvoiceItems,
   renderConfirmation,
   type ConfirmationValues,
 } from "@/lib/confirmation";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CreditCard, Eraser, FileSignature, Sparkles, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
