@@ -776,7 +776,7 @@ function LabelsPage() {
               <button
                 type="button"
                 disabled={!printLabels.length}
-                onClick={() => printLabelSheet(printer)}
+                onClick={() => printLabelSheet(printer, printLabels.length)}
                 className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
                 <Printer className="size-4" /> Print
@@ -854,7 +854,9 @@ function LabelsPage() {
 
         <PrintSheet>
           {printLabels.map((r) => (
-            <LabelCard key={r.key} config={config} printer={printer} values={valuesFor(r)} />
+            <div className="label-print-page" key={r.key}>
+              <LabelCard config={config} printer={printer} values={valuesFor(r)} />
+            </div>
           ))}
         </PrintSheet>
       </div>
@@ -863,7 +865,7 @@ function LabelsPage() {
   );
 }
 
-function printLabelSheet(printer: PrinterProfile) {
+function printLabelSheet(printer: PrinterProfile, expectedCount: number) {
   const sheet = document.getElementById("label-sheet");
   if (!sheet) return;
   // Landscape fix: page width = lamba side, height = chhota side. Agar profile
@@ -872,6 +874,11 @@ function printLabelSheet(printer: PrinterProfile) {
   const landscape = printer.widthMm >= printer.heightMm;
   const w = Math.max(printer.widthMm, printer.heightMm);
   const h = Math.min(printer.widthMm, printer.heightMm);
+  const pages = sheet.querySelectorAll(".label-print-page");
+  if (pages.length !== expectedCount || expectedCount < 1) {
+    toast.error("Labels tayyar nahi hue. Dobara Print dabayein.");
+    return;
+  }
   const frame = document.createElement("iframe");
   frame.setAttribute("aria-hidden", "true");
   frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;";
@@ -882,19 +889,21 @@ function printLabelSheet(printer: PrinterProfile) {
     return;
   }
   doc.open();
-  doc.write(`<!doctype html><html><head><meta charset="utf-8"><title></title><style>
+  doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>${expectedCount} Labels</title><style>
     @page { size: ${w}mm ${h}mm; margin: 0; }
-    /* height fix na karein warna sirf pehla label print hota hai (baqi clip ho jate hain). */
     html, body { margin: 0; padding: 0; background: #fff; width: ${w}mm; }
     * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     body { font-family: Arial, Helvetica, sans-serif; color: #000; }
-    .label-card { position: relative; display: block; overflow: hidden; background: #fff; color: #000;
-      margin: 0; padding: 0; page-break-inside: avoid; break-inside: avoid;
-      width: ${w}mm !important; height: ${h}mm !important;
+    .label-print-page { position: relative; display: block; overflow: hidden; margin: 0; padding: 0;
+      width: ${w}mm; height: ${h}mm; page-break-inside: avoid; break-inside: avoid;
       page-break-after: always; break-after: page; }
+    .label-print-page:last-child { page-break-after: auto; break-after: auto; }
+    .label-card { position: relative; display: block; overflow: hidden; background: #fff; color: #000;
+      margin: 0; padding: 0;
+      width: ${w}mm !important; height: ${h}mm !important;
+    }
     ${landscape ? "" : `.label-card > * { transform-origin: top left; }
     .label-card { transform: rotate(90deg) translateY(-100%); transform-origin: top left; }`}
-    .label-card:last-child { page-break-after: auto; break-after: auto; }
     svg { display: block; max-width: 100%; max-height: 100%; }
   </style></head><body>${sheet.innerHTML}</body></html>`);
   doc.close();
@@ -904,7 +913,9 @@ function printLabelSheet(printer: PrinterProfile) {
       frame.contentWindow?.focus();
       frame.contentWindow?.print();
     } finally {
-      window.setTimeout(() => frame.remove(), 1500);
+      // Thermal printer drivers spool multi-page jobs slowly. Removing the iframe
+      // immediately can leave only page one in the queue and put the printer in error.
+      window.setTimeout(() => frame.remove(), 60_000);
     }
   };
   if (doc.readyState === "complete") window.setTimeout(go, 150);
