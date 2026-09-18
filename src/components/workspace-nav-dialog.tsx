@@ -22,6 +22,7 @@ type WorkspacePath =
   | "/invoices"
   | "/customers"
   | "/sync"
+  | "/settings"
   | "/admin";
 
 type NavItem = { to: WorkspacePath; label: string; description: string; icon: LucideIcon };

@@ -405,6 +405,99 @@ export type Database = {
         }
         Relationships: []
       }
+      user_settings: {
+        Row: {
+          allowed_sections: Json
+          auto_order_number: boolean
+          compact_mode: boolean
+          default_city: string
+          default_courier_profile_id: string | null
+          default_delivery: string
+          default_payment_method: string
+          default_weight: string
+          payment_enabled: boolean
+          theme: string
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          allowed_sections?: Json
+          auto_order_number?: boolean
+          compact_mode?: boolean
+          default_city?: string
+          default_courier_profile_id?: string | null
+          default_delivery?: string
+          default_payment_method?: string
+          default_weight?: string
+          payment_enabled?: boolean
+          theme?: string
+          updated_at?: string
+          user_id: string
+          workspace_id?: string
+        }
+        Update: {
+          allowed_sections?: Json
+          auto_order_number?: boolean
+          compact_mode?: boolean
+          default_city?: string
+          default_courier_profile_id?: string | null
+          default_delivery?: string
+          default_payment_method?: string
+          default_weight?: string
+          payment_enabled?: boolean
+          theme?: string
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
+      workspace_settings: {
+        Row: {
+          allowed_sections: Json
+          business_address: string
+          business_name: string
+          business_phone: string
+          currency: string
+          default_delivery: string
+          default_payment_method: string
+          invoice_prefix: string
+          order_number_start: number
+          updated_at: string
+          updated_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          allowed_sections?: Json
+          business_address?: string
+          business_name?: string
+          business_phone?: string
+          currency?: string
+          default_delivery?: string
+          default_payment_method?: string
+          invoice_prefix?: string
+          order_number_start?: number
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          allowed_sections?: Json
+          business_address?: string
+          business_name?: string
+          business_phone?: string
+          currency?: string
+          default_delivery?: string
+          default_payment_method?: string
+          invoice_prefix?: string
+          order_number_start?: number
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -421,6 +514,7 @@ export type Database = {
       is_active_team_member: { Args: { _user_id: string }; Returns: boolean }
       next_invoice_number: { Args: never; Returns: string }
       next_order_number: { Args: never; Returns: string }
+      set_order_number_start: { Args: { _start: number }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "staff"
