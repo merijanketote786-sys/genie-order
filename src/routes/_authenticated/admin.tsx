@@ -116,7 +116,7 @@ function AdminPage() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-4 gap-1 rounded-xl border border-border bg-card p-1">
+            <div className="grid grid-cols-5 gap-1 rounded-xl border border-border bg-card p-1">
               {sections.map((item) => {
                 const Icon = item.icon;
                 return (
