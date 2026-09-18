@@ -27,6 +27,7 @@ export function LabelCanvas({
   onSelect,
   onPatchField,
   onPatchBarcode,
+  onEditText,
 }: {
   config: LabelConfig;
   printer: PrinterProfile;
@@ -36,8 +37,22 @@ export function LabelCanvas({
   onSelect: (s: CanvasSelection) => void;
   onPatchField: (id: string, patch: Record<string, number>) => void;
   onPatchBarcode: (patch: Record<string, number>) => void;
+  /** Preview ke upar double-click kar ke text edit — template text wapas bhejta hai. */
+  onEditText?: (id: string, template: string) => void;
 }) {
   const drag = useRef<DragState | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+  const editRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (editingId) requestAnimationFrame(() => editRef.current?.select());
+  }, [editingId]);
+
+  const commitEdit = () => {
+    if (editingId && onEditText) onEditText(editingId, editDraft);
+    setEditingId(null);
+  };
 
   const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
