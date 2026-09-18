@@ -16,6 +16,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as ApiInvoiceRouteImport } from './routes/api/invoice'
 import { Route as ApiExtractRouteImport } from './routes/api/extract'
+import { Route as ApiConfirmParseRouteImport } from './routes/api/confirm-parse'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedSyncRouteImport } from './routes/_authenticated/sync'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -66,6 +67,11 @@ const ApiInvoiceRoute = ApiInvoiceRouteImport.update({
 const ApiExtractRoute = ApiExtractRouteImport.update({
   id: '/api/extract',
   path: '/api/extract',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiConfirmParseRoute = ApiConfirmParseRouteImport.update({
+  id: '/api/confirm-parse',
+  path: '/api/confirm-parse',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -175,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/sync': typeof AuthenticatedSyncRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/confirm-parse': typeof ApiConfirmParseRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -199,6 +206,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/sync': typeof AuthenticatedSyncRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/confirm-parse': typeof ApiConfirmParseRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
   '/': typeof AuthenticatedIndexRoute
@@ -226,6 +234,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/sync': typeof AuthenticatedSyncRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/confirm-parse': typeof ApiConfirmParseRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -254,6 +263,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/sync'
     | '/api/chat'
+    | '/api/confirm-parse'
     | '/api/extract'
     | '/api/invoice'
     | '/.lovable/oauth/consent'
@@ -278,6 +288,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/sync'
     | '/api/chat'
+    | '/api/confirm-parse'
     | '/api/extract'
     | '/api/invoice'
     | '/'
@@ -304,6 +315,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/sync'
     | '/api/chat'
+    | '/api/confirm-parse'
     | '/api/extract'
     | '/api/invoice'
     | '/_authenticated/'
@@ -319,6 +331,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiConfirmParseRoute: typeof ApiConfirmParseRoute
   ApiExtractRoute: typeof ApiExtractRoute
   ApiInvoiceRoute: typeof ApiInvoiceRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
@@ -375,6 +388,13 @@ declare module '@tanstack/react-router' {
       path: '/api/extract'
       fullPath: '/api/extract'
       preLoaderRoute: typeof ApiExtractRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/confirm-parse': {
+      id: '/api/confirm-parse'
+      path: '/api/confirm-parse'
+      fullPath: '/api/confirm-parse'
+      preLoaderRoute: typeof ApiConfirmParseRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/chat': {
@@ -542,6 +562,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiConfirmParseRoute: ApiConfirmParseRoute,
   ApiExtractRoute: ApiExtractRoute,
   ApiInvoiceRoute: ApiInvoiceRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,

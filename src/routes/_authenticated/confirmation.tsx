@@ -8,6 +8,8 @@ import { ResultCard } from "@/components/result-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ChatComposer } from "@/components/lightweight-chat";
+import { supabase } from "@/integrations/supabase/client";
 import { takeHandoff } from "@/lib/handoff";
 import { DEFAULT_CONFIRMATION_TEMPLATE } from "@/lib/order-template";
 import {
@@ -51,6 +53,8 @@ function ConfirmationPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
   const [codAmount, setCodAmount] = useState("");
   const [performa, setPerforma] = useState("");
+  const [pasted, setPasted] = useState("");
+  const [parsing, setParsing] = useState(false);
 
   const set = <K extends keyof ConfirmationValues>(key: K, value: ConfirmationValues[K]) =>
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -77,16 +81,54 @@ function ConfirmationPage() {
     }
   }, [values]);
 
+  const buildFrom = (vals: ConfirmationValues) => {
+    const payment = paymentEnabled
+      ? paymentLine(paymentMethod, paymentMethod === "COD" ? codAmount : "")
+      : "";
+    setPerforma(renderConfirmation(template, { ...vals, payment }));
+  };
+
   const build = () => {
     if (!values.name.trim() && !values.phone.trim() && !values.invoice.trim()) {
       toast.error("Customer detail ya invoice text zaroori hai");
       return;
     }
-    const payment = paymentEnabled
-      ? paymentLine(paymentMethod, paymentMethod === "COD" ? codAmount : "")
-      : "";
-    setPerforma(renderConfirmation(template, { ...values, payment }));
+    buildFrom(values);
     toast.success("Order performa taiyar hai");
+  };
+
+  const fillFromText = async (text: string) => {
+    setParsing(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const res = await fetch("/api/confirm-parse", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const parsed = (await res.json()) as Partial<ConfirmationValues>;
+      let next: ConfirmationValues = values;
+      setValues((prev) => {
+        const merged = { ...prev };
+        for (const [key, value] of Object.entries(parsed) as [keyof ConfirmationValues, string][]) {
+          if (typeof value === "string" && value.trim()) merged[key] = value.trim();
+        }
+        next = merged;
+        return merged;
+      });
+      buildFrom(next);
+      setPasted("");
+      toast.success("Data template ke mutabiq bhar diya");
+    } catch {
+      toast.error("Text samajh nahi aaya — dobara koshish karein");
+    } finally {
+      setParsing(false);
+    }
   };
 
   const clearAll = () => {
@@ -164,6 +206,28 @@ function ConfirmationPage() {
             <Eraser className="size-4.5" /> Clear
           </Button>
         </WorkspaceToolDock>
+
+        <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
+          <p className="text-[11px] font-bold uppercase text-muted-foreground">
+            Data paste karein
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Kisi bhi format me order/customer detail paste karein — fields khud bhar jayenge aur
+            selected template ke mutabiq performa ban jayega.
+          </p>
+          <div className="mt-2 rounded-xl border border-border bg-background">
+            <ChatComposer
+              value={pasted}
+              onValueChange={setPasted}
+              disabled={parsing}
+              placeholder="Yahan order ya customer ki details paste karein…"
+              textareaClassName="min-h-24 px-3 pt-3 text-sm"
+              onSubmit={({ text }) => fillFromText(text)}
+            />
+          </div>
+        </section>
+
+
 
         <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
           <p className="text-[11px] font-bold uppercase text-muted-foreground">Customer details</p>
