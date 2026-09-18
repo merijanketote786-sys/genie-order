@@ -823,10 +823,11 @@ function LabelsPage() {
                         Qty
                         <input
                           className={`${inputCls} w-20`}
-                          value={String(r.qty)}
+                          value={r.qty === 0 ? "" : String(r.qty)}
                           inputMode="numeric"
+                          placeholder="1"
                           onChange={(e) =>
-                            update(r.id, { qty: Math.max(1, Number(e.target.value.replace(/[^\d]/g, "")) || 1) })
+                            update(r.id, { qty: Number(e.target.value.replace(/[^\d]/g, "")) || 0 })
                           }
                         />
                       </label>
