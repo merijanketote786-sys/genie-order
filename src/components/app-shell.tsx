@@ -82,8 +82,18 @@ export function AppShell({
     queryFn: () => getMyAccess(),
     staleTime: 5 * 60 * 1000,
   });
-  const tabs = access.data?.isOwner ? [...TABS, ADMIN_TAB] : [...TABS];
-  const primaryTabs = TABS.slice(0, 4);
+  const mine = useQuery({
+    queryKey: ["my-settings"],
+    queryFn: () => getMySettings(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const userAllowed = mine.data?.settings.allowedSections ?? [];
+  const workspaceAllowed = mine.data?.workspace.allowedSections ?? [];
+  const visibleTabs = TABS.filter((tab) => isSectionAllowed(tab.to, userAllowed, workspaceAllowed));
+  const tabs = access.data?.isOwner
+    ? [...visibleTabs, SETTINGS_TAB, ADMIN_TAB]
+    : [...visibleTabs, SETTINGS_TAB];
+  const primaryTabs = visibleTabs.slice(0, 4);
 
   return (
     <div className="grid h-[100dvh] min-h-0 overflow-hidden bg-background lg:grid-cols-[244px_minmax(0,1fr)]">
