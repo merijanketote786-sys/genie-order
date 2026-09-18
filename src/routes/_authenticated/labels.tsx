@@ -166,6 +166,8 @@ function LabelsPage() {
           .label-card:last-child { page-break-after: auto; break-after: auto; }
         }
       `}</style>
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-8 pt-3">
+
 
       <WorkspaceHeader
         icon={QrCode}
@@ -381,6 +383,7 @@ function LabelsPage() {
         {printLabels.map((r) => (
           <LabelCard key={r.key} business={business} currency={currency} row={r} />
         ))}
+      </div>
       </div>
     </AppShell>
   );
