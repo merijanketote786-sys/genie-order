@@ -48,6 +48,7 @@ export function ResultCard({
   exportable = false,
   onSave,
   forward,
+  forward2,
 }: {
   text: string;
   label: string;
@@ -56,6 +57,8 @@ export function ResultCard({
   onSave?: (text: string) => Promise<void>;
   /** Doosre section (Order/Invoice) me forward karne ka button. */
   forward?: { label: string; onClick: (text: string) => void };
+  /** Teesre section (jaise Order Confirmation) me forward karne ka button. */
+  forward2?: { label: string; onClick: (text: string) => void };
 }) {
 
   const [copied, setCopied] = useState(false);
@@ -140,6 +143,16 @@ export function ResultCard({
             className="h-11 flex-1 gap-1.5 rounded-xl border-border bg-card sm:h-9 sm:flex-none"
           >
             <ArrowLeftRight className="h-4 w-4" /> {forward.label}
+          </Button>
+        ) : null}
+        {forward2 ? (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => forward2.onClick(text)}
+            className="h-11 flex-1 gap-1.5 rounded-xl border-border bg-card sm:h-9 sm:flex-none"
+          >
+            <ArrowLeftRight className="h-4 w-4" /> {forward2.label}
           </Button>
         ) : null}
 
