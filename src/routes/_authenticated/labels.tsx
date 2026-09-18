@@ -8,7 +8,6 @@ import { Barcode } from "@/components/barcode";
 import { LabelCanvas, type CanvasSelection } from "@/components/label-canvas";
 
 import { WorkspaceHeader } from "@/components/workspace-header";
-import { getProducts, type DbProduct } from "@/lib/products.functions";
 import { getMySettings } from "@/lib/settings.functions";
 import { getMyLabelSettings, saveMyLabelSettings } from "@/lib/label-settings.functions";
 import {
@@ -35,7 +34,6 @@ import {
   QrCode,
   RotateCcw,
   Save,
-  Search,
   Settings2,
   Trash2,
 } from "lucide-react";
