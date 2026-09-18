@@ -271,14 +271,16 @@ function LabelsPage() {
     <AppShell title="Labels" subtitle="Apna label design karein aur print karein" active="/labels">
       <style>{`
         @media print {
-          body * { visibility: hidden !important; }
-          #label-sheet, #label-sheet * { visibility: visible !important; }
-          #label-sheet { position: absolute; inset: 0; display: block !important; }
+          html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
+          body > *:not(#label-sheet) { display: none !important; }
+          #label-sheet { display: block !important; position: static !important; }
           @page { size: ${printer.widthMm}mm ${printer.heightMm}mm; margin: 0; }
           .label-card { page-break-after: always; break-after: page; }
           .label-card:last-child { page-break-after: auto; break-after: auto; }
         }
+        @media screen { #label-sheet { display: none !important; } }
       `}</style>
+
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-8 pt-3">
         <WorkspaceHeader
