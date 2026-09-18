@@ -573,6 +573,21 @@ function LabelsPage() {
                 </div>
 
                 <div className="mt-2 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                  <Labeled title="Font style">
+                    <select
+                      className={smallInput}
+                      value={selectedField.fontFamily || DEFAULT_FONT_FAMILY}
+                      aria-label="Font style"
+                      style={{ fontFamily: selectedField.fontFamily || DEFAULT_FONT_FAMILY }}
+                      onChange={(e) => patchField(selectedField.id, { fontFamily: e.target.value })}
+                    >
+                      {FONT_FAMILIES.map((f) => (
+                        <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>
+                          {f.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Labeled>
                   <Labeled title="Font (pt)">
                     <NumInput
                       value={selectedField.fontPt}
@@ -624,6 +639,14 @@ function LabelsPage() {
                           onChange={(e) => patchField(selectedField.id, { bold: e.target.checked })}
                         />
                         Bold
+                      </label>
+                      <label className="flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedField.italic}
+                          onChange={(e) => patchField(selectedField.id, { italic: e.target.checked })}
+                        />
+                        Italic
                       </label>
                       <label className="flex items-center gap-1">
                         <input
