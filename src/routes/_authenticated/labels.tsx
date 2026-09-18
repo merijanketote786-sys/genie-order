@@ -413,7 +413,7 @@ function LabelsPage() {
             <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-[11px] font-semibold text-muted-foreground">
-                  Label pe click kar ke element chunein, drag kar ke move karein, corner se resize karein.
+                  Text ko drag karke move karein; corner ko tircha drag karke font aur width chhoti bari karein.
                 </p>
                 <label className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
                   Zoom
@@ -560,6 +560,9 @@ function LabelsPage() {
                     <NumInput
                       value={selectedField.fontPt}
                       step={0.5}
+                      min={3}
+                      max={72}
+                      ariaLabel="Font size points mein"
                       onChange={(v) => patchField(selectedField.id, { fontPt: v })}
                     />
                   </Labeled>
@@ -1011,21 +1014,30 @@ function Labeled({ title, children }: { title: string; children: React.ReactNode
 function NumInput({
   value,
   step,
+  min,
+  max,
+  ariaLabel,
   onChange,
 }: {
   value: number;
   step: number;
+  min?: number;
+  max?: number;
+  ariaLabel?: string;
   onChange: (v: number) => void;
 }) {
   return (
     <input
       type="number"
       step={step}
+      min={min}
+      max={max}
       value={value}
+      aria-label={ariaLabel}
       className={smallInput}
       onChange={(e) => {
         const n = Number(e.target.value);
-        if (Number.isFinite(n)) onChange(n);
+        if (Number.isFinite(n)) onChange(Math.min(max ?? n, Math.max(min ?? n, n)));
       }}
     />
   );

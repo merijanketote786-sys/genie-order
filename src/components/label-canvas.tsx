@@ -1,7 +1,7 @@
 /**
  * LabelCanvas — actual label ka WYSIWYG preview.
  * Element pe click kar ke select karein, drag kar ke move karein,
- * corner handle se resize karein — sab kuch preview ke upar hi.
+ * corner handle se width aur font size resize karein — sab kuch preview ke upar hi.
  */
 import { Barcode } from "@/components/barcode";
 import { renderTemplate, type LabelConfig, type LabelValues, type PrinterProfile } from "@/lib/label-settings";
@@ -98,7 +98,9 @@ export function LabelCanvas({
               onPointerDown={(e) => {
                 onSelect({ kind: "field", id: f.id });
                 startDrag(e, "move", { x: f.xMm, y: f.yMm, w: f.widthMm, h: 0 }, (p) => {
-                  if (p["x"] !== undefined) onPatchField(f.id, { xMm: p["x"]!, yMm: p["y"]! });
+                  const xMm = p["x"];
+                  const yMm = p["y"];
+                  if (xMm !== undefined && yMm !== undefined) onPatchField(f.id, { xMm, yMm });
                 });
               }}
               className={`absolute cursor-move ${active ? "outline outline-1 outline-primary" : ""}`}
@@ -122,10 +124,17 @@ export function LabelCanvas({
                 <span
                   onPointerDown={(e) =>
                     startDrag(e, "resize", { x: f.xMm, y: f.yMm, w: f.widthMm, h: f.fontPt }, (p) => {
-                      if (p["w"] !== undefined) onPatchField(f.id, { widthMm: p["w"]! });
+                      const widthMm = p["w"];
+                      const draggedHeight = p["h"];
+                      if (widthMm !== undefined && draggedHeight !== undefined) {
+                        const fontPt = Number(clamp(draggedHeight, 3, 72).toFixed(1));
+                        onPatchField(f.id, { widthMm, fontPt });
+                      }
                     })
                   }
-                  className="absolute -bottom-1 -right-1 size-3 cursor-ew-resize rounded-full bg-primary"
+                  className="absolute -bottom-1.5 -right-1.5 size-4 cursor-nwse-resize rounded-full border-2 border-background bg-primary shadow-sm"
+                  title="Drag karke font aur width chhota bara karein"
+                  aria-label="Font aur width resize karein"
                 />
               ) : null}
             </div>
@@ -137,7 +146,9 @@ export function LabelCanvas({
           onPointerDown={(e) => {
             onSelect({ kind: "barcode" });
             startDrag(e, "move", { x: b.xMm, y: b.yMm, w: b.widthMm, h: b.heightMm }, (p) => {
-              if (p["x"] !== undefined) onPatchBarcode({ xMm: p["x"]!, yMm: p["y"]! });
+              const xMm = p["x"];
+              const yMm = p["y"];
+              if (xMm !== undefined && yMm !== undefined) onPatchBarcode({ xMm, yMm });
             });
           }}
           className={`absolute cursor-move ${
@@ -164,7 +175,9 @@ export function LabelCanvas({
             <span
               onPointerDown={(e) =>
                 startDrag(e, "resize", { x: b.xMm, y: b.yMm, w: b.widthMm, h: b.heightMm }, (p) => {
-                  if (p["w"] !== undefined) onPatchBarcode({ widthMm: p["w"]!, heightMm: p["h"]! });
+                  const widthMm = p["w"];
+                  const heightMm = p["h"];
+                  if (widthMm !== undefined && heightMm !== undefined) onPatchBarcode({ widthMm, heightMm });
                 })
               }
               className="absolute -bottom-1 -right-1 size-3 cursor-nwse-resize rounded-full bg-primary"
