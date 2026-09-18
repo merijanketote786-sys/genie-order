@@ -145,6 +145,27 @@ export type Database = {
           },
         ]
       }
+      label_settings: {
+        Row: {
+          config: Json
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          config?: Json
+          updated_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          config?: Json
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
       order_templates: {
         Row: {
           created_at: string

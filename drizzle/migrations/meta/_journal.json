@@ -85,6 +85,13 @@
       "when": 1789725088213,
       "tag": "0011_lock_definer_functions_and_user_settings_delete",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789734680195,
+      "tag": "0012_label_settings",
+      "breakpoints": true
     }
   ]
 }
