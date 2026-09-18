@@ -142,16 +142,18 @@ function ConfirmationPage() {
       });
       if (!res.ok) throw new Error(await res.text());
       const parsed = (await res.json()) as Partial<ConfirmationValues>;
+      const { invoice, pay } = applyInvoiceText(parsed.invoice?.trim() ? parsed.invoice : text);
       let next: ConfirmationValues = values;
       setValues((prev) => {
         const merged = { ...prev };
         for (const [key, value] of Object.entries(parsed) as [keyof ConfirmationValues, string][]) {
           if (typeof value === "string" && value.trim()) merged[key] = value.trim();
         }
+        if (invoice.trim()) merged.invoice = invoice;
         next = merged;
         return merged;
       });
-      buildFrom(next);
+      buildFrom(next, pay.method ? { method: pay.method, codAmount: pay.codAmount, status: pay.status } : undefined);
       setPasted("");
       toast.success("Data template ke mutabiq bhar diya");
     } catch {
