@@ -418,7 +418,8 @@ function LabelsPage() {
             <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-[11px] font-semibold text-muted-foreground">
-                  Text ko drag karke move karein; corner ko tircha drag karke font aur width chhoti bari karein.
+                  Text pe double-click karke seedha yahin likhein; drag karke move karein; corner ko tircha drag
+                  karke font aur width chhoti bari karein.
                 </p>
                 <label className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
                   Zoom
@@ -482,6 +483,16 @@ function LabelsPage() {
                   className="inline-flex h-8 items-center gap-1 rounded-lg border border-dashed border-border px-2.5 text-[11px] font-semibold text-foreground hover:bg-muted"
                 >
                   <Plus className="size-3.5" /> Custom text
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const id = addField("headline");
+                    setSelection({ kind: "field", id });
+                  }}
+                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-dashed border-primary px-2.5 text-[11px] font-semibold text-primary hover:bg-primary/10"
+                >
+                  <Plus className="size-3.5" /> Nayi headline
                 </button>
               </div>
             </div>
