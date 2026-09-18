@@ -179,6 +179,7 @@ export function normalizeConfig(raw: unknown): LabelConfig {
           fontPt: num(f?.fontPt, 7, 3, 72),
           bold: Boolean(f?.bold),
           uppercase: Boolean(f?.uppercase),
+          underline: Boolean(f?.underline),
           align: (["left", "center", "right"] as string[]).includes(String(f?.align))
             ? (f!.align as TextAlign)
             : "center",
