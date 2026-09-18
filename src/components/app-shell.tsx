@@ -14,6 +14,7 @@ import {
   ReceiptText,
   RefreshCw,
   RotateCcw,
+  Settings2,
   Shield,
   Tag,
   Users,
