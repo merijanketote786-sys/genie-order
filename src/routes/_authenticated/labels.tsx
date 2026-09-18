@@ -368,7 +368,8 @@ function LabelsPage() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-[11px] font-semibold text-muted-foreground">
                   Text pe double-click karke seedha yahin likhein; drag karke move karein; corner ko tircha drag
-                  karke font aur width chhoti bari karein.
+                  karke font aur width chhoti bari karein. Jo line "(khali)" dikhe us pe double-click karke apna
+                  text likhein — warna wo label pe print nahi hogi.
                 </p>
                 <label className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
                   Zoom

@@ -105,7 +105,8 @@ export function LabelCanvas({
       {config.fields
         .filter((f) => f.enabled)
         .map((f) => {
-          const text = renderTemplate(f.template, values) || f.label;
+          // Print jaisa hi text — koi fallback nahi, warna canvas aur asli label alag lagte hain.
+          const text = renderTemplate(f.template, values);
           const active = selection?.kind === "field" && selection.id === f.id;
           return (
             <div
@@ -167,8 +168,10 @@ export function LabelCanvas({
                     border: 0,
                   }}
                 />
-              ) : (
+              ) : text ? (
                 text
+              ) : (
+                <span className="text-muted-foreground/70 italic">{f.label} (khali)</span>
               )}
               {active && editingId !== f.id ? (
                 <span
