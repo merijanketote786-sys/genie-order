@@ -5,7 +5,7 @@
  */
 import { Barcode } from "@/components/barcode";
 import { renderTemplate, type LabelConfig, type LabelValues, type PrinterProfile } from "@/lib/label-settings";
-import { useRef, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 
 const PT_TO_MM = 0.352_777_8;
 
