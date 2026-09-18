@@ -8,7 +8,7 @@ import { ChatComposer, ChatMessage, ChatMessageContent, PlainMessageText } from 
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { ResultCard } from "@/components/result-card";
 import { useChat } from "@ai-sdk/react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { ScrollToEnd } from "@/components/scroll-to-end";
 import { loadChatHistory, saveChatHistory } from "@/lib/chat-history";
