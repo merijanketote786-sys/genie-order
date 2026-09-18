@@ -26,10 +26,27 @@ function priceFor(p: DbProduct, pack: Pack): number | null {
 }
 
 
+/** Naam ke end se unit suffix (/kg, /gram...) hata deta hai. */
+function cleanName(name: string): string {
+  return name
+    .replace(/\s*\/\s*(kg|kilogram|g|gm|gram|gramme|ml|ltr|litre|liter|pcs|pc|piece|bottle|bundle)s?\b/gi, "")
+    .trim();
+}
+
+function packLabel(p: DbProduct, pack: Pack): string {
+  if (pack === "100") return "100gram";
+  if (pack === "250") return "250gram";
+  if (pack === "500") return "500gram";
+  return p.unit || "unit";
+}
+
 export function productLine(p: DbProduct, pack: Pack, qty: number): string {
   const unitPrice = priceFor(p, pack);
-  const total = unitPrice == null ? null : Math.round(unitPrice * qty);
-  return `${p.name} ${qty}${total == null ? "" : `/${total}`}`.trim();
+  const base =
+    unitPrice == null
+      ? cleanName(p.name)
+      : `${cleanName(p.name)} ${Math.round(unitPrice)}/${packLabel(p, pack)}`;
+  return qty > 1 ? `${qty} × ${base}` : base;
 }
 
 export function ProductPickerBody({
