@@ -11,7 +11,7 @@ Rules:
 - Product field mein agar 1 se zyada products hain to sab ko aik hi line mein comma se separate kar k likho, jaisay: 1kg glycerine soap base,1kg cocobetain,100gram btms 50
 - Qty field mein sirf total items ka number likho (sab products ki quantities ka total count). Example: 3 products hain to "Qty: 3". Agar user ne explicitly qty di ho to wo use karo.
 - Status hamesha "Confirmed" rakho jab tak user explicitly kuch aur na kahay.
-- Order Number agar user ne na diya ho to blank chhor do.
+- Order Number agar user ne diya ho to wahi use karo. Agar user ne na diya ho to neeche diya gaya AUTO ORDER NUMBER use karo; agar auto number available na ho to blank chhor do.
 - Phone number ko Pakistani local format me likho: 03000000000 (11 digits, 0 se start). Agar user ne country code ke sath diya ho (jaise +923001234567 ya 923001234567 ya +92 300 1234567), to country code (+92 ya 92) hata do aur uski jagah 0 laga do. Spaces, dashes ya koi bhi separator hatao — sirf 11 continuous digits.
 - Numbers (Product Total, Delivery, Advance) me sirf digits/currency rakho jaisa user ne diya.
 - Agar user ne payment status "cc" (cash on delivery / COD wali cc) mention ki ho, to Product Total, Delivery, aur Advance teeno fields me sirf "0" likho (chahe user ne koi bhi amount di ho).
