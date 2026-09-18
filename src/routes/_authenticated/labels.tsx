@@ -613,6 +613,14 @@ function LabelsPage() {
                         />
                         CAPS
                       </label>
+                      <label className="flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedField.underline}
+                          onChange={(e) => patchField(selectedField.id, { underline: e.target.checked })}
+                        />
+                        Underline
+                      </label>
                     </div>
                   </Labeled>
                 </div>
