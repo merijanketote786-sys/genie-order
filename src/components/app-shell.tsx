@@ -10,6 +10,7 @@ import {
   ClipboardList,
   FileCheck2,
   FileScan,
+  FileSignature,
   History,
   QrCode,
   ReceiptText,
@@ -29,6 +30,7 @@ import type { ReactNode } from "react";
 const TABS = [
   { to: "/", label: "Order", description: "Format customer orders", icon: ClipboardList },
   { to: "/invoice", label: "Invoice", description: "Create item invoices", icon: ReceiptText },
+  { to: "/confirmation", label: "Confirm", description: "Order performa aur WhatsApp", icon: FileSignature },
   { to: "/extract", label: "Extract", description: "Read images and PDFs", icon: FileScan },
   { to: "/rates", label: "Rates", description: "Search staff prices", icon: Tag },
   { to: "/calculator", label: "Calculator", description: "Courier charges calculate", icon: Calculator },
@@ -59,6 +61,7 @@ type AppShellProps = {
   active:
     | "/"
     | "/invoice"
+    | "/confirmation"
     | "/extract"
     | "/rates"
     | "/calculator"
