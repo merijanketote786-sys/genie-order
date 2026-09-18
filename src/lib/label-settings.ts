@@ -200,7 +200,9 @@ export function normalizeConfig(raw: unknown): LabelConfig {
           yMm: num(f?.yMm, 1, -50, 300),
           widthMm: num(f?.widthMm, 40, 2, 300),
           fontPt: num(f?.fontPt, 7, 3, 72),
+          fontFamily: String(f?.fontFamily ?? DEFAULT_FONT_FAMILY) || DEFAULT_FONT_FAMILY,
           bold: Boolean(f?.bold),
+          italic: Boolean(f?.italic),
           uppercase: Boolean(f?.uppercase),
           underline: Boolean(f?.underline),
           align: (["left", "center", "right"] as string[]).includes(String(f?.align))
