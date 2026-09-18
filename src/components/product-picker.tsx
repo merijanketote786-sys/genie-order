@@ -144,7 +144,7 @@ export function ProductPickerBody({
                           className="h-9 w-20 rounded-lg border border-input bg-background px-2 text-sm outline-none focus:border-ring"
                         />
                         <span className="truncate text-xs text-muted-foreground">
-                          {unitPrice == null ? "Is pack ka rate nahi hai" : `= ${Math.round(unitPrice * qtyNum)}`}
+                          {unitPrice == null ? "Is pack ka rate nahi hai" : line}
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-2">
