@@ -8,7 +8,7 @@ import { ChatComposer, ChatMessage, ChatMessageContent, PlainMessageText } from 
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { ResultCard } from "@/components/result-card";
 import { useChat } from "@ai-sdk/react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { ScrollToEnd } from "@/components/scroll-to-end";
 import { loadChatHistory, saveChatHistory } from "@/lib/chat-history";
@@ -24,7 +24,7 @@ import { DEFAULT_ORDER_TEMPLATE } from "@/lib/order-template";
 import { saveOrder } from "@/lib/records.functions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Calculator, ClipboardList, CreditCard, Languages, MessageSquareText, Package, Sparkles, Users } from "lucide-react";
+import { Calculator, ClipboardList, CreditCard, Languages, MessageSquareText, Package, QrCode, Sparkles, Users } from "lucide-react";
 
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -222,6 +222,13 @@ function OrderChat() {
           />
         </WorkspaceTool>
         <OrderTemplateDialog template={orderTemplate} onTemplateChange={handleTemplateChange} compact />
+        <Link
+          to="/labels"
+          className="relative flex h-14 w-full min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-2 text-[10px] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          <QrCode className="size-4.5" />
+          <span className="max-w-full truncate">Labels</span>
+        </Link>
       </WorkspaceToolDock>
       <Conversation className="flex-1">
         <ConversationContent className="gap-4 px-0 pb-4 pt-3 sm:gap-6 sm:pb-6 sm:pt-5">
