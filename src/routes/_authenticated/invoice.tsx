@@ -250,6 +250,13 @@ function InvoiceChat() {
                           navigate({ to: "/" });
                         },
                       }}
+                      forward2={{
+                        label: "Confirmation me bhejein",
+                        onClick: (value) => {
+                          setHandoff("confirmation", value);
+                          navigate({ to: "/confirmation" });
+                        },
+                      }}
 
                     />
                   ) : (
