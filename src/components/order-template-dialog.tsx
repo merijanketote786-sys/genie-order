@@ -109,6 +109,16 @@ export function OrderTemplateDialog({ template, onTemplateChange, compact = fals
     focusName();
   };
 
+  const startEditDefault = () => {
+    setEditingId(null);
+    setName("Default");
+    setDraft(DEFAULT_ORDER_TEMPLATE);
+    setFormError(null);
+    setEditorOpen(true);
+    focusName();
+    toast.info("Default template edit mode — tabdeeli ke baad Save dabayein, aapki apni Default ban jayegi");
+  };
+
   const run = async (fn: () => Promise<any>, successMessage: string, fallback: string) => {
     setSaving(true);
     try {
@@ -213,17 +223,32 @@ export function OrderTemplateDialog({ template, onTemplateChange, compact = fals
         <div className="space-y-2">
           <p className="text-sm font-semibold text-foreground">Saved templates</p>
           <div className="space-y-1.5">
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => run(() => resetTemplate(), "Default template active", "Default set nahi ho saki")}
-              className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm ${
+            <div
+              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${
                 selectedId === null ? "border-primary bg-accent" : "border-border bg-card"
               }`}
             >
-              {selectedId === null ? <Check className="size-4 text-primary" /> : <span className="size-4" />}
-              <span className="font-medium">Default template</span>
-            </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => run(() => resetTemplate(), "Default template active", "Default set nahi ho saki")}
+                className="flex min-w-0 flex-1 items-center gap-2 text-left"
+              >
+                {selectedId === null ? <Check className="size-4 shrink-0 text-primary" /> : <span className="size-4 shrink-0" />}
+                <span className="truncate font-medium">Default template</span>
+              </button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={saving}
+                aria-label="Default template edit karein"
+                title="Default template edit karein"
+                onClick={startEditDefault}
+              >
+                <FilePenLine />
+              </Button>
+            </div>
 
             {templates.map((row) => (
               <div
