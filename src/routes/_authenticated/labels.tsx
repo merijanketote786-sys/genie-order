@@ -929,8 +929,12 @@ function LabelsPage() {
 function printLabelSheet(printer: PrinterProfile) {
   const sheet = document.getElementById("label-sheet");
   if (!sheet) return;
-  const w = printer.widthMm;
-  const h = printer.heightMm;
+  // Landscape fix: page width = lamba side, height = chhota side. Agar profile
+  // portrait (w < h) set hui ho to bhi label ko rotate kar ke landscape page pe
+  // ek hi sticker me fit karte hain — kabhi multiple stickers pe split nahi.
+  const landscape = printer.widthMm >= printer.heightMm;
+  const w = Math.max(printer.widthMm, printer.heightMm);
+  const h = Math.min(printer.widthMm, printer.heightMm);
   const frame = document.createElement("iframe");
   frame.setAttribute("aria-hidden", "true");
   frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;";
@@ -943,13 +947,17 @@ function printLabelSheet(printer: PrinterProfile) {
   doc.open();
   doc.write(`<!doctype html><html><head><meta charset="utf-8"><title></title><style>
     @page { size: ${w}mm ${h}mm; margin: 0; }
-    html, body { margin: 0; padding: 0; background: #fff; }
+    html, body { margin: 0; padding: 0; background: #fff; width: ${w}mm; height: ${h}mm; overflow: hidden; }
     * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     body { font-family: Arial, Helvetica, sans-serif; color: #000; }
     .label-card { position: relative; display: block; overflow: hidden; background: #fff; color: #000;
-      width: ${w}mm; height: ${h}mm; page-break-after: always; break-after: page; }
+      margin: 0; padding: 0; page-break-inside: avoid; break-inside: avoid;
+      width: ${w}mm !important; height: ${h}mm !important;
+      page-break-after: always; break-after: page; }
+    ${landscape ? "" : `.label-card > * { transform-origin: top left; }
+    .label-card { transform: rotate(90deg) translateY(-100%); transform-origin: top left; }`}
     .label-card:last-child { page-break-after: auto; break-after: auto; }
-    svg { display: block; }
+    svg { display: block; max-width: 100%; max-height: 100%; }
   </style></head><body>${sheet.innerHTML}</body></html>`);
   doc.close();
 
