@@ -129,6 +129,7 @@ function AdminPage() {
             </div>
             {section === "dashboard" ? <StatsSection /> : null}
             {section === "users" ? <UsersSection /> : null}
+            {section === "settings" ? <AdminWorkspaceSettings /> : null}
             {section === "records" ? <RecordsSection /> : null}
             {section === "export" ? <ExportSection /> : null}
           </>
