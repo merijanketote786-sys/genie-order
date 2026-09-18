@@ -5,6 +5,8 @@
  */
 import { AppShell } from "@/components/app-shell";
 import { Barcode } from "@/components/barcode";
+import { LabelCanvas, type CanvasSelection } from "@/components/label-canvas";
+
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { getProducts, type DbProduct } from "@/lib/products.functions";
 import { getMySettings } from "@/lib/settings.functions";
@@ -106,6 +108,9 @@ function LabelsPage() {
   const [manual, setManual] = useState({ name: "", code: "", price: "", pack: "", qty: "1" });
   const [config, setConfig] = useState<LabelConfig>(() => defaultConfig());
   const [showDesign, setShowDesign] = useState(false);
+  const [selection, setSelection] = useState<CanvasSelection>(null);
+  const [zoom, setZoom] = useState(7);
+
 
   const settings = useQuery({
     queryKey: ["my-settings"],
@@ -236,13 +241,14 @@ function LabelsPage() {
   const patchField = (id: string, patch: Partial<LabelField>) =>
     setConfig((c) => ({ ...c, fields: c.fields.map((f) => (f.id === id ? { ...f, ...patch } : f)) }));
 
-  const addField = () =>
+  const addField = () => {
+    const id = crypto.randomUUID();
     setConfig((c) => ({
       ...c,
       fields: [
         ...c.fields,
         {
-          id: crypto.randomUUID(),
+          id,
           label: `Custom text ${c.fields.length + 1}`,
           template: "Apna text likhein",
           enabled: true,
@@ -256,9 +262,16 @@ function LabelsPage() {
         },
       ],
     }));
+    return id;
+  };
+
 
   const removeField = (id: string) =>
     setConfig((c) => ({ ...c, fields: c.fields.filter((f) => f.id !== id) }));
+
+  const selectedField =
+    selection?.kind === "field" ? config.fields.find((f) => f.id === selection.id) ?? null : null;
+
 
   const previewRow: LabelRow = rows[0] ?? {
     id: "preview",
@@ -402,202 +415,303 @@ function LabelsPage() {
               </Labeled>
             </div>
 
-            {/* text fields */}
-            <div className="space-y-3">
-              {config.fields.map((f) => (
-                <div key={f.id} className="rounded-xl border border-border bg-background p-3">
-                  <div className="flex flex-wrap items-center gap-2">
+            {/* WYSIWYG canvas */}
+            <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[11px] font-semibold text-muted-foreground">
+                  Label pe click kar ke element chunein, drag kar ke move karein, corner se resize karein.
+                </p>
+                <label className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
+                  Zoom
+                  <input
+                    type="range"
+                    min={3}
+                    max={14}
+                    step={0.5}
+                    value={zoom}
+                    onChange={(e) => setZoom(Number(e.target.value))}
+                  />
+                </label>
+              </div>
+
+              <div className="flex justify-center overflow-auto">
+                <LabelCanvas
+                  config={config}
+                  printer={printer}
+                  values={valuesFor(previewRow)}
+                  scale={zoom}
+                  selection={selection}
+                  onSelect={setSelection}
+                  onPatchField={(id, patch) => patchField(id, patch as Partial<LabelField>)}
+                  onPatchBarcode={(patch) => setConfig((c) => ({ ...c, barcode: { ...c.barcode, ...patch } }))}
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-1.5">
+                {config.fields.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setSelection({ kind: "field", id: f.id })}
+                    className={`h-8 rounded-lg border px-2.5 text-[11px] font-semibold transition ${
+                      selection?.kind === "field" && selection.id === f.id
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setSelection({ kind: "barcode" })}
+                  className={`h-8 rounded-lg border px-2.5 text-[11px] font-semibold transition ${
+                    selection?.kind === "barcode"
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-foreground hover:bg-muted"
+                  }`}
+                >
+                  Barcode
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const id = addField();
+                    setSelection({ kind: "field", id });
+                  }}
+                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-dashed border-border px-2.5 text-[11px] font-semibold text-foreground hover:bg-muted"
+                >
+                  <Plus className="size-3.5" /> Custom text
+                </button>
+              </div>
+            </div>
+
+            {/* selected element inspector */}
+            {selectedField ? (
+              <div className="rounded-xl border border-border bg-background p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    className={`${smallInput} w-40`}
+                    value={selectedField.label}
+                    aria-label="Text block naam"
+                    onChange={(e) => patchField(selectedField.id, { label: e.target.value })}
+                  />
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                     <input
-                      className={`${smallInput} w-40`}
-                      value={f.label}
-                      aria-label="Text block naam"
-                      onChange={(e) => patchField(f.id, { label: e.target.value })}
+                      type="checkbox"
+                      checked={selectedField.enabled}
+                      onChange={(e) => patchField(selectedField.id, { enabled: e.target.checked })}
                     />
-                    <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                      <input
-                        type="checkbox"
-                        checked={f.enabled}
-                        onChange={(e) => patchField(f.id, { enabled: e.target.checked })}
-                      />
-                      Show
-                    </label>
+                    Show
+                  </label>
+                  <div className="ml-auto flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={() => removeField(f.id)}
+                      onClick={() =>
+                        patchField(selectedField.id, { fontPt: Math.max(3, selectedField.fontPt - 0.5) })
+                      }
+                      className="inline-flex size-9 items-center justify-center rounded-lg border border-border text-xs font-bold hover:bg-muted"
+                      aria-label="Font chhota"
+                    >
+                      A-
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        patchField(selectedField.id, { fontPt: Math.min(72, selectedField.fontPt + 0.5) })
+                      }
+                      className="inline-flex size-9 items-center justify-center rounded-lg border border-border text-xs font-bold hover:bg-muted"
+                      aria-label="Font bara"
+                    >
+                      A+
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        removeField(selectedField.id);
+                        setSelection(null);
+                      }}
                       aria-label="Text hatayein"
-                      className="ml-auto inline-flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted"
+                      className="inline-flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted"
                     >
                       <Trash2 className="size-4" />
                     </button>
                   </div>
-
-                  <input
-                    className={`${inputCls} mt-2`}
-                    value={f.template}
-                    aria-label="Text"
-                    placeholder="Apna text ya {{name}} jaise variables"
-                    onChange={(e) => patchField(f.id, { template: e.target.value })}
-                  />
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {FIELD_VARIABLES.map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() => patchField(f.id, { template: `${f.template} ${v}`.trim() })}
-                        className="rounded-md border border-border px-2 py-1 text-[10px] font-semibold text-muted-foreground hover:bg-muted"
-                      >
-                        {v}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="mt-2 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
-                    <Labeled title="Font (pt)">
-                      <NumInput value={f.fontPt} step={0.5} onChange={(v) => patchField(f.id, { fontPt: v })} />
-                    </Labeled>
-                    <Labeled title="X (mm)">
-                      <NumInput value={f.xMm} step={0.5} onChange={(v) => patchField(f.id, { xMm: v })} />
-                    </Labeled>
-                    <Labeled title="Y (mm)">
-                      <NumInput value={f.yMm} step={0.5} onChange={(v) => patchField(f.id, { yMm: v })} />
-                    </Labeled>
-                    <Labeled title="Width (mm)">
-                      <NumInput value={f.widthMm} step={0.5} onChange={(v) => patchField(f.id, { widthMm: v })} />
-                    </Labeled>
-                    <Labeled title="Align">
-                      <select
-                        className={smallInput}
-                        value={f.align}
-                        onChange={(e) => patchField(f.id, { align: e.target.value as TextAlign })}
-                      >
-                        <option value="left">Left</option>
-                        <option value="center">Center</option>
-                        <option value="right">Right</option>
-                      </select>
-                    </Labeled>
-                    <Labeled title="Style">
-                      <div className="flex h-9 items-center gap-3 text-xs font-semibold text-muted-foreground">
-                        <label className="flex items-center gap-1">
-                          <input
-                            type="checkbox"
-                            checked={f.bold}
-                            onChange={(e) => patchField(f.id, { bold: e.target.checked })}
-                          />
-                          Bold
-                        </label>
-                        <label className="flex items-center gap-1">
-                          <input
-                            type="checkbox"
-                            checked={f.uppercase}
-                            onChange={(e) => patchField(f.id, { uppercase: e.target.checked })}
-                          />
-                          CAPS
-                        </label>
-                      </div>
-                    </Labeled>
-                  </div>
                 </div>
-              ))}
 
-              <button
-                type="button"
-                onClick={addField}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-dashed border-border px-3 text-xs font-semibold text-foreground hover:bg-muted"
-              >
-                <Plus className="size-4" /> Custom text add karein
-              </button>
-            </div>
+                <input
+                  className={`${inputCls} mt-2`}
+                  value={selectedField.template}
+                  aria-label="Text"
+                  placeholder="Apna text ya {{name}} jaise variables"
+                  onChange={(e) => patchField(selectedField.id, { template: e.target.value })}
+                />
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {FIELD_VARIABLES.map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() =>
+                        patchField(selectedField.id, { template: `${selectedField.template} ${v}`.trim() })
+                      }
+                      className="rounded-md border border-border px-2 py-1 text-[10px] font-semibold text-muted-foreground hover:bg-muted"
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
 
-            {/* barcode block */}
-            <div className="rounded-xl border border-border bg-background p-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <h4 className="font-display text-xs font-bold text-foreground">Barcode</h4>
-                <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                  <input
-                    type="checkbox"
-                    checked={config.barcode.enabled}
-                    onChange={(e) =>
-                      setConfig((c) => ({ ...c, barcode: { ...c.barcode, enabled: e.target.checked } }))
-                    }
-                  />
-                  Show
-                </label>
-                <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                  <input
-                    type="checkbox"
-                    checked={config.barcode.showText}
-                    onChange={(e) =>
-                      setConfig((c) => ({ ...c, barcode: { ...c.barcode, showText: e.target.checked } }))
-                    }
-                  />
-                  Code text
-                </label>
+                <div className="mt-2 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                  <Labeled title="Font (pt)">
+                    <NumInput
+                      value={selectedField.fontPt}
+                      step={0.5}
+                      onChange={(v) => patchField(selectedField.id, { fontPt: v })}
+                    />
+                  </Labeled>
+                  <Labeled title="X (mm)">
+                    <NumInput
+                      value={selectedField.xMm}
+                      step={0.5}
+                      onChange={(v) => patchField(selectedField.id, { xMm: v })}
+                    />
+                  </Labeled>
+                  <Labeled title="Y (mm)">
+                    <NumInput
+                      value={selectedField.yMm}
+                      step={0.5}
+                      onChange={(v) => patchField(selectedField.id, { yMm: v })}
+                    />
+                  </Labeled>
+                  <Labeled title="Width (mm)">
+                    <NumInput
+                      value={selectedField.widthMm}
+                      step={0.5}
+                      onChange={(v) => patchField(selectedField.id, { widthMm: v })}
+                    />
+                  </Labeled>
+                  <Labeled title="Align">
+                    <select
+                      className={smallInput}
+                      value={selectedField.align}
+                      onChange={(e) => patchField(selectedField.id, { align: e.target.value as TextAlign })}
+                    >
+                      <option value="left">Left</option>
+                      <option value="center">Center</option>
+                      <option value="right">Right</option>
+                    </select>
+                  </Labeled>
+                  <Labeled title="Style">
+                    <div className="flex h-9 items-center gap-3 text-xs font-semibold text-muted-foreground">
+                      <label className="flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedField.bold}
+                          onChange={(e) => patchField(selectedField.id, { bold: e.target.checked })}
+                        />
+                        Bold
+                      </label>
+                      <label className="flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedField.uppercase}
+                          onChange={(e) => patchField(selectedField.id, { uppercase: e.target.checked })}
+                        />
+                        CAPS
+                      </label>
+                    </div>
+                  </Labeled>
+                </div>
               </div>
-              <div className="mt-2 grid gap-2 sm:grid-cols-3 lg:grid-cols-7">
-                <Labeled title="Format">
-                  <select
-                    className={smallInput}
-                    value={config.barcode.format}
-                    onChange={(e) =>
-                      setConfig((c) => ({ ...c, barcode: { ...c.barcode, format: e.target.value as never } }))
-                    }
-                  >
-                    {BARCODE_FORMATS.map((f) => (
-                      <option key={f} value={f}>
-                        {f}
-                      </option>
-                    ))}
-                  </select>
-                </Labeled>
-                <Labeled title="X (mm)">
-                  <NumInput
-                    value={config.barcode.xMm}
-                    step={0.5}
-                    onChange={(v) => setConfig((c) => ({ ...c, barcode: { ...c.barcode, xMm: v } }))}
-                  />
-                </Labeled>
-                <Labeled title="Y (mm)">
-                  <NumInput
-                    value={config.barcode.yMm}
-                    step={0.5}
-                    onChange={(v) => setConfig((c) => ({ ...c, barcode: { ...c.barcode, yMm: v } }))}
-                  />
-                </Labeled>
-                <Labeled title="Width (mm)">
-                  <NumInput
-                    value={config.barcode.widthMm}
-                    step={0.5}
-                    onChange={(v) => setConfig((c) => ({ ...c, barcode: { ...c.barcode, widthMm: v } }))}
-                  />
-                </Labeled>
-                <Labeled title="Height (mm)">
-                  <NumInput
-                    value={config.barcode.heightMm}
-                    step={0.5}
-                    onChange={(v) => setConfig((c) => ({ ...c, barcode: { ...c.barcode, heightMm: v } }))}
-                  />
-                </Labeled>
-                <Labeled title="Bar width">
-                  <NumInput
-                    value={config.barcode.moduleWidth}
-                    step={0.1}
-                    onChange={(v) => setConfig((c) => ({ ...c, barcode: { ...c.barcode, moduleWidth: v } }))}
-                  />
-                </Labeled>
-                <Labeled title="Code font (pt)">
-                  <NumInput
-                    value={config.barcode.textPt}
-                    step={0.5}
-                    onChange={(v) => setConfig((c) => ({ ...c, barcode: { ...c.barcode, textPt: v } }))}
-                  />
-                </Labeled>
-              </div>
-            </div>
+            ) : null}
 
-            <div className="flex flex-col items-center gap-2 rounded-xl bg-muted/40 p-3">
-              <p className="text-[11px] font-semibold text-muted-foreground">Live preview</p>
-              <LabelCard config={config} printer={printer} values={valuesFor(previewRow)} preview />
-            </div>
+            {selection?.kind === "barcode" ? (
+              <div className="rounded-xl border border-border bg-background p-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <h4 className="font-display text-xs font-bold text-foreground">Barcode</h4>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={config.barcode.enabled}
+                      onChange={(e) =>
+                        setConfig((c) => ({ ...c, barcode: { ...c.barcode, enabled: e.target.checked } }))
+                      }
+                    />
+                    Show
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={config.barcode.showText}
+                      onChange={(e) =>
+                        setConfig((c) => ({ ...c, barcode: { ...c.barcode, showText: e.target.checked } }))
+                      }
+                    />
+                    Code text
+                  </label>
+                </div>
+                <div className="mt-2 grid gap-2 sm:grid-cols-3 lg:grid-cols-7">
+                  <Labeled title="Format">
+                    <select
+                      className={smallInput}
+                      value={config.barcode.format}
+                      onChange={(e) =>
+                        setConfig((c) => ({ ...c, barcode: { ...c.barcode, format: e.target.value as never } }))
+                      }
+                    >
+                      {BARCODE_FORMATS.map((f) => (
+                        <option key={f} value={f}>
+                          {f}
+                        </option>
+                      ))}
+                    </select>
+                  </Labeled>
+                  <Labeled title="X (mm)">
+                    <NumInput
+                      value={config.barcode.xMm}
+                      step={0.5}
+                      onChange={(v) => setConfig((c) => ({ ...c, barcode: { ...c.barcode, xMm: v } }))}
+                    />
+                  </Labeled>
+                  <Labeled title="Y (mm)">
+                    <NumInput
+                      value={config.barcode.yMm}
+                      step={0.5}
+                      onChange={(v) => setConfig((c) => ({ ...c, barcode: { ...c.barcode, yMm: v } }))}
+                    />
+                  </Labeled>
+                  <Labeled title="Width (mm)">
+                    <NumInput
+                      value={config.barcode.widthMm}
+                      step={0.5}
+                      onChange={(v) => setConfig((c) => ({ ...c, barcode: { ...c.barcode, widthMm: v } }))}
+                    />
+                  </Labeled>
+                  <Labeled title="Height (mm)">
+                    <NumInput
+                      value={config.barcode.heightMm}
+                      step={0.5}
+                      onChange={(v) => setConfig((c) => ({ ...c, barcode: { ...c.barcode, heightMm: v } }))}
+                    />
+                  </Labeled>
+                  <Labeled title="Bar width">
+                    <NumInput
+                      value={config.barcode.moduleWidth}
+                      step={0.1}
+                      onChange={(v) => setConfig((c) => ({ ...c, barcode: { ...c.barcode, moduleWidth: v } }))}
+                    />
+                  </Labeled>
+                  <Labeled title="Code font (pt)">
+                    <NumInput
+                      value={config.barcode.textPt}
+                      step={0.5}
+                      onChange={(v) => setConfig((c) => ({ ...c, barcode: { ...c.barcode, textPt: v } }))}
+                    />
+                  </Labeled>
+                </div>
+              </div>
+            ) : null}
+
           </section>
         ) : null}
 
