@@ -285,16 +285,9 @@ function LabelsPage() {
   return (
     <AppShell title="Labels" subtitle="Apna label design karein aur print karein" active="/labels">
       <style>{`
-        @media print {
-          html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
-          body > *:not(#label-sheet) { display: none !important; }
-          #label-sheet { display: block !important; position: static !important; }
-          @page { size: ${printer.widthMm}mm ${printer.heightMm}mm; margin: 0; }
-          .label-card { page-break-after: always; break-after: page; }
-          .label-card:last-child { page-break-after: auto; break-after: auto; }
-        }
-        @media screen { #label-sheet { display: none !important; } }
+        #label-sheet { position: fixed; left: -10000px; top: 0; }
       `}</style>
+
 
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-8 pt-3">
