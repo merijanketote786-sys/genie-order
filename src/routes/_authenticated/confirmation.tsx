@@ -314,6 +314,13 @@ function ConfirmationPage() {
           {total ? (
             <p className="mt-2 text-sm font-semibold text-foreground">Grand Total: {total}</p>
           ) : null}
+          {parcelStatus ? (
+            <p className="mt-1 text-xs font-semibold text-muted-foreground">
+              {parcelStatus === "paid"
+                ? "CC — 0 amount parcel (Paid)"
+                : `COD — Unpaid parcel${codAmount ? ` (${codAmount})` : ""}`}
+            </p>
+          ) : null}
           <Button type="button" onClick={build} className="mt-3 h-11 w-full gap-1.5 rounded-xl sm:w-auto">
             <Sparkles className="size-4" /> Performa banayein
           </Button>
