@@ -222,6 +222,13 @@ function OrderChat() {
           />
         </WorkspaceTool>
         <OrderTemplateDialog template={orderTemplate} onTemplateChange={handleTemplateChange} compact />
+        <Link
+          to="/labels"
+          className="relative flex h-14 w-full min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-2 text-[10px] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          <QrCode className="size-4.5" />
+          <span className="max-w-full truncate">Labels</span>
+        </Link>
       </WorkspaceToolDock>
       <Conversation className="flex-1">
         <ConversationContent className="gap-4 px-0 pb-4 pt-3 sm:gap-6 sm:pb-6 sm:pt-5">
