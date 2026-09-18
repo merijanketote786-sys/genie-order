@@ -806,12 +806,13 @@ function LabelsPage() {
           )}
         </section>
 
-        <div id="label-sheet" className="hidden">
+        <PrintSheet>
           {printLabels.map((r) => (
             <LabelCard key={r.key} config={config} printer={printer} values={valuesFor(r)} />
           ))}
-        </div>
+        </PrintSheet>
       </div>
+
     </AppShell>
   );
 }
