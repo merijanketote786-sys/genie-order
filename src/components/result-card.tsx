@@ -18,7 +18,7 @@ import {
   exportInvoicePdf,
   shareInvoiceFile,
 } from "@/lib/invoice-export";
-import { Check, Copy, FileSpreadsheet, FileText, MessageCircle, Save, Send } from "lucide-react";
+import { ArrowLeftRight, Check, Copy, FileSpreadsheet, FileText, MessageCircle, Save, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -47,13 +47,17 @@ export function ResultCard({
   phone,
   exportable = false,
   onSave,
+  forward,
 }: {
   text: string;
   label: string;
   phone?: string | null;
   exportable?: boolean;
   onSave?: (text: string) => Promise<void>;
+  /** Doosre section (Order/Invoice) me forward karne ka button. */
+  forward?: { label: string; onClick: (text: string) => void };
 }) {
+
   const [copied, setCopied] = useState(false);
   const [exportFormat, setExportFormat] = useState<"pdf" | "xlsx" | null>(null);
   const [saving, setSaving] = useState(false);
@@ -128,6 +132,17 @@ export function ResultCard({
             {saved ? "Saved" : saving ? "Saving…" : "Save"}
           </Button>
         ) : null}
+        {forward ? (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => forward.onClick(text)}
+            className="h-11 flex-1 gap-1.5 rounded-xl border-border bg-card sm:h-9 sm:flex-none"
+          >
+            <ArrowLeftRight className="h-4 w-4" /> {forward.label}
+          </Button>
+        ) : null}
+
         {exportable ? (
           <>
             <Button

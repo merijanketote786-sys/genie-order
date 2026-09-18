@@ -9,19 +9,22 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { ResultCard } from "@/components/result-card";
 import { saveInvoice } from "@/lib/records.functions";
 import { useChat } from "@ai-sdk/react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { ScrollToEnd } from "@/components/scroll-to-end";
 import { loadChatHistory, saveChatHistory } from "@/lib/chat-history";
+import { setHandoff, takeHandoff } from "@/lib/handoff";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { RateMiniCalculatorBody } from "@/components/rate-mini-calculator";
 import { CustomerPickerBody } from "@/components/customer-picker";
+import { ProductPickerBody } from "@/components/product-picker";
 import { WorkspaceTool, WorkspaceToolDock } from "@/components/workspace-tool";
 import { Button } from "@/components/ui/button";
 import { PaymentModeField, paymentLine, stripPaymentLines, upsertPaymentLine, type PaymentMethod } from "@/components/payment-mode-field";
-import { Calculator, CreditCard, Phone, ReceiptText, ShieldCheck, Users, X } from "lucide-react";
+import { Calculator, CreditCard, Package, Phone, ReceiptText, ShieldCheck, Users, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/_authenticated/invoice")({
   head: () => ({
@@ -66,6 +69,7 @@ const STORAGE_KEY = "invoice-bot:messages:v1";
 const PHONE_KEY = "invoice-bot:phone:v1";
 
 function InvoiceChat() {
+  const navigate = useNavigate();
   const [phone, setPhone] = useState("");
   const [composerText, setComposerText] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
@@ -75,6 +79,7 @@ function InvoiceChat() {
   const appendToComposer = useCallback((block: string) => {
     setComposerText((prev) => `${prev.trimEnd()}${prev.trim() ? "\n" : ""}${block}\n`);
   }, []);
+
   const { messages, sendMessage, status, setMessages, error } = useChat({
     transport,
     onError: (err) => toast.error(err.message || "Kuch masla ho gaya"),
@@ -110,7 +115,13 @@ function InvoiceChat() {
     } catch {
       // ignore
     }
+    const incoming = takeHandoff("invoice");
+    if (incoming) {
+      setComposerText(`${incoming.trim()}\n\nIs order ki invoice banayein.\n`);
+      toast.success("Order invoice section me aa gaya");
+    }
   }, []);
+
 
   const updatePhone = (value: string) => {
     const cleaned = value.replace(/[^\d+\s-]/g, "");
@@ -162,7 +173,15 @@ function InvoiceChat() {
             toast.success("Customer detail invoice me daal diya");
           }} />
         </WorkspaceTool>
+        <WorkspaceTool icon={Package} label="Product" title="Product select" description="Rate list se product, pack aur qty choose karein.">
+          <ProductPickerBody useLabel="Invoice me daalein" onUse={(line) => {
+            appendToComposer(line);
+            textareaRef.current?.focus();
+            toast.success("Product invoice me daal diya");
+          }} />
+        </WorkspaceTool>
         <WorkspaceTool icon={Calculator} label="Courier" title="Courier rate" description="Delivery charge foran calculate karein.">
+
           <RateMiniCalculatorBody useLabel="Invoice me daalein" onUse={(amount) => {
             appendToComposer(`Delivery Charges: ${amount}`);
             textareaRef.current?.focus();
@@ -224,6 +243,14 @@ function InvoiceChat() {
                             : `Save ho gayi: ${res.invoiceNumber}`,
                         );
                       }}
+                      forward={{
+                        label: "Order me bhejein",
+                        onClick: (value) => {
+                          setHandoff("order", value);
+                          navigate({ to: "/" });
+                        },
+                      }}
+
                     />
                   ) : (
                     <ChatMessageContent>

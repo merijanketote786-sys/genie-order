@@ -8,21 +8,24 @@ import { ChatComposer, ChatMessage, ChatMessageContent, PlainMessageText } from 
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { ResultCard } from "@/components/result-card";
 import { useChat } from "@ai-sdk/react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { ScrollToEnd } from "@/components/scroll-to-end";
 import { loadChatHistory, saveChatHistory } from "@/lib/chat-history";
+import { setHandoff, takeHandoff } from "@/lib/handoff";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { OrderTemplateDialog } from "@/components/order-template-dialog";
 import { RateMiniCalculatorBody } from "@/components/rate-mini-calculator";
 import { CustomerPickerBody } from "@/components/customer-picker";
+import { ProductPickerBody } from "@/components/product-picker";
 import { WorkspaceTool, WorkspaceToolDock } from "@/components/workspace-tool";
 import { PaymentModeField, paymentLine, stripPaymentLines, upsertPaymentLine, type PaymentMethod } from "@/components/payment-mode-field";
 import { DEFAULT_ORDER_TEMPLATE } from "@/lib/order-template";
 import { saveOrder } from "@/lib/records.functions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Calculator, ClipboardList, CreditCard, Languages, MessageSquareText, Sparkles, Users } from "lucide-react";
+import { Calculator, ClipboardList, CreditCard, Languages, MessageSquareText, Package, Sparkles, Users } from "lucide-react";
+
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -56,6 +59,8 @@ function messageText(msg: UIMessage): string {
 const STORAGE_KEY = "order-format-bot:messages:v1";
 
 function OrderChat() {
+  const navigate = useNavigate();
+
   const [orderTemplate, setOrderTemplate] = useState(DEFAULT_ORDER_TEMPLATE);
   const [composerText, setComposerText] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
@@ -98,7 +103,13 @@ function OrderChat() {
     hydratedRef.current = true;
     const saved = loadChatHistory<UIMessage>(STORAGE_KEY);
     if (saved) setMessages(saved);
+    const incoming = takeHandoff("order");
+    if (incoming) {
+      setComposerText(`${incoming.trim()}\n\nIs invoice ka order format banayein.\n`);
+      toast.success("Invoice order section me aa gayi");
+    }
   }, [setMessages]);
+
 
   useEffect(() => {
     if (!hydratedRef.current) return;
@@ -178,7 +189,15 @@ function OrderChat() {
             toast.success("Customer detail order me daal diya");
           }} />
         </WorkspaceTool>
+        <WorkspaceTool icon={Package} label="Product" title="Product select" description="Rate list se product, pack aur qty choose karein.">
+          <ProductPickerBody useLabel="Order me daalein" onUse={(line) => {
+            appendToComposer(line);
+            textareaRef.current?.focus();
+            toast.success("Product order me daal diya");
+          }} />
+        </WorkspaceTool>
         <WorkspaceTool icon={Calculator} label="Courier" title="Courier rate" description="Weight aur city se delivery charge calculate karein.">
+
           <RateMiniCalculatorBody useLabel="Order me daalein" onUse={(amount) => {
             appendToComposer(`Delivery: ${amount}`);
             textareaRef.current?.focus();
@@ -214,7 +233,18 @@ function OrderChat() {
               <ChatMessage key={msg.id} from={msg.role}>
                 {msg.role === "assistant" ? (
                   text ? (
-                    <ResultCard text={text} label="Formatted order" />
+                    <ResultCard
+                      text={text}
+                      label="Formatted order"
+                      forward={{
+                        label: "Invoice me bhejein",
+                        onClick: (value) => {
+                          setHandoff("invoice", value);
+                          navigate({ to: "/invoice" });
+                        },
+                      }}
+                    />
+
                   ) : (
                     <ChatMessageContent>
                       <Shimmer>Format ho raha hai...</Shimmer>
