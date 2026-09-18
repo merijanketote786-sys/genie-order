@@ -258,6 +258,7 @@ function LabelsPage() {
           fontPt: 7,
           bold: false,
           uppercase: false,
+          underline: false,
           align: "center",
         },
       ],
