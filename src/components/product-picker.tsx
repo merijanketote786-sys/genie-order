@@ -33,8 +33,7 @@ function packLabel(p: DbProduct, pack: Pack): string {
 export function productLine(p: DbProduct, pack: Pack, qty: number): string {
   const unitPrice = priceFor(p, pack);
   const total = unitPrice == null ? null : Math.round(unitPrice * qty);
-  const q = qty > 1 ? ` x${qty}` : "";
-  return `${p.name} ${packLabel(p, pack)}${q}${total == null ? "" : ` ${total}`}`.trim();
+  return `${p.name} ${qty}${total == null ? "" : `/${total}`}`.trim();
 }
 
 export function ProductPickerBody({
