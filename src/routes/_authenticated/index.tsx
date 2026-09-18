@@ -189,7 +189,15 @@ function OrderChat() {
             toast.success("Customer detail order me daal diya");
           }} />
         </WorkspaceTool>
+        <WorkspaceTool icon={Package} label="Product" title="Product select" description="Rate list se product, pack aur qty choose karein.">
+          <ProductPickerBody useLabel="Order me daalein" onUse={(line) => {
+            appendToComposer(line);
+            textareaRef.current?.focus();
+            toast.success("Product order me daal diya");
+          }} />
+        </WorkspaceTool>
         <WorkspaceTool icon={Calculator} label="Courier" title="Courier rate" description="Weight aur city se delivery charge calculate karein.">
+
           <RateMiniCalculatorBody useLabel="Order me daalein" onUse={(amount) => {
             appendToComposer(`Delivery: ${amount}`);
             textareaRef.current?.focus();
