@@ -13,7 +13,9 @@ import { getMySettings } from "@/lib/settings.functions";
 import { getMyLabelSettings, saveMyLabelSettings } from "@/lib/label-settings.functions";
 import {
   BARCODE_FORMATS,
+  DEFAULT_FONT_FAMILY,
   FIELD_VARIABLES,
+  FONT_FAMILIES,
   PRINTER_PRESETS,
   defaultConfig,
   renderTemplate,
@@ -241,23 +243,26 @@ function LabelsPage() {
   const patchField = (id: string, patch: Partial<LabelField>) =>
     setConfig((c) => ({ ...c, fields: c.fields.map((f) => (f.id === id ? { ...f, ...patch } : f)) }));
 
-  const addField = () => {
+  const addField = (kind: "text" | "headline" = "text") => {
     const id = crypto.randomUUID();
+    const headline = kind === "headline";
     setConfig((c) => ({
       ...c,
       fields: [
         ...c.fields,
         {
           id,
-          label: `Custom text ${c.fields.length + 1}`,
-          template: "Apna text likhein",
+          label: headline ? `Headline ${c.fields.length + 1}` : `Custom text ${c.fields.length + 1}`,
+          template: headline ? "NAYI HEADLINE" : "Apna text likhein",
           enabled: true,
           xMm: 1,
           yMm: Math.min(printer.heightMm - 3, 2 + c.fields.length * 3.5),
           widthMm: Math.max(10, printer.widthMm - 2),
-          fontPt: 7,
-          bold: false,
-          uppercase: false,
+          fontPt: headline ? 12 : 7,
+          fontFamily: DEFAULT_FONT_FAMILY,
+          bold: headline,
+          italic: false,
+          uppercase: headline,
           underline: false,
           align: "center",
         },
