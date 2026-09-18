@@ -384,6 +384,7 @@ function LabelsPage() {
           <LabelCard key={r.key} business={business} currency={currency} row={r} />
         ))}
       </div>
+      </div>
     </AppShell>
   );
 }
