@@ -29,6 +29,54 @@ export const EMPTY_CONFIRMATION: ConfirmationValues = {
   notes: "",
 };
 
+/** Invoice ki lines jo item nahi hain (totals, customer detail, headings). */
+const NON_ITEM = /^(invoice|order|name|naam|phone|mobile|city|address|date|customer|sub\s*total|subtotal|total|product\s*total|delivery|shipping|advance|grand\s*total|payment|status|cod|cc|thanks|shukriya|note|notes)\b/i;
+
+/** Item line lagti hai: naam + koi number (price/qty) ho. */
+const looksLikeItem = (line: string) =>
+  line.trim().length > 2 && /\d/.test(line) && /[a-zA-Z\u0600-\u06FF]/.test(line) && !NON_ITEM.test(line.trim());
+
+/**
+ * Invoice text ke products ko number wise sort (1. 2. 3.) kar deta hai,
+ * baqi lines (totals waghera) waisi ki waisi rehti hain.
+ */
+export function numberInvoiceItems(text: string): string {
+  let n = 0;
+  return text
+    .split("\n")
+    .map((line) => {
+      const raw = line.trim();
+      if (!looksLikeItem(raw)) return line;
+      const clean = raw.replace(/^\s*(\d+)\s*[).:-]\s*/, "");
+      n += 1;
+      return `${n}. ${clean}`;
+    })
+    .join("\n")
+    .trim();
+}
+
+export type InvoicePayment = {
+  method: "COD" | "CC" | null;
+  codAmount: string;
+  status: "paid" | "unpaid" | "";
+};
+
+/**
+ * Grand total ke neeche likha CC = 0 amount parcel (paid),
+ * COD ya COD amount = unpaid parcel.
+ */
+export function detectInvoicePayment(text: string): InvoicePayment {
+  const codMatch = text.match(/\bC\.?O\.?D\.?\b[^0-9\n]*([\d,]+(?:\.\d+)?)?/i);
+  if (codMatch) {
+    const amount = (codMatch[1] ?? "").replace(/,/g, "");
+    return { method: "COD", codAmount: amount, status: "unpaid" };
+  }
+  if (/\bC\.?C\.?\b|credit\s*card|prepaid|paid\b/i.test(text)) {
+    return { method: "CC", codAmount: "0", status: "paid" };
+  }
+  return { method: null, codAmount: "", status: "" };
+}
+
 const num = (value: string) => {
   const n = Number(String(value).replace(/[^\d.]/g, ""));
   return Number.isFinite(n) ? n : 0;

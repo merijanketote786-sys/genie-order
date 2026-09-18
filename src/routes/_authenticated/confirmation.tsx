@@ -10,15 +10,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ChatComposer } from "@/components/lightweight-chat";
 import { supabase } from "@/integrations/supabase/client";
-import { takeHandoff } from "@/lib/handoff";
+import { setHandoff, takeHandoff } from "@/lib/handoff";
 import { DEFAULT_CONFIRMATION_TEMPLATE } from "@/lib/order-template";
 import {
   EMPTY_CONFIRMATION,
+  detectInvoicePayment,
   grandTotal,
+  numberInvoiceItems,
   renderConfirmation,
   type ConfirmationValues,
 } from "@/lib/confirmation";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CreditCard, Eraser, FileSignature, Sparkles, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -55,6 +57,22 @@ function ConfirmationPage() {
   const [performa, setPerforma] = useState("");
   const [pasted, setPasted] = useState("");
   const [parsing, setParsing] = useState(false);
+  const [parcelStatus, setParcelStatus] = useState<"paid" | "unpaid" | "">("");
+  const navigate = useNavigate();
+
+  /** Invoice text ko number-wise sort karta hai aur COD/CC status set karta hai. */
+  const applyInvoiceText = (raw: string, detectSource = raw) => {
+    const invoice = numberInvoiceItems(raw);
+    const pay = detectInvoicePayment(detectSource);
+    if (pay.method) {
+      setPaymentEnabled(true);
+      setPaymentMethod(pay.method);
+      setCodAmount(pay.method === "COD" ? pay.codAmount : "0");
+      setParcelStatus(pay.status);
+    }
+    return { invoice, pay };
+  };
+
 
   const set = <K extends keyof ConfirmationValues>(key: K, value: ConfirmationValues[K]) =>
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -68,7 +86,8 @@ function ConfirmationPage() {
     }
     const incoming = takeHandoff("confirmation");
     if (incoming) {
-      setValues((prev) => ({ ...prev, invoice: incoming.trim() }));
+      const { invoice } = applyInvoiceText(incoming);
+      setValues((prev) => ({ ...prev, invoice }));
       toast.success("Invoice confirmation section me aa gayi");
     }
   }, []);
@@ -81,11 +100,22 @@ function ConfirmationPage() {
     }
   }, [values]);
 
-  const buildFrom = (vals: ConfirmationValues) => {
-    const payment = paymentEnabled
-      ? paymentLine(paymentMethod, paymentMethod === "COD" ? codAmount : "")
-      : "";
-    setPerforma(renderConfirmation(template, { ...vals, payment }));
+  const buildFrom = (
+    vals: ConfirmationValues,
+    pay?: { method: "COD" | "CC"; codAmount: string; status: "paid" | "unpaid" | "" },
+  ) => {
+    const method = pay?.method ?? paymentMethod;
+    const cod = pay ? pay.codAmount : codAmount;
+    const status = pay ? pay.status : parcelStatus;
+    const on = pay ? true : paymentEnabled;
+    const base = on ? paymentLine(method, method === "COD" ? cod : "") : "";
+    const suffix =
+      on && status
+        ? method === "CC"
+          ? " — 0 amount parcel (Paid)"
+          : " — Unpaid parcel"
+        : "";
+    setPerforma(renderConfirmation(template, { ...vals, payment: base ? `${base}${suffix}` : "" }));
   };
 
   const build = () => {
@@ -93,7 +123,9 @@ function ConfirmationPage() {
       toast.error("Customer detail ya invoice text zaroori hai");
       return;
     }
-    buildFrom(values);
+    const sorted = { ...values, invoice: numberInvoiceItems(values.invoice) };
+    setValues(sorted);
+    buildFrom(sorted);
     toast.success("Order performa taiyar hai");
   };
 
@@ -112,16 +144,18 @@ function ConfirmationPage() {
       });
       if (!res.ok) throw new Error(await res.text());
       const parsed = (await res.json()) as Partial<ConfirmationValues>;
+      const { invoice, pay } = applyInvoiceText(parsed.invoice?.trim() ? parsed.invoice : text, text);
       let next: ConfirmationValues = values;
       setValues((prev) => {
         const merged = { ...prev };
         for (const [key, value] of Object.entries(parsed) as [keyof ConfirmationValues, string][]) {
           if (typeof value === "string" && value.trim()) merged[key] = value.trim();
         }
+        if (invoice.trim()) merged.invoice = invoice;
         next = merged;
         return merged;
       });
-      buildFrom(next);
+      buildFrom(next, pay.method ? { method: pay.method, codAmount: pay.codAmount, status: pay.status } : undefined);
       setPasted("");
       toast.success("Data template ke mutabiq bhar diya");
     } catch {
@@ -134,6 +168,7 @@ function ConfirmationPage() {
   const clearAll = () => {
     setValues(EMPTY_CONFIRMATION);
     setPerforma("");
+    setParcelStatus("");
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -279,13 +314,31 @@ function ConfirmationPage() {
           {total ? (
             <p className="mt-2 text-sm font-semibold text-foreground">Grand Total: {total}</p>
           ) : null}
+          {parcelStatus ? (
+            <p className="mt-1 text-xs font-semibold text-muted-foreground">
+              {parcelStatus === "paid"
+                ? "CC — 0 amount parcel (Paid)"
+                : `COD — Unpaid parcel${codAmount ? ` (${codAmount})` : ""}`}
+            </p>
+          ) : null}
           <Button type="button" onClick={build} className="mt-3 h-11 w-full gap-1.5 rounded-xl sm:w-auto">
             <Sparkles className="size-4" /> Performa banayein
           </Button>
         </section>
 
         {performa ? (
-          <ResultCard text={performa} label="Order performa" phone={values.phone} />
+          <ResultCard
+            text={performa}
+            label="Order performa"
+            phone={values.phone}
+            forward={{
+              label: "Order me bhejein",
+              onClick: (value) => {
+                setHandoff("order", value);
+                navigate({ to: "/" });
+              },
+            }}
+          />
         ) : (
           <p className="pb-4 text-center text-xs text-muted-foreground">
             Performa banane ke baad yahan preview aur WhatsApp share button aa jayega.
