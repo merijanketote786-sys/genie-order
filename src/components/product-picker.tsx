@@ -25,10 +25,6 @@ function priceFor(p: DbProduct, pack: Pack): number | null {
   return p.sale;
 }
 
-function packLabel(p: DbProduct, pack: Pack): string {
-  if (pack === "unit") return `1 ${p.unit}`;
-  return `${pack}${/l$|ml|litre|liter/i.test(p.unit) ? "ml" : "g"}`;
-}
 
 export function productLine(p: DbProduct, pack: Pack, qty: number): string {
   const unitPrice = priceFor(p, pack);
