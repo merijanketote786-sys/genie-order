@@ -1,7 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { DEFAULT_ORDER_TEMPLATE, ORDER_TEMPLATE_MAX_LENGTH } from "@/lib/order-template";
+import {
+  DEFAULT_CONFIRMATION_TEMPLATE,
+  DEFAULT_ORDER_TEMPLATE,
+  ORDER_TEMPLATE_MAX_LENGTH,
+} from "@/lib/order-template";
 
 const templateSchema = z
   .string()
@@ -15,6 +19,8 @@ const nameSchema = z
   .min(2, "Template ka naam likhein")
   .max(60, "Naam bohat lamba hai");
 
+const kindSchema = z.enum(["order", "confirmation"]).default("order");
+
 export type OrderTemplateRow = {
   id: string;
   name: string;
@@ -22,11 +28,16 @@ export type OrderTemplateRow = {
   isSelected: boolean;
 };
 
-async function loadAll(context: { supabase: any; userId: string }) {
+function fallbackFor(kind: string) {
+  return kind === "confirmation" ? DEFAULT_CONFIRMATION_TEMPLATE : DEFAULT_ORDER_TEMPLATE;
+}
+
+async function loadAll(context: { supabase: any; userId: string }, kind: string) {
   const { data, error } = await context.supabase
     .from("order_templates")
     .select("id, name, template_text, is_selected")
     .eq("user_id", context.userId)
+    .eq("kind", kind)
     .order("created_at", { ascending: true });
 
   if (error) throw new Error("Templates load nahi ho sakin");
@@ -42,13 +53,14 @@ async function loadAll(context: { supabase: any; userId: string }) {
   return {
     templates,
     selectedId: selected?.id ?? null,
-    template: selected?.template ?? DEFAULT_ORDER_TEMPLATE,
+    template: selected?.template ?? fallbackFor(kind),
   };
 }
 
 export const getOrderTemplate = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => loadAll(context as any));
+  .inputValidator((data: unknown) => z.object({ kind: kindSchema }).parse(data ?? {}))
+  .handler(async ({ data, context }) => loadAll(context as any, data.kind));
 
 export const saveOrderTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -58,6 +70,7 @@ export const saveOrderTemplate = createServerFn({ method: "POST" })
         id: z.string().uuid().optional(),
         name: nameSchema,
         template: templateSchema,
+        kind: kindSchema,
       })
       .parse(data),
   )
@@ -68,7 +81,8 @@ export const saveOrderTemplate = createServerFn({ method: "POST" })
     await ctx.supabase
       .from("order_templates")
       .update({ is_selected: false })
-      .eq("user_id", ctx.userId);
+      .eq("user_id", ctx.userId)
+      .eq("kind", data.kind);
 
     if (data.id) {
       const { error } = await ctx.supabase
@@ -83,6 +97,7 @@ export const saveOrderTemplate = createServerFn({ method: "POST" })
         name: data.name,
         template_text: data.template,
         is_selected: true,
+        kind: data.kind,
       });
       if (error)
         throw new Error(
@@ -90,17 +105,21 @@ export const saveOrderTemplate = createServerFn({ method: "POST" })
         );
     }
 
-    return loadAll(ctx);
+    return loadAll(ctx, data.kind);
   });
 
 export const selectOrderTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({ id: z.string().uuid().nullable() }).parse(data),
+    z.object({ id: z.string().uuid().nullable(), kind: kindSchema }).parse(data),
   )
   .handler(async ({ data, context }) => {
     const ctx = context as any;
-    await ctx.supabase.from("order_templates").update({ is_selected: false }).eq("user_id", ctx.userId);
+    await ctx.supabase
+      .from("order_templates")
+      .update({ is_selected: false })
+      .eq("user_id", ctx.userId)
+      .eq("kind", data.kind);
 
     if (data.id) {
       const { error } = await ctx.supabase
@@ -111,12 +130,14 @@ export const selectOrderTemplate = createServerFn({ method: "POST" })
       if (error) throw new Error("Template select nahi ho saki");
     }
 
-    return loadAll(ctx);
+    return loadAll(ctx, data.kind);
   });
 
 export const deleteOrderTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .inputValidator((data: unknown) =>
+    z.object({ id: z.string().uuid(), kind: kindSchema }).parse(data),
+  )
   .handler(async ({ data, context }) => {
     const ctx = context as any;
     const { error } = await ctx.supabase
@@ -125,17 +146,19 @@ export const deleteOrderTemplate = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .eq("user_id", ctx.userId);
     if (error) throw new Error("Template delete nahi ho saki");
-    return loadAll(ctx);
+    return loadAll(ctx, data.kind);
   });
 
 export const resetOrderTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((data: unknown) => z.object({ kind: kindSchema }).parse(data ?? {}))
+  .handler(async ({ data, context }) => {
     const ctx = context as any;
     const { error } = await ctx.supabase
       .from("order_templates")
       .update({ is_selected: false })
-      .eq("user_id", ctx.userId);
+      .eq("user_id", ctx.userId)
+      .eq("kind", data.kind);
     if (error) throw new Error("Default template set nahi ho saki");
-    return loadAll(ctx);
+    return loadAll(ctx, data.kind);
   });
