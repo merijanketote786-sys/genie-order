@@ -57,6 +57,22 @@ function ConfirmationPage() {
   const [performa, setPerforma] = useState("");
   const [pasted, setPasted] = useState("");
   const [parsing, setParsing] = useState(false);
+  const [parcelStatus, setParcelStatus] = useState<"paid" | "unpaid" | "">("");
+  const navigate = useNavigate();
+
+  /** Invoice text ko number-wise sort karta hai aur COD/CC status set karta hai. */
+  const applyInvoiceText = (raw: string) => {
+    const invoice = numberInvoiceItems(raw);
+    const pay = detectInvoicePayment(raw);
+    if (pay.method) {
+      setPaymentEnabled(true);
+      setPaymentMethod(pay.method);
+      setCodAmount(pay.method === "COD" ? pay.codAmount : "0");
+      setParcelStatus(pay.status);
+    }
+    return { invoice, pay };
+  };
+
 
   const set = <K extends keyof ConfirmationValues>(key: K, value: ConfirmationValues[K]) =>
     setValues((prev) => ({ ...prev, [key]: value }));
