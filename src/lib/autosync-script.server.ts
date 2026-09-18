@@ -132,10 +132,27 @@ New-Item -ItemType Directory -Force -Path $dir | Out-Null
 $watch = Join-Path $dir 'watcher.ps1'
 Set-Content -Path $watch -Value '${watcher}' -Encoding UTF8
 if (-not (Test-Path '${opts.folder}')) { New-Item -ItemType Directory -Force -Path '${opts.folder}' | Out-Null }
-$act = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument ('-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + $watch + '"')
-$trg = New-ScheduledTaskTrigger -AtLogOn
-$set = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero)
-Register-ScheduledTask -TaskName 'OrderBot Vyapar Sync' -Action $act -Trigger $trg -Settings $set -Force | Out-Null
+$autoStart = $false
+try {
+  $act = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument ('-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + $watch + '"')
+  $trg = New-ScheduledTaskTrigger -AtLogOn
+  $set = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero)
+  Register-ScheduledTask -TaskName 'OrderBot Vyapar Sync' -Action $act -Trigger $trg -Settings $set -Force -ErrorAction Stop | Out-Null
+  $autoStart = $true
+} catch {
+  $autoStart = $false
+}
+if (-not $autoStart) {
+  try {
+    $startup = [Environment]::GetFolderPath('Startup')
+    $vbs = Join-Path $startup 'OrderBotSync.vbs'
+    $cmd = 'CreateObject("WScript.Shell").Run "powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File ""' + $watch + '""", 0, False'
+    Set-Content -Path $vbs -Value $cmd -Encoding ASCII
+    $autoStart = $true
+  } catch {
+    $autoStart = $false
+  }
+}
 Get-Process powershell -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.MainWindowTitle -eq 'OrderBot Sync' } | Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Process powershell -ArgumentList ('-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + $watch + '"')
 Write-Host ''
