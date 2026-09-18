@@ -36,6 +36,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/labels")({
@@ -271,14 +273,16 @@ function LabelsPage() {
     <AppShell title="Labels" subtitle="Apna label design karein aur print karein" active="/labels">
       <style>{`
         @media print {
-          body * { visibility: hidden !important; }
-          #label-sheet, #label-sheet * { visibility: visible !important; }
-          #label-sheet { position: absolute; inset: 0; display: block !important; }
+          html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
+          body > *:not(#label-sheet) { display: none !important; }
+          #label-sheet { display: block !important; position: static !important; }
           @page { size: ${printer.widthMm}mm ${printer.heightMm}mm; margin: 0; }
           .label-card { page-break-after: always; break-after: page; }
           .label-card:last-child { page-break-after: auto; break-after: auto; }
         }
+        @media screen { #label-sheet { display: none !important; } }
       `}</style>
+
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-8 pt-3">
         <WorkspaceHeader
@@ -804,17 +808,34 @@ function LabelsPage() {
           )}
         </section>
 
-        <div id="label-sheet" className="hidden">
+        <PrintSheet>
           {printLabels.map((r) => (
             <LabelCard key={r.key} config={config} printer={printer} values={valuesFor(r)} />
           ))}
-        </div>
+        </PrintSheet>
       </div>
+
     </AppShell>
   );
 }
 
+function PrintSheet({ children }: { children: React.ReactNode }) {
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    const el = document.createElement("div");
+    el.id = "label-sheet";
+    document.body.appendChild(el);
+    setHost(el);
+    return () => {
+      el.remove();
+    };
+  }, []);
+  if (!host) return null;
+  return createPortal(<>{children}</>, host);
+}
+
 function Labeled({ title, children }: { title: string; children: React.ReactNode }) {
+
   return (
     <label className="block text-[11px] font-semibold text-muted-foreground">
       {title ? <span className="mb-1 block">{title}</span> : <span className="mb-1 block">&nbsp;</span>}
