@@ -24,7 +24,7 @@ import { DEFAULT_ORDER_TEMPLATE } from "@/lib/order-template";
 import { saveOrder } from "@/lib/records.functions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Calculator, ClipboardList, CreditCard, Languages, MessageSquareText, Package, Sparkles, Users } from "lucide-react";
+import { Calculator, ClipboardList, CreditCard, Languages, MessageSquareText, Package, QrCode, Sparkles, Users } from "lucide-react";
 
 
 export const Route = createFileRoute("/_authenticated/")({
