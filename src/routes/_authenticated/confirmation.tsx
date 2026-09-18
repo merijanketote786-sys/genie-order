@@ -77,16 +77,54 @@ function ConfirmationPage() {
     }
   }, [values]);
 
+  const buildFrom = (vals: ConfirmationValues) => {
+    const payment = paymentEnabled
+      ? paymentLine(paymentMethod, paymentMethod === "COD" ? codAmount : "")
+      : "";
+    setPerforma(renderConfirmation(template, { ...vals, payment }));
+  };
+
   const build = () => {
     if (!values.name.trim() && !values.phone.trim() && !values.invoice.trim()) {
       toast.error("Customer detail ya invoice text zaroori hai");
       return;
     }
-    const payment = paymentEnabled
-      ? paymentLine(paymentMethod, paymentMethod === "COD" ? codAmount : "")
-      : "";
-    setPerforma(renderConfirmation(template, { ...values, payment }));
+    buildFrom(values);
     toast.success("Order performa taiyar hai");
+  };
+
+  const fillFromText = async (text: string) => {
+    setParsing(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const res = await fetch("/api/confirm-parse", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const parsed = (await res.json()) as Partial<ConfirmationValues>;
+      let next: ConfirmationValues = values;
+      setValues((prev) => {
+        const merged = { ...prev };
+        for (const [key, value] of Object.entries(parsed) as [keyof ConfirmationValues, string][]) {
+          if (typeof value === "string" && value.trim()) merged[key] = value.trim();
+        }
+        next = merged;
+        return merged;
+      });
+      buildFrom(next);
+      setPasted("");
+      toast.success("Data template ke mutabiq bhar diya");
+    } catch {
+      toast.error("Text samajh nahi aaya — dobara koshish karein");
+    } finally {
+      setParsing(false);
+    }
   };
 
   const clearAll = () => {
