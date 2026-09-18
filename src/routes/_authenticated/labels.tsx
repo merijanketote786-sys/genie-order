@@ -86,7 +86,17 @@ function LabelsPage() {
   const loadLabelSettings = useServerFn(getMyLabelSettings);
   const persistLabelSettings = useServerFn(saveMyLabelSettings);
 
-  const [rows, setRows] = useState<LabelRow[]>([]);
+  // Print list mein hamesha 1 khali label default mojood rahta hai —
+  // user ko har dafa "Label add karein" dabana nahi parta.
+  const emptyRow = (): LabelRow => ({
+    id: crypto.randomUUID(),
+    name: "",
+    code: "",
+    price: "",
+    pack: "",
+    qty: 1,
+  });
+  const [rows, setRows] = useState<LabelRow[]>(() => [emptyRow()]);
   const [manual, setManual] = useState({ name: "", code: "", price: "", pack: "", qty: "1" });
   const [config, setConfig] = useState<LabelConfig>(() => defaultConfig());
   const [showDesign, setShowDesign] = useState(false);
