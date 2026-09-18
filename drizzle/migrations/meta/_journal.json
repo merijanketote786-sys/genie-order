@@ -99,6 +99,13 @@
       "when": 1789767947138,
       "tag": "0013_order_template_kind",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1789769796807,
+      "tag": "0014_template_unique_per_kind",
+      "breakpoints": true
     }
   ]
 }
