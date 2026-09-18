@@ -233,7 +233,18 @@ function OrderChat() {
               <ChatMessage key={msg.id} from={msg.role}>
                 {msg.role === "assistant" ? (
                   text ? (
-                    <ResultCard text={text} label="Formatted order" />
+                    <ResultCard
+                      text={text}
+                      label="Formatted order"
+                      forward={{
+                        label: "Invoice me bhejein",
+                        onClick: (value) => {
+                          setHandoff("invoice", value);
+                          navigate({ to: "/invoice" });
+                        },
+                      }}
+                    />
+
                   ) : (
                     <ChatMessageContent>
                       <Shimmer>Format ho raha hai...</Shimmer>
