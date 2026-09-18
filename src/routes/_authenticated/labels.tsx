@@ -709,73 +709,8 @@ function LabelsPage() {
           </section>
         ) : null}
 
-        {/* item sources */}
-        <div className="grid gap-4 lg:grid-cols-2">
-          <section className="rounded-2xl border border-border bg-card p-4">
-            <h3 className="font-display text-sm font-bold text-foreground">Rate list se product</h3>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {PACKS.map((op) => (
-                <button
-                  key={op.id}
-                  type="button"
-                  onClick={() => setPack(op.id)}
-                  className={`h-8 rounded-lg border px-2.5 text-xs font-semibold transition ${
-                    pack === op.id
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-background text-foreground hover:bg-muted"
-                  }`}
-                >
-                  {op.label}
-                </button>
-              ))}
-            </div>
-            <div className="relative mt-3">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={term}
-                onChange={(e) => setTerm(e.target.value)}
-                placeholder="Product ka naam likhein"
-                aria-label="Product search"
-                className={`${inputCls} pl-9`}
-              />
-              {products.isFetching ? (
-                <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-              ) : null}
-            </div>
-            <ul className="mt-3 max-h-64 space-y-1.5 overflow-y-auto">
-              {results.length === 0 ? (
-                <li className="py-3 text-center text-xs text-muted-foreground">
-                  {products.isFetching
-                    ? "Rate list load ho rahi hai…"
-                    : "Koi product nahi mila — neeche manual label bana lein."}
-                </li>
-              ) : (
-                results.map((p) => {
-                  const price = priceFor(p, pack);
-                  return (
-                    <li key={p.name}>
-                      <button
-                        type="button"
-                        onClick={() => addProduct(p)}
-                        className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-left hover:bg-muted"
-                      >
-                        <span className="min-w-0">
-                          <span className="block truncate text-sm font-semibold text-foreground">
-                            {cleanName(p.name)}
-                          </span>
-                          <span className="block truncate text-xs text-muted-foreground">
-                            {price == null ? "Is pack ka rate nahi" : `${currency} ${Math.round(price)}`}
-                          </span>
-                        </span>
-                        <Plus className="size-4 shrink-0 text-primary" />
-                      </button>
-                    </li>
-                  );
-                })
-              )}
-            </ul>
-          </section>
-
+        {/* manual label */}
+        <div>
           <section className="rounded-2xl border border-border bg-card p-4">
             <h3 className="font-display text-sm font-bold text-foreground">Manual label</h3>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
