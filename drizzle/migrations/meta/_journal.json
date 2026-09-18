@@ -78,6 +78,13 @@
       "when": 1789723273327,
       "tag": "0010_set_order_number_start_fn",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789725088213,
+      "tag": "0011_lock_definer_functions_and_user_settings_delete",
+      "breakpoints": true
     }
   ]
 }
