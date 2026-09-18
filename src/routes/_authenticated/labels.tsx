@@ -443,6 +443,7 @@ function LabelsPage() {
                   onSelect={setSelection}
                   onPatchField={(id, patch) => patchField(id, patch as Partial<LabelField>)}
                   onPatchBarcode={(patch) => setConfig((c) => ({ ...c, barcode: { ...c.barcode, ...patch } }))}
+                  onEditText={(id, template) => patchField(id, { template })}
                 />
               </div>
 
