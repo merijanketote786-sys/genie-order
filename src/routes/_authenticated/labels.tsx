@@ -884,7 +884,8 @@ function printLabelSheet(printer: PrinterProfile) {
   doc.open();
   doc.write(`<!doctype html><html><head><meta charset="utf-8"><title></title><style>
     @page { size: ${w}mm ${h}mm; margin: 0; }
-    html, body { margin: 0; padding: 0; background: #fff; width: ${w}mm; height: ${h}mm; overflow: hidden; }
+    /* height fix na karein warna sirf pehla label print hota hai (baqi clip ho jate hain). */
+    html, body { margin: 0; padding: 0; background: #fff; width: ${w}mm; }
     * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     body { font-family: Arial, Helvetica, sans-serif; color: #000; }
     .label-card { position: relative; display: block; overflow: hidden; background: #fff; color: #000;
