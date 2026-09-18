@@ -25,16 +25,11 @@ function priceFor(p: DbProduct, pack: Pack): number | null {
   return p.sale;
 }
 
-function packLabel(p: DbProduct, pack: Pack): string {
-  if (pack === "unit") return `1 ${p.unit}`;
-  return `${pack}${/l$|ml|litre|liter/i.test(p.unit) ? "ml" : "g"}`;
-}
 
 export function productLine(p: DbProduct, pack: Pack, qty: number): string {
   const unitPrice = priceFor(p, pack);
   const total = unitPrice == null ? null : Math.round(unitPrice * qty);
-  const q = qty > 1 ? ` x${qty}` : "";
-  return `${p.name} ${packLabel(p, pack)}${q}${total == null ? "" : ` ${total}`}`.trim();
+  return `${p.name} ${qty}${total == null ? "" : `/${total}`}`.trim();
 }
 
 export function ProductPickerBody({
@@ -149,7 +144,7 @@ export function ProductPickerBody({
                           className="h-9 w-20 rounded-lg border border-input bg-background px-2 text-sm outline-none focus:border-ring"
                         />
                         <span className="truncate text-xs text-muted-foreground">
-                          {unitPrice == null ? "Is pack ka rate nahi hai" : `= ${Math.round(unitPrice * qtyNum)}`}
+                          {unitPrice == null ? "Is pack ka rate nahi hai" : line}
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-2">
