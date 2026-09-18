@@ -121,39 +121,8 @@ function LabelsPage() {
     onError: () => toast.error("Save nahi hua, dobara koshish karein"),
   });
 
-  const products = useQuery({
-    queryKey: ["product-picker"],
-    queryFn: () => loadProducts({}),
-    staleTime: 5 * 60_000,
-    retry: 0,
-  });
-
-  const results = useMemo(() => {
-    const list = products.data?.products ?? [];
-    const q = term.trim().toLowerCase();
-    return (q ? list.filter((p) => p.name.toLowerCase().includes(q)) : list).slice(0, 25);
-  }, [products.data, term]);
-
   const printer =
     config.printers.find((p) => p.id === config.activePrinterId) ?? config.printers[0] ?? defaultConfig().printers[0]!;
-
-  const addProduct = (p: DbProduct) => {
-    const label = PACKS.find((x) => x.id === pack)?.label ?? "";
-    const price = priceFor(p, pack);
-    const name = cleanName(p.name);
-    setRows((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        name,
-        code: autoCode(name, pack === "unit" ? p.unit || "U" : pack),
-        price: price == null ? "" : String(Math.round(price)),
-        pack: pack === "unit" ? p.unit || "unit" : label,
-        qty: 1,
-      },
-    ]);
-    toast.success(`${name} label list me add ho gaya`);
-  };
 
   const addManual = () => {
     const name = manual.name.trim();
