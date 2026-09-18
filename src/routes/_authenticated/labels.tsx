@@ -8,7 +8,6 @@ import { Barcode } from "@/components/barcode";
 import { LabelCanvas, type CanvasSelection } from "@/components/label-canvas";
 
 import { WorkspaceHeader } from "@/components/workspace-header";
-import { getProducts, type DbProduct } from "@/lib/products.functions";
 import { getMySettings } from "@/lib/settings.functions";
 import { getMyLabelSettings, saveMyLabelSettings } from "@/lib/label-settings.functions";
 import {
@@ -35,7 +34,6 @@ import {
   QrCode,
   RotateCcw,
   Save,
-  Search,
   Settings2,
   Trash2,
 } from "lucide-react";
@@ -66,26 +64,11 @@ export const Route = createFileRoute("/_authenticated/labels")({
 });
 
 type LabelRow = { id: string; name: string; code: string; price: string; pack: string; qty: number };
-type Pack = "100" | "250" | "500" | "unit";
-
-const PACKS: Array<{ id: Pack; label: string }> = [
-  { id: "100", label: "100 gram" },
-  { id: "250", label: "250 gram" },
-  { id: "500", label: "500 gram" },
-  { id: "unit", label: "1 unit" },
-];
 
 function cleanName(name: string) {
   return name
     .replace(/\s*\/\s*(kg|kilogram|g|gm|gram|ml|ltr|litre|liter|pcs|pc|piece|bottle)s?\b/gi, "")
     .trim();
-}
-
-function priceFor(p: DbProduct, pack: Pack): number | null {
-  if (pack === "100") return p.p100;
-  if (pack === "250") return p.p250;
-  if (pack === "500") return p.p500;
-  return p.sale;
 }
 
 function autoCode(name: string, pack: string) {
@@ -100,13 +83,10 @@ const smallInput =
   "h-9 w-full rounded-lg border border-input bg-background px-2 text-xs text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/30";
 
 function LabelsPage() {
-  const loadProducts = useServerFn(getProducts);
   const loadLabelSettings = useServerFn(getMyLabelSettings);
   const persistLabelSettings = useServerFn(saveMyLabelSettings);
 
   const [rows, setRows] = useState<LabelRow[]>([]);
-  const [term, setTerm] = useState("");
-  const [pack, setPack] = useState<Pack>("250");
   const [manual, setManual] = useState({ name: "", code: "", price: "", pack: "", qty: "1" });
   const [config, setConfig] = useState<LabelConfig>(() => defaultConfig());
   const [showDesign, setShowDesign] = useState(false);
@@ -141,39 +121,8 @@ function LabelsPage() {
     onError: () => toast.error("Save nahi hua, dobara koshish karein"),
   });
 
-  const products = useQuery({
-    queryKey: ["product-picker"],
-    queryFn: () => loadProducts({}),
-    staleTime: 5 * 60_000,
-    retry: 0,
-  });
-
-  const results = useMemo(() => {
-    const list = products.data?.products ?? [];
-    const q = term.trim().toLowerCase();
-    return (q ? list.filter((p) => p.name.toLowerCase().includes(q)) : list).slice(0, 25);
-  }, [products.data, term]);
-
   const printer =
     config.printers.find((p) => p.id === config.activePrinterId) ?? config.printers[0] ?? defaultConfig().printers[0]!;
-
-  const addProduct = (p: DbProduct) => {
-    const label = PACKS.find((x) => x.id === pack)?.label ?? "";
-    const price = priceFor(p, pack);
-    const name = cleanName(p.name);
-    setRows((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        name,
-        code: autoCode(name, pack === "unit" ? p.unit || "U" : pack),
-        price: price == null ? "" : String(Math.round(price)),
-        pack: pack === "unit" ? p.unit || "unit" : label,
-        qty: 1,
-      },
-    ]);
-    toast.success(`${name} label list me add ho gaya`);
-  };
 
   const addManual = () => {
     const name = manual.name.trim();
@@ -760,73 +709,8 @@ function LabelsPage() {
           </section>
         ) : null}
 
-        {/* item sources */}
-        <div className="grid gap-4 lg:grid-cols-2">
-          <section className="rounded-2xl border border-border bg-card p-4">
-            <h3 className="font-display text-sm font-bold text-foreground">Rate list se product</h3>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {PACKS.map((op) => (
-                <button
-                  key={op.id}
-                  type="button"
-                  onClick={() => setPack(op.id)}
-                  className={`h-8 rounded-lg border px-2.5 text-xs font-semibold transition ${
-                    pack === op.id
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-background text-foreground hover:bg-muted"
-                  }`}
-                >
-                  {op.label}
-                </button>
-              ))}
-            </div>
-            <div className="relative mt-3">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={term}
-                onChange={(e) => setTerm(e.target.value)}
-                placeholder="Product ka naam likhein"
-                aria-label="Product search"
-                className={`${inputCls} pl-9`}
-              />
-              {products.isFetching ? (
-                <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-              ) : null}
-            </div>
-            <ul className="mt-3 max-h-64 space-y-1.5 overflow-y-auto">
-              {results.length === 0 ? (
-                <li className="py-3 text-center text-xs text-muted-foreground">
-                  {products.isFetching
-                    ? "Rate list load ho rahi hai…"
-                    : "Koi product nahi mila — neeche manual label bana lein."}
-                </li>
-              ) : (
-                results.map((p) => {
-                  const price = priceFor(p, pack);
-                  return (
-                    <li key={p.name}>
-                      <button
-                        type="button"
-                        onClick={() => addProduct(p)}
-                        className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-left hover:bg-muted"
-                      >
-                        <span className="min-w-0">
-                          <span className="block truncate text-sm font-semibold text-foreground">
-                            {cleanName(p.name)}
-                          </span>
-                          <span className="block truncate text-xs text-muted-foreground">
-                            {price == null ? "Is pack ka rate nahi" : `${currency} ${Math.round(price)}`}
-                          </span>
-                        </span>
-                        <Plus className="size-4 shrink-0 text-primary" />
-                      </button>
-                    </li>
-                  );
-                })
-              )}
-            </ul>
-          </section>
-
+        {/* manual label */}
+        <div>
           <section className="rounded-2xl border border-border bg-card p-4">
             <h3 className="font-display text-sm font-bold text-foreground">Manual label</h3>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -901,7 +785,7 @@ function LabelsPage() {
 
           {rows.length === 0 ? (
             <p className="mt-4 rounded-2xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
-              Abhi koi label nahi. Upar se product chunein ya manual label add karein.
+              Abhi koi label nahi. Upar se manual label add karein.
             </p>
           ) : (
             <ul className="mt-4 space-y-3">
