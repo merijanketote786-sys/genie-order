@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ChatComposer } from "@/components/lightweight-chat";
 import { supabase } from "@/integrations/supabase/client";
-import { setHandoff, takeHandoff } from "@/lib/handoff";
+import { clearHandoff, peekHandoff, setHandoff } from "@/lib/handoff";
 import { DEFAULT_CONFIRMATION_TEMPLATE } from "@/lib/order-template";
 import {
   EMPTY_CONFIRMATION,
@@ -84,13 +84,19 @@ function ConfirmationPage() {
     } catch {
       // ignore
     }
-    const incoming = takeHandoff("confirmation");
+    // Peek (remove nahi): agar page remount ho jaye to dobara apply ho jaye.
+    const incoming = peekHandoff("confirmation");
     if (incoming) {
       const { invoice } = applyInvoiceText(incoming);
       setValues((prev) => ({ ...prev, invoice }));
       toast.success("Invoice confirmation section me aa gayi");
     }
   }, []);
+
+  // Jab invoice field me data aa chuka ho tab handoff clear karein.
+  useEffect(() => {
+    if (values.invoice.trim()) clearHandoff("confirmation");
+  }, [values.invoice]);
 
   useEffect(() => {
     try {
