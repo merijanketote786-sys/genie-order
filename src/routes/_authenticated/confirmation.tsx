@@ -346,18 +346,35 @@ function ConfirmationPage() {
         </section>
 
         {performa ? (
-          <ResultCard
-            text={performa}
-            label="Order performa"
-            phone={values.phone}
-            forward={{
-              label: "Order me bhejein",
-              onClick: (value) => {
-                setHandoff("order", value);
-                navigate({ to: "/" });
-              },
-            }}
-          />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] font-bold uppercase text-muted-foreground">Order performa</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setPerforma("");
+                  toast.success("Performa delete ho gaya");
+                }}
+                className="h-8 gap-1.5 rounded-lg text-xs"
+              >
+                <Trash2 className="size-3.5" /> Delete
+              </Button>
+            </div>
+            <ResultCard
+              text={performa}
+              label="Order performa"
+              phone={values.phone}
+              forward={{
+                label: "Order me bhejein",
+                onClick: (value) => {
+                  setHandoff("order", value);
+                  navigate({ to: "/" });
+                },
+              }}
+            />
+          </div>
         ) : (
           <p className="pb-4 text-center text-xs text-muted-foreground">
             Performa banane ke baad yahan preview aur WhatsApp share button aa jayega.
