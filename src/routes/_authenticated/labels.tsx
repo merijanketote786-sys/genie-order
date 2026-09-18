@@ -926,6 +926,45 @@ function LabelsPage() {
   );
 }
 
+function printLabelSheet(printer: PrinterProfile) {
+  const sheet = document.getElementById("label-sheet");
+  if (!sheet) return;
+  const w = printer.widthMm;
+  const h = printer.heightMm;
+  const frame = document.createElement("iframe");
+  frame.setAttribute("aria-hidden", "true");
+  frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;";
+  document.body.appendChild(frame);
+  const doc = frame.contentDocument;
+  if (!doc) {
+    frame.remove();
+    return;
+  }
+  doc.open();
+  doc.write(`<!doctype html><html><head><meta charset="utf-8"><title></title><style>
+    @page { size: ${w}mm ${h}mm; margin: 0; }
+    html, body { margin: 0; padding: 0; background: #fff; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { font-family: Arial, Helvetica, sans-serif; color: #000; }
+    .label-card { position: relative; display: block; overflow: hidden; background: #fff; color: #000;
+      width: ${w}mm; height: ${h}mm; page-break-after: always; break-after: page; }
+    .label-card:last-child { page-break-after: auto; break-after: auto; }
+    svg { display: block; }
+  </style></head><body>${sheet.innerHTML}</body></html>`);
+  doc.close();
+
+  const go = () => {
+    try {
+      frame.contentWindow?.focus();
+      frame.contentWindow?.print();
+    } finally {
+      window.setTimeout(() => frame.remove(), 1500);
+    }
+  };
+  if (doc.readyState === "complete") window.setTimeout(go, 150);
+  else frame.onload = () => window.setTimeout(go, 150);
+}
+
 function PrintSheet({ children }: { children: React.ReactNode }) {
   const [host, setHost] = useState<HTMLElement | null>(null);
   useEffect(() => {
@@ -940,6 +979,7 @@ function PrintSheet({ children }: { children: React.ReactNode }) {
   if (!host) return null;
   return createPortal(<>{children}</>, host);
 }
+
 
 function Labeled({ title, children }: { title: string; children: React.ReactNode }) {
 
