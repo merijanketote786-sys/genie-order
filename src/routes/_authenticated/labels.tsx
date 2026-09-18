@@ -36,6 +36,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/labels")({
