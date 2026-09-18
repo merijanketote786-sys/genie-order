@@ -86,7 +86,8 @@ function ConfirmationPage() {
     }
     const incoming = takeHandoff("confirmation");
     if (incoming) {
-      setValues((prev) => ({ ...prev, invoice: incoming.trim() }));
+      const { invoice } = applyInvoiceText(incoming);
+      setValues((prev) => ({ ...prev, invoice }));
       toast.success("Invoice confirmation section me aa gayi");
     }
   }, []);
