@@ -28,6 +28,33 @@ function safeTemplate(value: unknown) {
   return clean;
 }
 
+/** User ke bearer token se agla auto order number leta hai; fail ho to null. */
+async function fetchAutoOrderNumber(request: Request): Promise<string | null> {
+  try {
+    const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+    if (!token) return null;
+    const { createClient } = await import("@supabase/supabase-js");
+    const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
+    const supabase = createClient(process.env["SUPABASE_URL"]!, key, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: {
+        fetch: (input: RequestInfo | URL, init?: RequestInit) => {
+          const h = new Headers(init?.headers);
+          if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) h.delete("Authorization");
+          h.set("apikey", key);
+          h.set("Authorization", `Bearer ${token}`);
+          return fetch(input, { ...init, headers: h });
+        },
+      },
+    });
+    const { data, error } = await supabase.rpc("next_order_number");
+    if (error || typeof data !== "string") return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
@@ -48,8 +75,13 @@ export const Route = createFileRoute("/api/chat")({
           return new Response("Missing LOVABLE_API_KEY", { status: 500 });
         }
 
+        const autoOrderNumber = await fetchAutoOrderNumber(request);
+
         const gateway = createLovableAiGatewayProvider(key);
         const outputTemplate = safeTemplate(template);
+        const autoRule = autoOrderNumber
+          ? `\n- AUTO ORDER NUMBER: Agar user ne order number na diya ho to Order Number field mein bilkul yeh value likho: ${autoOrderNumber} — na is se pehle wali, na agli.`
+          : "";
         const result = streamText({
           model: gateway("google/gemini-3-flash-preview"),
           system: `${SYSTEM_RULES}\n\nOUTPUT TEMPLATE START\n${outputTemplate}\nOUTPUT TEMPLATE END`,
