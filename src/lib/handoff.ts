@@ -1,7 +1,7 @@
 /**
  * Order <-> Invoice forward: aik section ka text doosre section ke composer me le jata hai.
  */
-export type HandoffTarget = "order" | "invoice";
+export type HandoffTarget = "order" | "invoice" | "confirmation";
 
 const key = (target: HandoffTarget) => `workspace-handoff:${target}:v1`;
 
