@@ -269,6 +269,10 @@ function LabelsPage() {
   const removeField = (id: string) =>
     setConfig((c) => ({ ...c, fields: c.fields.filter((f) => f.id !== id) }));
 
+  const selectedField =
+    selection?.kind === "field" ? config.fields.find((f) => f.id === selection.id) ?? null : null;
+
+
   const previewRow: LabelRow = rows[0] ?? {
     id: "preview",
     name: "Acetanilide",
