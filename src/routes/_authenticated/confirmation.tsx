@@ -74,8 +74,12 @@ function ConfirmationPage() {
   };
 
 
-  const set = <K extends keyof ConfirmationValues>(key: K, value: ConfirmationValues[K]) =>
+  const set = <K extends keyof ConfirmationValues>(key: K, value: ConfirmationValues[K]) => {
+    // Koi bhi field badle to neeche para purana performa foran hata dein —
+    // naya performa sirf "Performa banayein" se bane ga.
+    setPerforma("");
     setValues((prev) => ({ ...prev, [key]: value }));
+  };
 
   useEffect(() => {
     try {
@@ -87,8 +91,16 @@ function ConfirmationPage() {
     // Peek (remove nahi): agar page remount ho jaye to dobara apply ho jaye.
     const incoming = peekHandoff("confirmation");
     if (incoming) {
-      const { invoice } = applyInvoiceText(incoming);
-      setValues((prev) => ({ ...prev, invoice }));
+      const { invoice, pay } = applyInvoiceText(incoming);
+      let next: ConfirmationValues | null = null;
+      setValues((prev) => {
+        next = { ...prev, invoice };
+        return next;
+      });
+      // Nayi invoice par purana performa hata kar naya foran bana dein.
+      if (next) {
+        buildFrom(next, pay.method ? { method: pay.method, codAmount: pay.codAmount, status: pay.status } : undefined);
+      }
       toast.success("Invoice confirmation section me aa gayi");
     }
   }, []);
