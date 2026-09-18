@@ -57,6 +57,13 @@
       "when": 1789676544445,
       "tag": "0007_secure_sync_log_writes",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789690678462,
+      "tag": "0008_auto_order_numbers",
+      "breakpoints": true
     }
   ]
 }

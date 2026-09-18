@@ -420,6 +420,7 @@ export type Database = {
       }
       is_active_team_member: { Args: { _user_id: string }; Returns: boolean }
       next_invoice_number: { Args: never; Returns: string }
+      next_order_number: { Args: never; Returns: string }
     }
     Enums: {
       app_role: "admin" | "staff"
