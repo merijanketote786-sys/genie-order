@@ -82,9 +82,10 @@ function ConfirmationPage() {
   };
 
   useEffect(() => {
+    let draft = EMPTY_CONFIRMATION;
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) setValues({ ...EMPTY_CONFIRMATION, ...JSON.parse(saved) });
+      if (saved) draft = { ...EMPTY_CONFIRMATION, ...JSON.parse(saved) };
     } catch {
       // ignore
     }
@@ -92,16 +93,13 @@ function ConfirmationPage() {
     const incoming = peekHandoff("confirmation");
     if (incoming) {
       const { invoice, pay } = applyInvoiceText(incoming);
-      let next: ConfirmationValues | null = null;
-      setValues((prev) => {
-        next = { ...prev, invoice };
-        return next;
-      });
+      const merged = { ...draft, invoice };
+      setValues(merged);
       // Nayi invoice par purana performa hata kar naya foran bana dein.
-      if (next) {
-        buildFrom(next, pay.method ? { method: pay.method, codAmount: pay.codAmount, status: pay.status } : undefined);
-      }
+      buildFrom(merged, pay.method ? { method: pay.method, codAmount: pay.codAmount, status: pay.status } : undefined);
       toast.success("Invoice confirmation section me aa gayi");
+    } else {
+      setValues(draft);
     }
   }, []);
 
