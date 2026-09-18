@@ -123,7 +123,9 @@ function ConfirmationPage() {
       toast.error("Customer detail ya invoice text zaroori hai");
       return;
     }
-    buildFrom(values);
+    const sorted = { ...values, invoice: numberInvoiceItems(values.invoice) };
+    setValues(sorted);
+    buildFrom(sorted);
     toast.success("Order performa taiyar hai");
   };
 
