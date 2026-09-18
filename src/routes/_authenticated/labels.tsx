@@ -106,6 +106,9 @@ function LabelsPage() {
   const [manual, setManual] = useState({ name: "", code: "", price: "", pack: "", qty: "1" });
   const [config, setConfig] = useState<LabelConfig>(() => defaultConfig());
   const [showDesign, setShowDesign] = useState(false);
+  const [selection, setSelection] = useState<CanvasSelection>(null);
+  const [zoom, setZoom] = useState(7);
+
 
   const settings = useQuery({
     queryKey: ["my-settings"],
