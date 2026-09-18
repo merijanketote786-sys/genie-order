@@ -59,6 +59,8 @@ function messageText(msg: UIMessage): string {
 const STORAGE_KEY = "order-format-bot:messages:v1";
 
 function OrderChat() {
+  const navigate = useNavigate();
+
   const [orderTemplate, setOrderTemplate] = useState(DEFAULT_ORDER_TEMPLATE);
   const [composerText, setComposerText] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
@@ -101,7 +103,13 @@ function OrderChat() {
     hydratedRef.current = true;
     const saved = loadChatHistory<UIMessage>(STORAGE_KEY);
     if (saved) setMessages(saved);
+    const incoming = takeHandoff("order");
+    if (incoming) {
+      setComposerText(`${incoming.trim()}\n\nIs invoice ka order format banayein.\n`);
+      toast.success("Invoice order section me aa gayi");
+    }
   }, [setMessages]);
+
 
   useEffect(() => {
     if (!hydratedRef.current) return;
