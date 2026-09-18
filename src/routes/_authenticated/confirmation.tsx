@@ -100,11 +100,22 @@ function ConfirmationPage() {
     }
   }, [values]);
 
-  const buildFrom = (vals: ConfirmationValues) => {
-    const payment = paymentEnabled
-      ? paymentLine(paymentMethod, paymentMethod === "COD" ? codAmount : "")
-      : "";
-    setPerforma(renderConfirmation(template, { ...vals, payment }));
+  const buildFrom = (
+    vals: ConfirmationValues,
+    pay?: { method: "COD" | "CC"; codAmount: string; status: "paid" | "unpaid" | "" },
+  ) => {
+    const method = pay?.method ?? paymentMethod;
+    const cod = pay ? pay.codAmount : codAmount;
+    const status = pay ? pay.status : parcelStatus;
+    const on = pay ? true : paymentEnabled;
+    const base = on ? paymentLine(method, method === "COD" ? cod : "") : "";
+    const suffix =
+      on && status
+        ? method === "CC"
+          ? " — 0 amount parcel (Paid)"
+          : " — Unpaid parcel"
+        : "";
+    setPerforma(renderConfirmation(template, { ...vals, payment: base ? `${base}${suffix}` : "" }));
   };
 
   const build = () => {
