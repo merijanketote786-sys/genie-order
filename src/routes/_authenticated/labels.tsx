@@ -149,7 +149,7 @@ function LabelsPage() {
   const remove = (id: string) => setRows((prev) => prev.filter((r) => r.id !== id));
 
   const printLabels = useMemo(
-    () => rows.flatMap((r) => Array.from({ length: r.qty }, (_, i) => ({ ...r, key: `${r.id}-${i}` }))),
+    () => rows.flatMap((r) => Array.from({ length: Math.max(1, r.qty) }, (_, i) => ({ ...r, key: `${r.id}-${i}` }))),
     [rows],
   );
 
