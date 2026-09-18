@@ -1,0 +1,176 @@
+/**
+ * LabelCanvas — actual label ka WYSIWYG preview.
+ * Element pe click kar ke select karein, drag kar ke move karein,
+ * corner handle se resize karein — sab kuch preview ke upar hi.
+ */
+import { Barcode } from "@/components/barcode";
+import { renderTemplate, type LabelConfig, type LabelValues, type PrinterProfile } from "@/lib/label-settings";
+import { useRef, type PointerEvent as ReactPointerEvent } from "react";
+
+const PT_TO_MM = 0.352_777_8;
+
+export type CanvasSelection = { kind: "field"; id: string } | { kind: "barcode" } | null;
+
+type DragState = {
+  mode: "move" | "resize";
+  startX: number;
+  startY: number;
+  origin: { x: number; y: number; w: number; h: number };
+};
+
+export function LabelCanvas({
+  config,
+  printer,
+  values,
+  scale,
+  selection,
+  onSelect,
+  onPatchField,
+  onPatchBarcode,
+}: {
+  config: LabelConfig;
+  printer: PrinterProfile;
+  values: LabelValues;
+  scale: number; // px per mm
+  selection: CanvasSelection;
+  onSelect: (s: CanvasSelection) => void;
+  onPatchField: (id: string, patch: Record<string, number>) => void;
+  onPatchBarcode: (patch: Record<string, number>) => void;
+}) {
+  const drag = useRef<DragState | null>(null);
+
+  const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+
+  const startDrag = (
+    e: ReactPointerEvent,
+    mode: DragState["mode"],
+    origin: DragState["origin"],
+    apply: (patch: Record<string, number>) => void,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const target = e.currentTarget as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+    drag.current = { mode, startX: e.clientX, startY: e.clientY, origin };
+
+    const move = (ev: PointerEvent) => {
+      const d = drag.current;
+      if (!d) return;
+      const dx = (ev.clientX - d.startX) / scale;
+      const dy = (ev.clientY - d.startY) / scale;
+      if (d.mode === "move") {
+        apply({
+          x: Number(clamp(d.origin.x + dx, -5, printer.widthMm).toFixed(2)),
+          y: Number(clamp(d.origin.y + dy, -5, printer.heightMm).toFixed(2)),
+        });
+      } else {
+        apply({
+          w: Number(clamp(d.origin.w + dx, 3, printer.widthMm + 10).toFixed(2)),
+          h: Number(clamp(d.origin.h + dy, 2, printer.heightMm + 10).toFixed(2)),
+        });
+      }
+    };
+    const up = () => {
+      drag.current = null;
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  const b = config.barcode;
+
+  return (
+    <div
+      className="relative select-none overflow-hidden bg-white text-black shadow-sm ring-1 ring-border"
+      style={{ width: printer.widthMm * scale, height: printer.heightMm * scale, touchAction: "none" }}
+      onPointerDown={() => onSelect(null)}
+    >
+      {config.fields
+        .filter((f) => f.enabled)
+        .map((f) => {
+          const text = renderTemplate(f.template, values) || f.label;
+          const active = selection?.kind === "field" && selection.id === f.id;
+          return (
+            <div
+              key={f.id}
+              onPointerDown={(e) => {
+                onSelect({ kind: "field", id: f.id });
+                startDrag(e, "move", { x: f.xMm, y: f.yMm, w: f.widthMm, h: 0 }, (p) => {
+                  if (p["x"] !== undefined) onPatchField(f.id, { xMm: p["x"]!, yMm: p["y"]! });
+                });
+              }}
+              className={`absolute cursor-move ${active ? "outline outline-1 outline-primary" : ""}`}
+              style={{
+                left: f.xMm * scale,
+                top: f.yMm * scale,
+                width: f.widthMm * scale,
+                fontSize: f.fontPt * PT_TO_MM * scale,
+                fontWeight: f.bold ? 700 : 400,
+                textTransform: f.uppercase ? "uppercase" : "none",
+                textAlign: f.align,
+                lineHeight: 1.1,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {text}
+              {active ? (
+                <span
+                  onPointerDown={(e) =>
+                    startDrag(e, "resize", { x: f.xMm, y: f.yMm, w: f.widthMm, h: f.fontPt }, (p) => {
+                      if (p["w"] !== undefined) onPatchField(f.id, { widthMm: p["w"]! });
+                    })
+                  }
+                  className="absolute -bottom-1 -right-1 size-3 cursor-ew-resize rounded-full bg-primary"
+                />
+              ) : null}
+            </div>
+          );
+        })}
+
+      {b.enabled && values.code.trim() ? (
+        <div
+          onPointerDown={(e) => {
+            onSelect({ kind: "barcode" });
+            startDrag(e, "move", { x: b.xMm, y: b.yMm, w: b.widthMm, h: b.heightMm }, (p) => {
+              if (p["x"] !== undefined) onPatchBarcode({ xMm: p["x"]!, yMm: p["y"]! });
+            });
+          }}
+          className={`absolute cursor-move ${
+            selection?.kind === "barcode" ? "outline outline-1 outline-primary" : ""
+          }`}
+          style={{
+            left: b.xMm * scale,
+            top: b.yMm * scale,
+            width: b.widthMm * scale,
+            height: b.heightMm * scale,
+          }}
+        >
+          <div className="pointer-events-none h-full w-full">
+            <Barcode
+              value={values.code}
+              format={b.format}
+              height={Math.max(10, b.heightMm * 3.78)}
+              moduleWidth={b.moduleWidth}
+              displayValue={b.showText}
+              fontSize={Math.round(b.textPt * 1.6)}
+            />
+          </div>
+          {selection?.kind === "barcode" ? (
+            <span
+              onPointerDown={(e) =>
+                startDrag(e, "resize", { x: b.xMm, y: b.yMm, w: b.widthMm, h: b.heightMm }, (p) => {
+                  if (p["w"] !== undefined) onPatchBarcode({ widthMm: p["w"]!, heightMm: p["h"]! });
+                })
+              }
+              className="absolute -bottom-1 -right-1 size-3 cursor-nwse-resize rounded-full bg-primary"
+            />
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
