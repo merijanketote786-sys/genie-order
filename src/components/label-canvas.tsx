@@ -111,6 +111,7 @@ export function LabelCanvas({
             <div
               key={f.id}
               onPointerDown={(e) => {
+                if (editingId === f.id) return;
                 onSelect({ kind: "field", id: f.id });
                 startDrag(e, "move", { x: f.xMm, y: f.yMm, w: f.widthMm, h: 0 }, (p) => {
                   const xMm = p["x"];
@@ -118,13 +119,23 @@ export function LabelCanvas({
                   if (xMm !== undefined && yMm !== undefined) onPatchField(f.id, { xMm, yMm });
                 });
               }}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                if (!onEditText) return;
+                onSelect({ kind: "field", id: f.id });
+                setEditDraft(f.template);
+                setEditingId(f.id);
+              }}
+              title="Double-click karke seedha yahin text edit karein"
               className={`absolute cursor-move ${active ? "outline outline-1 outline-primary" : ""}`}
               style={{
                 left: f.xMm * scale,
                 top: f.yMm * scale,
                 width: f.widthMm * scale,
                 fontSize: f.fontPt * PT_TO_MM * scale,
+                fontFamily: f.fontFamily,
                 fontWeight: f.bold ? 700 : 400,
+                fontStyle: f.italic ? "italic" : "normal",
                 textTransform: f.uppercase ? "uppercase" : "none",
                 textDecoration: f.underline ? "underline" : "none",
                 textAlign: f.align,
@@ -134,8 +145,32 @@ export function LabelCanvas({
                 textOverflow: "ellipsis",
               }}
             >
-              {text}
-              {active ? (
+              {editingId === f.id ? (
+                <input
+                  ref={editRef}
+                  value={editDraft}
+                  onChange={(e) => setEditDraft(e.target.value)}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onBlur={commitEdit}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitEdit();
+                    if (e.key === "Escape") setEditingId(null);
+                  }}
+                  aria-label="Label text edit karein"
+                  className="w-full bg-white/90 text-inherit outline outline-1 outline-primary"
+                  style={{
+                    font: "inherit",
+                    textAlign: f.align,
+                    textTransform: "none",
+                    padding: 0,
+                    margin: 0,
+                    border: 0,
+                  }}
+                />
+              ) : (
+                text
+              )}
+              {active && editingId !== f.id ? (
                 <span
                   onPointerDown={(e) =>
                     startDrag(e, "resize", { x: f.xMm, y: f.yMm, w: f.widthMm, h: f.fontPt }, (p) => {
