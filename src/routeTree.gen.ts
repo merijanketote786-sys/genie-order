@@ -18,6 +18,7 @@ import { Route as ApiInvoiceRouteImport } from './routes/api/invoice'
 import { Route as ApiExtractRouteImport } from './routes/api/extract'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedSyncRouteImport } from './routes/_authenticated/sync'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedRatesRouteImport } from './routes/_authenticated/rates'
 import { Route as AuthenticatedInvoicesRouteImport } from './routes/_authenticated/invoices'
 import { Route as AuthenticatedInvoiceRouteImport } from './routes/_authenticated/invoice'
@@ -73,6 +74,11 @@ const ApiChatRoute = ApiChatRouteImport.update({
 const AuthenticatedSyncRoute = AuthenticatedSyncRouteImport.update({
   id: '/sync',
   path: '/sync',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedRatesRoute = AuthenticatedRatesRouteImport.update({
@@ -151,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/invoice': typeof AuthenticatedInvoiceRoute
   '/invoices': typeof AuthenticatedInvoicesRoute
   '/rates': typeof AuthenticatedRatesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/sync': typeof AuthenticatedSyncRoute
   '/api/chat': typeof ApiChatRoute
   '/api/extract': typeof ApiExtractRoute
@@ -172,6 +179,7 @@ export interface FileRoutesByTo {
   '/invoice': typeof AuthenticatedInvoiceRoute
   '/invoices': typeof AuthenticatedInvoicesRoute
   '/rates': typeof AuthenticatedRatesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/sync': typeof AuthenticatedSyncRoute
   '/api/chat': typeof ApiChatRoute
   '/api/extract': typeof ApiExtractRoute
@@ -196,6 +204,7 @@ export interface FileRoutesById {
   '/_authenticated/invoice': typeof AuthenticatedInvoiceRoute
   '/_authenticated/invoices': typeof AuthenticatedInvoicesRoute
   '/_authenticated/rates': typeof AuthenticatedRatesRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/sync': typeof AuthenticatedSyncRoute
   '/api/chat': typeof ApiChatRoute
   '/api/extract': typeof ApiExtractRoute
@@ -221,6 +230,7 @@ export interface FileRouteTypes {
     | '/invoice'
     | '/invoices'
     | '/rates'
+    | '/settings'
     | '/sync'
     | '/api/chat'
     | '/api/extract'
@@ -242,6 +252,7 @@ export interface FileRouteTypes {
     | '/invoice'
     | '/invoices'
     | '/rates'
+    | '/settings'
     | '/sync'
     | '/api/chat'
     | '/api/extract'
@@ -265,6 +276,7 @@ export interface FileRouteTypes {
     | '/_authenticated/invoice'
     | '/_authenticated/invoices'
     | '/_authenticated/rates'
+    | '/_authenticated/settings'
     | '/_authenticated/sync'
     | '/api/chat'
     | '/api/extract'
@@ -352,6 +364,13 @@ declare module '@tanstack/react-router' {
       path: '/sync'
       fullPath: '/sync'
       preLoaderRoute: typeof AuthenticatedSyncRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rates': {
@@ -450,6 +469,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInvoiceRoute: typeof AuthenticatedInvoiceRoute
   AuthenticatedInvoicesRoute: typeof AuthenticatedInvoicesRoute
   AuthenticatedRatesRoute: typeof AuthenticatedRatesRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSyncRoute: typeof AuthenticatedSyncRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
@@ -463,6 +483,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInvoiceRoute: AuthenticatedInvoiceRoute,
   AuthenticatedInvoicesRoute: AuthenticatedInvoicesRoute,
   AuthenticatedRatesRoute: AuthenticatedRatesRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSyncRoute: AuthenticatedSyncRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }

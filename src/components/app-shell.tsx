@@ -41,6 +41,13 @@ const ADMIN_TAB = {
   icon: Shield,
 } as const;
 
+const SETTINGS_TAB = {
+  to: "/settings",
+  label: "Settings",
+  description: "Meri apni settings",
+  icon: Settings2,
+} as const;
+
 type AppShellProps = {
   title: string;
   subtitle: string;
@@ -54,6 +61,7 @@ type AppShellProps = {
     | "/invoices"
     | "/customers"
     | "/sync"
+    | "/settings"
     | "/admin";
   onClear?: () => void;
   showClear?: boolean;
