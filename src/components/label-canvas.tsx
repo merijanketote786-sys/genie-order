@@ -168,8 +168,10 @@ export function LabelCanvas({
                     border: 0,
                   }}
                 />
-              ) : (
+              ) : text ? (
                 text
+              ) : (
+                <span className="text-muted-foreground/70 italic">{f.label} (khali)</span>
               )}
               {active && editingId !== f.id ? (
                 <span
