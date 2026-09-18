@@ -168,6 +168,7 @@ function ConfirmationPage() {
   const clearAll = () => {
     setValues(EMPTY_CONFIRMATION);
     setPerforma("");
+    setParcelStatus("");
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {
