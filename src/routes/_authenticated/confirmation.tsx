@@ -327,7 +327,18 @@ function ConfirmationPage() {
         </section>
 
         {performa ? (
-          <ResultCard text={performa} label="Order performa" phone={values.phone} />
+          <ResultCard
+            text={performa}
+            label="Order performa"
+            phone={values.phone}
+            forward={{
+              label: "Order me bhejein",
+              onClick: (value) => {
+                setHandoff("order", value);
+                navigate({ to: "/" });
+              },
+            }}
+          />
         ) : (
           <p className="pb-4 text-center text-xs text-muted-foreground">
             Performa banane ke baad yahan preview aur WhatsApp share button aa jayega.
