@@ -86,7 +86,17 @@ function LabelsPage() {
   const loadLabelSettings = useServerFn(getMyLabelSettings);
   const persistLabelSettings = useServerFn(saveMyLabelSettings);
 
-  const [rows, setRows] = useState<LabelRow[]>([]);
+  // Print list mein hamesha 1 khali label default mojood rahta hai —
+  // user ko har dafa "Label add karein" dabana nahi parta.
+  const emptyRow = (): LabelRow => ({
+    id: crypto.randomUUID(),
+    name: "",
+    code: "",
+    price: "",
+    pack: "",
+    qty: 1,
+  });
+  const [rows, setRows] = useState<LabelRow[]>(() => [emptyRow()]);
   const [manual, setManual] = useState({ name: "", code: "", price: "", pack: "", qty: "1" });
   const [config, setConfig] = useState<LabelConfig>(() => defaultConfig());
   const [showDesign, setShowDesign] = useState(false);
@@ -130,26 +140,40 @@ function LabelsPage() {
       toast.error("Naam ya code likhein");
       return;
     }
-    setRows((prev) => [
-      ...prev,
-      {
+    setRows((prev) => {
+      const next = {
         id: crypto.randomUUID(),
         name,
         code: manual.code.trim() || autoCode(name, manual.pack.trim()),
         price: manual.price.trim(),
         pack: manual.pack.trim(),
         qty: Math.max(1, Number(manual.qty.replace(/[^\d]/g, "")) || 1),
-      },
-    ]);
+      };
+      // Pehli khali row ho to usi ko bhar do — nayi row append karne ki zaroorat nahi.
+      const emptyIdx = prev.findIndex(
+        (r) => !r.name.trim() && !r.code.trim() && !r.price.trim() && !r.pack.trim(),
+      );
+      if (emptyIdx >= 0) {
+        const copy = [...prev];
+        copy[emptyIdx] = next;
+        return copy;
+      }
+      return [...prev, next];
+    });
     setManual({ name: "", code: "", price: "", pack: "", qty: "1" });
   };
 
   const update = (id: string, patch: Partial<LabelRow>) =>
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
-  const remove = (id: string) => setRows((prev) => prev.filter((r) => r.id !== id));
+  const remove = (id: string) =>
+    // Aakhri row kabhi delete nahi hoti — khali ho kar default 1 label rehta hai.
+    setRows((prev) => (prev.length <= 1 ? [emptyRow()] : prev.filter((r) => r.id !== id)));
 
   const printLabels = useMemo(
-    () => rows.flatMap((r) => Array.from({ length: Math.max(1, r.qty) }, (_, i) => ({ ...r, key: `${r.id}-${i}` }))),
+    () =>
+      rows
+        .filter((r) => r.name.trim() || r.code.trim())
+        .flatMap((r) => Array.from({ length: Math.max(1, r.qty) }, (_, i) => ({ ...r, key: `${r.id}-${i}` }))),
     [rows],
   );
 
@@ -159,7 +183,7 @@ function LabelsPage() {
     price: r.price,
     currency,
     pack: r.pack,
-    code: r.code,
+    code: r.code.trim() || autoCode(r.name, r.pack),
     qty: String(r.qty),
     date: new Date().toLocaleDateString("en-GB"),
   });
@@ -767,7 +791,7 @@ function LabelsPage() {
               {rows.length ? (
                 <button
                   type="button"
-                  onClick={() => setRows([])}
+                  onClick={() => setRows([emptyRow()])}
                   className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-semibold text-foreground hover:bg-muted"
                 >
                   <Trash2 className="size-4" /> Clear
