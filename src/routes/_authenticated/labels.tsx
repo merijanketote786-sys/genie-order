@@ -236,13 +236,14 @@ function LabelsPage() {
   const patchField = (id: string, patch: Partial<LabelField>) =>
     setConfig((c) => ({ ...c, fields: c.fields.map((f) => (f.id === id ? { ...f, ...patch } : f)) }));
 
-  const addField = () =>
+  const addField = () => {
+    const id = crypto.randomUUID();
     setConfig((c) => ({
       ...c,
       fields: [
         ...c.fields,
         {
-          id: crypto.randomUUID(),
+          id,
           label: `Custom text ${c.fields.length + 1}`,
           template: "Apna text likhein",
           enabled: true,
@@ -256,6 +257,9 @@ function LabelsPage() {
         },
       ],
     }));
+    return id;
+  };
+
 
   const removeField = (id: string) =>
     setConfig((c) => ({ ...c, fields: c.fields.filter((f) => f.id !== id) }));
