@@ -142,7 +142,7 @@ function ConfirmationPage() {
       });
       if (!res.ok) throw new Error(await res.text());
       const parsed = (await res.json()) as Partial<ConfirmationValues>;
-      const { invoice, pay } = applyInvoiceText(parsed.invoice?.trim() ? parsed.invoice : text);
+      const { invoice, pay } = applyInvoiceText(parsed.invoice?.trim() ? parsed.invoice : text, text);
       let next: ConfirmationValues = values;
       setValues((prev) => {
         const merged = { ...prev };
