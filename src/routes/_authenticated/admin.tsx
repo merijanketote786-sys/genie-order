@@ -77,10 +77,13 @@ export const Route = createFileRoute("/_authenticated/admin")({
 function AdminPage() {
   const access = useQuery({ queryKey: ["my-access"], queryFn: () => getMyAccess() });
   const isOwner = access.data?.isOwner === true;
-  const [section, setSection] = useState<"dashboard" | "users" | "records" | "export">("dashboard");
+  const [section, setSection] = useState<
+    "dashboard" | "users" | "settings" | "records" | "export"
+  >("dashboard");
   const sections = [
     { key: "dashboard" as const, label: "Overview", icon: BarChart3 },
     { key: "users" as const, label: "Users", icon: Users },
+    { key: "settings" as const, label: "Settings", icon: Settings2 },
     { key: "records" as const, label: "Records", icon: Database },
     { key: "export" as const, label: "Export", icon: Download },
   ];
