@@ -1,4 +1,6 @@
 import { AppShell } from "@/components/app-shell";
+import { AdminWorkspaceSettings } from "@/components/admin-workspace-settings";
+import { Settings2 } from "lucide-react";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { Button } from "@/components/ui/button";
 import {
