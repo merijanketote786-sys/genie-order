@@ -785,7 +785,7 @@ function LabelsPage() {
 
           {rows.length === 0 ? (
             <p className="mt-4 rounded-2xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
-              Abhi koi label nahi. Upar se product chunein ya manual label add karein.
+              Abhi koi label nahi. Upar se manual label add karein.
             </p>
           ) : (
             <ul className="mt-4 space-y-3">
