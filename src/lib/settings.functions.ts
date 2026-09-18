@@ -208,6 +208,9 @@ export const saveWorkspaceSettings = createServerFn({ method: "POST" })
         .insert({ workspace_id: workspaceId, ...patch });
       if (error) return { ok: false as const, message: error.message };
     }
+    if (data.orderNumberStart !== undefined) {
+      await supabase.rpc("set_order_number_start", { _start: data.orderNumberStart });
+    }
     return { ok: true as const, message: "Workspace settings save ho gayin" };
   });
 
