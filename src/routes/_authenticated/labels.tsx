@@ -817,7 +817,23 @@ function LabelsPage() {
   );
 }
 
+function PrintSheet({ children }: { children: React.ReactNode }) {
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    const el = document.createElement("div");
+    el.id = "label-sheet";
+    document.body.appendChild(el);
+    setHost(el);
+    return () => {
+      el.remove();
+    };
+  }, []);
+  if (!host) return null;
+  return createPortal(<>{children}</>, host);
+}
+
 function Labeled({ title, children }: { title: string; children: React.ReactNode }) {
+
   return (
     <label className="block text-[11px] font-semibold text-muted-foreground">
       {title ? <span className="mb-1 block">{title}</span> : <span className="mb-1 block">&nbsp;</span>}
