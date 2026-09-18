@@ -23,15 +23,33 @@ import {
   selectOrderTemplate,
   type OrderTemplateRow,
 } from "@/lib/order-template.functions";
-import { DEFAULT_ORDER_TEMPLATE, ORDER_TEMPLATE_MAX_LENGTH, ORDER_TEMPLATE_VARIABLES } from "@/lib/order-template";
+import {
+  CONFIRMATION_TEMPLATE_VARIABLES,
+  DEFAULT_CONFIRMATION_TEMPLATE,
+  DEFAULT_ORDER_TEMPLATE,
+  ORDER_TEMPLATE_MAX_LENGTH,
+  ORDER_TEMPLATE_VARIABLES,
+  type TemplateKind,
+} from "@/lib/order-template";
 
 type OrderTemplateDialogProps = {
   template: string;
   onTemplateChange: (template: string) => void;
   compact?: boolean;
+  kind?: TemplateKind;
 };
 
-export function OrderTemplateDialog({ template, onTemplateChange, compact = false }: OrderTemplateDialogProps) {
+export function OrderTemplateDialog({
+  template,
+  onTemplateChange,
+  compact = false,
+  kind = "order",
+}: OrderTemplateDialogProps) {
+  const isConfirm = kind === "confirmation";
+  const baseTemplate = isConfirm ? DEFAULT_CONFIRMATION_TEMPLATE : DEFAULT_ORDER_TEMPLATE;
+  const variables: readonly { label: string; token: string }[] = isConfirm
+    ? CONFIRMATION_TEMPLATE_VARIABLES
+    : ORDER_TEMPLATE_VARIABLES;
   const queryClient = useQueryClient();
   const loadTemplates = useServerFn(getOrderTemplate);
   const saveTemplate = useServerFn(saveOrderTemplate);
@@ -54,8 +72,8 @@ export function OrderTemplateDialog({ template, onTemplateChange, compact = fals
   const selectedName = templates.find((t) => t.id === selectedId)?.name;
 
   const templateQuery = useQuery({
-    queryKey: ["order-template"],
-    queryFn: () => loadTemplates(),
+    queryKey: ["order-template", kind],
+    queryFn: () => loadTemplates({ data: { kind } }),
     staleTime: 10 * 60 * 1000,
     retry: 0,
   });
@@ -94,7 +112,7 @@ export function OrderTemplateDialog({ template, onTemplateChange, compact = fals
   const startNew = () => {
     setEditingId(null);
     setName("");
-    setDraft(DEFAULT_ORDER_TEMPLATE);
+    setDraft(baseTemplate);
     setFormError(null);
     setEditorOpen(true);
     focusName();
@@ -112,7 +130,7 @@ export function OrderTemplateDialog({ template, onTemplateChange, compact = fals
   const startEditDefault = () => {
     setEditingId(null);
     setName("Default");
-    setDraft(DEFAULT_ORDER_TEMPLATE);
+    setDraft(baseTemplate);
     setFormError(null);
     setEditorOpen(true);
     focusName();
@@ -123,7 +141,7 @@ export function OrderTemplateDialog({ template, onTemplateChange, compact = fals
     setSaving(true);
     try {
       const result = await fn();
-      queryClient.setQueryData(["order-template"], result);
+      queryClient.setQueryData(["order-template", kind], result);
       applyResult(result);
       setFormError(null);
       toast.success(successMessage);
@@ -153,7 +171,7 @@ export function OrderTemplateDialog({ template, onTemplateChange, compact = fals
       return;
     }
     const result = await run(
-      () => saveTemplate({ data: { id: editingId ?? undefined, name: cleanName, template: clean } }),
+      () => saveTemplate({ data: { id: editingId ?? undefined, name: cleanName, template: clean, kind } }),
       "Template save ho gayi",
       "Template save nahi ho saki",
     );
@@ -214,9 +232,10 @@ export function OrderTemplateDialog({ template, onTemplateChange, compact = fals
       </DialogTrigger>
       <DialogContent className="max-h-[92dvh] w-[calc(100%-1.5rem)] max-w-2xl overflow-y-auto rounded-2xl p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle>Order templates</DialogTitle>
+          <DialogTitle>{isConfirm ? "Confirmation templates" : "Order templates"}</DialogTitle>
           <DialogDescription>
-            Multiple templates save karein aur jo chahiye woh select karein. Har naya order selected template mein banega.
+            Multiple templates save karein aur jo chahiye woh select karein. Har naya{" "}
+            {isConfirm ? "order performa" : "order"} selected template mein banega.
           </DialogDescription>
         </DialogHeader>
 
@@ -231,7 +250,7 @@ export function OrderTemplateDialog({ template, onTemplateChange, compact = fals
               <button
                 type="button"
                 disabled={saving}
-                onClick={() => run(() => resetTemplate(), "Default template active", "Default set nahi ho saki")}
+                onClick={() => run(() => resetTemplate({ data: { kind } }), "Default template active", "Default set nahi ho saki")}
                 className="flex min-w-0 flex-1 items-center gap-2 text-left"
               >
                 {selectedId === null ? <Check className="size-4 shrink-0 text-primary" /> : <span className="size-4 shrink-0" />}
@@ -260,7 +279,7 @@ export function OrderTemplateDialog({ template, onTemplateChange, compact = fals
                 <button
                   type="button"
                   disabled={saving}
-                  onClick={() => run(() => pickTemplate({ data: { id: row.id } }), `"${row.name}" select ho gayi`, "Select nahi ho saki")}
+                  onClick={() => run(() => pickTemplate({ data: { id: row.id, kind } }), `"${row.name}" select ho gayi`, "Select nahi ho saki")}
                   className="flex min-w-0 flex-1 items-center gap-2 text-left"
                 >
                   {row.id === selectedId ? <Check className="size-4 shrink-0 text-primary" /> : <span className="size-4 shrink-0" />}
@@ -282,7 +301,7 @@ export function OrderTemplateDialog({ template, onTemplateChange, compact = fals
                   variant="ghost"
                   size="sm"
                   disabled={saving}
-                  onClick={() => run(() => removeTemplate({ data: { id: row.id } }), "Template delete ho gayi", "Delete nahi ho saki")}
+                  onClick={() => run(() => removeTemplate({ data: { id: row.id, kind } }), "Template delete ho gayi", "Delete nahi ho saki")}
                 >
                   <Trash2 className="text-destructive" />
                 </Button>
@@ -311,7 +330,7 @@ export function OrderTemplateDialog({ template, onTemplateChange, compact = fals
           <div className="space-y-2">
             <p className="text-xs font-semibold text-muted-foreground">Variables — touch karke cursor par add karein</p>
             <div className="flex max-h-24 flex-wrap gap-1.5 overflow-y-auto rounded-xl border border-border bg-surface-2 p-2">
-              {ORDER_TEMPLATE_VARIABLES.map((variable) => (
+              {variables.map((variable) => (
                 <Button
                   key={variable.token}
                   type="button"
@@ -349,7 +368,7 @@ export function OrderTemplateDialog({ template, onTemplateChange, compact = fals
           <Button
             type="button"
             variant="outline"
-            onClick={() => run(() => resetTemplate(), "Default template active", "Default set nahi ho saki")}
+            onClick={() => run(() => resetTemplate({ data: { kind } }), "Default template active", "Default set nahi ho saki")}
             disabled={saving || selectedId === null}
           >
             <RotateCcw /> Default template
