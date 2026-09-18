@@ -8,6 +8,8 @@ import { ResultCard } from "@/components/result-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ChatComposer } from "@/components/lightweight-chat";
+import { supabase } from "@/integrations/supabase/client";
 import { takeHandoff } from "@/lib/handoff";
 import { DEFAULT_CONFIRMATION_TEMPLATE } from "@/lib/order-template";
 import {
@@ -51,6 +53,8 @@ function ConfirmationPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
   const [codAmount, setCodAmount] = useState("");
   const [performa, setPerforma] = useState("");
+  const [pasted, setPasted] = useState("");
+  const [parsing, setParsing] = useState(false);
 
   const set = <K extends keyof ConfirmationValues>(key: K, value: ConfirmationValues[K]) =>
     setValues((prev) => ({ ...prev, [key]: value }));
