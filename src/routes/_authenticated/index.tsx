@@ -8,21 +8,24 @@ import { ChatComposer, ChatMessage, ChatMessageContent, PlainMessageText } from 
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { ResultCard } from "@/components/result-card";
 import { useChat } from "@ai-sdk/react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { ScrollToEnd } from "@/components/scroll-to-end";
 import { loadChatHistory, saveChatHistory } from "@/lib/chat-history";
+import { setHandoff, takeHandoff } from "@/lib/handoff";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { OrderTemplateDialog } from "@/components/order-template-dialog";
 import { RateMiniCalculatorBody } from "@/components/rate-mini-calculator";
 import { CustomerPickerBody } from "@/components/customer-picker";
+import { ProductPickerBody } from "@/components/product-picker";
 import { WorkspaceTool, WorkspaceToolDock } from "@/components/workspace-tool";
 import { PaymentModeField, paymentLine, stripPaymentLines, upsertPaymentLine, type PaymentMethod } from "@/components/payment-mode-field";
 import { DEFAULT_ORDER_TEMPLATE } from "@/lib/order-template";
 import { saveOrder } from "@/lib/records.functions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Calculator, ClipboardList, CreditCard, Languages, MessageSquareText, Sparkles, Users } from "lucide-react";
+import { Calculator, ClipboardList, CreditCard, Languages, MessageSquareText, Package, Sparkles, Users } from "lucide-react";
+
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
