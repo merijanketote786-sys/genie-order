@@ -208,6 +208,28 @@ function ConfirmationPage() {
         </WorkspaceToolDock>
 
         <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
+          <p className="text-[11px] font-bold uppercase text-muted-foreground">
+            Data paste karein
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Kisi bhi format me order/customer detail paste karein — fields khud bhar jayenge aur
+            selected template ke mutabiq performa ban jayega.
+          </p>
+          <div className="mt-2 rounded-xl border border-border bg-background">
+            <ChatComposer
+              value={pasted}
+              onValueChange={setPasted}
+              disabled={parsing}
+              placeholder="Yahan order ya customer ki details paste karein…"
+              textareaClassName="min-h-24 px-3 pt-3 text-sm"
+              onSubmit={({ text }) => fillFromText(text)}
+            />
+          </div>
+        </section>
+
+
+
+        <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
           <p className="text-[11px] font-bold uppercase text-muted-foreground">Customer details</p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <Field label="Order #" value={values.orderNumber} onChange={(v) => set("orderNumber", v)} placeholder="00370" />
