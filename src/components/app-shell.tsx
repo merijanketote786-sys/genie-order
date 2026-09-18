@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getMyAccess } from "@/lib/admin.functions";
+import { getMySettings } from "@/lib/settings.functions";
+import { isSectionAllowed } from "@/lib/settings";
 import type { ReactNode } from "react";
 
 const TABS = [
