@@ -111,8 +111,8 @@ export function AppShell({
             <img src={logoUrl} alt="HB Chemicals Pakistan" width={40} height={40} className="size-full object-contain" />
           </span>
           <div className="min-w-0">
-            <p className="truncate text-[10px] font-bold uppercase text-sidebar-muted">HB Chemicals Pakistan</p>
-            <p className="truncate font-display text-base font-bold text-sidebar-foreground">OrderBot</p>
+            <p className="truncate text-[10px] font-bold uppercase text-sidebar-muted">Workspace</p>
+            <p className="truncate font-display text-base font-bold text-sidebar-foreground">HB Chemicals Pakistan</p>
           </div>
         </div>
 

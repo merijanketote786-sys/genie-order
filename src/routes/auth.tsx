@@ -112,8 +112,8 @@ function AuthPage() {
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
           <img src={logo} alt="HB Chemicals Pakistan" width={48} height={48} className="h-12 w-auto" />
           <div>
-            <h1 className="font-display text-xl font-bold text-foreground">OrderBot</h1>
-            <p className="text-sm text-muted-foreground">HB Chemicals Pakistan — staff workspace</p>
+            <h1 className="font-display text-xl font-bold text-foreground">HB Chemicals Pakistan</h1>
+            <p className="text-sm text-muted-foreground">Staff workspace</p>
           </div>
         </div>
 
