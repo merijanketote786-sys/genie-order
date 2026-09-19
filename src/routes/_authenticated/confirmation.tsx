@@ -107,6 +107,7 @@ function ConfirmationPage() {
     // Purane drafts me khali totals ko 0 par set karein.
     draft.productTotal = draft.productTotal.trim() || "0";
     draft.delivery = draft.delivery.trim() || "0";
+    draft.advance = draft.advance.trim() || "0";
     // Peek (remove nahi): agar page remount ho jaye to dobara apply ho jaye.
     const incoming = peekHandoff("confirmation");
     if (incoming) {
