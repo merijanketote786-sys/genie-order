@@ -107,6 +107,7 @@ function ConfirmationPage() {
     // Purane drafts me khali totals ko 0 par set karein.
     draft.productTotal = draft.productTotal.trim() || "0";
     draft.delivery = draft.delivery.trim() || "0";
+    draft.advance = draft.advance.trim() || "0";
     // Peek (remove nahi): agar page remount ho jaye to dobara apply ho jaye.
     const incoming = peekHandoff("confirmation");
     if (incoming) {
@@ -325,7 +326,7 @@ function ConfirmationPage() {
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
             <Field label="Product Total" value={values.productTotal} onChange={(v) => set("productTotal", v)} placeholder="5000" inputMode="decimal" />
             <Field label="Delivery" value={values.delivery} onChange={(v) => set("delivery", v)} placeholder="250" inputMode="decimal" />
-            <Field label="Advance" value={values.advance} onChange={(v) => set("advance", v)} placeholder="1000" inputMode="decimal" />
+            <Field label="Advance (optional)" value={values.advance} onChange={(v) => set("advance", v)} placeholder="0" inputMode="decimal" />
           </div>
           <div className="mt-2">
             <label className="text-xs font-semibold text-muted-foreground" htmlFor="conf-notes">
