@@ -160,18 +160,16 @@ function ConfirmationPage() {
       });
       if (!res.ok) throw new Error(await res.text());
       const parsed = (await res.json()) as Partial<ConfirmationValues>;
-      const { invoice, pay } = applyInvoiceText(parsed.invoice?.trim() ? parsed.invoice : text, text);
       let next: ConfirmationValues = values;
       setValues((prev) => {
         const merged = { ...prev };
         for (const [key, value] of Object.entries(parsed) as [keyof ConfirmationValues, string][]) {
           if (typeof value === "string" && value.trim()) merged[key] = value.trim();
         }
-        if (invoice.trim()) merged.invoice = invoice;
         next = merged;
         return merged;
       });
-      buildFrom(next, pay.method ? { method: pay.method, codAmount: pay.codAmount, status: pay.status } : undefined);
+      buildFrom(next);
       setPasted("");
       toast.success("Data template ke mutabiq bhar diya");
     } catch {
@@ -261,18 +259,19 @@ function ConfirmationPage() {
 
         <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
           <p className="text-[11px] font-bold uppercase text-muted-foreground">
-            Data paste karein
+            Customer details paste karein
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Kisi bhi format me order/customer detail paste karein — fields khud bhar jayenge aur
-            selected template ke mutabiq performa ban jayega.
+            Kisi bhi format me customer ki details likhein ya paste karein — send button dabate hi
+            sirf naam, phone, city, address waghera neeche fields me bhar jayenge.
           </p>
           <div className="mt-2 rounded-xl border border-border bg-background">
             <ChatComposer
               value={pasted}
               onValueChange={setPasted}
               disabled={parsing}
-              placeholder="Yahan order ya customer ki details paste karein…"
+              submitOnEnter={false}
+              placeholder="Yahan customer ki details paste karein…"
               textareaClassName="min-h-24 px-3 pt-3 text-sm"
               onSubmit={({ text }) => fillFromText(text)}
             />

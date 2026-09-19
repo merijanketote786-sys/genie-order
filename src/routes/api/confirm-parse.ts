@@ -1,16 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-const SYSTEM_PROMPT = `Aap aik order-confirmation data extractor hain. User kisi bhi format (Urdu, Roman Urdu, English, bikhri hui lines, invoice text) me order/customer details dega.
+const SYSTEM_PROMPT = `Aap aik customer-details extractor hain. User kisi bhi format (Urdu, Roman Urdu, English, bikhri hui lines, message text) me customer ki details dega.
 
 Aap ne SIRF aik JSON object return karna hai, bina markdown, bina code fence, bina explanation. Shape bilkul yeh:
-{"orderNumber":"","name":"","phone":"","city":"","address":"","invoice":"","productTotal":"","delivery":"","advance":"","notes":""}
+{"orderNumber":"","name":"","phone":"","city":"","address":"","notes":""}
 
 Rules:
+- SIRF customer ki details nikaalo: order number, naam, phone, city, address, aur koi khaas hidayat (notes).
+- Products, items, prices, totals, delivery ya payment ki koi cheez MAT nikaalo — unhe hamesha ignore karo.
 - Jo field text me nahi hai usay khali string "" rakho. Kuch guess mat karo.
 - phone Pakistani local format me: 11 digits, 0 se start (+92/92 hata kar 0 lagao), koi space ya dash nahi.
-- productTotal, delivery, advance me sirf digits (currency symbol, comma nahi).
-- invoice field me products/items ki lines rakho (har item apni line par, jaise "Acetinalide 920/100gram x2"). Agar items na hon to "".
-- notes me sirf koi khaas hidayat ho to likho.`;
+- notes me sirf koi khaas hidayat ho to likho, warna "".`;
 
 export const Route = createFileRoute("/api/confirm-parse")({
   server: {
@@ -62,10 +62,10 @@ export const Route = createFileRoute("/api/confirm-parse")({
             phone: str(parsed.phone),
             city: str(parsed.city),
             address: str(parsed.address),
-            invoice: str(parsed.invoice),
-            productTotal: str(parsed.productTotal),
-            delivery: str(parsed.delivery),
-            advance: str(parsed.advance),
+            invoice: "",
+            productTotal: "",
+            delivery: "",
+            advance: "",
             notes: str(parsed.notes),
           }),
           { headers: { "Content-Type": "application/json" } },

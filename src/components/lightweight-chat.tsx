@@ -53,11 +53,13 @@ type ChatComposerProps = {
   /** Optional controlled value (e.g. rate calculator se text insert karne ke liye). */
   value?: string;
   onValueChange?: (value: string) => void;
+  /** Enter key se submit ho ya sirf send button se. Default true. */
+  submitOnEnter?: boolean;
 };
 
 export const ChatComposer = forwardRef<HTMLTextAreaElement, ChatComposerProps>(
   (
-    { onSubmit, status, disabled, placeholder, textareaClassName, value: controlled, onValueChange },
+    { onSubmit, status, disabled, placeholder, textareaClassName, value: controlled, onValueChange, submitOnEnter = true },
     ref,
   ) => {
     const [inner, setInner] = useState("");
@@ -77,6 +79,7 @@ export const ChatComposer = forwardRef<HTMLTextAreaElement, ChatComposerProps>(
     };
 
     const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+      if (!submitOnEnter) return;
       if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
         event.preventDefault();
         event.currentTarget.form?.requestSubmit();
