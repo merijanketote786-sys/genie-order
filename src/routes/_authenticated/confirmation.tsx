@@ -22,7 +22,7 @@ import {
   type ConfirmationValues,
 } from "@/lib/confirmation";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { CreditCard, Eraser, FileSignature, Sparkles, Trash2, Users } from "lucide-react";
+import { Eraser, FileSignature, Sparkles, Trash2, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
