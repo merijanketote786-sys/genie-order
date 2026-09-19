@@ -24,7 +24,7 @@ export const EMPTY_CONFIRMATION: ConfirmationValues = {
   invoice: "",
   productTotal: "0",
   delivery: "0",
-  advance: "",
+  advance: "0",
   payment: "",
   notes: "",
 };
