@@ -55,6 +55,25 @@ export function numberInvoiceItems(text: string): string {
     .trim();
 }
 
+/**
+ * Kisi bhi paste kiye gaye text me se sirf invoice item lines uthata hai —
+ * naam, phone, address, totals waghera sab chhor deta hai — aur items ko
+ * 1, 2, 3 number wise sort karta hai.
+ */
+export function extractInvoiceOnly(text: string): string {
+  let n = 0;
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((raw) => looksLikeItem(raw))
+    .map((raw) => {
+      const clean = raw.replace(/^\s*(\d+)\s*[).:-]\s*/, "");
+      n += 1;
+      return `${n}. ${clean}`;
+    })
+    .join("\n");
+}
+
 export type InvoicePayment = {
   method: "COD" | "CC" | null;
   codAmount: string;
