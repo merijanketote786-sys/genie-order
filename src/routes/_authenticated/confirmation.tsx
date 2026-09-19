@@ -15,6 +15,7 @@ import { DEFAULT_CONFIRMATION_TEMPLATE } from "@/lib/order-template";
 import {
   EMPTY_CONFIRMATION,
   detectInvoicePayment,
+  extractInvoiceOnly,
   grandTotal,
   numberInvoiceItems,
   renderConfirmation,
@@ -62,7 +63,9 @@ function ConfirmationPage() {
 
   /** Invoice text ko number-wise sort karta hai aur COD/CC status set karta hai. */
   const applyInvoiceText = (raw: string, detectSource = raw) => {
-    const invoice = numberInvoiceItems(raw);
+    // Sirf invoice item lines uthao — baqi text (naam, address waghera) chhor do.
+    const items = extractInvoiceOnly(raw);
+    const invoice = items || numberInvoiceItems(raw);
     const pay = detectInvoicePayment(detectSource);
     if (pay.method) {
       setPaymentEnabled(true);
@@ -71,6 +74,18 @@ function ConfirmationPage() {
       setParcelStatus(pay.status);
     }
     return { invoice, pay };
+  };
+
+  /** Manually likhe/paste kiye gaye text ko box se bahar aate hi sirf invoice items tak mehdood karta hai. */
+  const cleanInvoiceField = () => {
+    const raw = values.invoice;
+    if (!raw.trim()) return;
+    const items = extractInvoiceOnly(raw);
+    if (!items) return; // koi item line nahi mili to text waise ka waisa rakho
+    if (items !== raw.trim()) {
+      setPerforma("");
+      setValues((prev) => ({ ...prev, invoice: items }));
+    }
   };
 
 
