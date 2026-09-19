@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ChatComposer } from "@/components/lightweight-chat";
 import { supabase } from "@/integrations/supabase/client";
 import { clearHandoff, peekHandoff, setHandoff } from "@/lib/handoff";
+import { getMySettings } from "@/lib/settings.functions";
 import { DEFAULT_CONFIRMATION_TEMPLATE } from "@/lib/order-template";
 import {
   EMPTY_CONFIRMATION,
@@ -96,6 +97,26 @@ function ConfirmationPage() {
     setValues((prev) => ({ ...prev, [key]: value }));
   };
 
+  /** Settings me auto order number on ho aur field khali ho to sequence se naya number le aata hai. */
+  const fetchAutoOrderNumber = async (): Promise<string | null> => {
+    try {
+      const settings = await getMySettings();
+      if (settings && settings.autoOrderNumber === false) return null;
+      const { data, error } = await supabase.rpc("next_order_number");
+      if (error || !data) return null;
+      return String(data);
+    } catch {
+      return null;
+    }
+  };
+
+  /** Khali order number field ko auto number se bhar deta hai. */
+  const withAutoOrderNumber = async (vals: ConfirmationValues): Promise<ConfirmationValues> => {
+    if (vals.orderNumber.trim()) return vals;
+    const n = await fetchAutoOrderNumber();
+    return n ? { ...vals, orderNumber: n } : vals;
+  };
+
   useEffect(() => {
     let draft = EMPTY_CONFIRMATION;
     try {
@@ -112,13 +133,15 @@ function ConfirmationPage() {
     const incoming = peekHandoff("confirmation");
     if (incoming) {
       const { invoice, pay } = applyInvoiceText(incoming);
-      const merged = { ...draft, invoice };
-      setValues(merged);
-      // Nayi invoice par purana performa hata kar naya foran bana dein.
-      buildFrom(merged, pay.method ? { method: pay.method, codAmount: pay.codAmount, status: pay.status } : undefined);
+      void (async () => {
+        const merged = await withAutoOrderNumber({ ...draft, invoice });
+        setValues(merged);
+        // Nayi invoice par purana performa hata kar naya foran bana dein.
+        buildFrom(merged, pay.method ? { method: pay.method, codAmount: pay.codAmount, status: pay.status } : undefined);
+      })();
       toast.success("Invoice confirmation section me aa gayi");
     } else {
-      setValues(draft);
+      void (async () => setValues(await withAutoOrderNumber(draft)))();
     }
   }, []);
 
@@ -207,6 +230,11 @@ function ConfirmationPage() {
     } catch {
       // ignore
     }
+    // Clear ke baad naya auto order number bhar dein (agar setting on ho).
+    void (async () => {
+      const n = await fetchAutoOrderNumber();
+      if (n) setValues((prev) => (prev.orderNumber.trim() ? prev : { ...prev, orderNumber: n }));
+    })();
   };
 
   const total = grandTotal(values);
