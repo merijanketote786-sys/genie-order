@@ -53,6 +53,8 @@ type ChatComposerProps = {
   /** Optional controlled value (e.g. rate calculator se text insert karne ke liye). */
   value?: string;
   onValueChange?: (value: string) => void;
+  /** Enter key se submit ho ya sirf send button se. Default true. */
+  submitOnEnter?: boolean;
 };
 
 export const ChatComposer = forwardRef<HTMLTextAreaElement, ChatComposerProps>(
