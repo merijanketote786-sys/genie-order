@@ -286,7 +286,7 @@ function ConfirmationPage() {
               useLabel="Performa me daalein"
               onUse={(amount) => {
                 setPerforma("");
-                set("delivery", amount);
+                set("delivery", String(amount));
                 toast.success(`Delivery Rs ${amount} performa me daal diya`);
               }}
             />
