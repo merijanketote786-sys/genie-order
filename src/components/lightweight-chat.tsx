@@ -59,7 +59,7 @@ type ChatComposerProps = {
 
 export const ChatComposer = forwardRef<HTMLTextAreaElement, ChatComposerProps>(
   (
-    { onSubmit, status, disabled, placeholder, textareaClassName, value: controlled, onValueChange },
+    { onSubmit, status, disabled, placeholder, textareaClassName, value: controlled, onValueChange, submitOnEnter = true },
     ref,
   ) => {
     const [inner, setInner] = useState("");
