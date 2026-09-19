@@ -22,8 +22,9 @@ import {
   renderConfirmation,
   type ConfirmationValues,
 } from "@/lib/confirmation";
+import { RateMiniCalculatorBody } from "@/components/rate-mini-calculator";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Eraser, FileSignature, Sparkles, Trash2, Users } from "lucide-react";
+import { Calculator, Eraser, FileSignature, Sparkles, Trash2, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -272,6 +273,21 @@ function ConfirmationPage() {
                   address: customer.address || prev.address,
                 }));
                 toast.success("Customer detail bhar di gayi");
+              }}
+            />
+          </WorkspaceTool>
+          <WorkspaceTool
+            icon={Calculator}
+            label="Courier"
+            title="Courier rate"
+            description="Weight aur city se delivery charge calculate karein."
+          >
+            <RateMiniCalculatorBody
+              useLabel="Performa me daalein"
+              onUse={(amount) => {
+                setPerforma("");
+                set("delivery", String(amount));
+                toast.success(`Delivery Rs ${amount} performa me daal diya`);
               }}
             />
           </WorkspaceTool>
