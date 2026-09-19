@@ -100,8 +100,8 @@ function ConfirmationPage() {
   /** Settings me auto order number on ho aur field khali ho to sequence se naya number le aata hai. */
   const fetchAutoOrderNumber = async (): Promise<string | null> => {
     try {
-      const settings = await getMySettings();
-      if (settings && settings.autoOrderNumber === false) return null;
+      const data = await getMySettings();
+      if (data && data.settings && data.settings.autoOrderNumber === false) return null;
       const { data, error } = await supabase.rpc("next_order_number");
       if (error || !data) return null;
       return String(data);
