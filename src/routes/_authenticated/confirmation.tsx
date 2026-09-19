@@ -22,7 +22,7 @@ import {
   type ConfirmationValues,
 } from "@/lib/confirmation";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { CreditCard, Eraser, FileSignature, Sparkles, Trash2, Users } from "lucide-react";
+import { Eraser, FileSignature, Sparkles, Trash2, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -104,6 +104,9 @@ function ConfirmationPage() {
     } catch {
       // ignore
     }
+    // Purane drafts me khali totals ko 0 par set karein.
+    draft.productTotal = draft.productTotal.trim() || "0";
+    draft.delivery = draft.delivery.trim() || "0";
     // Peek (remove nahi): agar page remount ho jaye to dobara apply ho jaye.
     const incoming = peekHandoff("confirmation");
     if (incoming) {
@@ -246,16 +249,6 @@ function ConfirmationPage() {
               }}
             />
           </WorkspaceTool>
-          <WorkspaceTool icon={CreditCard} label="Payment" title="Payment status" active={paymentEnabled}>
-            <PaymentModeField
-              enabled={paymentEnabled}
-              onEnabledChange={setPaymentEnabled}
-              method={paymentMethod}
-              onMethodChange={setPaymentMethod}
-              codAmount={codAmount}
-              onCodAmountChange={setCodAmount}
-            />
-          </WorkspaceTool>
           <OrderTemplateDialog
             kind="confirmation"
             template={template}
@@ -356,6 +349,19 @@ function ConfirmationPage() {
                 : `COD — Unpaid parcel${codAmount ? ` (${codAmount})` : ""}`}
             </p>
           ) : null}
+          <div className="mt-3 rounded-xl border border-border bg-background p-3">
+            <p className="text-[11px] font-bold uppercase text-muted-foreground">Payment status</p>
+            <div className="mt-2">
+              <PaymentModeField
+                enabled={paymentEnabled}
+                onEnabledChange={setPaymentEnabled}
+                method={paymentMethod}
+                onMethodChange={setPaymentMethod}
+                codAmount={codAmount}
+                onCodAmountChange={setCodAmount}
+              />
+            </div>
+          </div>
           <Button type="button" onClick={build} className="mt-3 h-11 w-full gap-1.5 rounded-xl sm:w-auto">
             <Sparkles className="size-4" /> Performa banayein
           </Button>

@@ -22,8 +22,8 @@ export const EMPTY_CONFIRMATION: ConfirmationValues = {
   city: "",
   address: "",
   invoice: "",
-  productTotal: "",
-  delivery: "",
+  productTotal: "0",
+  delivery: "0",
   advance: "",
   payment: "",
   notes: "",
@@ -104,7 +104,8 @@ const num = (value: string) => {
 export function grandTotal(values: ConfirmationValues): string {
   const total = num(values.productTotal) + num(values.delivery) - num(values.advance);
   if (!values.productTotal.trim()) return "";
-  return total > 0 ? total.toLocaleString("en-PK") : "";
+  if (total < 0) return "";
+  return total.toLocaleString("en-PK");
 }
 
 export function renderConfirmation(template: string, values: ConfirmationValues): string {
