@@ -12,6 +12,7 @@ import {
   FileScan,
   FileSignature,
   History,
+  LayoutDashboard,
   QrCode,
   ReceiptText,
   RefreshCw,
@@ -28,6 +29,7 @@ import { isSectionAllowed } from "@/lib/settings";
 import type { ReactNode } from "react";
 
 const TABS = [
+  { to: "/dashboard", label: "Dashboard", description: "Poori progress ek nazar", icon: LayoutDashboard },
   { to: "/", label: "Order", description: "Format customer orders", icon: ClipboardList },
   { to: "/invoice", label: "Invoice", description: "Create item invoices", icon: ReceiptText },
   { to: "/confirmation", label: "Confirm", description: "Order performa aur WhatsApp", icon: FileSignature },
@@ -60,6 +62,7 @@ type AppShellProps = {
   subtitle: string;
   active:
     | "/"
+    | "/dashboard"
     | "/invoice"
     | "/confirmation"
     | "/extract"

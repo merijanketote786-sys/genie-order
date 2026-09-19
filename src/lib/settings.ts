@@ -1,4 +1,5 @@
 export const APP_SECTIONS = [
+  { key: "/dashboard", label: "Dashboard" },
   { key: "/", label: "Order" },
   { key: "/invoice", label: "Invoice" },
   { key: "/confirmation", label: "Confirmation" },
