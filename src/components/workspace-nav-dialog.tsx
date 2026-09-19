@@ -14,6 +14,7 @@ import type { LucideIcon } from "lucide-react";
 
 type WorkspacePath =
   | "/"
+  | "/dashboard"
   | "/invoice"
   | "/confirmation"
   | "/extract"

@@ -26,6 +26,7 @@ import { Route as AuthenticatedInvoicesRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedInvoiceRouteImport } from './routes/_authenticated/invoice'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedExtractRouteImport } from './routes/_authenticated/extract'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedConfirmationRouteImport } from './routes/_authenticated/confirmation'
 import { Route as AuthenticatedCalculatorRouteImport } from './routes/_authenticated/calculator'
@@ -119,6 +120,11 @@ const AuthenticatedExtractRoute = AuthenticatedExtractRouteImport.update({
   path: '/extract',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCustomersRoute = AuthenticatedCustomersRouteImport.update({
   id: '/customers',
   path: '/customers',
@@ -172,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/calculator': typeof AuthenticatedCalculatorRoute
   '/confirmation': typeof AuthenticatedConfirmationRoute
   '/customers': typeof AuthenticatedCustomersRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
   '/extract': typeof AuthenticatedExtractRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/invoice': typeof AuthenticatedInvoiceRoute
@@ -197,6 +204,7 @@ export interface FileRoutesByTo {
   '/calculator': typeof AuthenticatedCalculatorRoute
   '/confirmation': typeof AuthenticatedConfirmationRoute
   '/customers': typeof AuthenticatedCustomersRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
   '/extract': typeof AuthenticatedExtractRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/invoice': typeof AuthenticatedInvoiceRoute
@@ -225,6 +233,7 @@ export interface FileRoutesById {
   '/_authenticated/calculator': typeof AuthenticatedCalculatorRoute
   '/_authenticated/confirmation': typeof AuthenticatedConfirmationRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/extract': typeof AuthenticatedExtractRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/invoice': typeof AuthenticatedInvoiceRoute
@@ -254,6 +263,7 @@ export interface FileRouteTypes {
     | '/calculator'
     | '/confirmation'
     | '/customers'
+    | '/dashboard'
     | '/extract'
     | '/history'
     | '/invoice'
@@ -279,6 +289,7 @@ export interface FileRouteTypes {
     | '/calculator'
     | '/confirmation'
     | '/customers'
+    | '/dashboard'
     | '/extract'
     | '/history'
     | '/invoice'
@@ -306,6 +317,7 @@ export interface FileRouteTypes {
     | '/_authenticated/calculator'
     | '/_authenticated/confirmation'
     | '/_authenticated/customers'
+    | '/_authenticated/dashboard'
     | '/_authenticated/extract'
     | '/_authenticated/history'
     | '/_authenticated/invoice'
@@ -460,6 +472,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedExtractRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/customers': {
       id: '/_authenticated/customers'
       path: '/customers'
@@ -524,6 +543,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCalculatorRoute: typeof AuthenticatedCalculatorRoute
   AuthenticatedConfirmationRoute: typeof AuthenticatedConfirmationRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedExtractRoute: typeof AuthenticatedExtractRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
   AuthenticatedInvoiceRoute: typeof AuthenticatedInvoiceRoute
@@ -540,6 +560,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCalculatorRoute: AuthenticatedCalculatorRoute,
   AuthenticatedConfirmationRoute: AuthenticatedConfirmationRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedExtractRoute: AuthenticatedExtractRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
   AuthenticatedInvoiceRoute: AuthenticatedInvoiceRoute,
