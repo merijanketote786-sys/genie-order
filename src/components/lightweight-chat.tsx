@@ -79,6 +79,7 @@ export const ChatComposer = forwardRef<HTMLTextAreaElement, ChatComposerProps>(
     };
 
     const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+      if (!submitOnEnter) return;
       if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
         event.preventDefault();
         event.currentTarget.form?.requestSubmit();
