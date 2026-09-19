@@ -15,6 +15,7 @@ import { DEFAULT_CONFIRMATION_TEMPLATE } from "@/lib/order-template";
 import {
   EMPTY_CONFIRMATION,
   detectInvoicePayment,
+  extractInvoiceOnly,
   grandTotal,
   numberInvoiceItems,
   renderConfirmation,
@@ -62,7 +63,9 @@ function ConfirmationPage() {
 
   /** Invoice text ko number-wise sort karta hai aur COD/CC status set karta hai. */
   const applyInvoiceText = (raw: string, detectSource = raw) => {
-    const invoice = numberInvoiceItems(raw);
+    // Sirf invoice item lines uthao — baqi text (naam, address waghera) chhor do.
+    const items = extractInvoiceOnly(raw);
+    const invoice = items || numberInvoiceItems(raw);
     const pay = detectInvoicePayment(detectSource);
     if (pay.method) {
       setPaymentEnabled(true);
@@ -71,6 +74,18 @@ function ConfirmationPage() {
       setParcelStatus(pay.status);
     }
     return { invoice, pay };
+  };
+
+  /** Manually likhe/paste kiye gaye text ko box se bahar aate hi sirf invoice items tak mehdood karta hai. */
+  const cleanInvoiceField = () => {
+    const raw = values.invoice;
+    if (!raw.trim()) return;
+    const items = extractInvoiceOnly(raw);
+    if (!items) return; // koi item line nahi mili to text waise ka waisa rakho
+    if (items !== raw.trim()) {
+      setPerforma("");
+      setValues((prev) => ({ ...prev, invoice: items }));
+    }
   };
 
 
@@ -307,9 +322,13 @@ function ConfirmationPage() {
           <Textarea
             value={values.invoice}
             onChange={(e) => set("invoice", e.target.value)}
+            onBlur={cleanInvoiceField}
             placeholder="Invoice section se 'Confirmation me bhejein' dabayein, ya yahan items paste karein."
             className="mt-2 min-h-32 rounded-xl bg-background font-mono text-[13px] leading-6"
           />
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Kuch bhi paste karein — box sirf invoice items rakhega, baqi text khud hata dega.
+          </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
             <Field label="Product Total" value={values.productTotal} onChange={(v) => set("productTotal", v)} placeholder="5000" inputMode="decimal" />
             <Field label="Delivery" value={values.delivery} onChange={(v) => set("delivery", v)} placeholder="250" inputMode="decimal" />
