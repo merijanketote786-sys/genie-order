@@ -141,7 +141,7 @@ function ConfirmationPage() {
       })();
       toast.success("Invoice confirmation section me aa gayi");
     } else {
-      void (async () => setValues(await withAutoOrderNumber(draft)))();
+      setValues(draft);
     }
   }, []);
 
@@ -176,14 +176,16 @@ function ConfirmationPage() {
     setPerforma(renderConfirmation(template, { ...vals, payment: base ? `${base}${suffix}` : "" }));
   };
 
-  const build = () => {
+  const build = async () => {
     if (!values.name.trim() && !values.phone.trim() && !values.invoice.trim()) {
       toast.error("Customer detail ya invoice text zaroori hai");
       return;
     }
     const sorted = { ...values, invoice: numberInvoiceItems(values.invoice) };
-    setValues(sorted);
-    buildFrom(sorted);
+    // Order number khali ho to isi waqt sequence se auto number lein — number sirf tab kharch hota hai jab performa bane.
+    const numbered = await withAutoOrderNumber(sorted);
+    setValues(numbered);
+    buildFrom(numbered);
     toast.success("Order performa taiyar hai");
   };
 
@@ -230,11 +232,6 @@ function ConfirmationPage() {
     } catch {
       // ignore
     }
-    // Clear ke baad naya auto order number bhar dein (agar setting on ho).
-    void (async () => {
-      const n = await fetchAutoOrderNumber();
-      if (n) setValues((prev) => (prev.orderNumber.trim() ? prev : { ...prev, orderNumber: n }));
-    })();
   };
 
   const total = grandTotal(values);
