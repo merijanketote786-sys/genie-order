@@ -45,13 +45,8 @@ export function FontSizeControl() {
   const change = (delta: number) => {
     const current = size;
     const next = Math.min(MAX, Math.max(MIN, current + delta));
-    if (next === BASE) {
-      applySize(null);
-      setSize(null);
-    } else {
-      applySize(next);
-      setSize(next);
-    }
+    applySize(next === BASE ? null : next);
+    setSize(next);
   };
 
   const percent = Math.round((size / BASE) * 100);
