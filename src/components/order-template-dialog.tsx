@@ -224,9 +224,9 @@ export function OrderTemplateDialog({
           variant={compact ? "ghost" : "outline"}
           size="sm"
           disabled={loading}
-          className={compact ? "relative h-14 w-full min-w-0 flex-col gap-1 rounded-lg px-2 text-[10px] text-muted-foreground" : undefined}
+          className={compact ? "relative h-16 w-full min-w-0 flex-col gap-1 rounded-lg px-1.5 text-xs text-muted-foreground sm:h-14 sm:px-2" : undefined}
         >
-          <FilePenLine /> {compact ? "Template" : loading ? "Loading..." : selectedName ? selectedName : "Templates"}
+          <FilePenLine className="size-5 sm:size-4" /> {compact ? "Template" : loading ? "Loading..." : selectedName ? selectedName : "Templates"}
           {compact && selectedName ? <span className="absolute right-2 top-2 size-1.5 rounded-full bg-success" /> : null}
         </Button>
       </DialogTrigger>

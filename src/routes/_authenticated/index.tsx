@@ -224,10 +224,10 @@ function OrderChat() {
         <OrderTemplateDialog template={orderTemplate} onTemplateChange={handleTemplateChange} compact />
         <Link
           to="/labels"
-          className="relative flex h-14 w-full min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-2 text-[10px] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          className="relative flex h-16 w-full min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground sm:h-14 sm:px-2"
         >
-          <QrCode className="size-4.5" />
-          <span className="max-w-full truncate">Labels</span>
+          <QrCode className="size-5 shrink-0 sm:size-4.5" />
+          <span className="max-w-full whitespace-normal text-center leading-tight">Labels</span>
         </Link>
       </WorkspaceToolDock>
       <Conversation className="flex-1">

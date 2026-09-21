@@ -37,12 +37,12 @@ export function WorkspaceTool({
           type="button"
           variant="ghost"
           className={cn(
-            "relative h-14 w-full min-w-0 flex-col gap-1 rounded-lg px-2 text-[10px] text-muted-foreground",
+            "relative h-16 w-full min-w-0 flex-col gap-1 rounded-lg px-1.5 text-xs text-muted-foreground sm:h-14 sm:px-2",
             active && "bg-accent text-accent-foreground",
           )}
         >
-          <Icon className="size-4.5" />
-          <span className="max-w-full truncate">{label}</span>
+          <Icon className="size-5 shrink-0 sm:size-4.5" />
+          <span className="max-w-full whitespace-normal text-center leading-tight">{label}</span>
           {active ? <span className="absolute right-2 top-2 size-1.5 rounded-full bg-success" /> : null}
         </Button>
       </DialogTrigger>
@@ -64,7 +64,7 @@ export function WorkspaceTool({
 
 export function WorkspaceToolDock({ children }: { children: ReactNode }) {
   return (
-    <div className="grid grid-cols-4 gap-1 rounded-xl border border-border bg-surface p-1 shadow-sm">
+    <div className="grid grid-cols-3 gap-1 rounded-xl border border-border bg-surface p-1 shadow-sm min-[480px]:grid-cols-4 lg:grid-cols-6">
       {children}
     </div>
   );

@@ -108,8 +108,8 @@ export function AppShell({
   const primaryTabs = visibleTabs.slice(0, 4);
 
   return (
-    <div className="grid h-[100dvh] min-h-0 overflow-hidden bg-background lg:grid-cols-[244px_minmax(0,1fr)]">
-      <aside className="hidden min-h-0 flex-col border-r border-border bg-sidebar lg:flex">
+    <div className="grid h-[100dvh] min-h-0 overflow-hidden bg-background xl:grid-cols-[244px_minmax(0,1fr)]">
+      <aside className="hidden min-h-0 flex-col border-r border-border bg-sidebar xl:flex">
         <div className="flex h-20 shrink-0 items-center gap-3 border-b border-sidebar-border px-5">
           <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg border border-sidebar-border bg-card">
             <img src={logoUrl} alt="HB Chemicals Pakistan" width={40} height={40} className="size-full object-contain" />
@@ -163,7 +163,7 @@ export function AppShell({
       <section className="flex min-h-0 min-w-0 flex-col">
         <header className="shrink-0 border-b border-border bg-surface/95 backdrop-blur-sm">
           <div className="grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 sm:min-h-16 sm:gap-3 sm:px-6 lg:px-8">
-            <div className="flex min-w-0 items-center gap-2.5 lg:hidden">
+            <div className="flex min-w-0 items-center gap-2.5 xl:hidden">
               <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-card">
                 <img
                   src={logoUrl}
@@ -180,17 +180,17 @@ export function AppShell({
                  <p className="truncate font-display text-sm font-bold text-foreground">{title}</p>
               </div>
             </div>
-            <div className="hidden min-w-0 lg:block">
+            <div className="hidden min-w-0 xl:block">
               <h1 className="truncate font-display text-xl font-bold text-foreground">{title}</h1>
               <p className="truncate text-sm text-muted-foreground">{subtitle}</p>
             </div>
-            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <div className="flex shrink-0 items-center gap-1 sm:gap-2">
               <FontSizeControl />
               <Button
                 variant="outline"
                 size="icon"
                 onClick={() => window.location.reload()}
-                  className="size-10 shrink-0 border-border bg-card"
+                  className="size-10 shrink-0 border-border bg-card max-[380px]:hidden"
                 title="Workspace refresh karein (data mehfooz rahega)"
                 aria-label="Refresh workspace"
               >
@@ -209,7 +209,7 @@ export function AppShell({
                   <span className="hidden sm:inline">New chat</span>
                 </Button>
               ) : (
-                <span className="hidden items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground sm:flex lg:hidden">
+                <span className="hidden items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground lg:flex xl:hidden">
                   <span className="h-1.5 w-1.5 rounded-full bg-success" />
                   Online
                 </span>
@@ -219,7 +219,7 @@ export function AppShell({
 
         </header>
 
-        <main className="mx-auto flex min-h-0 w-full max-w-[1180px] flex-1 flex-col px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8 lg:pb-0">
+        <main className="mx-auto flex min-h-0 w-full max-w-[1180px] flex-1 flex-col overflow-y-auto px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:px-5 xl:px-8 xl:pb-0">
           {access.data && access.data.isActive === false ? (
             <div className="glass-panel my-6 rounded-3xl px-4 py-10 text-center">
               <h2 className="font-display text-base font-bold text-foreground">Access band hai</h2>
@@ -231,7 +231,7 @@ export function AppShell({
             children
           )}
         </main>
-        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg lg:hidden" aria-label="Mobile navigation">
+        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg xl:hidden" aria-label="Mobile navigation">
           <div className="mx-auto grid max-w-lg grid-cols-5 gap-1 p-1.5">
             {primaryTabs.map((tab) => {
               const isActive = tab.to === active;
@@ -242,7 +242,7 @@ export function AppShell({
                   to={tab.to}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "flex h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 text-[10px] font-semibold transition-colors",
+                    "flex h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 text-xs font-semibold transition-colors",
                     isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
                   )}
                 >
