@@ -24,19 +24,26 @@ function applySize(px: number | null) {
  * Browser zoom (Ctrl+scroll) ki jagah ye use karein — is se layout nahi tootta
  * aur cheezen chhup nahi jaati. Setting is browser me save rehti hai.
  */
+function defaultSize() {
+  if (typeof window === "undefined") return BASE;
+  if (window.innerWidth >= 1536) return 18;
+  if (window.innerWidth >= 1024) return 17;
+  return BASE;
+}
+
 export function FontSizeControl() {
-  const [size, setSize] = useState<number | null>(null);
+  const [size, setSize] = useState<number>(BASE);
 
   useEffect(() => {
     const saved = Number(localStorage.getItem(KEY));
-    if (Number.isFinite(saved) && saved >= MIN && saved <= MAX) {
-      applySize(saved);
-      setSize(saved);
-    }
+    const initial =
+      Number.isFinite(saved) && saved >= MIN && saved <= MAX ? saved : defaultSize();
+    applySize(initial === BASE ? null : initial);
+    setSize(initial);
   }, []);
 
   const change = (delta: number) => {
-    const current = size ?? BASE;
+    const current = size;
     const next = Math.min(MAX, Math.max(MIN, current + delta));
     if (next === BASE) {
       applySize(null);
@@ -47,7 +54,7 @@ export function FontSizeControl() {
     }
   };
 
-  const percent = Math.round(((size ?? BASE) / BASE) * 100);
+  const percent = Math.round((size / BASE) * 100);
 
   return (
     <div
@@ -58,7 +65,7 @@ export function FontSizeControl() {
         variant="ghost"
         size="icon"
         onClick={() => change(-1)}
-        disabled={(size ?? BASE) <= MIN}
+        disabled={size <= MIN}
         className="size-8"
         aria-label="Text chhota karein"
       >
@@ -71,7 +78,7 @@ export function FontSizeControl() {
         variant="ghost"
         size="icon"
         onClick={() => change(1)}
-        disabled={(size ?? BASE) >= MAX}
+        disabled={size >= MAX}
         className="size-8"
         aria-label="Text bara karein"
       >
