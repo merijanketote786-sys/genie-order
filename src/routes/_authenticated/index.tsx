@@ -282,7 +282,7 @@ function OrderChat() {
         <ConversationScrollButton />
       </Conversation>
 
-      <div className="sticky bottom-0 bg-background/95 pb-2 pt-2 backdrop-blur-sm sm:pb-4 sm:pt-3">
+      <div className="shrink-0 bg-background/95 pb-2 pt-2 backdrop-blur-sm sm:pb-4 sm:pt-3">
         <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/20">
           <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-xs font-semibold text-foreground sm:px-4 sm:py-2.5">
             <MessageSquareText className="size-4 text-primary" /> Customer order
