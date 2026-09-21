@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Minus, Plus } from "lucide-react";
 
 const KEY = "app-font-size";
-const MIN = 14;
-const MAX = 22;
+const MIN = 15;
+const MAX = 19;
 const BASE = 16;
 
 function applySize(px: number | null) {
@@ -25,9 +25,6 @@ function applySize(px: number | null) {
  * aur cheezen chhup nahi jaati. Setting is browser me save rehti hai.
  */
 function defaultSize() {
-  if (typeof window === "undefined") return BASE;
-  if (window.innerWidth >= 1536) return 18;
-  if (window.innerWidth >= 1024) return 17;
   return BASE;
 }
 

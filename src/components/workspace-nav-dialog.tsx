@@ -34,8 +34,8 @@ export function WorkspaceNavDialog({ tabs, active }: { tabs: readonly NavItem[];
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" className="h-14 w-full min-w-0 flex-col gap-1 rounded-lg px-2 text-[10px] text-muted-foreground">
-          <Grid2X2 className="size-4.5" />
+        <Button variant="ghost" className="h-14 w-full min-w-0 flex-col gap-1 rounded-lg px-1 text-xs text-muted-foreground">
+          <Grid2X2 className="size-4.5 shrink-0" />
           More
         </Button>
       </DialogTrigger>
