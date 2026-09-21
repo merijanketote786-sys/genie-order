@@ -230,3 +230,16 @@
     font-size: 16px !important;
   }
 }
+
+/* Laptop/desktop par content thoda bara rakhein taake sab kuch saaf nazar aaye.
+   (Header ke -/+ control se ye size aur adjust ho sakta hai.) */
+@media (min-width: 1024px) {
+  html {
+    font-size: 17px;
+  }
+}
+@media (min-width: 1536px) {
+  html {
+    font-size: 18px;
+  }
+}
