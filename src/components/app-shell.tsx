@@ -1,4 +1,5 @@
 import logoUrl from "@/assets/logo.webp";
+import { FontSizeControl } from "@/components/font-size-control";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Button } from "@/components/ui/button";
@@ -184,6 +185,7 @@ export function AppShell({
               <p className="truncate text-sm text-muted-foreground">{subtitle}</p>
             </div>
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              <FontSizeControl />
               <Button
                 variant="outline"
                 size="icon"
