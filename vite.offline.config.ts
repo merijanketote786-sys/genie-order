@@ -37,6 +37,8 @@ export default defineConfig({
       { find: /^@\/integrations\/supabase\/auth-attacher$/, replacement: at("offline/server-stub.ts") },
       { find: /^@\/lib\/[a-z-]+\.server$/, replacement: at("offline/server-stub.ts") },
       { find: /^@tanstack\/react-start$/, replacement: at("offline/react-start-shim.ts") },
+      // Start-only root shell -> plain SPA root
+      { find: /^\.\/routes\/__root$/, replacement: at("offline/root-route.tsx") },
       { find: "@", replacement: src },
     ],
   },
