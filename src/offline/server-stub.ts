@@ -1,0 +1,16 @@
+/** Server-only modules ka khali stub — offline (browser-only) build me kabhi chalta nahi. */
+const nope = () => {
+  throw new Error("Server-only module offline app me available nahi hai.");
+};
+
+export const createLovableAiGatewayProvider = nope;
+export const requireUserId = nope;
+export const createPublicSupabase = nope;
+export const getOwnerWorkspaceId = nope;
+export const isActiveProfile = nope;
+export const parseVyaparSheet = nope;
+export const parseDelimitedText = nope;
+export const buildSetupCmd = nope;
+export const supabaseAdmin = new Proxy({}, { get: nope }) as never;
+export const requireSupabaseAuth = {} as never;
+export default {};
