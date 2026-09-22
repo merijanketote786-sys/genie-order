@@ -1,3 +1,4 @@
+console.log("OFFLINE BOOT start");
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
@@ -28,6 +29,7 @@ declare module "@tanstack/react-router" {
   }
 }
 
+console.log("OFFLINE BOOT render");
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <RouterProvider router={router} />
