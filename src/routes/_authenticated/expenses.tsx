@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/app-shell";
-import { PAY_OPTS, PosSubnav, posInput, rs } from "@/components/pos-subnav";
+import { PosSubnav, posInput, rs } from "@/components/pos-subnav";
 import { Button } from "@/components/ui/button";
 import { EXPENSE_CATEGORIES, cancelExpense, listExpenses, saveExpense } from "@/lib/ledger.functions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";

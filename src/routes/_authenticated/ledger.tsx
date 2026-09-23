@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/app-shell";
-import { PAY_OPTS, PosSubnav, posInput, rs } from "@/components/pos-subnav";
+import { PosSubnav, posInput, rs } from "@/components/pos-subnav";
 import { Button } from "@/components/ui/button";
 import { partyPayment } from "@/lib/business.functions";
 import { getCustomerLedger, listCustomerBalances, saveCustomerAccount } from "@/lib/ledger.functions";
