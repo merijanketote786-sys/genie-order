@@ -1,132 +1,194 @@
 import { AppShell } from "@/components/app-shell";
 import { usePosAccess } from "@/components/pos-access";
-import { PAY_OPTS, PosSubnav, posInput } from "@/components/pos-subnav";
+import { usePrintCenter } from "@/components/print-center";
+import { PosSubnav } from "@/components/pos-subnav";
+import { FIELDS, SECTIONS, type Field, type SectionId } from "@/components/settings/schema";
+import { AdvancedStatus, AuditSection, BackupSection, InvoiceFieldsEditor, LogoField, PaymentsEditor, PrintersManager, SuppliersInfo, TaxRatesEditor, UsersSection, VyaparSection, inp, sampleDoc } from "@/components/settings/sections";
 import { Button } from "@/components/ui/button";
-import { POS_ROLES, exportPosBackup, listPosMembers, savePosSettings, setPosMemberRole, type PosConfig } from "@/lib/pos-access.functions";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { savePosSettings } from "@/lib/pos-access.functions";
+import { getPath, resolveCfg, setPath, type PaperFormat, type PosConfig } from "@/lib/pos-config";
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Download, Save, ShieldCheck } from "lucide-react";
-import { useEffect, useState } from "react";
+import { AlertTriangle, Eye, Save, Search } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/pos-settings")({
   head: () => ({
     meta: [
-      { title: "POS Staff & Settings — HB Chemicals Pakistan Workspace" },
-      { name: "description", content: "Staff roles, ijazatein, manager PIN, receipt aur POS defaults, backup." },
-      { property: "og:title", content: "POS Staff & Settings — HB Chemicals Pakistan Workspace" },
-      { property: "og:description", content: "POS roles aur settings." },
+      { title: "Business Settings & Printing — HB Chemicals Pakistan Workspace" },
+      { name: "description", content: "Business, POS, sales, inventory, tax, printing, printers, permissions, backup, Vyapar sync aur audit settings ek jagah — search ke saath." },
+      { property: "og:title", content: "Business Settings & Printing — HB Chemicals Pakistan Workspace" },
+      { property: "og:description", content: "Advanced POS settings aur printing system." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: PosSettingsPage,
+  component: SettingsHub,
 });
 
-const PERM_LABEL: Record<string, string> = {
-  view_pos: "POS dekhna", create_sale: "Sale banana", edit_price: "Rate badalna", apply_discount: "Discount dena", cancel_invoice: "Bill cancel",
-  view_reports: "Reports / Day book", view_profit: "Profit dekhna", edit_stock: "Stock edit", edit_products: "Product edit", view_balances: "Customer udhaar",
-  manage_expenses: "Expenses", manage_purchases: "Purchases / Suppliers", manage_users: "Staff roles", settings: "Settings",
+/** Custom (non-schema) blocks har section me. keywords search ke liye. */
+const CUSTOM: Partial<Record<SectionId, { keywords: string; render: (p: { draft: PosConfig; upd: (p: string, v: unknown) => void; disabled: boolean }) => ReactNode }[]>> = {
+  business: [{ keywords: "logo image", render: (p) => <LogoField {...p} /> }],
+  payments: [{ keywords: "payment method cash card bank jazzcash easypaisa credit custom default", render: (p) => <PaymentsEditor {...p} /> }],
+  taxes: [{ keywords: "tax rates multiple gst percentage name", render: (p) => <TaxRatesEditor {...p} /> }],
+  invoices: [{ keywords: "invoice fields show hide logo signature sku barcode columns width discount tax", render: (p) => <InvoiceFieldsEditor {...p} /> }],
+  printers: [{ keywords: "printer default test print rename remove paper status", render: () => <PrintersManager /> }],
+  users: [{ keywords: "user role permission pin staff cashier manager", render: () => <UsersSection /> }],
+  backup: [{ keywords: "backup export csv excel import data", render: () => <BackupSection /> }],
+  vyapar: [{ keywords: "vyapar sync history error manual automatic retry", render: () => <VyaparSection /> }],
+  audit: [{ keywords: "audit log history reprint", render: () => <AuditSection /> }],
+  suppliers: [{ keywords: "supplier payable", render: () => <SuppliersInfo /> }],
+  advanced: [{ keywords: "api status session cache numbering", render: () => <AdvancedStatus /> }],
 };
-const ROLE_PERMS: Record<string, string[]> = {
-  admin: Object.keys(PERM_LABEL),
-  manager: Object.keys(PERM_LABEL).filter((p) => p !== "manage_users" && p !== "settings"),
-  salesman: ["view_pos", "create_sale", "apply_discount", "view_balances"],
-  cashier: ["view_pos", "create_sale", "view_balances", "manage_expenses"],
-  staff: ["view_pos", "create_sale"],
-};
-const ROLE_LABEL: Record<string, string> = { admin: "Admin", manager: "Manager", cashier: "Cashier", salesman: "Salesman", staff: "Staff" };
 
-function PosSettingsPage() {
+const norm = (s: string) => s.toLowerCase();
+
+function SettingsHub() {
   const qc = useQueryClient();
   const { access, can } = usePosAccess();
-  const isAdmin = can("settings");
-  const { data: mem } = useQuery({ queryKey: ["pos-members"], queryFn: () => listPosMembers(), enabled: can("manage_users") });
-  const [cfg, setCfg] = useState<PosConfig>({});
-  const [pin, setPin] = useState("");
-  useEffect(() => { if (access) setCfg(access.config); }, [access]);
+  const pc = usePrintCenter();
+  const admin = can("settings");
+  const [draft, setDraft] = useState<PosConfig>({});
+  const [saved, setSaved] = useState<PosConfig>({});
+  const [section, setSection] = useState<SectionId>("business");
+  const [q, setQ] = useState("");
+  const [confirm, setConfirm] = useState<string[] | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  const save = async (pinVal: string | null) => {
+  useEffect(() => { if (access) { setDraft(access.config); setSaved(access.config); } }, [access]);
+  const resolved = useMemo(() => resolveCfg(draft), [draft]);
+  const upd = (path: string, v: unknown) => setDraft((d) => setPath(d, path, v));
+  const dirty = JSON.stringify(stripPrinters(draft)) !== JSON.stringify(stripPrinters(saved));
+
+  const query = norm(q.trim());
+  const matches = (f: Field) => !query || norm(`${f.label} ${f.help ?? ""} ${f.path}`).includes(query);
+  const sectionHits = useMemo(() => {
+    if (!query) return null;
+    const hits = new Set<SectionId>();
+    for (const f of FIELDS) if (matches(f)) hits.add(f.s);
+    for (const s of SECTIONS) {
+      if (norm(`${s.label} ${s.keywords}`).includes(query)) hits.add(s.id);
+      for (const c of CUSTOM[s.id] ?? []) if (norm(c.keywords).includes(query)) hits.add(s.id);
+    }
+    return SECTIONS.filter((s) => hits.has(s.id)).map((s) => s.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  const doSave = async () => {
+    setSaving(true);
     try {
-      await savePosSettings({ data: { config: cfg, pin: pinVal } });
-      toast.success(pinVal === "" ? "PIN hata diya" : pinVal ? "PIN set ho gaya" : "Settings save");
-      setPin(""); qc.invalidateQueries({ queryKey: ["pos-access"] });
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Nahi hua"); }
+      await savePosSettings({ data: { config: stripPrinters(draft) as Record<string, unknown>, pin: null } });
+      toast.success("Settings save ho gayi — har device par lagu");
+      setSaved(draft); setConfirm(null);
+      qc.invalidateQueries({ queryKey: ["pos-access"] });
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Save nahi hua"); } finally { setSaving(false); }
   };
-  const backup = async () => {
-    try {
-      const { json } = await exportPosBackup();
-      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([json], { type: "application/json" })); a.download = `pos-backup-${new Date().toISOString().slice(0, 10)}.json`; a.click();
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Nahi hua"); }
+  const trySave = () => {
+    const warns = FIELDS.filter((f) => f.danger && JSON.stringify(getPath(draft, f.path) ?? null) !== JSON.stringify(getPath(saved, f.path) ?? null)).map((f) => f.danger!);
+    if (warns.length) setConfirm(warns); else void doSave();
   };
-  const L = ({ label, children }: { label: string; children: React.ReactNode }) => <label className="text-xs text-muted-foreground">{label}{children}</label>;
+
+  const renderField = (f: Field) => {
+    const raw = getPath(draft, f.path);
+    const val = raw ?? getPath(resolved, f.path) ?? f.def;
+    const dis = !admin;
+    const lbl = <span className="flex items-center gap-1">{f.label}{f.danger ? <AlertTriangle className="size-3 text-destructive" aria-label="Ahem setting" /> : null}</span>;
+    let control: ReactNode;
+    if (f.type === "bool") {
+      return (
+        <label key={f.path} className="flex items-start gap-2 rounded-lg border border-border p-2.5 text-sm">
+          <input type="checkbox" className="mt-0.5" disabled={dis} checked={!!val} onChange={(e) => upd(f.path, e.target.checked)} />
+          <span><span className="text-foreground">{lbl}</span>{f.help ? <span className="block text-xs text-muted-foreground">{f.help}</span> : null}</span>
+        </label>
+      );
+    }
+    if (f.type === "select") control = <select className={inp} disabled={dis} value={String(val ?? "")} onChange={(e) => upd(f.path, f.path.endsWith("copies") ? Number(e.target.value) : e.target.value)}>{f.options!.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}</select>;
+    else if (f.type === "textarea") control = <textarea className={`${inp} h-20 py-1.5`} disabled={dis} value={String(val ?? "")} placeholder={f.placeholder} maxLength={1000} onChange={(e) => upd(f.path, e.target.value)} />;
+    else if (f.type === "number") control = <input className={inp} disabled={dis} inputMode="decimal" value={val == null ? "" : String(val)} placeholder={f.placeholder} onChange={(e) => {
+      const t = e.target.value.trim();
+      if (!t) return upd(f.path, f.nullable ? null : undefined);
+      const n = Number(t); if (Number.isNaN(n)) return;
+      upd(f.path, Math.min(f.max ?? 1e9, Math.max(f.min ?? -1e9, n)));
+    }} />;
+    else control = <input className={inp} disabled={dis} value={String(val ?? "")} placeholder={f.placeholder} maxLength={200} onChange={(e) => upd(f.path, e.target.value)} />;
+    return <label key={f.path} className="block text-xs text-muted-foreground">{lbl}{control}{f.help ? <span className="mt-0.5 block text-[11px]">{f.help}</span> : null}</label>;
+  };
+
+  const renderSection = (id: SectionId, filtered: boolean) => {
+    const meta = SECTIONS.find((s) => s.id === id)!;
+    const fields = FIELDS.filter((f) => f.s === id && (!filtered || matches(f) || norm(`${meta.label} ${meta.keywords}`).includes(query)));
+    const bools = fields.filter((f) => f.type === "bool");
+    const others = fields.filter((f) => f.type !== "bool");
+    const custom = (CUSTOM[id] ?? []).filter((c) => !filtered || norm(`${c.keywords} ${meta.label} ${meta.keywords}`).includes(query) || fields.length > 0);
+    return (
+      <section key={id} className="space-y-3 rounded-xl border border-border bg-card p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-base font-bold text-foreground">{meta.label}</h2>
+          {id === "printing" || id === "invoices" ? (
+            <div className="flex flex-wrap gap-1">
+              {(["a4", "a5", "t80", "t58", "custom"] as PaperFormat[]).map((f) => (
+                <Button key={f} size="sm" variant="outline" onClick={() => pc.preview({ ...sampleDoc(), kind: "sale" })} title={`Preview (${f})`}><Eye /> {f.toUpperCase()}</Button>
+              )).slice(0, 1)}
+              <span className="self-center text-[11px] text-muted-foreground">Preview abhi-saved settings dikhata hai — pehle Save karein</span>
+            </div>
+          ) : null}
+        </div>
+        {custom.map((c, i) => <div key={i}>{c.render({ draft, upd, disabled: !admin })}</div>)}
+        {others.length ? <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{others.map(renderField)}</div> : null}
+        {bools.length ? <div className="grid gap-2 sm:grid-cols-2">{bools.map(renderField)}</div> : null}
+      </section>
+    );
+  };
+
+  const visible = sectionHits ?? [section];
 
   return (
-    <AppShell title="POS Staff & Settings" subtitle="Roles, PIN, receipt" active="/pos">
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
+    <AppShell title="Settings" subtitle="Business, POS, printing" active="/pos">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-24 pt-3">
         <PosSubnav />
-        <section className="rounded-xl border border-border bg-card p-3 text-sm">
-          <p className="flex items-center gap-2 font-bold text-foreground"><ShieldCheck className="size-4 text-primary" /> Aap ka role: {ROLE_LABEL[access?.role ?? "staff"]}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Ijazatein: {(access?.perms ?? []).map((p) => PERM_LABEL[p]).join(", ")}</p>
-          {!isAdmin ? <p className="mt-2 text-xs text-muted-foreground">Settings sirf Admin badal sakta hai. Rate/discount/cancel ki ijazat na ho to manager PIN se kaam ho jata hai.</p> : null}
-        </section>
-
-        {can("manage_users") ? (
-          <section className="space-y-2 rounded-xl border border-border bg-card p-3">
-            <p className="text-sm font-bold text-foreground">Staff roles</p>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead><tr className="text-left text-xs text-muted-foreground"><th>User</th><th>Role</th><th>Kya kar sakta hai</th></tr></thead>
-                <tbody>
-                  {(mem?.members ?? []).map((m) => (
-                    <tr key={m.id} className="border-t border-border">
-                      <td className="py-1.5">{m.name}{!m.active ? <span className="ml-1 text-xs text-destructive">(inactive)</span> : null}</td>
-                      <td>{m.role === "admin" ? <b>Admin (owner)</b> : (
-                        <select className="h-8 rounded-md border border-border bg-background px-2" value={m.role} aria-label={`${m.name} role`} onChange={async (e) => {
-                          try { await setPosMemberRole({ data: { userId: m.id, role: e.target.value as (typeof POS_ROLES)[number] } }); toast.success("Role save"); qc.invalidateQueries({ queryKey: ["pos-members"] }); } catch (er) { toast.error(er instanceof Error ? er.message : "Nahi hua"); }
-                        }}>{POS_ROLES.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}</select>
-                      )}</td>
-                      <td className="text-xs text-muted-foreground">{ROLE_PERMS[m.role].map((p) => PERM_LABEL[p]).join(", ")}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        ) : null}
-
-        {isAdmin ? (
-          <>
-            <section className="space-y-2 rounded-xl border border-border bg-card p-3">
-              <p className="text-sm font-bold text-foreground">Manager PIN {access?.hasPin ? <span className="text-xs text-primary">(set hai)</span> : <span className="text-xs text-destructive">(set nahi)</span>}</p>
-              <p className="text-xs text-muted-foreground">Cashier/Salesman ko rate badalna, discount dena ya bill cancel karna ho to ye PIN mangta hai. Har PIN istemal audit log me record hota hai.</p>
-              <div className="flex flex-wrap gap-2">
-                <input className={`${posInput} w-40`} type="password" inputMode="numeric" maxLength={8} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))} placeholder="Naya PIN (4-8)" aria-label="Naya PIN" />
-                <Button disabled={pin.length < 4} onClick={() => save(pin)}>PIN set karein</Button>
-                {access?.hasPin ? <Button variant="ghost" onClick={() => save("")}>PIN hatayein</Button> : null}
-              </div>
-            </section>
-
-            <section className="space-y-2 rounded-xl border border-border bg-card p-3">
-              <p className="text-sm font-bold text-foreground">Receipt aur defaults</p>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                <L label="Receipt par business naam"><input className={posInput} value={cfg.receiptBusiness ?? ""} onChange={(e) => setCfg({ ...cfg, receiptBusiness: e.target.value })} placeholder="Khali = Settings wala naam" /></L>
-                <L label="Receipt ke neeche line"><input className={posInput} value={cfg.receiptFooter ?? ""} onChange={(e) => setCfg({ ...cfg, receiptFooter: e.target.value })} placeholder="Shukriya! Dobara tashreef layein." /></L>
-                <L label="Default payment"><select className={posInput} value={cfg.defaultPayMethod ?? "Cash"} onChange={(e) => setCfg({ ...cfg, defaultPayMethod: e.target.value })}>{PAY_OPTS.map((m) => <option key={m}>{m}</option>)}</select></L>
-                <L label="Default tax %"><input className={posInput} inputMode="decimal" value={cfg.defaultTax ?? ""} onChange={(e) => setCfg({ ...cfg, defaultTax: Number(e.target.value) || 0 })} placeholder="0" /></L>
-                <L label="Terms & conditions (receipt par)"><textarea className={`${posInput} h-20 py-2`} value={cfg.terms ?? ""} onChange={(e) => setCfg({ ...cfg, terms: e.target.value })} placeholder="Maal wapas 7 din me..." /></L>
-              </div>
-              <p className="text-xs text-muted-foreground">Invoice number, currency aur business phone/address Admin panel ki Workspace settings se aate hain. Printer/paper Billing ke "POS Settings" tab me hain (har device ka alag).</p>
-              <Button onClick={() => save(null)}><Save /> Settings save</Button>
-            </section>
-
-            <section className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card p-3">
-              <div><p className="text-sm font-bold text-foreground">Backup</p><p className="text-xs text-muted-foreground">Sales, purchases, payments, expenses, customers, suppliers, stock — sab ek file me.</p></div>
-              <Button variant="outline" onClick={backup}><Download /> Backup download</Button>
-            </section>
-          </>
-        ) : null}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input className="h-11 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm outline-none focus:border-primary" value={q} onChange={(e) => setQ(e.target.value)} placeholder='Settings search — "printer", "invoice", "discount", "barcode"…' aria-label="Settings search" />
+        </div>
+        {!admin ? <p className="rounded-lg border border-border bg-muted/40 p-2 text-xs text-muted-foreground">Aap settings dekh sakte hain; badalne ki ijazat sirf Admin ko hai{can("manage_printers") ? " (Printers aap manage kar sakte hain)" : ""}.</p> : null}
+        <div className="flex flex-col gap-3 lg:flex-row">
+          <nav className="flex gap-1 overflow-x-auto lg:w-52 lg:shrink-0 lg:flex-col" aria-label="Settings sections">
+            {SECTIONS.map((s) => (
+              <button key={s.id} type="button" onClick={() => { setSection(s.id); setQ(""); }} className={`whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm ${!sectionHits && section === s.id ? "bg-primary text-primary-foreground" : sectionHits?.includes(s.id) ? "bg-accent text-accent-foreground" : "text-foreground hover:bg-muted"}`}>{s.label}</button>
+            ))}
+          </nav>
+          <div className="min-w-0 flex-1 space-y-3">
+            {sectionHits && !sectionHits.length ? <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">"{q}" se koi setting nahi mili</p> : null}
+            {visible.map((id) => renderSection(id, !!sectionHits))}
+          </div>
+        </div>
       </div>
+      {admin && dirty ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 p-3 backdrop-blur">
+          <div className="mx-auto flex max-w-5xl items-center justify-end gap-2">
+            <span className="mr-auto text-sm text-muted-foreground">Save nahi hui tabdeeliyan</span>
+            <Button variant="ghost" onClick={() => setDraft(saved)}>Wapas</Button>
+            <Button disabled={saving} onClick={trySave}><Save /> Save changes</Button>
+          </div>
+        </div>
+      ) : null}
+      {confirm ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/50 p-4" role="alertdialog" aria-modal="true" aria-label="Confirm">
+          <div className="w-full max-w-md space-y-3 rounded-xl border border-border bg-card p-4 shadow-xl">
+            <p className="flex items-center gap-2 font-bold text-foreground"><AlertTriangle className="size-5 text-destructive" /> Ahem tabdeeli — tasdeeq karein</p>
+            <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">{confirm.map((w) => <li key={w}>{w}</li>)}</ul>
+            <p className="text-xs text-muted-foreground">Purana financial data kabhi nahi badla jata.</p>
+            <div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setConfirm(null)}>Cancel</Button><Button disabled={saving} onClick={doSave}>Haan, save karein</Button></div>
+          </div>
+        </div>
+      ) : null}
+      {pc.node}
     </AppShell>
   );
+}
+
+function stripPrinters(c: PosConfig): PosConfig {
+  const { printers: _p, printerDefaults: _d, ...rest } = c;
+  return rest;
 }
