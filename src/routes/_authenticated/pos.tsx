@@ -25,7 +25,7 @@ import {
 } from "@/lib/pos";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Minus, Plus, Printer, ScanBarcode, ShoppingCart, Trash2, MessageCircle } from "lucide-react";
+import { Minus, Plus, Printer, ScanBarcode, ShoppingCart, Trash2, MessageCircle, LayoutGrid } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
