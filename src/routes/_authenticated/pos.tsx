@@ -403,27 +403,41 @@ function PosPage() {
                 <Button size="sm" variant="ghost" onClick={() => { setPendingCode(null); setTerm(""); }}>Cancel</Button>
               </div>
             ) : null}
-            <div className="mt-3 grid max-h-[26rem] grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
-              {results.map((p) => {
-                const price = priceFor(p, rate);
-                return (
-                  <button
-                    key={p.name}
-                    type="button"
-                    onClick={() => (pendingCode ? saveLink(pendingCode, p) : add(p))}
-                    disabled={price == null}
-                    className="rounded-xl border border-border bg-background p-2.5 text-left transition hover:border-primary disabled:opacity-40"
-                  >
-                    <p className="line-clamp-2 text-sm font-semibold text-foreground">{p.name}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {price != null ? `Rs ${money(price)}` : "Rate nahi"} · stock {p.stock ?? "-"}
-                    </p>
-                    {pendingCode ? <p className="mt-1 text-xs font-bold text-primary">Link karein</p> : null}
-                  </button>
-                );
-              })}
-              {!results.length ? <p className="col-span-full py-6 text-center text-sm text-muted-foreground">Koi product nahi mila. Rates section me products add karein.</p> : null}
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={toggleGrid}
+                aria-expanded={showGrid}
+                className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs text-muted-foreground transition hover:border-primary hover:text-foreground"
+              >
+                <LayoutGrid className="size-3.5" />
+                {showGrid ? "Shortcuts chhupayein" : "Product shortcuts dikhayein"}
+              </button>
+              {pendingCode ? <span className="text-xs text-muted-foreground">Link ke liye list khuli hai</span> : null}
             </div>
+            {gridVisible ? (
+              <div className="mt-2 grid max-h-[26rem] grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
+                {results.map((p) => {
+                  const price = priceFor(p, rate);
+                  return (
+                    <button
+                      key={p.name}
+                      type="button"
+                      onClick={() => (pendingCode ? saveLink(pendingCode, p) : add(p))}
+                      disabled={price == null}
+                      className="rounded-xl border border-border bg-background p-2.5 text-left transition hover:border-primary disabled:opacity-40"
+                    >
+                      <p className="line-clamp-2 text-sm font-semibold text-foreground">{p.name}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {price != null ? `Rs ${money(price)}` : "Rate nahi"} · stock {p.stock ?? "-"}
+                      </p>
+                      {pendingCode ? <p className="mt-1 text-xs font-bold text-primary">Link karein</p> : null}
+                    </button>
+                  );
+                })}
+                {!results.length ? <p className="col-span-full py-6 text-center text-sm text-muted-foreground">Koi product nahi mila. Rates section me products add karein.</p> : null}
+              </div>
+            ) : null}
           </section>
 
           {/* Cart */}
