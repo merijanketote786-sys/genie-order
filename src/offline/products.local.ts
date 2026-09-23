@@ -60,7 +60,100 @@ export async function saveProductPricesBulk(arg: Arg<{ items: PriceInput[] }>) {
 
 type Row = { name: string; unit: string; sale_price: number; stock: number };
 
-function applyRows(rows: Row[], sheetName: string) {
+const NAME_KEYS = ["item name", "product name", "name", "item", "product", "description"];
+const PRICE_KEYS = ["sale price", "sales price", "selling price", "sale rate", "rate", "price", "mrp", "unit price"];
+const UNIT_KEYS = ["unit", "base unit", "item unit", "uom", "measuring unit"];
+const STOCK_KEYS = ["stock", "closing stock", "current stock", "stock quantity", "quantity", "qty", "available quantity"];
+
+const cleanCell = (value: unknown) => String(value ?? "").trim();
+const headerKey = (value: unknown) =>
+  cleanCell(value).toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+
+function findColumn(headers: string[], candidates: string[]) {
+  for (const candidate of candidates) {
+    const index = headers.indexOf(candidate);
+    if (index !== -1) return index;
+  }
+  for (const candidate of candidates) {
+    const index = headers.findIndex((header) => header.includes(candidate));
+    if (index !== -1) return index;
+  }
+  return -1;
+}
+
+function numberCell(value: unknown) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  const parsed = Number(cleanCell(value).replace(/[^0-9.\-]/g, ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function unitCell(value: unknown, name: string) {
+  const raw = headerKey(value).split(" ")[0] ?? "";
+  const units: Record<string, string> = {
+    kg: "kg", kgs: "kg", kilogram: "kg", kilograms: "kg", kilo: "kg",
+    gm: "grammes", gms: "grammes", g: "grammes", gram: "grammes", grams: "grammes", grammes: "grammes",
+    ltr: "litre", ltrs: "litre", liter: "litre", liters: "litre", litre: "litre", litres: "litre", l: "litre",
+    pc: "pcs", pcs: "pcs", piece: "piece", pieces: "piece", nos: "pcs", unit: "pcs", units: "pcs",
+    bottle: "bottles", bottles: "bottles", btl: "bottles", bundle: "bundles", bundles: "bundles", bdl: "bundles",
+    packet: "pcs", packets: "pcs", pkt: "pcs", box: "pcs", boxes: "pcs",
+  };
+  if (units[raw]) return units[raw];
+  const suffix = /\/\s*(kg|ltr|litre|gram|g|piece|pcs)\s*$/i.exec(name);
+  return suffix ? (units[headerKey(suffix[1])] ?? "pcs") : "pcs";
+}
+
+function rowsFromMatrix(matrix: unknown[][]): { rows: Row[]; skipped: number; error?: string } {
+  let headerIndex = -1;
+  let headers: string[] = [];
+  let nameColumn = -1;
+  let priceColumn = -1;
+
+  for (let index = 0; index < Math.min(matrix.length, 30); index += 1) {
+    const candidate = (matrix[index] ?? []).map(headerKey);
+    const name = findColumn(candidate, NAME_KEYS);
+    const price = findColumn(candidate, PRICE_KEYS);
+    if (name !== -1 && price !== -1 && name !== price) {
+      headerIndex = index;
+      headers = candidate;
+      nameColumn = name;
+      priceColumn = price;
+      break;
+    }
+  }
+
+  if (headerIndex === -1) {
+    return { rows: [], skipped: 0, error: "Sheet me 'Item Name' aur 'Sale Price' columns nahi mile." };
+  }
+
+  const unitRaw = findColumn(headers, UNIT_KEYS);
+  const stockRaw = findColumn(headers, STOCK_KEYS);
+  const unitColumn = unitRaw === nameColumn || unitRaw === priceColumn ? -1 : unitRaw;
+  const stockColumn = stockRaw === nameColumn || stockRaw === priceColumn ? -1 : stockRaw;
+  const rows: Row[] = [];
+  let skipped = 0;
+
+  for (let index = headerIndex + 1; index < matrix.length; index += 1) {
+    const source = matrix[index] ?? [];
+    const name = cleanCell(source[nameColumn]);
+    const price = numberCell(source[priceColumn]);
+    if (!name || /^(total|grand total|sub total)$/i.test(name) || price <= 0) {
+      skipped += 1;
+      continue;
+    }
+    rows.push({
+      name,
+      unit: unitCell(unitColumn === -1 ? "" : source[unitColumn], name),
+      sale_price: price,
+      stock: stockColumn === -1 ? 0 : numberCell(source[stockColumn]),
+    });
+  }
+
+  if (rows.length === 0) return { rows, skipped, error: "Sheet me rate wali koi product row nahi mili." };
+  if (rows.length > 5000) return { rows: [], skipped, error: "5000 se zyada rows hain. File chhoti karein." };
+  return { rows, skipped };
+}
+
+function applyRows(rows: Row[], sheetName: string, skippedCount = 0) {
   const d = db();
   let inserted = 0;
   let updated = 0;
@@ -98,7 +191,7 @@ function applyRows(rows: Row[], sheetName: string) {
     total_rows: rows.length,
     updated_count: updated,
     inserted_count: inserted,
-    skipped_count: 0,
+    skipped_count: skippedCount,
     error_count: 0,
     status: "success",
   };
@@ -106,10 +199,11 @@ function applyRows(rows: Row[], sheetName: string) {
   return {
     ok: true as const,
     message: `${inserted} naye, ${updated} update (${sheetName})`,
-    inserted,
-    updated,
-    skipped: 0,
-    total: rows.length,
+    total_rows: rows.length + skippedCount,
+    inserted_count: inserted,
+    updated_count: updated,
+    skipped_count: skippedCount,
+    error_count: 0,
     notes: [] as string[],
   };
 }
@@ -136,11 +230,32 @@ export async function applyProductRows(arg: Arg<{ rows: Row[] }>) {
   return applyRows(arg!.data.rows, "Import");
 }
 
-export async function syncProductsFromSheet() {
-  return {
-    ok: false as const,
-    message: "Offline app me Excel file sync band hai. Rates paste kar ke update karein.",
-  };
+export async function syncProductsFromSheet(arg: Arg<{ fileName: string; fileBase64: string }>) {
+  const input = arg?.data;
+  if (!input) return { ok: false as const, message: "File nahi mili." };
+  const extension = (input.fileName.split(".").pop() ?? "").toLowerCase();
+  if (!["xlsx", "xls", "csv"].includes(extension)) {
+    return { ok: false as const, message: "Sirf Excel (.xlsx/.xls) ya CSV file upload karein." };
+  }
+
+  try {
+    const binary = atob(input.fileBase64);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+    if (bytes.length > 10 * 1024 * 1024) return { ok: false as const, message: "File 10MB se bari hai." };
+
+    const { read, utils } = await import("xlsx");
+    const workbook = read(bytes, { type: "array" });
+    const sheetName = workbook.SheetNames[0] ?? "Excel";
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet) return { ok: false as const, message: "File me koi sheet nahi mili." };
+    const matrix = utils.sheet_to_json<unknown[]>(sheet, { header: 1, blankrows: false, defval: "" });
+    const parsed = rowsFromMatrix(matrix);
+    if (parsed.error) return { ok: false as const, message: parsed.error };
+    return applyRows(parsed.rows, sheetName, parsed.skipped);
+  } catch {
+    return { ok: false as const, message: "File parh nahi saki. Vyapar se Excel dobara export karein." };
+  }
 }
 
 export async function previewProductsFromDocument() {
