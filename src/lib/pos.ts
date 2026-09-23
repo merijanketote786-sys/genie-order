@@ -27,6 +27,10 @@ export type CartLine = {
   qty: number;
   discount: number; // per line, amount
   taxPercent?: number;
+  /** Rate me tax shamil hai (tax-inclusive pricing) */
+  taxIncl?: boolean;
+  sku?: string;
+  barcode?: string;
   note?: string;
 };
 
@@ -51,9 +55,14 @@ export function stockDeduction(line: Pick<CartLine, "rateType" | "unit" | "qty">
 }
 
 const r2 = (x: number) => Math.round(x * 100) / 100;
-export const lineBase = (l: CartLine) => Math.max(0, l.price * l.qty - (l.discount || 0));
-export const lineTax = (l: CartLine) => r2((lineBase(l) * (l.taxPercent || 0)) / 100);
-export const lineTotal = (l: CartLine) => r2(lineBase(l) + lineTax(l));
+const grossOf = (l: CartLine) => Math.max(0, l.price * l.qty - (l.discount || 0));
+/** Tax-inclusive: rate me tax shamil — tax = gross × t/(100+t). Exclusive: tax = base × t/100. */
+export const lineTax = (l: CartLine) => {
+  const t = l.taxPercent || 0;
+  return l.taxIncl ? r2((grossOf(l) * t) / (100 + t)) : r2((grossOf(l) * t) / 100);
+};
+export const lineBase = (l: CartLine) => (l.taxIncl ? r2(grossOf(l) - lineTax(l)) : grossOf(l));
+export const lineTotal = (l: CartLine) => (l.taxIncl ? r2(grossOf(l)) : r2(grossOf(l) + lineTax(l)));
 
 /** billDiscount = amount (percent pehle hi amount me convert karein). */
 export function totals(lines: CartLine[], billDiscount: number, delivery: number) {
@@ -64,7 +73,10 @@ export function totals(lines: CartLine[], billDiscount: number, delivery: number
   return { subtotal, taxTotal, itemDiscount, total };
 }
 
-export const money = (n: number) => (Math.round(n * 100) / 100).toLocaleString("en-PK", { maximumFractionDigits: 2 });
+let MONEY_DP = 2;
+/** Business setting "decimal places" (0–3). */
+export function setMoneyDecimals(d: number) { MONEY_DP = Math.min(3, Math.max(0, Math.round(Number(d) || 0))); }
+export const money = (n: number) => (Math.round(n * 10 ** MONEY_DP) / 10 ** MONEY_DP).toLocaleString("en-PK", { maximumFractionDigits: MONEY_DP });
 
 export type ReceiptInput = {
   business: string;
@@ -234,4 +246,31 @@ export async function downloadReceiptPdf(r: ReceiptInput) {
   if (r.notes) doc.setFontSize(9).text(`Note: ${r.notes}`, 14, endY, { maxWidth: 180 });
   if (r.terms) doc.setFontSize(8).text(r.terms, 14, endY + 8, { maxWidth: 180 });
   doc.save(`${r.invoiceNumber}.pdf`);
+}
+
+/** POS receipt -> central PrintDoc. */
+export function receiptToDoc(r: ReceiptInput, o: { kind?: import("@/lib/pos-config").DocKind; id?: string; date?: Date } = {}): import("@/lib/print/render").PrintDoc {
+  const { subtotal, taxTotal, total } = totals(r.lines, r.billDiscount, r.delivery);
+  const quote = r.title === "Quotation";
+  const t: import("@/lib/print/render").PrintTotal[] = [{ label: "Subtotal", value: subtotal }];
+  if (taxTotal) t.push({ label: "Tax", value: taxTotal });
+  if (r.billDiscount) t.push({ label: "Discount", value: r.billDiscount, neg: true });
+  if (r.delivery) t.push({ label: "Delivery", value: r.delivery });
+  t.push({ label: "Grand Total", value: total, bold: true });
+  if (!quote && r.previousBalance) t.push({ label: "Previous balance", value: r.previousBalance });
+  return {
+    kind: o.kind ?? (quote ? "quotation" : "pos"),
+    id: o.id,
+    title: r.title || "Invoice",
+    number: r.invoiceNumber,
+    date: o.date ?? r.date,
+    currency: r.currency,
+    party: { label: "Customer", name: r.customerName, phone: r.customerPhone },
+    lines: r.lines.map((l) => ({ name: l.name, sku: l.sku, barcode: l.barcode, unit: packLabel(l), qty: l.qty, rate: l.price, discount: l.discount || 0, taxPct: l.taxPercent || 0, total: lineTotal(l), note: l.note })),
+    totals: t,
+    payments: quote ? undefined : r.payments,
+    paid: quote ? undefined : Math.min(r.paid, total),
+    balance: quote ? undefined : Math.max(0, r2(total - r.paid)),
+    notes: [r.notes, !quote && r.paid > total ? `Change: ${money(r.paid - total)}` : ""].filter(Boolean).join(" · ") || undefined,
+  };
 }
