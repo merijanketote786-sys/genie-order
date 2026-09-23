@@ -500,40 +500,82 @@ function PosPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <label className="text-xs text-muted-foreground">Bill discount<input className={inputCls} value={billDiscount} onChange={(e) => setBillDiscount(e.target.value)} inputMode="decimal" placeholder="0" /></label>
+              <label className="text-xs text-muted-foreground">
+                <span className="flex items-center justify-between">Bill discount
+                  <span className="flex gap-0.5">
+                    {(["amt", "pct"] as const).map((k) => (
+                      <button key={k} type="button" onClick={() => setDiscType(k)} className={`rounded px-1.5 text-[10px] font-bold ${discType === k ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{k === "amt" ? "Rs" : "%"}</button>
+                    ))}
+                  </span>
+                </span>
+                <input className={inputCls} value={billDiscount} onChange={(e) => setBillDiscount(e.target.value)} inputMode="decimal" placeholder="0" />
+              </label>
               <label className="text-xs text-muted-foreground">Delivery<input className={inputCls} value={delivery} onChange={(e) => setDelivery(e.target.value)} inputMode="decimal" placeholder="0" /></label>
             </div>
 
-            <div className="flex gap-1.5">
-              {(["Cash", "Card", "Udhaar"] as PayMode[]).map((m) => (
-                <Button key={m} className="flex-1" variant={payMode === m ? "default" : "outline"} onClick={() => setPayMode(m)}>{m}</Button>
+            <div ref={payRef} className="space-y-2 rounded-xl border border-border p-2.5">
+              <p className="text-xs font-bold text-foreground">Payment {pays.length > 1 ? "(split)" : ""} <span className="font-normal text-muted-foreground">— F8</span></p>
+              {pays.map((p, i) => (
+                <div key={i} className="flex gap-1.5">
+                  <select className="h-10 rounded-lg border border-border bg-background px-2 text-sm" value={p.method} onChange={(e) => setPays((all) => all.map((x, j) => (j === i ? { ...x, method: e.target.value as PayMethod } : x)))} aria-label="Payment method">
+                    {PAY_METHODS.map((m) => <option key={m} value={m}>{m === "Credit" ? "Credit / Udhaar" : m}</option>)}
+                  </select>
+                  <input className={inputCls} value={p.amount} inputMode="decimal" placeholder={i === 0 && pays.length === 1 ? `${money(total)} (poora)` : "0"} onChange={(e) => setPays((all) => all.map((x, j) => (j === i ? { ...x, amount: e.target.value } : x)))} aria-label="Amount" />
+                  {pays.length > 1 ? <Button size="icon" variant="ghost" onClick={() => setPays((all) => all.filter((_, j) => j !== i))} aria-label="Hatayein"><Trash2 /></Button> : null}
+                </div>
               ))}
+              <div className="flex flex-wrap gap-1.5">
+                <Button size="sm" variant="outline" onClick={() => setPays((all) => [...all, { method: all.some((x) => x.method === "Cash") ? "Bank" : "Cash", amount: "" }])}><Plus /> Split payment</Button>
+                <Button size="sm" variant="outline" onClick={() => setPays([{ method: "Credit", amount: "" }])}>Poora udhaar</Button>
+              </div>
             </div>
-            <label className="block text-xs text-muted-foreground">
-              {payMode === "Udhaar" ? "Abhi kitna mila (optional)" : "Customer ne diya (khali = poora)"}
-              <input className={inputCls} value={paid} onChange={(e) => setPaid(e.target.value)} inputMode="decimal" placeholder={payMode === "Udhaar" ? "0" : money(total)} />
-            </label>
+
+            {balance?.found ? (
+              <div className={`rounded-lg border p-2 text-xs ${balance.balance > 0 ? "border-destructive text-destructive" : "border-border text-muted-foreground"}`}>
+                Purana baqaya: <b>Rs {money(balance.balance)}</b>{balance.creditLimit ? ` · Credit limit Rs ${money(balance.creditLimit)}` : ""}
+              </div>
+            ) : null}
+
+            <label className="block text-xs text-muted-foreground">Invoice note<input className={inputCls} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional — bill pe chhapega" /></label>
 
             <div className="space-y-1 rounded-xl bg-surface-2 p-3 text-sm">
               <Row a="Subtotal" b={`Rs ${money(subtotal)}`} />
-              {n(billDiscount) ? <Row a="Discount" b={`- Rs ${money(n(billDiscount))}`} /> : null}
+              {itemDiscount ? <Row a="Item discounts" b={`- Rs ${money(itemDiscount)}`} /> : null}
+              {taxTotal ? <Row a="Tax" b={`Rs ${money(taxTotal)}`} /> : null}
+              {discAmt ? <Row a="Bill discount" b={`- Rs ${money(discAmt)}`} /> : null}
               {n(delivery) ? <Row a="Delivery" b={`Rs ${money(n(delivery))}`} /> : null}
               <Row a="Grand Total" b={`Rs ${money(total)}`} bold />
+              <Row a="Paid" b={`Rs ${money(Math.min(paidNum, total))}`} />
               {paidNum > total ? <Row a="Change wapas" b={`Rs ${money(paidNum - total)}`} /> : null}
               {paidNum < total ? <Row a="Baqaya (udhaar)" b={`Rs ${money(total - paidNum)}`} /> : null}
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout(false)}>Save sale</Button>
-              <Button disabled={!cart.length || saving} onClick={() => checkout(true)}><Printer /> Save + Print</Button>
+            {editing ? <p className="rounded-lg bg-accent p-2 text-xs text-accent-foreground">Khula hua: <b>{editing.number}</b> — save karne par ye band ho jayega. <button className="underline" onClick={() => setEditing(null)}>Alag karein</button></p> : null}
+
+            <Button size="lg" className="h-14 w-full text-base" disabled={!cart.length || saving} onClick={() => checkout("sale", true)}><Printer /> Save + Print (F9) — Rs {money(total)}</Button>
+            <div className="grid grid-cols-3 gap-2">
+              <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("sale", false)}><Save /> Save</Button>
+              <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("held", false)}><Pause /> Hold (F10)</Button>
+              <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("quotation", false)}><FileText /> Quotation</Button>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setDocsOpen("held")}><FolderOpen /> Held bills</Button>
+              <Button variant="ghost" size="sm" onClick={() => setDocsOpen("quotation")}><FolderOpen /> Quotations</Button>
+              <Button variant="ghost" size="sm" onClick={() => reset()}><RotateCcw /> Naya (F2)</Button>
             </div>
 
             {last ? (
               <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border p-2.5 text-sm">
                 <span className="font-semibold">Aakhri: {last.invoiceNumber}</span>
-                <Button size="sm" variant="outline" onClick={() => printReceipt(receiptHtml(last, printer))}><Printer /> Dobara print</Button>
-                {last.customerPhone ? <Button size="sm" variant="outline" onClick={() => whatsapp(last)}><MessageCircle /> WhatsApp</Button> : null}
+                <Button size="sm" variant="outline" onClick={() => printReceipt(receiptHtml(last, printer))}><Printer /> Print</Button>
+                <Button size="sm" variant="outline" onClick={() => downloadReceiptPdf(last).catch(() => toast.error("PDF nahi bana"))}><Download /> PDF</Button>
+                <Button size="sm" variant="outline" onClick={() => share(last)}><Share2 /> Share</Button>
+                <Button size="sm" variant="outline" onClick={() => whatsapp(last)}><MessageCircle /> WhatsApp</Button>
               </div>
+            ) : null}
+
+            {docsOpen ? (
+              <DocsList kind={docsOpen} onClose={() => setDocsOpen(null)} onOpen={openDoc} />
             ) : null}
           </section>
         </div>
