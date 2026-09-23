@@ -1,4 +1,5 @@
 import { PosCustomerSearch } from "@/components/pos-customer-search";
+import { PosSubnav } from "@/components/pos-subnav";
 import { AppShell } from "@/components/app-shell";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { Button } from "@/components/ui/button";
