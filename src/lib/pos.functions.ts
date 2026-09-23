@@ -2,16 +2,23 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-const input = z.object({
+const money = z.number().min(0).max(1e9);
+const docInput = z.object({
+  docType: z.enum(["sale", "quotation", "held", "return"]),
+  customerId: z.string().uuid().optional(),
   customerName: z.string().trim().max(120).optional(),
   phone: z.string().trim().max(30).optional(),
-  total: z.number().nonnegative().max(1e9),
-  paid: z.number().nonnegative().max(1e9),
-  payMode: z.enum(["Cash", "Card", "Udhaar"]),
-  status: z.enum(["paid", "partial", "unpaid"]),
-  /** text builder receives the invoice number via {{INVOICE}} placeholder */
-  invoiceText: z.string().trim().min(5).max(20000),
-  stock: z.array(z.object({ name: z.string().max(300), qty: z.number().min(0).max(1e7) })).max(300),
+  subtotal: money,
+  discountTotal: money,
+  taxTotal: money,
+  delivery: money,
+  total: money,
+  notes: z.string().max(2000).optional(),
+  refSaleId: z.string().uuid().optional(),
+  convertFromId: z.string().uuid().optional(),
+  methodLabel: z.string().max(120).optional(),
+  invoiceText: z.string().max(20000).optional(),
+  payments: z.array(z.object({ method: z.string().max(30), amount: money })).max(10),
   items: z
     .array(
       z.object({
@@ -20,66 +27,120 @@ const input = z.object({
         rateType: z.string().max(20).optional(),
         qty: z.number().min(0).max(1e7),
         stockQty: z.number().min(0).max(1e7),
-        rate: z.number().min(0).max(1e9),
-        discount: z.number().min(0).max(1e9),
-        lineTotal: z.number().min(0).max(1e9),
+        rate: money,
+        discount: money,
+        taxPercent: z.number().min(0).max(100),
+        taxAmount: money,
+        lineTotal: money,
+        note: z.string().max(300).optional(),
       }),
     )
-    .max(300)
-    .optional(),
-  subtotal: z.number().min(0).max(1e9).optional(),
-  discountTotal: z.number().min(0).max(1e9).optional(),
-  delivery: z.number().min(0).max(1e9).optional(),
+    .max(300),
+  /** cart/UI state — held bill aur quotation wapas kholne ke liye */
+  ui: z.unknown().optional(),
 });
+export type PosDocInput = z.infer<typeof docInput>;
 
-/** Sale ek hi database transaction me save hoti hai: bill + items + payment + stock + invoice record. */
-export const savePosSale = createServerFn({ method: "POST" })
+/** Bill / quotation / hold / return — ek database transaction me (stock + payment + invoice record). */
+export const savePosDoc = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => input.parse(d))
+  .inputValidator((d: unknown) => docInput.parse(d))
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
-    const names = [...new Set((data.items ?? data.stock).map((s) => s.name))];
-    const { data: prods } = names.length
-      ? await supabase.from("products").select("id, name").in("name", names)
-      : { data: [] };
+    const names = [...new Set(data.items.map((s) => s.name))];
+    const { data: prods } = names.length ? await supabase.from("products").select("id, name").in("name", names) : { data: [] };
     const idOf = new Map<string, string>((prods ?? []).map((p: { id: string; name: string }) => [p.name, p.id]));
-
-    const items =
-      data.items?.map((i) => ({
-        product_id: idOf.get(i.name) ?? null,
-        name: i.name,
-        unit: i.unit ?? null,
-        rate_type: i.rateType ?? null,
-        qty: i.qty,
-        stock_qty: i.stockQty,
-        rate: i.rate,
-        discount: i.discount,
-        line_total: i.lineTotal,
-      })) ??
-      data.stock.map((s) => ({ product_id: idOf.get(s.name) ?? null, name: s.name, qty: s.qty, stock_qty: s.qty, rate: 0, line_total: 0 }));
-
-    const paidAmt = Math.min(data.paid, data.total);
-    const payments = [
-      ...(paidAmt > 0 ? [{ method: data.payMode === "Udhaar" ? "Cash" : data.payMode, amount: paidAmt }] : []),
-      ...(data.total - paidAmt > 0 ? [{ method: "Credit", amount: data.total - paidAmt }] : []),
-    ];
 
     const { data: res, error } = await supabase.rpc("pos_save_sale", {
       _p: {
-        doc_type: "sale",
+        doc_type: data.docType,
+        customer_id: data.customerId ?? "",
         customer_name: data.customerName ?? "",
         customer_phone: data.phone ?? "",
-        subtotal: data.subtotal ?? data.total,
-        discount_total: data.discountTotal ?? 0,
-        delivery: data.delivery ?? 0,
+        subtotal: data.subtotal,
+        discount_total: data.discountTotal,
+        tax_total: data.taxTotal,
+        delivery: data.delivery,
         grand_total: data.total,
-        items,
-        payments,
-        method_label: data.payMode,
-        invoice_text: data.invoiceText,
+        notes: data.notes ?? "",
+        ref_sale_id: data.refSaleId ?? "",
+        method_label: data.methodLabel ?? "Cash",
+        invoice_text: data.invoiceText ?? "",
+        payments: data.payments,
+        ui: data.ui ?? null,
+        items: data.items.map((i) => ({
+          product_id: idOf.get(i.name) ?? null,
+          name: i.name,
+          unit: i.unit ?? null,
+          rate_type: i.rateType ?? null,
+          qty: i.qty,
+          stock_qty: i.stockQty,
+          rate: i.rate,
+          discount: i.discount,
+          tax_percent: i.taxPercent,
+          tax_amount: i.taxAmount,
+          line_total: i.lineTotal,
+          note: i.note ?? null,
+        })),
       },
     });
-    if (error || !res) throw new Error(error?.message?.includes("Access") ? "Access band hai" : "Sale save nahi ho saki");
-    const r = res as { id: string; number: string };
-    return { ok: true, id: r.id, invoiceNumber: r.number };
+    if (error || !res) {
+      console.error("pos_save_sale", error);
+      throw new Error(error?.message?.includes("Access") ? "Access band hai" : "Bill save nahi ho saka");
+    }
+    if (data.convertFromId) {
+      await supabase.from("pos_sales").update({ status: "converted" }).eq("id", data.convertFromId);
+    }
+    const r = res as { id: string; number: string; payment_status: string };
+    return { ok: true, id: r.id, invoiceNumber: r.number, paymentStatus: r.payment_status };
   });
+
+/** Held bills / quotations ki list (sirf open wale). */
+export const listPosDocs = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ docType: z.enum(["quotation", "held", "sale"]) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const q = supabase
+      .from("pos_sales")
+      .select("id, doc_number, customer_name, customer_phone, grand_total, created_at, payload, status")
+      .eq("doc_type", data.docType)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    const { data: rows, error } = data.docType === "sale" ? await q : await q.in("status", ["draft", "completed"]);
+    if (error) throw new Error("List load nahi hui");
+    return { docs: (rows ?? []) as Array<{ id: string; doc_number: string; customer_name: string | null; customer_phone: string | null; grand_total: number; created_at: string; payload: unknown; status: string }> };
+  });
+
+/** Held bill wapas kholne par band (converted) mark karein. */
+export const closePosDoc = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await (context.supabase as any).from("pos_sales").update({ status: "converted" }).eq("id", data.id).in("doc_type", ["held", "quotation"]);
+    if (error) throw new Error("Update nahi hua");
+    return { ok: true };
+  });
+
+/** Customer ka purana baqaya: opening + POS udhaar − returns/receipts. */
+export const getCustomerBalance = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ phone: z.string().max(30) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const phone = data.phone.replace(/\D/g, "");
+    if (phone.length < 10) return { found: false, balance: 0, creditLimit: null as number | null, customerId: null as string | null };
+    const { data: c } = await supabase.from("customers").select("id, opening_balance, credit_limit").eq("phone", phone).maybeSingle();
+    if (!c) return { found: false, balance: 0, creditLimit: null, customerId: null };
+    const [{ data: sales }, { data: pays }] = await Promise.all([
+      supabase.from("pos_sales").select("doc_type, balance, grand_total, paid_total").eq("customer_id", c.id).in("doc_type", ["sale", "return"]).neq("status", "cancelled"),
+      supabase.from("pos_payments").select("amount").eq("customer_id", c.id).eq("kind", "receipt").eq("status", "completed"),
+    ]);
+    let bal = Number(c.opening_balance ?? 0);
+    for (const s of sales ?? []) bal += s.doc_type === "sale" ? Number(s.balance) : -(Number(s.grand_total) - Number(s.paid_total));
+    for (const p of pays ?? []) bal -= Number(p.amount);
+    return { found: true, balance: Math.round(bal * 100) / 100, creditLimit: c.credit_limit == null ? null : Number(c.credit_limit), customerId: c.id as string };
+  });
+
+/** Purana API (backward compat) — naya code savePosDoc use kare. */
+export const savePosSale = savePosDoc;

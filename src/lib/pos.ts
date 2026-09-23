@@ -9,7 +9,13 @@ export const RATE_TYPES: { id: RateType; label: string; packGrams: number | null
   { id: "p500", label: "Staff 500g", packGrams: 500 },
 ];
 
+/** Purana 3-mode type (backward compat). */
 export type PayMode = "Cash" | "Card" | "Udhaar";
+
+export const PAY_METHODS = ["Cash", "Bank", "JazzCash", "Easypaisa", "Card", "Other", "Credit"] as const;
+export type PayMethod = (typeof PAY_METHODS)[number];
+export type PaymentPart = { method: PayMethod; amount: number };
+export const TAX_RATES = [0, 5, 13, 16, 17, 18];
 
 export type CartLine = {
   key: string;
@@ -20,6 +26,8 @@ export type CartLine = {
   price: number;
   qty: number;
   discount: number; // per line, amount
+  taxPercent?: number;
+  note?: string;
 };
 
 export function priceFor(p: DbProduct, rate: RateType): number | null {
@@ -42,52 +50,72 @@ export function stockDeduction(line: Pick<CartLine, "rateType" | "unit" | "qty">
   return line.qty;
 }
 
-export const lineTotal = (l: CartLine) => Math.max(0, l.price * l.qty - (l.discount || 0));
+const r2 = (x: number) => Math.round(x * 100) / 100;
+export const lineBase = (l: CartLine) => Math.max(0, l.price * l.qty - (l.discount || 0));
+export const lineTax = (l: CartLine) => r2((lineBase(l) * (l.taxPercent || 0)) / 100);
+export const lineTotal = (l: CartLine) => r2(lineBase(l) + lineTax(l));
 
+/** billDiscount = amount (percent pehle hi amount me convert karein). */
 export function totals(lines: CartLine[], billDiscount: number, delivery: number) {
-  const subtotal = lines.reduce((s, l) => s + lineTotal(l), 0);
-  const total = Math.max(0, subtotal - (billDiscount || 0) + (delivery || 0));
-  return { subtotal, total };
+  const subtotal = r2(lines.reduce((s, l) => s + lineBase(l), 0));
+  const taxTotal = r2(lines.reduce((s, l) => s + lineTax(l), 0));
+  const itemDiscount = r2(lines.reduce((s, l) => s + (l.discount || 0), 0));
+  const total = Math.max(0, r2(subtotal + taxTotal - (billDiscount || 0) + (delivery || 0)));
+  return { subtotal, taxTotal, itemDiscount, total };
 }
 
-export const money = (n: number) => Math.round(n).toLocaleString("en-PK");
+export const money = (n: number) => (Math.round(n * 100) / 100).toLocaleString("en-PK", { maximumFractionDigits: 2 });
 
 export type ReceiptInput = {
   business: string;
   phone?: string;
   address?: string;
   invoiceNumber: string;
+  title?: string; // "Invoice" | "Quotation" | "Sale Return"
   date: string;
   customerName?: string;
   customerPhone?: string;
   lines: CartLine[];
   billDiscount: number;
   delivery: number;
-  payMode: PayMode;
+  payMode: PayMode | string;
+  payments?: PaymentPart[];
   paid: number;
+  previousBalance?: number;
+  notes?: string;
+  terms?: string;
   currency: string;
 };
 
+const payLabel = (r: ReceiptInput) =>
+  r.payments?.length ? r.payments.filter((p) => p.amount > 0).map((p) => `${p.method} ${money(p.amount)}`).join(", ") : String(r.payMode);
+
 /** Plain text invoice — record + WhatsApp ke liye. */
 export function receiptText(r: ReceiptInput) {
-  const { subtotal, total } = totals(r.lines, r.billDiscount, r.delivery);
+  const { subtotal, taxTotal, total } = totals(r.lines, r.billDiscount, r.delivery);
   const out: string[] = [];
-  out.push(`*${r.business || "Invoice"}*`, `Invoice: ${r.invoiceNumber}`, `Date: ${r.date}`);
+  out.push(`*${r.business || "Invoice"}*`, `${r.title || "Invoice"}: ${r.invoiceNumber}`, `Date: ${r.date}`);
   if (r.customerName) out.push(`Customer: ${r.customerName}`);
   if (r.customerPhone) out.push(`Phone: ${r.customerPhone}`);
   out.push("");
   r.lines.forEach((l, i) => {
-    out.push(`${i + 1}. ${l.name} ${packLabel(l)} x${l.qty} @ ${money(l.price)} = ${money(lineTotal(l))}${l.discount ? ` (disc ${money(l.discount)})` : ""}`);
+    out.push(
+      `${i + 1}. ${l.name} ${packLabel(l)} x${l.qty} @ ${money(l.price)} = ${money(lineTotal(l))}${l.discount ? ` (disc ${money(l.discount)})` : ""}${l.taxPercent ? ` (tax ${l.taxPercent}%)` : ""}`,
+    );
+    if (l.note) out.push(`   - ${l.note}`);
   });
   out.push("", `Subtotal: ${r.currency} ${money(subtotal)}`);
+  if (taxTotal) out.push(`Tax: ${r.currency} ${money(taxTotal)}`);
   if (r.billDiscount) out.push(`Discount: ${r.currency} ${money(r.billDiscount)}`);
   if (r.delivery) out.push(`Delivery Charges: ${r.currency} ${money(r.delivery)}`);
-  out.push(`Grand Total: ${r.currency} ${money(total)}`, `Payment: ${r.payMode}`);
-  if (r.payMode !== "Udhaar") {
-    out.push(`Paid: ${r.currency} ${money(r.paid)}`);
+  out.push(`Grand Total: ${r.currency} ${money(total)}`);
+  if (r.title !== "Quotation") {
+    out.push(`Payment: ${payLabel(r)}`, `Paid: ${r.currency} ${money(Math.min(r.paid, total))}`);
     if (r.paid > total) out.push(`Change: ${r.currency} ${money(r.paid - total)}`);
+    if (r.paid < total) out.push(`Balance: ${r.currency} ${money(total - r.paid)}`);
+    if (r.previousBalance) out.push(`Previous balance: ${r.currency} ${money(r.previousBalance)}`);
   }
-  if (r.paid < total) out.push(`Balance: ${r.currency} ${money(total - r.paid)}`);
+  if (r.notes) out.push("", `Note: ${r.notes}`);
   return out.join("\n");
 }
 
@@ -110,7 +138,7 @@ export type ReceiptPrinter = {
 
 export const PRINTER_PRESETS: ReceiptPrinter[] = [
   { id: "t80", name: "Thermal 80mm roll", widthMm: 80, heightMm: null, marginMm: 3, fontPt: 9 },
-  { id: "t58", name: "Thermal 58mm roll", widthMm: 58, heightMm: null, marginMm: 2, fontPt: 8 },
+  { id: "t58", name: "Compact 58mm roll", widthMm: 58, heightMm: null, marginMm: 2, fontPt: 8 },
   { id: "t76", name: "Dot-matrix 76mm", widthMm: 76, heightMm: null, marginMm: 3, fontPt: 9 },
   { id: "a4", name: "A4 (210x297)", widthMm: 210, heightMm: 297, marginMm: 12, fontPt: 11 },
   { id: "a5", name: "A5 (148x210)", widthMm: 148, heightMm: 210, marginMm: 8, fontPt: 10 },
@@ -121,16 +149,17 @@ export const PRINTER_PRESETS: ReceiptPrinter[] = [
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
 export function receiptHtml(r: ReceiptInput, p: ReceiptPrinter) {
-  const { subtotal, total } = totals(r.lines, r.billDiscount, r.delivery);
+  const { subtotal, taxTotal, total } = totals(r.lines, r.billDiscount, r.delivery);
   const wide = p.widthMm >= 120;
   const rows = r.lines
     .map(
       (l, i) =>
-        `<tr><td>${i + 1}. ${esc(l.name)} <small>${esc(packLabel(l))}</small>${l.discount ? `<br><small>disc -${money(l.discount)}</small>` : ""}</td><td class=r>${l.qty}</td>${wide ? `<td class=r>${money(l.price)}</td>` : ""}<td class=r>${money(lineTotal(l))}</td></tr>`,
+        `<tr><td>${i + 1}. ${esc(l.name)} <small>${esc(packLabel(l))}</small>${l.discount ? `<br><small>disc -${money(l.discount)}</small>` : ""}${l.taxPercent ? `<br><small>tax ${l.taxPercent}%</small>` : ""}${l.note ? `<br><small>${esc(l.note)}</small>` : ""}</td><td class=r>${l.qty}</td>${wide ? `<td class=r>${money(l.price)}</td>` : ""}<td class=r>${money(lineTotal(l))}</td></tr>`,
     )
     .join("");
   const line = (a: string, b: string, bold = false) => `<tr${bold ? " class=b" : ""}><td>${a}</td><td class=r>${b}</td></tr>`;
   const c = r.currency;
+  const quote = r.title === "Quotation";
   return `<!doctype html><html><head><meta charset=utf-8><style>
 @page{size:${p.widthMm}mm ${p.heightMm ? `${p.heightMm}mm` : "auto"};margin:0}
 *{box-sizing:border-box}html,body{margin:0;padding:0}
@@ -141,9 +170,15 @@ table{width:100%;border-collapse:collapse}td,th{padding:1mm 0;vertical-align:top
 </style></head><body>
 <h1>${esc(r.business || "Invoice")}</h1>
 ${r.address ? `<div class=c>${esc(r.address)}</div>` : ""}${r.phone ? `<div class=c>${esc(r.phone)}</div>` : ""}
-<hr><table>${line("Invoice", esc(r.invoiceNumber))}${line("Date", esc(r.date))}${r.customerName ? line("Customer", esc(r.customerName)) : ""}${r.customerPhone ? line("Phone", esc(r.customerPhone)) : ""}</table><hr>
+<div class=c><b>${esc(r.title || "Invoice")}</b></div>
+<hr><table>${line("No.", esc(r.invoiceNumber))}${line("Date", esc(r.date))}${r.customerName ? line("Customer", esc(r.customerName)) : ""}${r.customerPhone ? line("Phone", esc(r.customerPhone)) : ""}</table><hr>
 <table class=items><tr><th>Item</th><th class=r>Qty</th>${wide ? "<th class=r>Rate</th>" : ""}<th class=r>Amount</th></tr>${rows}</table><hr>
-<table>${line("Subtotal", `${c} ${money(subtotal)}`)}${r.billDiscount ? line("Discount", `- ${c} ${money(r.billDiscount)}`) : ""}${r.delivery ? line("Delivery", `${c} ${money(r.delivery)}`) : ""}${line("Grand Total", `${c} ${money(total)}`, true)}${line("Payment", r.payMode)}${r.payMode !== "Udhaar" ? line("Paid", `${c} ${money(r.paid)}`) : ""}${r.paid > total ? line("Change", `${c} ${money(r.paid - total)}`) : ""}${r.paid < total ? line("Balance", `${c} ${money(total - r.paid)}`, true) : ""}</table>
+<table>${line("Subtotal", `${c} ${money(subtotal)}`)}${taxTotal ? line("Tax", `${c} ${money(taxTotal)}`) : ""}${r.billDiscount ? line("Discount", `- ${c} ${money(r.billDiscount)}`) : ""}${r.delivery ? line("Delivery", `${c} ${money(r.delivery)}`) : ""}${line("Grand Total", `${c} ${money(total)}`, true)}${
+    quote
+      ? ""
+      : `${line("Payment", esc(payLabel(r)))}${line("Paid", `${c} ${money(Math.min(r.paid, total))}`)}${r.paid > total ? line("Change", `${c} ${money(r.paid - total)}`) : ""}${r.paid < total ? line("Balance", `${c} ${money(total - r.paid)}`, true) : ""}${r.previousBalance ? line("Previous balance", `${c} ${money(r.previousBalance)}`) : ""}`
+  }</table>
+${r.notes ? `<hr><div><small>Note: ${esc(r.notes)}</small></div>` : ""}${r.terms ? `<div><small>${esc(r.terms)}</small></div>` : ""}
 <hr><div class=c>Shukriya! Dobara tashreef layein.</div></body></html>`;
 }
 
@@ -160,4 +195,42 @@ export function printReceipt(html: string) {
     frame.contentWindow?.print();
     setTimeout(() => frame.remove(), 60000);
   }, 250);
+}
+
+/** A4 PDF download (browser-only, dynamic import). */
+export async function downloadReceiptPdf(r: ReceiptInput) {
+  const { jsPDF } = await import("jspdf");
+  const { default: autoTable } = await import("jspdf-autotable");
+  const { subtotal, taxTotal, total } = totals(r.lines, r.billDiscount, r.delivery);
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const c = r.currency;
+  doc.setFont("helvetica", "bold").setFontSize(16).text(r.business || "Invoice", 14, 18);
+  doc.setFont("helvetica", "normal").setFontSize(9);
+  let y = 23;
+  for (const t of [r.address, r.phone].filter(Boolean) as string[]) { doc.text(t, 14, y); y += 4.5; }
+  doc.setFont("helvetica", "bold").setFontSize(12).text(`${r.title || "Invoice"} ${r.invoiceNumber}`, 196, 18, { align: "right" });
+  doc.setFont("helvetica", "normal").setFontSize(9).text(r.date, 196, 23, { align: "right" });
+  y = Math.max(y, 30);
+  if (r.customerName || r.customerPhone) { doc.text(`Customer: ${[r.customerName, r.customerPhone].filter(Boolean).join(" · ")}`, 14, y); y += 5; }
+  autoTable(doc, {
+    startY: y + 2,
+    head: [["#", "Item", "Unit", "Qty", "Rate", "Disc", "Tax", "Total"]],
+    body: r.lines.map((l, i) => [i + 1, l.name + (l.note ? `\n${l.note}` : ""), packLabel(l), l.qty, money(l.price), money(l.discount || 0), l.taxPercent ? `${l.taxPercent}%` : "-", money(lineTotal(l))]),
+    styles: { fontSize: 9 },
+    headStyles: { fillColor: [20, 40, 80] },
+  });
+  const rows: [string, string][] = [["Subtotal", `${c} ${money(subtotal)}`]];
+  if (taxTotal) rows.push(["Tax", `${c} ${money(taxTotal)}`]);
+  if (r.billDiscount) rows.push(["Discount", `- ${c} ${money(r.billDiscount)}`]);
+  if (r.delivery) rows.push(["Delivery", `${c} ${money(r.delivery)}`]);
+  rows.push(["Grand Total", `${c} ${money(total)}`]);
+  if (r.title !== "Quotation") {
+    rows.push(["Payment", payLabel(r)], ["Paid", `${c} ${money(Math.min(r.paid, total))}`]);
+    if (r.paid < total) rows.push(["Balance", `${c} ${money(total - r.paid)}`]);
+  }
+  autoTable(doc, { body: rows, theme: "plain", margin: { left: 120 }, styles: { fontSize: 10 }, columnStyles: { 1: { halign: "right", fontStyle: "bold" } } });
+  const endY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+  if (r.notes) doc.setFontSize(9).text(`Note: ${r.notes}`, 14, endY, { maxWidth: 180 });
+  if (r.terms) doc.setFontSize(8).text(r.terms, 14, endY + 8, { maxWidth: 180 });
+  doc.save(`${r.invoiceNumber}.pdf`);
 }
