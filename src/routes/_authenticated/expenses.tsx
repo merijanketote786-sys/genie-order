@@ -8,6 +8,8 @@ import { Plus } from "lucide-react";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { newRef } from "@/lib/pos-errors";
+import { usePrintCenter } from "@/components/print-center";
+import { usePosAccess } from "@/components/pos-access";
 
 export const Route = createFileRoute("/_authenticated/expenses")({
   head: () => ({
@@ -27,6 +29,8 @@ const localDate = (d = new Date()) => new Date(d.getTime() - d.getTimezoneOffset
 
 function ExpensesPage() {
   const qc = useQueryClient();
+  const pc = usePrintCenter();
+  const { cfg } = usePosAccess();
   const today = localDate();
   const [from, setFrom] = useState(today.slice(0, 8) + "01");
   const [to, setTo] = useState(today);
@@ -55,13 +59,14 @@ function ExpensesPage() {
 
   return (
     <AppShell title="Expenses" subtitle="Business kharche" active="/pos">
+      {pc.node}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />
         <section className="grid gap-2 rounded-xl border border-border bg-card p-3 sm:grid-cols-3 lg:grid-cols-6">
           <select className={posInput} value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} aria-label="Category">{EXPENSE_CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select>
           <input className={posInput} value={f.amount} inputMode="decimal" onChange={(e) => setF({ ...f, amount: e.target.value })} placeholder="Amount" aria-label="Amount" />
           <input className={posInput} type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} aria-label="Date" />
-          <select className={posInput} value={f.method} onChange={(e) => setF({ ...f, method: e.target.value })} aria-label="Method">{PAY_OPTS.map((m) => <option key={m}>{m}</option>)}</select>
+          <select className={posInput} value={f.method} onChange={(e) => setF({ ...f, method: e.target.value })} aria-label="Method">{cfg.payMethods.filter((m) => m !== "Credit").map((m) => <option key={m}>{m}</option>)}</select>
           <input className={posInput} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} placeholder="Detail" />
           <Button className="h-10" onClick={add}><Plus /> Expense add</Button>
         </section>
@@ -83,7 +88,7 @@ function ExpensesPage() {
                 {rows.map((r) => (
                   <tr key={r.id} className={`border-t border-border ${r.status === "cancelled" ? "opacity-50 line-through" : ""}`}>
                     <td className="py-1.5">{r.date}</td><td>{r.category}</td><td className="text-xs">{r.description}</td><td>{r.method}</td><td className="text-right font-semibold">{rs(r.amount)}</td>
-                    <td className="text-right">{r.status !== "cancelled" ? <Button size="sm" variant="ghost" onClick={async () => { if (!confirm("Ye expense cancel karein?")) return; await cancelExpense({ data: { id: r.id } }); qc.invalidateQueries({ queryKey: ["expenses"] }); }}>Cancel</Button> : null}</td>
+                    <td className="whitespace-nowrap text-right"><Button size="sm" variant="ghost" onClick={() => pc.preview({ kind: "expense", id: r.id, title: "Expense Voucher", number: `EXP-${r.id.slice(0, 6).toUpperCase()}`, date: r.date, meta: [["Category", r.category], ["Method", r.method], ["Status", r.status]], notes: r.description || undefined, totals: [{ label: "Amount", value: r.amount, bold: true }] })}>Print</Button>{r.status !== "cancelled" ? <Button size="sm" variant="ghost" onClick={async () => { if (!confirm("Ye expense cancel karein?")) return; await cancelExpense({ data: { id: r.id } }); qc.invalidateQueries({ queryKey: ["expenses"] }); }}>Cancel</Button> : null}</td>
                   </tr>
                 ))}
               </tbody>

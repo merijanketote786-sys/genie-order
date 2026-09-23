@@ -8,6 +8,8 @@ import { Plus, Printer, Wallet } from "lucide-react";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { newRef } from "@/lib/pos-errors";
+import { usePrintCenter } from "@/components/print-center";
+import { usePosAccess } from "@/components/pos-access";
 
 export const Route = createFileRoute("/_authenticated/suppliers")({
   head: () => ({
@@ -25,6 +27,8 @@ export const Route = createFileRoute("/_authenticated/suppliers")({
 
 function SuppliersPage() {
   const qc = useQueryClient();
+  const pc = usePrintCenter();
+  const { cfg } = usePosAccess();
   const { data } = useQuery({ queryKey: ["suppliers"], queryFn: () => listSuppliers() });
   const [form, setForm] = useState<{ id?: string; name: string; phone: string; address: string; opening: string } | null>(null);
   const [sel, setSel] = useState<string | null>(null);
@@ -52,6 +56,7 @@ function SuppliersPage() {
       await partyPayment({ data: { kind: "supplier_payment", partyId: sel, amount: a, method: pay.method, note: pay.note || undefined, clientRef: opRef.current } });
       opRef.current = newRef();
       toast.success(`Payment ${rs(a)} save`);
+      if (current) pc.afterSave({ kind: "receipt", title: "Supplier Payment Voucher", number: `PV-${Date.now().toString().slice(-6)}`, date: new Date(), party: { label: "Paid to", name: current.name, phone: current.phone }, payments: [{ method: pay.method, amount: a }], totals: [{ label: "Amount paid", value: a, bold: true }], notes: pay.note || undefined }, "receipt");
       setPay({ amount: "", method: "Cash", note: "" });
       qc.invalidateQueries({ queryKey: ["suppliers"] });
       qc.invalidateQueries({ queryKey: ["sup-ledger"] });
@@ -60,6 +65,7 @@ function SuppliersPage() {
 
   return (
     <AppShell title="Suppliers" subtitle="Ledger aur payments" active="/pos">
+      {pc.node}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />
         <div className="grid gap-3 lg:grid-cols-[1fr_1.4fr]">
@@ -97,12 +103,17 @@ function SuppliersPage() {
                   <div><p className="font-bold text-foreground">{current.name}</p><p className="text-xs text-muted-foreground">{current.phone} {current.address}</p></div>
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" onClick={() => setForm({ id: current.id, name: current.name, phone: current.phone, address: current.address, opening: String(current.openingBalance) })}>Edit</Button>
-                    <Button size="sm" variant="outline" onClick={() => window.print()}><Printer /> Statement</Button>
+                    <Button size="sm" variant="outline" onClick={() => pc.preview({
+                      kind: "statement", title: "Supplier Statement", number: current.name, date: new Date(),
+                      party: { label: "Supplier", name: current.name, phone: current.phone, address: current.address },
+                      table: { head: ["Date", "Detail", "Ref", "Paid (Dr)", "Purchase (Cr)", "Balance"], align: ["l", "l", "l", "r", "r", "r"], rows: [["", "Opening balance", "", "", "", ledger?.opening ?? 0], ...(ledger?.rows ?? []).map((r) => [new Date(r.date).toLocaleDateString("en-PK"), r.kind, r.ref, r.debit || "", r.credit || "", r.balance] as (string | number)[])] },
+                      totals: [{ label: "Payable balance", value: current.balance, bold: true }],
+                    })}><Printer /> Statement</Button>
                   </div>
                 </div>
                 <div className="grid gap-2 rounded-lg border border-border p-2 sm:grid-cols-[1fr_auto_1fr_auto]">
                   <input className={posInput} value={pay.amount} inputMode="decimal" onChange={(e) => setPay({ ...pay, amount: e.target.value })} placeholder={`Amount (baqaya ${rs(current.balance)})`} />
-                  <select className={posInput} value={pay.method} onChange={(e) => setPay({ ...pay, method: e.target.value })} aria-label="Method">{PAY_OPTS.map((m) => <option key={m}>{m}</option>)}</select>
+                  <select className={posInput} value={pay.method} onChange={(e) => setPay({ ...pay, method: e.target.value })} aria-label="Method">{cfg.payMethods.filter((m) => m !== "Credit").map((m) => <option key={m}>{m}</option>)}</select>
                   <input className={posInput} value={pay.note} onChange={(e) => setPay({ ...pay, note: e.target.value })} placeholder="Note" />
                   <Button onClick={paySupplier}><Wallet /> Pay Supplier</Button>
                 </div>

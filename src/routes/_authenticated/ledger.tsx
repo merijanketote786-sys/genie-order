@@ -9,6 +9,8 @@ import { MessageCircle, Printer, Search, Wallet } from "lucide-react";
 import { useMemo, useState, useRef } from "react";
 import { toast } from "sonner";
 import { newRef } from "@/lib/pos-errors";
+import { usePrintCenter } from "@/components/print-center";
+import { usePosAccess } from "@/components/pos-access";
 
 export const Route = createFileRoute("/_authenticated/ledger")({
   head: () => ({
@@ -26,6 +28,8 @@ export const Route = createFileRoute("/_authenticated/ledger")({
 
 function LedgerPage() {
   const qc = useQueryClient();
+  const pc = usePrintCenter();
+  const { cfg } = usePosAccess();
   const { data } = useQuery({ queryKey: ["cust-bal"], queryFn: () => listCustomerBalances() });
   const [q, setQ] = useState("");
   const [onlyDue, setOnlyDue] = useState(true);
@@ -53,6 +57,7 @@ function LedgerPage() {
       await partyPayment({ data: { kind: "receipt", partyId: sel, amount: a, method: pay.method, note: pay.note || undefined, clientRef: opRef.current } });
       opRef.current = newRef();
       toast.success(`Payment ${rs(a)} mil gayi`);
+      if (cur) pc.afterSave({ kind: "receipt", title: "Payment Receipt", number: `RCPT-${Date.now().toString().slice(-6)}`, date: new Date(), party: { label: "Received from", name: cur.name, phone: cur.phone }, payments: [{ method: pay.method, amount: a }], totals: [{ label: "Amount received", value: a, bold: true }, { label: "Balance after payment", value: Math.max(0, cur.balance - a) }], notes: pay.note || undefined }, "receipt");
       setPay({ amount: "", method: "Cash", note: "" });
       refresh();
     } catch (e) { toast.error(e instanceof Error ? e.message : "Payment save nahi hui. Dobara try karein."); } finally { lockRef.current = false; }
@@ -66,22 +71,25 @@ function LedgerPage() {
   };
   const printStatement = () => {
     if (!led || !cur) return;
-    const w = window.open("", "_blank", "width=800,height=900");
-    if (!w) return;
-    const rows = led.rows.map((r) => `<tr><td>${new Date(r.date).toLocaleDateString("en-PK")}</td><td>${r.kind}</td><td>${r.ref}</td><td class=n>${r.debit ? r.debit.toFixed(2) : ""}</td><td class=n>${r.credit ? r.credit.toFixed(2) : ""}</td><td class=n>${r.balance.toFixed(2)}</td></tr>`).join("");
-    const esc = (s: string) => s.replace(/[<>&]/g, "");
-    w.document.write(`<html><head><title>Statement ${esc(cur.name)}</title><style>body{font-family:Arial;padding:20px;font-size:12px}table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #ccc;padding:5px;text-align:left}.n{text-align:right}h2{margin:0}</style></head><body><h2>Customer Statement</h2><p><b>${esc(cur.name)}</b> ${esc(cur.phone)} ${esc(cur.city)}<br>Date: ${new Date().toLocaleDateString("en-PK")}</p><table><tr><th>Date</th><th>Detail</th><th>Ref</th><th class=n>Debit</th><th class=n>Credit</th><th class=n>Balance</th></tr><tr><td colspan=5>Opening balance</td><td class=n>${led.opening.toFixed(2)}</td></tr>${rows}</table><h3 style="text-align:right">Baqaya: Rs ${cur.balance.toFixed(2)}</h3><script>print()</script></body></html>`);
-    w.document.close();
+    pc.preview({
+      kind: "statement", title: "Customer Statement", number: cur.name, date: new Date(),
+      party: { label: "Customer", name: cur.name, phone: cur.phone, address: [led.customer.address, cur.city].filter(Boolean).join(", ") },
+      meta: [["Credit limit", cur.creditLimit == null ? "-" : rs(cur.creditLimit)]],
+      table: { head: ["Date", "Detail", "Ref", "Debit", "Credit", "Balance"], align: ["l", "l", "l", "r", "r", "r"], rows: [["", "Opening balance", "", "", "", led.opening], ...led.rows.map((r) => [new Date(r.date).toLocaleDateString("en-PK"), r.kind, r.ref, r.debit || "", r.credit || "", r.balance] as (string | number)[])] },
+      totals: [{ label: "Closing balance (baqaya)", value: cur.balance, bold: true }],
+    });
   };
   const whatsapp = () => {
     if (!cur) return;
     const ph = cur.phone.replace(/\D/g, "").replace(/^0/, "92");
-    const msg = `Assalam o Alaikum ${cur.name}, aap ka baqaya Rs ${cur.balance.toLocaleString("en-PK")} hai. Shukriya.`;
+    const tpl = cfg.customers.reminderText || "Assalam o Alaikum {name}, aap ka baqaya {balance} hai. Shukriya.";
+    const msg = tpl.replace(/\{name\}/g, cur.name).replace(/\{balance\}/g, `Rs ${cur.balance.toLocaleString("en-PK")}`);
     window.open(`https://wa.me/${ph}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
   return (
     <AppShell title="Customer Ledger" subtitle="Udhaar aur payments" active="/pos">
+      {pc.node}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />
         <div className="grid gap-3 lg:grid-cols-[1fr_1.4fr]">
@@ -117,7 +125,7 @@ function LedgerPage() {
                   <div className="flex flex-wrap gap-2">
                     <Button size="sm" variant="outline" onClick={() => setAcct({ opening: String(cur.opening), limit: cur.creditLimit == null ? "" : String(cur.creditLimit) })}>Opening / Limit</Button>
                     <Button size="sm" variant="outline" onClick={printStatement}><Printer /> Statement</Button>
-                    <Button size="sm" variant="outline" disabled={!cur.phone} onClick={whatsapp}><MessageCircle /> Reminder</Button>
+                    {cfg.notify.paymentReminders ? <Button size="sm" variant="outline" disabled={!cur.phone} onClick={whatsapp}><MessageCircle /> Reminder</Button> : null}
                   </div>
                 </div>
                 {acct ? (
@@ -129,7 +137,7 @@ function LedgerPage() {
                 ) : null}
                 <div className="grid gap-2 rounded-lg border border-border p-2 sm:grid-cols-[1fr_auto_1fr_auto]">
                   <input className={posInput} value={pay.amount} inputMode="decimal" onChange={(e) => setPay({ ...pay, amount: e.target.value })} placeholder="Amount mili" aria-label="Receive amount" />
-                  <select className={posInput} value={pay.method} onChange={(e) => setPay({ ...pay, method: e.target.value })} aria-label="Method">{PAY_OPTS.map((m) => <option key={m}>{m}</option>)}</select>
+                  <select className={posInput} value={pay.method} onChange={(e) => setPay({ ...pay, method: e.target.value })} aria-label="Method">{cfg.payMethods.filter((m) => m !== "Credit").map((m) => <option key={m}>{m}</option>)}</select>
                   <input className={posInput} value={pay.note} onChange={(e) => setPay({ ...pay, note: e.target.value })} placeholder="Note" />
                   <Button onClick={receive}><Wallet /> Receive Payment</Button>
                 </div>
