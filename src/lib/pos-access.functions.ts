@@ -7,17 +7,11 @@ type Sb = any;
 export const POS_ROLES = ["manager", "cashier", "salesman", "staff"] as const;
 export type PosPerm =
   | "view_pos" | "create_sale" | "edit_price" | "apply_discount" | "cancel_invoice" | "view_reports" | "view_profit"
-  | "edit_stock" | "edit_products" | "view_balances" | "manage_expenses" | "manage_purchases" | "manage_users" | "settings";
+  | "edit_stock" | "edit_products" | "view_balances" | "manage_expenses" | "manage_purchases" | "manage_users" | "settings"
+  | "edit_sale" | "return_sale" | "manage_customers" | "manage_suppliers" | "manage_printers";
 
-export type PosConfig = {
-  receiptBusiness?: string;
-  receiptFooter?: string;
-  terms?: string;
-  defaultPayMethod?: string;
-  defaultTax?: number;
-  decimals?: number;
-  lowStockDefault?: number;
-};
+export type { PosConfig } from "./pos-config";
+import type { PosConfig } from "./pos-config";
 
 export const getPosAccess = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -43,16 +37,12 @@ export const verifyPosPin = createServerFn({ method: "POST" })
 export const savePosSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({
-    config: z.object({
-      receiptBusiness: z.string().max(120).optional(), receiptFooter: z.string().max(300).optional(), terms: z.string().max(1000).optional(),
-      defaultPayMethod: z.string().max(30).optional(), defaultTax: z.number().min(0).max(100).optional(), decimals: z.number().int().min(0).max(3).optional(),
-      lowStockDefault: z.number().min(0).max(1e7).optional(),
-    }),
+    config: z.record(z.string(), z.unknown()).refine((c) => JSON.stringify(c).length < 600_000, "Settings bohat bari hain (logo chhota karein)"),
     pin: z.string().max(8).nullable(),
   }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await (context.supabase as Sb).rpc("pos_save_settings", { _config: data.config, _pin: data.pin });
-    if (error) throw new Error(error.message.includes("PIN") ? "PIN 4 se 8 digits ka ho" : "Settings save nahi hui (ijazat?)");
+    if (error) throw new Error(error.message.includes("PIN") ? "PIN 4 se 8 digits ka ho" : error.message.includes("permission") ? "Settings badalne ki ijazat nahi" : "Settings save nahi huin. Dobara try karein.");
     return { ok: true };
   });
 
@@ -98,5 +88,6 @@ export const exportPosBackup = createServerFn({ method: "GET" })
     const tables = ["customers", "suppliers", "pos_sales", "pos_sale_items", "purchases", "purchase_items", "pos_payments", "expenses", "stock_movements", "products"];
     const out: Record<string, unknown[]> = {};
     for (const t of tables) { const { data } = await sb.from(t).select("*").limit(50000); out[t] = data ?? []; }
+    await sb.rpc("pos_log_event", { _action: "backup", _entity: "pos", _entity_id: null, _details: { tables: tables.length } });
     return { json: JSON.stringify({ exportedAt: new Date().toISOString(), tables: out }) };
   });
