@@ -25,7 +25,7 @@ import {
 } from "@/lib/pos";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Minus, Plus, Printer, ScanBarcode, ShoppingCart, Trash2, MessageCircle } from "lucide-react";
+import { Minus, Plus, Printer, ScanBarcode, ShoppingCart, Trash2, MessageCircle, LayoutGrid } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -45,6 +45,7 @@ export const Route = createFileRoute("/_authenticated/pos")({
 
 const PRINTER_KEY = "pos-printer:v1";
 const LINKS_KEY = "pos-barcode-links:v1";
+const GRID_KEY = "pos-show-grid:v1";
 /** Labels section ke auto code jaisa base (naam ke pehle 10 harf). */
 function labelBase(name: string) {
   return name
@@ -91,6 +92,25 @@ function PosPage() {
   const scanRef = useRef<HTMLInputElement>(null);
   const [hi, setHi] = useState(-1);
   const [dropOpen, setDropOpen] = useState(false);
+  // Product shortcut boxes: default hidden, toggle se khulti hain (is device pe yaad rehta hai)
+  const [showGrid, setShowGrid] = useState(false);
+  useEffect(() => {
+    try {
+      setShowGrid(localStorage.getItem(GRID_KEY) === "1");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  const toggleGrid = () => {
+    setShowGrid((v) => {
+      try {
+        localStorage.setItem(GRID_KEY, v ? "0" : "1");
+      } catch {
+        /* ignore */
+      }
+      return !v;
+    });
+  };
 
   useEffect(() => setPrinter(loadPrinter()), []);
   const updatePrinter = (p: ReceiptPrinter) => {
@@ -135,6 +155,8 @@ function PosPage() {
       /* ignore */
     }
   }, []);
+  // Naya barcode link karte waqt boxes khud khul jate hain, warna sirf toggle se
+  const gridVisible = showGrid || !!pendingCode;
   const saveLink = (code: string, p: DbProduct) => {
     const next = { ...links, [code]: { name: p.name, rate } };
     setLinks(next);
@@ -381,27 +403,41 @@ function PosPage() {
                 <Button size="sm" variant="ghost" onClick={() => { setPendingCode(null); setTerm(""); }}>Cancel</Button>
               </div>
             ) : null}
-            <div className="mt-3 grid max-h-[26rem] grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
-              {results.map((p) => {
-                const price = priceFor(p, rate);
-                return (
-                  <button
-                    key={p.name}
-                    type="button"
-                    onClick={() => (pendingCode ? saveLink(pendingCode, p) : add(p))}
-                    disabled={price == null}
-                    className="rounded-xl border border-border bg-background p-2.5 text-left transition hover:border-primary disabled:opacity-40"
-                  >
-                    <p className="line-clamp-2 text-sm font-semibold text-foreground">{p.name}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {price != null ? `Rs ${money(price)}` : "Rate nahi"} · stock {p.stock ?? "-"}
-                    </p>
-                    {pendingCode ? <p className="mt-1 text-xs font-bold text-primary">Link karein</p> : null}
-                  </button>
-                );
-              })}
-              {!results.length ? <p className="col-span-full py-6 text-center text-sm text-muted-foreground">Koi product nahi mila. Rates section me products add karein.</p> : null}
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={toggleGrid}
+                aria-expanded={showGrid}
+                className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs text-muted-foreground transition hover:border-primary hover:text-foreground"
+              >
+                <LayoutGrid className="size-3.5" />
+                {showGrid ? "Shortcuts chhupayein" : "Product shortcuts dikhayein"}
+              </button>
+              {pendingCode ? <span className="text-xs text-muted-foreground">Link ke liye list khuli hai</span> : null}
             </div>
+            {gridVisible ? (
+              <div className="mt-2 grid max-h-[26rem] grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
+                {results.map((p) => {
+                  const price = priceFor(p, rate);
+                  return (
+                    <button
+                      key={p.name}
+                      type="button"
+                      onClick={() => (pendingCode ? saveLink(pendingCode, p) : add(p))}
+                      disabled={price == null}
+                      className="rounded-xl border border-border bg-background p-2.5 text-left transition hover:border-primary disabled:opacity-40"
+                    >
+                      <p className="line-clamp-2 text-sm font-semibold text-foreground">{p.name}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {price != null ? `Rs ${money(price)}` : "Rate nahi"} · stock {p.stock ?? "-"}
+                      </p>
+                      {pendingCode ? <p className="mt-1 text-xs font-bold text-primary">Link karein</p> : null}
+                    </button>
+                  );
+                })}
+                {!results.length ? <p className="col-span-full py-6 text-center text-sm text-muted-foreground">Koi product nahi mila. Rates section me products add karein.</p> : null}
+              </div>
+            ) : null}
           </section>
 
           {/* Cart */}
