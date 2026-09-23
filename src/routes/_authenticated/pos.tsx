@@ -190,7 +190,9 @@ function PosPage() {
   const results = useMemo(() => {
     const t = term.trim().toLowerCase();
     if (!t) return products.slice(0, 24);
-    return products.filter((p) => p.name.toLowerCase().includes(t)).slice(0, 24);
+    const exact = products.filter((p) => p.barcode?.toLowerCase() === t || p.sku?.toLowerCase() === t);
+    const rest = products.filter((p) => !exact.includes(p) && [p.name, p.sku, p.barcode, p.category].some((v) => v?.toLowerCase().includes(t)));
+    return [...exact, ...rest].slice(0, 24);
   }, [products, term]);
 
   const add = (p: DbProduct, rateOverride?: RateType) => {

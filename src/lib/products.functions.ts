@@ -15,6 +15,9 @@ export type DbProduct = {
   customP100: number | null;
   customP250: number | null;
   customP500: number | null;
+  sku?: string;
+  barcode?: string;
+  category?: string;
 };
 
 const num = (v: unknown) => (v == null ? null : Number(v));
@@ -43,7 +46,7 @@ export const getProducts = createServerFn({ method: "GET" })
   const { data, error } = await supabase
     .from("products")
     .select(
-      "name, unit, sale_price, p100_staff_price, p250_staff_price, p500_staff_price, stock, custom_sale_price, custom_p100_price, custom_p250_price, custom_p500_price",
+      "name, unit, sale_price, p100_staff_price, p250_staff_price, p500_staff_price, stock, custom_sale_price, custom_p100_price, custom_p250_price, custom_p500_price, sku, barcode, category",
     )
     .eq("is_active", true)
     .eq("workspace_id", await workspaceOf(context.userId))
@@ -71,6 +74,9 @@ export const getProducts = createServerFn({ method: "GET" })
         customP100,
         customP250,
         customP500,
+        sku: r["sku"] ? String(r["sku"]) : undefined,
+        barcode: r["barcode"] ? String(r["barcode"]) : undefined,
+        category: r["category"] ? String(r["category"]) : undefined,
       };
     }) as DbProduct[],
   };
