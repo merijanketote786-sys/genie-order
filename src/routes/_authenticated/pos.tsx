@@ -45,6 +45,7 @@ export const Route = createFileRoute("/_authenticated/pos")({
 
 const PRINTER_KEY = "pos-printer:v1";
 const LINKS_KEY = "pos-barcode-links:v1";
+const GRID_KEY = "pos-show-grid:v1";
 /** Labels section ke auto code jaisa base (naam ke pehle 10 harf). */
 function labelBase(name: string) {
   return name
