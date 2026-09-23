@@ -26,7 +26,7 @@ import {
 } from "@/lib/pos";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Minus, Plus, Printer, ScanBarcode, ShoppingCart, Trash2, MessageCircle, LayoutGrid } from "lucide-react";
+import { Minus, Plus, Printer, ScanBarcode, ShoppingCart, Trash2, MessageCircle, LayoutGrid, Settings2, ReceiptText, Save } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -47,6 +47,7 @@ export const Route = createFileRoute("/_authenticated/pos")({
 const PRINTER_KEY = "pos-printer:v1";
 const LINKS_KEY = "pos-barcode-links:v1";
 const GRID_KEY = "pos-show-grid:v1";
+const POS_VIEW_KEY = "pos-active-view:v1";
 /** Labels section ke auto code jaisa base (naam ke pehle 10 harf). */
 function labelBase(name: string) {
   return name
@@ -92,6 +93,7 @@ function PosPage() {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [printer, setPrinter] = useState<ReceiptPrinter>(PRINTER_PRESETS[0]);
+  const [view, setView] = useState<"billing" | "settings">("billing");
   const [saving, setSaving] = useState(false);
   const [last, setLast] = useState<ReceiptInput | null>(null);
   const scanRef = useRef<HTMLInputElement>(null);
@@ -117,13 +119,28 @@ function PosPage() {
     });
   };
 
-  useEffect(() => setPrinter(loadPrinter()), []);
-  const updatePrinter = (p: ReceiptPrinter) => {
-    setPrinter(p);
+  useEffect(() => {
+    setPrinter(loadPrinter());
     try {
-      localStorage.setItem(PRINTER_KEY, JSON.stringify(p));
+      if (localStorage.getItem(POS_VIEW_KEY) === "settings") setView("settings");
     } catch {
       /* ignore */
+    }
+  }, []);
+  const changeView = (next: "billing" | "settings") => {
+    setView(next);
+    try {
+      localStorage.setItem(POS_VIEW_KEY, next);
+    } catch {
+      /* ignore */
+    }
+  };
+  const savePrinter = () => {
+    try {
+      localStorage.setItem(PRINTER_KEY, JSON.stringify(printer));
+      toast.success("Printer aur paper settings save ho gayi hain");
+    } catch {
+      toast.error("Settings save nahi ho sakin");
     }
   };
 
@@ -337,6 +354,16 @@ function PosPage() {
           meta={["Barcode scan", "Discount", "Cash/Card/Udhaar"]}
         />
 
+        <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-card p-1 sm:w-fit sm:min-w-80">
+          <Button variant={view === "billing" ? "default" : "ghost"} onClick={() => changeView("billing")}>
+            <ReceiptText /> Billing
+          </Button>
+          <Button variant={view === "settings" ? "default" : "ghost"} onClick={() => changeView("settings")}>
+            <Settings2 /> POS Settings
+          </Button>
+        </div>
+
+        {view === "billing" ? (
         <div className="grid gap-3 lg:grid-cols-[1.1fr_1fr]">
           {/* Products */}
           <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
@@ -497,8 +524,9 @@ function PosPage() {
             ) : null}
           </section>
         </div>
-
-        <PrinterSettings printer={printer} onChange={updatePrinter} />
+        ) : (
+          <PosSettings printer={printer} onChange={setPrinter} onSave={savePrinter} />
+        )}
       </div>
     </AppShell>
   );
@@ -547,23 +575,33 @@ function Row({ a, b, bold }: { a: string; b: string; bold?: boolean }) {
   );
 }
 
-function PrinterSettings({ printer, onChange }: { printer: ReceiptPrinter; onChange: (p: ReceiptPrinter) => void }) {
+function PosSettings({ printer, onChange, onSave }: { printer: ReceiptPrinter; onChange: (p: ReceiptPrinter) => void; onSave: () => void }) {
   const num = (v: string, min: number, max: number) => Math.min(max, Math.max(min, Number(v) || min));
   return (
-    <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
-      <p className="flex items-center gap-2 font-display text-sm font-bold text-foreground"><Printer className="size-4 text-primary" /> Receipt printer / paper</p>
-      <p className="mt-1 text-xs text-muted-foreground">Kisi bhi brand ka printer chalega — Print dabane par system dialog me apna printer chunein, Margins "None" aur Scale 100% rakhein. Ye setting is device pe yaad rehti hai.</p>
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {PRINTER_PRESETS.map((p) => (
-          <Button key={p.id} size="sm" variant={printer.id === p.id ? "default" : "outline"} onClick={() => onChange(p)}>{p.name}</Button>
-        ))}
-        <Button size="sm" variant={printer.id === "custom" ? "default" : "outline"} onClick={() => onChange({ ...printer, id: "custom", name: "Custom" })}>Custom</Button>
+    <section className="space-y-3">
+      <div className="rounded-lg border border-border bg-card p-3 sm:p-4">
+        <p className="flex items-center gap-2 font-display text-base font-bold text-foreground"><Settings2 className="size-4 text-primary" /> POS Settings</p>
+        <p className="mt-1 text-sm text-muted-foreground">POS ki tamam mojooda aur anay wali settings yahan milengi.</p>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <label className="text-xs text-muted-foreground">Width (mm)<input className={inputCls} type="number" value={printer.widthMm} onChange={(e) => onChange({ ...printer, id: "custom", name: "Custom", widthMm: num(e.target.value, 30, 330) })} /></label>
-        <label className="text-xs text-muted-foreground">Height (mm, khali = roll)<input className={inputCls} type="number" value={printer.heightMm ?? ""} onChange={(e) => onChange({ ...printer, id: "custom", name: "Custom", heightMm: e.target.value ? num(e.target.value, 30, 500) : null })} /></label>
-        <label className="text-xs text-muted-foreground">Margin (mm)<input className={inputCls} type="number" value={printer.marginMm} onChange={(e) => onChange({ ...printer, id: "custom", name: "Custom", marginMm: num(e.target.value, 0, 30) })} /></label>
-        <label className="text-xs text-muted-foreground">Font (pt)<input className={inputCls} type="number" value={printer.fontPt} onChange={(e) => onChange({ ...printer, id: "custom", name: "Custom", fontPt: num(e.target.value, 6, 16) })} /></label>
+
+      <div className="rounded-lg border border-border bg-card p-3 sm:p-4">
+        <p className="flex items-center gap-2 font-display text-sm font-bold text-foreground"><Printer className="size-4 text-primary" /> Printer aur paper</p>
+        <p className="mt-1 text-xs text-muted-foreground">Kisi bhi brand ka printer chalega — Print dabane par system dialog me apna printer chunein, Margins "None" aur Scale 100% rakhein. Ye setting is device pe yaad rehti hai.</p>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {PRINTER_PRESETS.map((p) => (
+            <Button key={p.id} size="sm" variant={printer.id === p.id ? "default" : "outline"} onClick={() => onChange(p)}>{p.name}</Button>
+          ))}
+          <Button size="sm" variant={printer.id === "custom" ? "default" : "outline"} onClick={() => onChange({ ...printer, id: "custom", name: "Custom" })}>Custom</Button>
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <label className="text-xs text-muted-foreground">Width (mm)<input className={inputCls} type="number" value={printer.widthMm} onChange={(e) => onChange({ ...printer, id: "custom", name: "Custom", widthMm: num(e.target.value, 30, 330) })} /></label>
+          <label className="text-xs text-muted-foreground">Height (mm, khali = roll)<input className={inputCls} type="number" value={printer.heightMm ?? ""} onChange={(e) => onChange({ ...printer, id: "custom", name: "Custom", heightMm: e.target.value ? num(e.target.value, 30, 500) : null })} /></label>
+          <label className="text-xs text-muted-foreground">Margin (mm)<input className={inputCls} type="number" value={printer.marginMm} onChange={(e) => onChange({ ...printer, id: "custom", name: "Custom", marginMm: num(e.target.value, 0, 30) })} /></label>
+          <label className="text-xs text-muted-foreground">Font (pt)<input className={inputCls} type="number" value={printer.fontPt} onChange={(e) => onChange({ ...printer, id: "custom", name: "Custom", fontPt: num(e.target.value, 6, 16) })} /></label>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <Button onClick={onSave}><Save /> Save settings</Button>
+        </div>
       </div>
     </section>
   );

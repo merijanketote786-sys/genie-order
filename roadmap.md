@@ -9,3 +9,4 @@
 - [x] Verify compilation and runtime health without changing saved data or business logic
 - [x] Add touch-insert variables to order template creation and editing
 - [x] POS search dropdown with arrow-key + Enter selection
+- [x] POS Settings me printer/paper changes ke liye explicit Save settings button add karna
