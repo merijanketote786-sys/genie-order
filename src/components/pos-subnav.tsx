@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users } from "lucide-react";
+import { BarChart3, Boxes, BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users } from "lucide-react";
 
 const ITEMS = [
   { to: "/pos", label: "Billing", icon: ShoppingCart },
@@ -9,6 +9,8 @@ const ITEMS = [
   { to: "/ledger", label: "Udhaar", icon: BookOpen },
   { to: "/expenses", label: "Expenses", icon: Receipt },
   { to: "/daybook", label: "Day Book", icon: Notebook },
+  { to: "/inventory", label: "Inventory", icon: Boxes },
+  { to: "/reports", label: "Reports", icon: BarChart3 },
 ] as const;
 
 /** POS module ke andar tez navigation. */

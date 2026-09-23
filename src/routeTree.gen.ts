@@ -22,6 +22,7 @@ import { Route as AuthenticatedSyncRouteImport } from './routes/_authenticated/s
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReturnsRouteImport } from './routes/_authenticated/returns'
+import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedRatesRouteImport } from './routes/_authenticated/rates'
 import { Route as AuthenticatedPurchasesRouteImport } from './routes/_authenticated/purchases'
 import { Route as AuthenticatedPosRouteImport } from './routes/_authenticated/pos'
@@ -29,6 +30,7 @@ import { Route as AuthenticatedLedgerRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedLabelsRouteImport } from './routes/_authenticated/labels'
 import { Route as AuthenticatedInvoicesRouteImport } from './routes/_authenticated/invoices'
 import { Route as AuthenticatedInvoiceRouteImport } from './routes/_authenticated/invoice'
+import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedExtractRouteImport } from './routes/_authenticated/extract'
 import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
@@ -107,6 +109,11 @@ const AuthenticatedReturnsRoute = AuthenticatedReturnsRouteImport.update({
   path: '/returns',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRatesRoute = AuthenticatedRatesRouteImport.update({
   id: '/rates',
   path: '/rates',
@@ -140,6 +147,11 @@ const AuthenticatedInvoicesRoute = AuthenticatedInvoicesRouteImport.update({
 const AuthenticatedInvoiceRoute = AuthenticatedInvoiceRouteImport.update({
   id: '/invoice',
   path: '/invoice',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedInventoryRoute = AuthenticatedInventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
@@ -225,6 +237,7 @@ export interface FileRoutesByFullPath {
   '/expenses': typeof AuthenticatedExpensesRoute
   '/extract': typeof AuthenticatedExtractRoute
   '/history': typeof AuthenticatedHistoryRoute
+  '/inventory': typeof AuthenticatedInventoryRoute
   '/invoice': typeof AuthenticatedInvoiceRoute
   '/invoices': typeof AuthenticatedInvoicesRoute
   '/labels': typeof AuthenticatedLabelsRoute
@@ -232,6 +245,7 @@ export interface FileRoutesByFullPath {
   '/pos': typeof AuthenticatedPosRoute
   '/purchases': typeof AuthenticatedPurchasesRoute
   '/rates': typeof AuthenticatedRatesRoute
+  '/reports': typeof AuthenticatedReportsRoute
   '/returns': typeof AuthenticatedReturnsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
@@ -258,6 +272,7 @@ export interface FileRoutesByTo {
   '/expenses': typeof AuthenticatedExpensesRoute
   '/extract': typeof AuthenticatedExtractRoute
   '/history': typeof AuthenticatedHistoryRoute
+  '/inventory': typeof AuthenticatedInventoryRoute
   '/invoice': typeof AuthenticatedInvoiceRoute
   '/invoices': typeof AuthenticatedInvoicesRoute
   '/labels': typeof AuthenticatedLabelsRoute
@@ -265,6 +280,7 @@ export interface FileRoutesByTo {
   '/pos': typeof AuthenticatedPosRoute
   '/purchases': typeof AuthenticatedPurchasesRoute
   '/rates': typeof AuthenticatedRatesRoute
+  '/reports': typeof AuthenticatedReportsRoute
   '/returns': typeof AuthenticatedReturnsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
@@ -294,6 +310,7 @@ export interface FileRoutesById {
   '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
   '/_authenticated/extract': typeof AuthenticatedExtractRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
+  '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
   '/_authenticated/invoice': typeof AuthenticatedInvoiceRoute
   '/_authenticated/invoices': typeof AuthenticatedInvoicesRoute
   '/_authenticated/labels': typeof AuthenticatedLabelsRoute
@@ -301,6 +318,7 @@ export interface FileRoutesById {
   '/_authenticated/pos': typeof AuthenticatedPosRoute
   '/_authenticated/purchases': typeof AuthenticatedPurchasesRoute
   '/_authenticated/rates': typeof AuthenticatedRatesRoute
+  '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/returns': typeof AuthenticatedReturnsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
@@ -331,6 +349,7 @@ export interface FileRouteTypes {
     | '/expenses'
     | '/extract'
     | '/history'
+    | '/inventory'
     | '/invoice'
     | '/invoices'
     | '/labels'
@@ -338,6 +357,7 @@ export interface FileRouteTypes {
     | '/pos'
     | '/purchases'
     | '/rates'
+    | '/reports'
     | '/returns'
     | '/settings'
     | '/suppliers'
@@ -364,6 +384,7 @@ export interface FileRouteTypes {
     | '/expenses'
     | '/extract'
     | '/history'
+    | '/inventory'
     | '/invoice'
     | '/invoices'
     | '/labels'
@@ -371,6 +392,7 @@ export interface FileRouteTypes {
     | '/pos'
     | '/purchases'
     | '/rates'
+    | '/reports'
     | '/returns'
     | '/settings'
     | '/suppliers'
@@ -399,6 +421,7 @@ export interface FileRouteTypes {
     | '/_authenticated/expenses'
     | '/_authenticated/extract'
     | '/_authenticated/history'
+    | '/_authenticated/inventory'
     | '/_authenticated/invoice'
     | '/_authenticated/invoices'
     | '/_authenticated/labels'
@@ -406,6 +429,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pos'
     | '/_authenticated/purchases'
     | '/_authenticated/rates'
+    | '/_authenticated/reports'
     | '/_authenticated/returns'
     | '/_authenticated/settings'
     | '/_authenticated/suppliers'
@@ -528,6 +552,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReturnsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports': {
+      id: '/_authenticated/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AuthenticatedReportsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/rates': {
       id: '/_authenticated/rates'
       path: '/rates'
@@ -575,6 +606,13 @@ declare module '@tanstack/react-router' {
       path: '/invoice'
       fullPath: '/invoice'
       preLoaderRoute: typeof AuthenticatedInvoiceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/inventory': {
+      id: '/_authenticated/inventory'
+      path: '/inventory'
+      fullPath: '/inventory'
+      preLoaderRoute: typeof AuthenticatedInventoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/history': {
@@ -681,6 +719,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
   AuthenticatedExtractRoute: typeof AuthenticatedExtractRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
+  AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
   AuthenticatedInvoiceRoute: typeof AuthenticatedInvoiceRoute
   AuthenticatedInvoicesRoute: typeof AuthenticatedInvoicesRoute
   AuthenticatedLabelsRoute: typeof AuthenticatedLabelsRoute
@@ -688,6 +727,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPosRoute: typeof AuthenticatedPosRoute
   AuthenticatedPurchasesRoute: typeof AuthenticatedPurchasesRoute
   AuthenticatedRatesRoute: typeof AuthenticatedRatesRoute
+  AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedReturnsRoute: typeof AuthenticatedReturnsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSuppliersRoute: typeof AuthenticatedSuppliersRoute
@@ -705,6 +745,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
   AuthenticatedExtractRoute: AuthenticatedExtractRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
+  AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
   AuthenticatedInvoiceRoute: AuthenticatedInvoiceRoute,
   AuthenticatedInvoicesRoute: AuthenticatedInvoicesRoute,
   AuthenticatedLabelsRoute: AuthenticatedLabelsRoute,
@@ -712,6 +753,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPosRoute: AuthenticatedPosRoute,
   AuthenticatedPurchasesRoute: AuthenticatedPurchasesRoute,
   AuthenticatedRatesRoute: AuthenticatedRatesRoute,
+  AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedReturnsRoute: AuthenticatedReturnsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSuppliersRoute: AuthenticatedSuppliersRoute,
