@@ -162,6 +162,13 @@
       "when": 1790194224933,
       "tag": "0022_pos_audit_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790194862984,
+      "tag": "0023_pos_settings_printing_policies",
+      "breakpoints": true
     }
   ]
 }
