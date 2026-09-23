@@ -1,4 +1,5 @@
 import { PosCustomerSearch } from "@/components/pos-customer-search";
+import { PosSubnav } from "@/components/pos-subnav";
 import { AppShell } from "@/components/app-shell";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { Button } from "@/components/ui/button";
@@ -490,6 +491,8 @@ function PosPage() {
           description="Product scan ya search karein, cart banayein, payment lein aur receipt print karein. Stock khud kam hota hai."
           meta={["Barcode scan", "Discount", "Cash/Card/Udhaar"]}
         />
+
+        <PosSubnav />
 
         <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-card p-1 sm:w-fit sm:min-w-80">
           <Button variant={view === "billing" ? "default" : "ghost"} onClick={() => changeView("billing")}>
