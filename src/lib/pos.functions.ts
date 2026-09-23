@@ -109,7 +109,8 @@ export const listPosDocs = createServerFn({ method: "GET" })
       .limit(50);
     const { data: rows, error } = data.docType === "sale" ? await q : await q.in("status", ["draft", "completed"]);
     if (error) throw new Error("List load nahi hui");
-    return { docs: (rows ?? []) as Array<{ id: string; doc_number: string; customer_name: string | null; customer_phone: string | null; grand_total: number; created_at: string; payload: unknown; status: string }> };
+    type Row = { id: string; doc_number: string; customer_name: string | null; customer_phone: string | null; grand_total: number; created_at: string; payload: unknown; status: string };
+    return { docs: ((rows ?? []) as Row[]).map((r) => ({ ...r, grand_total: Number(r.grand_total), payload: r.payload == null ? null : JSON.stringify(r.payload) })) };
   });
 
 /** Held bill wapas kholne par band (converted) mark karein. */

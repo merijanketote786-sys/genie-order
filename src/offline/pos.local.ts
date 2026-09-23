@@ -56,7 +56,7 @@ export async function savePosDoc(arg: { data: Doc }) {
 export const savePosSale = savePosDoc;
 
 export async function listPosDocs(arg: { data: { docType: string } }) {
-  return { docs: load().filter((x) => x.doc_type === arg.data.docType && (arg.data.docType === "sale" || x.status !== "converted")).slice(0, 50) };
+  return { docs: load().filter((x) => x.doc_type === arg.data.docType && (arg.data.docType === "sale" || x.status !== "converted")).slice(0, 50).map((x) => ({ ...x, payload: x.payload == null ? null : JSON.stringify(x.payload) })) };
 }
 export async function closePosDoc(arg: { data: { id: string } }) {
   const docs = load();
