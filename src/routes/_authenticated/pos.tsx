@@ -8,11 +8,15 @@ import { getProducts, type DbProduct } from "@/lib/products.functions";
 import { getMySettings } from "@/lib/settings.functions";
 import { closePosDoc, getCustomerBalance, listPosDocs, savePosDoc } from "@/lib/pos.functions";
 import { newRef } from "@/lib/pos-errors";
+import { usePrintCenter } from "@/components/print-center";
+import { getSyncOverview } from "@/lib/print-admin.functions";
+import { Link } from "@tanstack/react-router";
+import type { PrintDoc } from "@/lib/print/render";
 import {
   PAY_METHODS,
   PRINTER_PRESETS,
   RATE_TYPES,
-  TAX_RATES,
+  receiptToDoc,
   downloadReceiptPdf,
   lineTax,
   lineTotal,
@@ -118,7 +122,9 @@ function PosPage() {
   const qc = useQueryClient();
   const { data: prodData } = useQuery({ queryKey: ["products"], queryFn: () => getProducts() });
   const { data: me } = useQuery({ queryKey: ["my-settings"], queryFn: () => getMySettings() });
-  const { can, config: posCfg } = usePosAccess();
+  const { can, config: posCfg, cfg } = usePosAccess();
+  const pc = usePrintCenter();
+  const [lastDoc, setLastDoc] = useState<PrintDoc | null>(null);
   const [pinNode, askPin] = usePinPrompt();
   const [unlocked, setUnlocked] = useState(false);
   const lockPrice = !can("edit_price") && !unlocked;
@@ -163,6 +169,14 @@ function PosPage() {
       /* ignore */
     }
   }, []);
+  const cfgApplied = useRef(false);
+  useEffect(() => {
+    if (cfgApplied.current || !posCfg || !Object.keys(posCfg).length) return;
+    cfgApplied.current = true;
+    setRate(cfg.sales.defaultRateType);
+    setPays([{ method: cfg.defaultPay as PayMethod, amount: "" }]);
+    try { if (localStorage.getItem(GRID_KEY) == null) setShowGrid(cfg.pos.showGrid); } catch { /* ignore */ }
+  }, [posCfg, cfg]);
   const toggleGrid = () => {
     setShowGrid((v) => {
       try {
@@ -175,7 +189,6 @@ function PosPage() {
   };
 
   useEffect(() => {
-    setPrinter(loadPrinter());
     try {
       if (localStorage.getItem(POS_VIEW_KEY) === "settings") setView("settings");
     } catch {
@@ -219,9 +232,11 @@ function PosPage() {
       const key = `${p.name}|${useRate}`;
       const ex = prev.find((l) => l.key === key);
       if (ex) return prev.map((l) => (l.key === key ? { ...l, qty: l.qty + 1 } : l));
-      return [...prev, { key, name: p.name, unit: p.unit, rateType: useRate, price, qty: 1, discount: 0, taxPercent: posCfg.defaultTax || 0 }];
+      return [...prev, { key, name: p.name, unit: p.unit, rateType: useRate, price, qty: 1, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode }];
     });
-    toast.success(`${p.name} cart me add`, { duration: 1200 });
+    if (cfg.inventory.trackStock && cfg.inventory.warnOutOfStock && p.stock != null && p.stock <= 0) {
+      toast.warning(`${p.name}: stock khatam hai (${p.stock})${cfg.inventory.allowNegativeStock ? "" : " — bill save nahi hoga"}`);
+    } else toast.success(`${p.name} cart me add`, { duration: 1200 });
   };
 
   // Barcode ↔ product links (company ke apne barcodes ke liye), is device pe saved
@@ -298,6 +313,8 @@ function PosPage() {
   };
 
   // Scanner input page pe kahin bhi aaye (box focus na ho tab bhi) pakar lein
+  const scanAutoRef = useRef(true);
+  scanAutoRef.current = cfg.pos.scanAutoAdd;
   const handleCodeRef = useRef(handleCode);
   handleCodeRef.current = handleCode;
   useEffect(() => {
@@ -314,6 +331,7 @@ function PosPage() {
           e.preventDefault();
           const code = buf;
           buf = "";
+          if (!scanAutoRef.current) { setTerm(code); scanRef.current?.focus(); return; }
           if (!handleCodeRef.current(code)) {
             setPendingCode(code.toUpperCase());
             toast.error("Ye barcode kisi product se juda nahi — product chun kar link karein");
@@ -353,11 +371,11 @@ function PosPage() {
 
   const ws = me?.workspace;
   const receipt = (invoiceNumber: string, title = "Invoice"): ReceiptInput => ({
-    business: posCfg.receiptBusiness || ws?.businessName || "HB Chemicals Pakistan",
+    business: cfg.business.name || ws?.businessName || "HB Chemicals Pakistan",
     terms: posCfg.terms || undefined,
     footer: posCfg.receiptFooter || undefined,
-    phone: ws?.businessPhone,
-    address: ws?.businessAddress,
+    phone: cfg.business.phone || ws?.businessPhone,
+    address: cfg.business.address || ws?.businessAddress,
     invoiceNumber,
     title,
     date: new Date().toLocaleString("en-PK"),
@@ -371,7 +389,7 @@ function PosPage() {
     paid: paidNum,
     previousBalance: balance?.found && balance.balance > 0 ? balance.balance : undefined,
     notes: notes.trim() || undefined,
-    currency: ws?.currency || "Rs",
+    currency: cfg.business.currencySymbol || ws?.currency || "Rs",
   });
 
   const reset = () => {
@@ -380,12 +398,14 @@ function PosPage() {
     setDiscType("amt");
     setDelivery("");
     setUnlocked(false);
-    setPays([{ method: (posCfg.defaultPayMethod as PayMethod) || "Cash", amount: "" }]);
+    setPays([{ method: cfg.defaultPay as PayMethod, amount: "" }]);
     setNotes("");
-    setCustomerName("");
-    setCustomerPhone("");
+    if (!cfg.sales.keepCustomerAfterSale) {
+      setCustomerName("");
+      setCustomerPhone("");
+    }
     setEditing(null);
-    scanRef.current?.focus();
+    if (cfg.pos.autoFocusSearch) scanRef.current?.focus();
   };
 
   const submitLock = useRef(false);
@@ -400,6 +420,11 @@ function PosPage() {
       toast.error("Har item ki quantity 0 se zyada honi chahiye");
       return;
     }
+    if (kind === "sale" && !cfg.inventory.allowFractional && cart.some((l) => !Number.isInteger(l.qty))) {
+      toast.error("Decimal quantity allowed nahi (Settings > Inventory)");
+      return;
+    }
+    if (kind === "sale" && cfg.sales.confirmBeforeSave && !window.confirm(`Bill save karein? Total Rs ${money(total)}`)) return;
     submitLock.current = true;
     setSaving(true);
     try {
@@ -443,7 +468,13 @@ function PosPage() {
         toast.success(`Bill hold: ${res.invoiceNumber}`);
       } else {
         setLast(final);
-        if (print) printReceipt(receiptHtml(final, printer));
+        const doc = receiptToDoc(final, { kind: kind === "quotation" ? "quotation" : "pos", id: res.id, date: new Date() });
+        setLastDoc(doc);
+        if (!res.duplicate) {
+          if (print) void pc.print(doc);
+          else pc.afterSave(doc, kind === "quotation" ? "quotation" : "pos");
+          if (kind === "sale" && cfg.sales.autoPdf) void pc.pdf(doc);
+        }
         toast.success(`${kind === "quotation" ? "Quotation" : "Sale"} save: ${res.invoiceNumber}${res.duplicate ? " (pehle se saved tha)" : ""}${res.change > 0 ? ` — wapas dein Rs ${money(res.change)}` : ""}`);
       }
       qc.invalidateQueries({ queryKey: ["products"] });
@@ -478,10 +509,13 @@ function PosPage() {
   };
 
   // Keyboard shortcuts: F2 naya, F4 search, F8 payment, F9 save+print, F10 hold
+  const shortcutsRef = useRef(true);
+  shortcutsRef.current = cfg.pos.shortcuts;
   const keysRef = useRef({ checkout, reset });
   keysRef.current = { checkout, reset };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (!shortcutsRef.current) return;
       if (e.key === "F2") { e.preventDefault(); keysRef.current.reset(); }
       else if (e.key === "F4") { e.preventDefault(); scanRef.current?.focus(); }
       else if (e.key === "F8") { e.preventDefault(); payRef.current?.querySelector("input")?.focus(); }
@@ -517,6 +551,8 @@ function PosPage() {
 
         <PosSubnav />
         {pinNode}
+        {pc.node}
+        <PosAlerts cfg={cfg} products={products} credit={balance?.found && balance.creditLimit != null && balance.balance + Math.max(0, total - paidNum) > balance.creditLimit ? { limit: balance.creditLimit, after: balance.balance + Math.max(0, total - paidNum) } : null} />
 
         <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-card p-1 sm:w-fit sm:min-w-80">
           <Button variant={view === "billing" ? "default" : "ghost"} onClick={() => changeView("billing")}>
@@ -669,7 +705,7 @@ function PosPage() {
               {pays.map((p, i) => (
                 <div key={i} className="flex gap-1.5">
                   <select className="h-10 rounded-lg border border-border bg-background px-2 text-sm" value={p.method} onChange={(e) => setPays((all) => all.map((x, j) => (j === i ? { ...x, method: e.target.value as PayMethod } : x)))} aria-label="Payment method">
-                    {PAY_METHODS.map((m) => <option key={m} value={m}>{m === "Credit" ? "Credit / Udhaar" : m}</option>)}
+                    {cfg.payMethods.map((m) => <option key={m} value={m}>{m === "Credit" ? "Credit / Udhaar" : m}</option>)}
                   </select>
                   <input className={inputCls} value={p.amount} inputMode="decimal" placeholder={i === 0 && pays.length === 1 ? `${money(total)} (poora)` : "0"} onChange={(e) => setPays((all) => all.map((x, j) => (j === i ? { ...x, amount: e.target.value } : x)))} aria-label="Amount" />
                   {pays.length > 1 ? <Button size="icon" variant="ghost" onClick={() => setPays((all) => all.filter((_, j) => j !== i))} aria-label="Hatayein"><Trash2 /></Button> : null}
@@ -718,8 +754,9 @@ function PosPage() {
             {last ? (
               <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border p-2.5 text-sm">
                 <span className="font-semibold">Aakhri: {last.invoiceNumber}</span>
-                <Button size="sm" variant="outline" onClick={() => printReceipt(receiptHtml(last, printer))}><Printer /> Print</Button>
-                <Button size="sm" variant="outline" onClick={() => downloadReceiptPdf(last).catch(() => toast.error("PDF nahi bana"))}><Download /> PDF</Button>
+                <Button size="sm" variant="outline" onClick={() => lastDoc && pc.print(lastDoc, { reprint: true })}><Printer /> Reprint</Button>
+                <Button size="sm" variant="outline" onClick={() => lastDoc && pc.preview(lastDoc, true)}><ReceiptText /> Preview</Button>
+                <Button size="sm" variant="outline" onClick={() => lastDoc && pc.pdf(lastDoc)}><Download /> PDF</Button>
                 <Button size="sm" variant="outline" onClick={() => share(last)}><Share2 /> Share</Button>
                 <Button size="sm" variant="outline" onClick={() => whatsapp(last)}><MessageCircle /> WhatsApp</Button>
               </div>
@@ -731,7 +768,14 @@ function PosPage() {
           </section>
         </div>
         ) : (
-          <PosSettings printer={printer} onChange={setPrinter} onSave={savePrinter} />
+          <section className="space-y-2 rounded-lg border border-border bg-card p-4">
+            <p className="flex items-center gap-2 font-bold text-foreground"><Settings2 className="size-4 text-primary" /> POS, printing aur printers</p>
+            <p className="text-sm text-muted-foreground">Paper (A4/A5/58mm/80mm/custom), design, auto-print, printers, tax, payment methods aur baqi sab settings ab ek jagah hain — har device par ek jaisi.</p>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild><Link to="/pos-settings">Settings kholein</Link></Button>
+              <Button variant="outline" onClick={() => pc.preview({ kind: "pos", title: "Test Receipt", number: "TEST-0001", date: new Date(), lines: [{ name: "Test item", unit: "kg", qty: 1, rate: 100, total: 100 }], totals: [{ label: "Grand Total", value: 100, bold: true }] })}><Printer /> Test print</Button>
+            </div>
+          </section>
         )}
       </div>
     </AppShell>
@@ -739,14 +783,14 @@ function PosPage() {
 }
 
 /** Cart ki ek line — qty, rate, discount, tax, unit, note aur total sab manually likhe ja sakte hain. */
-function CartRow({ line, onPatch, onRemove, lockPrice = false, lockDisc = false, onUnlock }: { line: CartLine; onPatch: (key: string, v: Partial<CartLine>) => void; onRemove: () => void; lockPrice?: boolean; lockDisc?: boolean; onUnlock?: () => void }) {
+function CartRow({ line, onPatch, onRemove, lockPrice = false, lockDisc = false, onUnlock, taxRates = [] }: { line: CartLine; onPatch: (key: string, v: Partial<CartLine>) => void; onRemove: () => void; lockPrice?: boolean; lockDisc?: boolean; onUnlock?: () => void; taxRates?: { name: string; pct: number }[] }) {
   const [totalText, setTotalText] = useState<string | null>(null);
   const [qtyText, setQtyText] = useState<string | null>(null);
   const [showNote, setShowNote] = useState(!!line.note);
   const total = lineTotal(line);
   const setTotal = (raw: string) => {
     setTotalText(raw);
-    const t = n(raw) / (1 + (line.taxPercent || 0) / 100);
+    const t = line.taxIncl ? n(raw) : n(raw) / (1 + (line.taxPercent || 0) / 100);
     const q = line.qty || 1;
     onPatch(line.key, { price: Math.round(((t + (line.discount || 0)) / q) * 100) / 100 });
   };
@@ -772,7 +816,7 @@ function CartRow({ line, onPatch, onRemove, lockPrice = false, lockDisc = false,
         <label className="text-[10px] text-muted-foreground">Rate<input className={`${small} block w-20`} value={String(line.price)} readOnly={lockPrice} onFocus={() => { if (lockPrice) onUnlock?.(); }} inputMode="decimal" onChange={(e) => onPatch(line.key, { price: n(e.target.value) })} aria-label="Rate" /></label>
         <label className="text-[10px] text-muted-foreground">Unit<input className={`${small} block w-16`} value={line.unitOverride ?? ""} placeholder={packLabel(line)} onChange={(e) => onPatch(line.key, { unitOverride: e.target.value })} aria-label="Unit" /></label>
         <label className="text-[10px] text-muted-foreground">Disc<input className={`${small} block w-16`} value={line.discount ? String(line.discount) : ""} placeholder="0" readOnly={lockDisc} onFocus={() => { if (lockDisc) onUnlock?.(); }} inputMode="decimal" onChange={(e) => onPatch(line.key, { discount: n(e.target.value) })} aria-label="Discount" /></label>
-        <label className="text-[10px] text-muted-foreground">Tax %<select className={`${small} block w-16 px-1`} value={line.taxPercent ?? 0} onChange={(e) => onPatch(line.key, { taxPercent: Number(e.target.value) })} aria-label="Tax">{TAX_RATES.map((t) => <option key={t} value={t}>{t}</option>)}</select></label>
+        {taxRates.length ? <label className="text-[10px] text-muted-foreground">Tax<select className={`${small} block w-20 px-1`} value={line.taxPercent ?? 0} onChange={(e) => onPatch(line.key, { taxPercent: Number(e.target.value) })} aria-label="Tax">{[...taxRates, ...(taxRates.some((t) => t.pct === (line.taxPercent ?? 0)) ? [] : [{ name: `${line.taxPercent}%`, pct: line.taxPercent ?? 0 }])].map((t) => <option key={t.name + t.pct} value={t.pct}>{t.name}</option>)}</select></label> : null}
         <label className="ml-auto text-[10px] text-muted-foreground">Total<input className={`${small} block w-24 text-right font-semibold text-foreground`} value={totalText ?? String(total)} readOnly={lockPrice} onFocus={() => { if (lockPrice) onUnlock?.(); }} inputMode="decimal" onChange={(e) => setTotal(e.target.value)} onBlur={() => setTotalText(null)} aria-label="Total" /></label>
       </div>
       {showNote ? <input className={`${small} mt-2 w-full`} value={line.note ?? ""} placeholder="Item note (receipt pe chhapega)" onChange={(e) => onPatch(line.key, { note: e.target.value })} aria-label="Item note" /> : null}
@@ -789,34 +833,17 @@ function Row({ a, b, bold }: { a: string; b: string; bold?: boolean }) {
   );
 }
 
-function PosSettings({ printer, onChange, onSave }: { printer: ReceiptPrinter; onChange: (p: ReceiptPrinter) => void; onSave: () => void }) {
-  const num = (v: string, min: number, max: number) => Math.min(max, Math.max(min, Number(v) || min));
+function PosAlerts({ cfg, products, credit }: { cfg: ReturnType<typeof usePosAccess>["cfg"]; products: DbProduct[]; credit: { limit: number; after: number } | null }) {
+  const low = cfg.notify.lowStock && cfg.inventory.trackStock ? products.filter((p) => p.stock != null && p.stock <= cfg.inventory.lowStockThreshold).length : 0;
+  const { data: sync } = useQuery({ queryKey: ["sync-overview"], queryFn: () => getSyncOverview(), enabled: cfg.notify.syncFailed, staleTime: 5 * 60_000 });
+  const lastSync = sync?.logs[0];
+  const syncBad = cfg.notify.syncFailed && lastSync && (lastSync.status !== "success" || lastSync.errors > 0);
+  if (!low && !credit && !syncBad) return null;
   return (
-    <section className="space-y-3">
-      <div className="rounded-lg border border-border bg-card p-3 sm:p-4">
-        <p className="flex items-center gap-2 font-display text-base font-bold text-foreground"><Settings2 className="size-4 text-primary" /> POS Settings</p>
-        <p className="mt-1 text-sm text-muted-foreground">POS ki tamam mojooda aur anay wali settings yahan milengi.</p>
-      </div>
-
-      <div className="rounded-lg border border-border bg-card p-3 sm:p-4">
-        <p className="flex items-center gap-2 font-display text-sm font-bold text-foreground"><Printer className="size-4 text-primary" /> Printer aur paper</p>
-        <p className="mt-1 text-xs text-muted-foreground">Kisi bhi brand ka printer chalega — Print dabane par system dialog me apna printer chunein, Margins "None" aur Scale 100% rakhein. Ye setting is device pe yaad rehti hai.</p>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {PRINTER_PRESETS.map((p) => (
-            <Button key={p.id} size="sm" variant={printer.id === p.id ? "default" : "outline"} onClick={() => onChange(p)}>{p.name}</Button>
-          ))}
-          <Button size="sm" variant={printer.id === "custom" ? "default" : "outline"} onClick={() => onChange({ ...printer, id: "custom", name: "Custom" })}>Custom</Button>
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <label className="text-xs text-muted-foreground">Width (mm)<input className={inputCls} type="number" value={printer.widthMm} onChange={(e) => onChange({ ...printer, id: "custom", name: "Custom", widthMm: num(e.target.value, 30, 330) })} /></label>
-          <label className="text-xs text-muted-foreground">Height (mm, khali = roll)<input className={inputCls} type="number" value={printer.heightMm ?? ""} onChange={(e) => onChange({ ...printer, id: "custom", name: "Custom", heightMm: e.target.value ? num(e.target.value, 30, 500) : null })} /></label>
-          <label className="text-xs text-muted-foreground">Margin (mm)<input className={inputCls} type="number" value={printer.marginMm} onChange={(e) => onChange({ ...printer, id: "custom", name: "Custom", marginMm: num(e.target.value, 0, 30) })} /></label>
-          <label className="text-xs text-muted-foreground">Font (pt)<input className={inputCls} type="number" value={printer.fontPt} onChange={(e) => onChange({ ...printer, id: "custom", name: "Custom", fontPt: num(e.target.value, 6, 16) })} /></label>
-        </div>
-        <div className="mt-4 flex justify-end">
-          <Button onClick={onSave}><Save /> Save settings</Button>
-        </div>
-      </div>
-    </section>
+    <div className="flex flex-wrap gap-2 text-xs">
+      {credit && cfg.notify.creditLimit ? <span className="rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1 text-destructive">Credit limit {money(credit.limit)} — is bill ke baad baqaya {money(credit.after)}{cfg.sales.enforceCreditLimit ? " (save nahi hoga)" : ""}</span> : null}
+      {low ? <Link to="/inventory" className="rounded-full border border-border bg-muted px-3 py-1 text-foreground">{low} products low stock (≤ {cfg.inventory.lowStockThreshold})</Link> : null}
+      {syncBad ? <Link to="/sync" className="rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1 text-destructive">Vyapar sync masla: {lastSync!.status} · {lastSync!.errors} errors</Link> : null}
+    </div>
   );
 }
