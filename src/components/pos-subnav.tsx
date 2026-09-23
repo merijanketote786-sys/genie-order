@@ -1,23 +1,27 @@
 import { Link } from "@tanstack/react-router";
-import { BarChart3, Boxes, BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users } from "lucide-react";
+import { usePosAccess } from "@/components/pos-access";
+import type { PosPerm } from "@/lib/pos-access.functions";
+import { Settings2, BarChart3, Boxes, BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users } from "lucide-react";
 
 const ITEMS = [
-  { to: "/pos", label: "Billing", icon: ShoppingCart },
-  { to: "/returns", label: "Returns", icon: Undo2 },
-  { to: "/purchases", label: "Purchases", icon: Truck },
-  { to: "/suppliers", label: "Suppliers", icon: Users },
-  { to: "/ledger", label: "Udhaar", icon: BookOpen },
-  { to: "/expenses", label: "Expenses", icon: Receipt },
-  { to: "/daybook", label: "Day Book", icon: Notebook },
-  { to: "/inventory", label: "Inventory", icon: Boxes },
-  { to: "/reports", label: "Reports", icon: BarChart3 },
-] as const;
+  { to: "/pos", label: "Billing", icon: ShoppingCart, perm: "view_pos" },
+  { to: "/returns", label: "Returns", icon: Undo2, perm: "create_sale" },
+  { to: "/purchases", label: "Purchases", icon: Truck, perm: "manage_purchases" },
+  { to: "/suppliers", label: "Suppliers", icon: Users, perm: "manage_purchases" },
+  { to: "/ledger", label: "Udhaar", icon: BookOpen, perm: "view_balances" },
+  { to: "/expenses", label: "Expenses", icon: Receipt, perm: "manage_expenses" },
+  { to: "/daybook", label: "Day Book", icon: Notebook, perm: "view_reports" },
+  { to: "/inventory", label: "Inventory", icon: Boxes, perm: "edit_stock" },
+  { to: "/reports", label: "Reports", icon: BarChart3, perm: "view_reports" },
+  { to: "/pos-settings", label: "Staff & Settings", icon: Settings2, perm: "view_pos" },
+] as const satisfies ReadonlyArray<{ to: string; label: string; icon: unknown; perm: PosPerm }>;
 
 /** POS module ke andar tez navigation. */
 export function PosSubnav() {
+  const { can } = usePosAccess();
   return (
     <nav className="flex gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1">
-      {ITEMS.map((i) => (
+      {ITEMS.filter((i) => can(i.perm)).map((i) => (
         <Link
           key={i.to}
           to={i.to}

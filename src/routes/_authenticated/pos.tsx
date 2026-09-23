@@ -1,5 +1,6 @@
 import { PosCustomerSearch } from "@/components/pos-customer-search";
 import { PosSubnav } from "@/components/pos-subnav";
+import { usePinPrompt, usePosAccess } from "@/components/pos-access";
 import { AppShell } from "@/components/app-shell";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { Button } from "@/components/ui/button";
@@ -116,6 +117,16 @@ function PosPage() {
   const qc = useQueryClient();
   const { data: prodData } = useQuery({ queryKey: ["products"], queryFn: () => getProducts() });
   const { data: me } = useQuery({ queryKey: ["my-settings"], queryFn: () => getMySettings() });
+  const { can, config: posCfg } = usePosAccess();
+  const [pinNode, askPin] = usePinPrompt();
+  const [unlocked, setUnlocked] = useState(false);
+  const lockPrice = !can("edit_price") && !unlocked;
+  const lockDisc = !can("apply_discount") && !unlocked;
+  const unlock = async () => {
+    if (unlocked) return;
+    const pin = await askPin("Rate/discount badalne ke liye manager PIN likhein (sirf is bill ke liye).");
+    if (pin) { setUnlocked(true); toast.success("Is bill ke liye unlock"); }
+  };
   const products = prodData?.products ?? [];
 
   const [rate, setRate] = useState<RateType>("sale");
@@ -207,7 +218,7 @@ function PosPage() {
       const key = `${p.name}|${useRate}`;
       const ex = prev.find((l) => l.key === key);
       if (ex) return prev.map((l) => (l.key === key ? { ...l, qty: l.qty + 1 } : l));
-      return [...prev, { key, name: p.name, unit: p.unit, rateType: useRate, price, qty: 1, discount: 0 }];
+      return [...prev, { key, name: p.name, unit: p.unit, rateType: useRate, price, qty: 1, discount: 0, taxPercent: posCfg.defaultTax || 0 }];
     });
     toast.success(`${p.name} cart me add`, { duration: 1200 });
   };
@@ -341,7 +352,9 @@ function PosPage() {
 
   const ws = me?.workspace;
   const receipt = (invoiceNumber: string, title = "Invoice"): ReceiptInput => ({
-    business: ws?.businessName || "HB Chemicals Pakistan",
+    business: posCfg.receiptBusiness || ws?.businessName || "HB Chemicals Pakistan",
+    terms: posCfg.terms || undefined,
+    footer: posCfg.receiptFooter || undefined,
     phone: ws?.businessPhone,
     address: ws?.businessAddress,
     invoiceNumber,
@@ -365,7 +378,8 @@ function PosPage() {
     setBillDiscount("");
     setDiscType("amt");
     setDelivery("");
-    setPays([{ method: "Cash", amount: "" }]);
+    setUnlocked(false);
+    setPays([{ method: (posCfg.defaultPayMethod as PayMethod) || "Cash", amount: "" }]);
     setNotes("");
     setCustomerName("");
     setCustomerPhone("");
@@ -495,6 +509,7 @@ function PosPage() {
         />
 
         <PosSubnav />
+        {pinNode}
 
         <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-card p-1 sm:w-fit sm:min-w-80">
           <Button variant={view === "billing" ? "default" : "ghost"} onClick={() => changeView("billing")}>
@@ -623,7 +638,7 @@ function PosPage() {
 
             <div className="space-y-2">
               {cart.map((l) => (
-                <CartRow key={l.key} line={l} onPatch={patch} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
+                <CartRow key={l.key} line={l} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
               ))}
               {!cart.length ? <p className="rounded-xl border border-dashed border-border py-8 text-center text-sm text-muted-foreground">Cart khali hai — product pe tap ya scan karein.</p> : null}
             </div>
@@ -637,7 +652,7 @@ function PosPage() {
                     ))}
                   </span>
                 </span>
-                <input className={inputCls} value={billDiscount} onChange={(e) => setBillDiscount(e.target.value)} inputMode="decimal" placeholder="0" />
+                <input className={inputCls} value={billDiscount} readOnly={lockDisc} onFocus={() => { if (lockDisc) void unlock(); }} onChange={(e) => setBillDiscount(e.target.value)} inputMode="decimal" placeholder={lockDisc ? "PIN" : "0"} />
               </label>
               <label className="text-xs text-muted-foreground">Delivery<input className={inputCls} value={delivery} onChange={(e) => setDelivery(e.target.value)} inputMode="decimal" placeholder="0" /></label>
             </div>
@@ -717,7 +732,7 @@ function PosPage() {
 }
 
 /** Cart ki ek line — qty, rate, discount, tax, unit, note aur total sab manually likhe ja sakte hain. */
-function CartRow({ line, onPatch, onRemove }: { line: CartLine; onPatch: (key: string, v: Partial<CartLine>) => void; onRemove: () => void }) {
+function CartRow({ line, onPatch, onRemove, lockPrice = false, lockDisc = false, onUnlock }: { line: CartLine; onPatch: (key: string, v: Partial<CartLine>) => void; onRemove: () => void; lockPrice?: boolean; lockDisc?: boolean; onUnlock?: () => void }) {
   const [totalText, setTotalText] = useState<string | null>(null);
   const [qtyText, setQtyText] = useState<string | null>(null);
   const [showNote, setShowNote] = useState(!!line.note);
@@ -747,11 +762,11 @@ function CartRow({ line, onPatch, onRemove }: { line: CartLine; onPatch: (key: s
           <input className={`${small} w-16 text-center`} value={qtyText ?? String(line.qty)} inputMode="decimal" onChange={(e) => { setQtyText(e.target.value); onPatch(line.key, { qty: n(e.target.value) }); }} onBlur={() => setQtyText(null)} aria-label="Qty" title="Quantity (0.5, 1.25 kg bhi)" />
           <Button size="icon-sm" variant="outline" onClick={() => onPatch(line.key, { qty: +(line.qty + 1).toFixed(3) })} aria-label="Zyada"><Plus /></Button>
         </div>
-        <label className="text-[10px] text-muted-foreground">Rate<input className={`${small} block w-20`} value={String(line.price)} inputMode="decimal" onChange={(e) => onPatch(line.key, { price: n(e.target.value) })} aria-label="Rate" /></label>
+        <label className="text-[10px] text-muted-foreground">Rate<input className={`${small} block w-20`} value={String(line.price)} readOnly={lockPrice} onFocus={() => { if (lockPrice) onUnlock?.(); }} inputMode="decimal" onChange={(e) => onPatch(line.key, { price: n(e.target.value) })} aria-label="Rate" /></label>
         <label className="text-[10px] text-muted-foreground">Unit<input className={`${small} block w-16`} value={line.unitOverride ?? ""} placeholder={packLabel(line)} onChange={(e) => onPatch(line.key, { unitOverride: e.target.value })} aria-label="Unit" /></label>
-        <label className="text-[10px] text-muted-foreground">Disc<input className={`${small} block w-16`} value={line.discount ? String(line.discount) : ""} placeholder="0" inputMode="decimal" onChange={(e) => onPatch(line.key, { discount: n(e.target.value) })} aria-label="Discount" /></label>
+        <label className="text-[10px] text-muted-foreground">Disc<input className={`${small} block w-16`} value={line.discount ? String(line.discount) : ""} placeholder="0" readOnly={lockDisc} onFocus={() => { if (lockDisc) onUnlock?.(); }} inputMode="decimal" onChange={(e) => onPatch(line.key, { discount: n(e.target.value) })} aria-label="Discount" /></label>
         <label className="text-[10px] text-muted-foreground">Tax %<select className={`${small} block w-16 px-1`} value={line.taxPercent ?? 0} onChange={(e) => onPatch(line.key, { taxPercent: Number(e.target.value) })} aria-label="Tax">{TAX_RATES.map((t) => <option key={t} value={t}>{t}</option>)}</select></label>
-        <label className="ml-auto text-[10px] text-muted-foreground">Total<input className={`${small} block w-24 text-right font-semibold text-foreground`} value={totalText ?? String(total)} inputMode="decimal" onChange={(e) => setTotal(e.target.value)} onBlur={() => setTotalText(null)} aria-label="Total" /></label>
+        <label className="ml-auto text-[10px] text-muted-foreground">Total<input className={`${small} block w-24 text-right font-semibold text-foreground`} value={totalText ?? String(total)} readOnly={lockPrice} onFocus={() => { if (lockPrice) onUnlock?.(); }} inputMode="decimal" onChange={(e) => setTotal(e.target.value)} onBlur={() => setTotalText(null)} aria-label="Total" /></label>
       </div>
       {showNote ? <input className={`${small} mt-2 w-full`} value={line.note ?? ""} placeholder="Item note (receipt pe chhapega)" onChange={(e) => onPatch(line.key, { note: e.target.value })} aria-label="Item note" /> : null}
     </div>
