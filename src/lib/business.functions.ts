@@ -13,7 +13,7 @@ export const listSuppliers = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const sb = context.supabase as Sb;
     const [{ data: sups }, { data: purs }, { data: pays }] = await Promise.all([
-      sb.from("suppliers").select("id, name, phone, address, opening_balance, is_active").order("name"),
+      sb.from("suppliers").select("id, name, phone, address, opening_balance, is_active").eq("is_active", true).order("name"),
       sb.from("purchases").select("supplier_id, doc_type, grand_total, paid_total").neq("status", "cancelled"),
       sb.from("pos_payments").select("supplier_id, amount").eq("kind", "supplier_payment").eq("status", "completed"),
     ]);
