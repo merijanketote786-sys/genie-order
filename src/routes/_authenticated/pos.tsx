@@ -13,18 +13,13 @@ import { getSyncOverview } from "@/lib/print-admin.functions";
 import { Link } from "@tanstack/react-router";
 import type { PrintDoc } from "@/lib/print/render";
 import {
-  PAY_METHODS,
-  PRINTER_PRESETS,
   RATE_TYPES,
   receiptToDoc,
-  downloadReceiptPdf,
   lineTax,
   lineTotal,
   money,
   packLabel,
   priceFor,
-  printReceipt,
-  receiptHtml,
   receiptText,
   stockDeduction,
   totals,
@@ -33,7 +28,6 @@ import {
   type PaymentPart,
   type RateType,
   type ReceiptInput,
-  type ReceiptPrinter,
 } from "@/lib/pos";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -89,7 +83,6 @@ export const Route = createFileRoute("/_authenticated/pos")({
   component: PosPage,
 });
 
-const PRINTER_KEY = "pos-printer:v1";
 const LINKS_KEY = "pos-barcode-links:v1";
 const GRID_KEY = "pos-show-grid:v1";
 const POS_VIEW_KEY = "pos-active-view:v1";
@@ -108,15 +101,6 @@ const n = (v: string) => {
   return Number.isFinite(x) ? x : 0;
 };
 
-function loadPrinter(): ReceiptPrinter {
-  try {
-    const raw = localStorage.getItem(PRINTER_KEY);
-    if (raw) return { ...PRINTER_PRESETS[0], ...JSON.parse(raw) };
-  } catch {
-    /* ignore */
-  }
-  return PRINTER_PRESETS[0];
-}
 
 function PosPage() {
   const qc = useQueryClient();
@@ -153,7 +137,6 @@ function PosPage() {
   };
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
-  const [printer, setPrinter] = useState<ReceiptPrinter>(PRINTER_PRESETS[0]);
   const [view, setView] = useState<"billing" | "settings">("billing");
   const [saving, setSaving] = useState(false);
   const [last, setLast] = useState<ReceiptInput | null>(null);
@@ -201,14 +184,6 @@ function PosPage() {
       localStorage.setItem(POS_VIEW_KEY, next);
     } catch {
       /* ignore */
-    }
-  };
-  const savePrinter = () => {
-    try {
-      localStorage.setItem(PRINTER_KEY, JSON.stringify(printer));
-      toast.success("Printer aur paper settings save ho gayi hain");
-    } catch {
-      toast.error("Settings save nahi ho sakin");
     }
   };
 
@@ -681,7 +656,7 @@ function PosPage() {
 
             <div className="space-y-2">
               {cart.map((l) => (
-                <CartRow key={l.key} line={l} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
+                <CartRow key={l.key} line={l} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} taxRates={cfg.tax.enabled ? cfg.tax.rates : []} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
               ))}
               {!cart.length ? <p className="rounded-xl border border-dashed border-border py-8 text-center text-sm text-muted-foreground">Cart khali hai — product pe tap ya scan karein.</p> : null}
             </div>
