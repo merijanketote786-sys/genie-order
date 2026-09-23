@@ -111,7 +111,6 @@ function PosPage() {
       return !v;
     });
   };
-  const gridVisible = showGrid || !!pendingCode;
 
   useEffect(() => setPrinter(loadPrinter()), []);
   const updatePrinter = (p: ReceiptPrinter) => {
