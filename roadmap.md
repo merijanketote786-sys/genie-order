@@ -8,4 +8,4 @@
 - [x] Apply Premium Navy tokens with Sora/Manrope typography
 - [x] Verify compilation and runtime health without changing saved data or business logic
 - [x] Add touch-insert variables to order template creation and editing
-- [ ] POS search dropdown with arrow-key + Enter selection
+- [x] POS search dropdown with arrow-key + Enter selection

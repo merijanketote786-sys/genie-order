@@ -89,6 +89,8 @@ function PosPage() {
   const [saving, setSaving] = useState(false);
   const [last, setLast] = useState<ReceiptInput | null>(null);
   const scanRef = useRef<HTMLInputElement>(null);
+  const [hi, setHi] = useState(-1);
+  const [dropOpen, setDropOpen] = useState(false);
 
   useEffect(() => setPrinter(loadPrinter()), []);
   const updatePrinter = (p: ReceiptPrinter) => {
@@ -318,18 +320,61 @@ function PosPage() {
                 </Button>
               ))}
             </div>
-            <label className="mt-3 flex h-11 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
+            <div className="relative mt-3">
+            <label className="flex h-11 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
               <ScanBarcode className="size-4 text-primary" />
               <input
                 ref={scanRef}
                 autoFocus
                 value={term}
-                onChange={(e) => setTerm(e.target.value)}
-                onKeyDown={(e) => (e.key === "Enter" || e.key === "Tab") && term.trim() && (e.preventDefault(), onScan())}
-                placeholder="Barcode scan karein ya product naam likhein + Enter"
+                role="combobox"
+                aria-expanded={dropOpen}
+                onChange={(e) => { setTerm(e.target.value); setHi(-1); setDropOpen(true); }}
+                onFocus={() => setDropOpen(true)}
+                onBlur={() => setTimeout(() => setDropOpen(false), 150)}
+                onKeyDown={(e) => {
+                  const list = term.trim() ? results.slice(0, 10) : [];
+                  if (e.key === "ArrowDown" && list.length) {
+                    e.preventDefault(); setDropOpen(true); setHi((h) => (h + 1) % list.length);
+                  } else if (e.key === "ArrowUp" && list.length) {
+                    e.preventDefault(); setHi((h) => (h <= 0 ? list.length - 1 : h - 1));
+                  } else if (e.key === "Escape") {
+                    setDropOpen(false); setHi(-1);
+                  } else if ((e.key === "Enter" || e.key === "Tab") && term.trim()) {
+                    e.preventDefault();
+                    if (hi >= 0 && list[hi]) {
+                      if (pendingCode) saveLink(pendingCode, list[hi]); else add(list[hi]);
+                      setTerm(""); setHi(-1);
+                    } else if (!handleCode(term) && list[0] && !pendingCode) {
+                      add(list[0]); setTerm("");
+                    } else if (!list.length) onScan();
+                  }
+                }}
+                placeholder="Barcode scan karein ya product naam likhein (↓ ↑ + Enter)"
                 className="min-w-0 flex-1 bg-transparent text-sm outline-none"
               />
             </label>
+            {dropOpen && term.trim() && results.length ? (
+              <ul role="listbox" className="absolute inset-x-0 top-12 z-30 max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg">
+                {results.slice(0, 10).map((p, i) => {
+                  const price = priceFor(p, rate);
+                  return (
+                    <li
+                      key={p.name}
+                      role="option"
+                      aria-selected={i === hi}
+                      onMouseDown={(e) => { e.preventDefault(); if (pendingCode) saveLink(pendingCode, p); else add(p); setTerm(""); setHi(-1); }}
+                      onMouseEnter={() => setHi(i)}
+                      className={`flex cursor-pointer items-center justify-between gap-2 rounded-md px-3 py-2 text-sm ${i === hi ? "bg-accent text-accent-foreground" : ""}`}
+                    >
+                      <span className="truncate font-medium">{p.name}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground">{price != null ? `Rs ${money(price)}` : "Rate nahi"} · {p.stock ?? "-"}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+            </div>
             {pendingCode ? (
               <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-primary bg-accent p-2.5 text-xs text-accent-foreground">
                 <span>Barcode <b>{pendingCode}</b> naya hai — neeche product search kar ke <b>Link</b> dabayein, agli dafa scan se seedha add hoga.</span>
