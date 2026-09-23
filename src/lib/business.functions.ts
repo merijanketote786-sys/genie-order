@@ -203,7 +203,7 @@ export const saveSalesReturn = createServerFn({ method: "POST" })
     if (!r.sale) throw new Error("Bill nahi mila");
     if (data.mode === "credit" && !r.sale.customer_id) throw new Error("Walk-in bill ka credit nahi ho sakta — refund chunein");
     const items = data.lines.map((l) => {
-      const it = r.items.find((x) => x.id === l.itemId);
+      const it = r.items.find((x: { id: string }) => x.id === l.itemId);
       if (!it) throw new Error("Item bill me nahi");
       if (l.qty > it.qty - it.returned + 1e-9) throw new Error(`${it.name}: zyada se zyada ${r2(it.qty - it.returned)} wapas ho sakta hai`);
       return { product_id: it.productId ?? "", name: it.name, unit: it.unit, rate_type: it.rateType, qty: l.qty, stock_qty: r2(it.stockPerUnit * l.qty * 1000) / 1000, rate: it.unitRefund, line_total: r2(it.unitRefund * l.qty) };
