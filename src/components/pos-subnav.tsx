@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users } from "lucide-react";
+import { BarChart3, Boxes, BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users } from "lucide-react";
 
 const ITEMS = [
   { to: "/pos", label: "Billing", icon: ShoppingCart },
@@ -9,6 +9,8 @@ const ITEMS = [
   { to: "/ledger", label: "Udhaar", icon: BookOpen },
   { to: "/expenses", label: "Expenses", icon: Receipt },
   { to: "/daybook", label: "Day Book", icon: Notebook },
+  { to: "/inventory", label: "Inventory", icon: Boxes },
+  { to: "/reports", label: "Reports", icon: BarChart3 },
 ] as const;
 
 /** POS module ke andar tez navigation. */
@@ -31,4 +33,4 @@ export function PosSubnav() {
 
 export const posInput = "h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
 export const PAY_OPTS = ["Cash", "Bank", "JazzCash", "Easypaisa", "Card", "Other"];
-export const rs = (n: number) => `Rs ${(Math.round(n * 100) / 100).toLocaleString("en-PK", { maximumFractionDigits: 2 })}`;
+export const rs = (n: number) => `Rs ${(Math.round(n * 100) / 100 + 0).toLocaleString("en-PK", { maximumFractionDigits: 2 })}`;
