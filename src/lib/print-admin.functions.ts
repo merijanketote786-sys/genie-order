@@ -78,7 +78,7 @@ export const exportData = createServerFn({ method: "POST" })
     const { data: rows, error } = await sb.from(TABLE[data.what]).select(EXPORTS[data.what]).limit(50000);
     if (error) throw new Error("Export nahi hua");
     await sb.rpc("pos_log_event", { _action: "export", _entity: data.what, _entity_id: null, _details: { rows: (rows ?? []).length } });
-    return { columns: EXPORTS[data.what].split(",").map((c) => c.trim()), rows: (rows ?? []) as Record<string, unknown>[] };
+    return { columns: EXPORTS[data.what].split(",").map((c) => c.trim()), rows: ((rows ?? []) as Record<string, unknown>[]).map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, v == null ? "" : String(v)]))) as Record<string, string>[] };
   });
 
 export const getSyncOverview = createServerFn({ method: "GET" })
