@@ -1141,6 +1141,10 @@ export type Database = {
         Args: { _id: string; _reason: string }
         Returns: undefined
       }
+      pos_find_customer: {
+        Args: { _phone: string; _ws: string }
+        Returns: string
+      }
       pos_move_stock: {
         Args: {
           _kind: string
