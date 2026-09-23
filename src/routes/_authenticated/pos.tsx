@@ -190,6 +190,7 @@ function PosPage() {
       return;
     }
     setPendingCode(t.toUpperCase());
+    setTerm("");
     toast.error("Ye barcode kisi product se juda nahi — neeche product chun kar link karein");
   };
 
@@ -211,7 +212,6 @@ function PosPage() {
           const code = buf;
           buf = "";
           if (!handleCodeRef.current(code)) {
-            setTerm(code);
             setPendingCode(code.toUpperCase());
             toast.error("Ye barcode kisi product se juda nahi — product chun kar link karein");
           }
