@@ -1156,6 +1156,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      pos_party_payment: {
+        Args: {
+          _amount: number
+          _kind: string
+          _method: string
+          _note: string
+          _party: string
+        }
+        Returns: string
+      }
+      pos_save_purchase: { Args: { _p: Json }; Returns: Json }
       pos_save_sale: { Args: { _p: Json }; Returns: Json }
       set_order_number_start: { Args: { _start: number }; Returns: undefined }
     }
