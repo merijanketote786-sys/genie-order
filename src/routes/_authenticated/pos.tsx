@@ -4,14 +4,17 @@ import { WorkspaceHeader } from "@/components/workspace-header";
 import { Button } from "@/components/ui/button";
 import { getProducts, type DbProduct } from "@/lib/products.functions";
 import { getMySettings } from "@/lib/settings.functions";
-import { savePosSale } from "@/lib/pos.functions";
+import { closePosDoc, getCustomerBalance, listPosDocs, savePosDoc } from "@/lib/pos.functions";
 import {
+  PAY_METHODS,
   PRINTER_PRESETS,
   RATE_TYPES,
+  TAX_RATES,
+  downloadReceiptPdf,
+  lineTax,
   lineTotal,
   money,
   packLabel,
-  paymentStatus,
   priceFor,
   printReceipt,
   receiptHtml,
@@ -19,14 +22,49 @@ import {
   stockDeduction,
   totals,
   type CartLine,
-  type PayMode,
+  type PayMethod,
+  type PaymentPart,
   type RateType,
   type ReceiptInput,
   type ReceiptPrinter,
 } from "@/lib/pos";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Minus, Plus, Printer, ScanBarcode, ShoppingCart, Trash2, MessageCircle, LayoutGrid, Settings2, ReceiptText, Save } from "lucide-react";
+import { Minus, Plus, Printer, ScanBarcode, ShoppingCart, Trash2, MessageCircle, LayoutGrid, Settings2, ReceiptText, Save, StickyNote, Pause, FileText, FolderOpen, RotateCcw, Download, Share2, X } from "lucide-react";
+
+type PosDocRow = { id: string; doc_number: string; customer_name: string | null; customer_phone: string | null; grand_total: number; created_at: string; payload: string | null; status: string };
+
+function DocsList({ kind, onClose, onOpen }: { kind: "held" | "quotation"; onClose: () => void; onOpen: (d: PosDocRow, asInvoice: boolean) => void }) {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({ queryKey: ["pos-docs", kind], queryFn: () => listPosDocs({ data: { docType: kind } }) });
+  const docs = (data?.docs ?? []) as PosDocRow[];
+  const close = async (id: string) => {
+    await closePosDoc({ data: { id } });
+    qc.invalidateQueries({ queryKey: ["pos-docs"] });
+  };
+  return (
+    <div className="rounded-xl border border-primary p-2.5">
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-sm font-bold text-foreground">{kind === "held" ? "Held bills" : "Quotations"}</p>
+        <Button size="icon-sm" variant="ghost" onClick={onClose} aria-label="Band"><X /></Button>
+      </div>
+      {isLoading ? <p className="text-xs text-muted-foreground">Load ho raha hai…</p> : null}
+      {!isLoading && !docs.length ? <p className="text-xs text-muted-foreground">Koi {kind === "held" ? "held bill" : "quotation"} nahi.</p> : null}
+      <ul className="max-h-64 space-y-1 overflow-y-auto">
+        {docs.map((d) => (
+          <li key={d.id} className="flex items-center gap-2 rounded-lg border border-border p-2 text-xs">
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold text-foreground">{d.doc_number} · {d.customer_name || "Walk-in"}</p>
+              <p className="text-muted-foreground">Rs {money(d.grand_total)} · {new Date(d.created_at).toLocaleString("en-PK")}</p>
+            </div>
+            <Button size="sm" onClick={() => onOpen(d, true)}>{kind === "held" ? "Kholein" : "Invoice banayein"}</Button>
+            <Button size="icon-sm" variant="ghost" onClick={() => close(d.id)} aria-label="Band karein"><Trash2 /></Button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -83,9 +121,13 @@ function PosPage() {
   const [term, setTerm] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [billDiscount, setBillDiscount] = useState("");
+  const [discType, setDiscType] = useState<"amt" | "pct">("amt");
   const [delivery, setDelivery] = useState("");
-  const [payMode, setPayMode] = useState<PayMode>("Cash");
-  const [paid, setPaid] = useState("");
+  const [pays, setPays] = useState<{ method: PayMethod; amount: string }[]>([{ method: "Cash", amount: "" }]);
+  const [notes, setNotes] = useState("");
+  const [editing, setEditing] = useState<{ id: string; number: string } | null>(null);
+  const [docsOpen, setDocsOpen] = useState<"held" | "quotation" | null>(null);
+  const payRef = useRef<HTMLDivElement>(null);
   const pickCustomer = (c: { name: string | null; phone: string }) => {
     setCustomerName(c.name ?? "");
     setCustomerPhone(c.phone ?? "");
@@ -273,56 +315,90 @@ function PosPage() {
   const patch = (key: string, v: Partial<CartLine>) =>
     setCart((prev) => prev.map((l) => (l.key === key ? { ...l, ...v } : l)));
 
-  const { subtotal, total } = totals(cart, n(billDiscount), n(delivery));
-  const paidNum = payMode === "Udhaar" ? n(paid) : paid.trim() ? n(paid) : total;
+  const pre = totals(cart, 0, 0);
+  const discAmt = discType === "pct" ? Math.round(((pre.subtotal + pre.taxTotal) * Math.min(100, n(billDiscount))) / 100 * 100) / 100 : n(billDiscount);
+  const { subtotal, taxTotal, itemDiscount, total } = totals(cart, discAmt, n(delivery));
+
+  // Payments: sirf ek line aur amount khali = poora us method se
+  const payParts: PaymentPart[] = (() => {
+    const filled = pays.map((p) => ({ method: p.method, amount: n(p.amount) }));
+    if (pays.length === 1 && !pays[0].amount.trim()) return [{ method: pays[0].method, amount: total }];
+    return filled.filter((p) => p.amount > 0);
+  })();
+  const paidNum = payParts.filter((p) => p.method !== "Credit").reduce((s, p) => s + p.amount, 0);
+  const methodLabel = payParts.length ? payParts.map((p) => p.method).join("+") : "Credit";
+
+  const phoneDigits = customerPhone.replace(/\D/g, "");
+  const { data: balance } = useQuery({
+    queryKey: ["pos-balance", phoneDigits],
+    queryFn: () => getCustomerBalance({ data: { phone: phoneDigits } }),
+    enabled: phoneDigits.length >= 10,
+    staleTime: 30_000,
+  });
 
   const ws = me?.workspace;
-  const receipt = (invoiceNumber: string): ReceiptInput => ({
+  const receipt = (invoiceNumber: string, title = "Invoice"): ReceiptInput => ({
     business: ws?.businessName || "HB Chemicals Pakistan",
     phone: ws?.businessPhone,
     address: ws?.businessAddress,
     invoiceNumber,
+    title,
     date: new Date().toLocaleString("en-PK"),
     customerName: customerName.trim() || undefined,
     customerPhone: customerPhone.trim() || undefined,
     lines: cart,
-    billDiscount: n(billDiscount),
+    billDiscount: discAmt,
     delivery: n(delivery),
-    payMode,
+    payMode: methodLabel,
+    payments: payParts,
     paid: paidNum,
+    previousBalance: balance?.found && balance.balance > 0 ? balance.balance : undefined,
+    notes: notes.trim() || undefined,
     currency: ws?.currency || "Rs",
   });
 
   const reset = () => {
     setCart([]);
     setBillDiscount("");
+    setDiscType("amt");
     setDelivery("");
-    setPaid("");
+    setPays([{ method: "Cash", amount: "" }]);
+    setNotes("");
     setCustomerName("");
     setCustomerPhone("");
-    setPayMode("Cash");
+    setEditing(null);
     scanRef.current?.focus();
   };
 
-  const checkout = async (print: boolean) => {
+  const checkout = async (kind: "sale" | "held" | "quotation", print: boolean) => {
     if (!cart.length || saving) return;
-    if (payMode === "Udhaar" && !customerName.trim() && !customerPhone.trim()) {
-      toast.error("Udhaar ke liye customer ka naam ya phone likhein");
+    if (kind === "sale" && paidNum < total && !customerName.trim() && !customerPhone.trim()) {
+      toast.error("Udhaar / baqaya ke liye customer ka naam ya phone likhein");
+      return;
+    }
+    if (kind === "sale" && cart.some((l) => !(l.qty > 0))) {
+      toast.error("Har item ki quantity 0 se zyada honi chahiye");
       return;
     }
     setSaving(true);
     try {
-      const r = receipt("{{INVOICE}}");
-      const res = await savePosSale({
+      const title = kind === "quotation" ? "Quotation" : "Invoice";
+      const r = receipt("{{INVOICE}}", title);
+      const res = await savePosDoc({
         data: {
+          docType: kind,
           customerName: r.customerName,
           phone: r.customerPhone,
+          subtotal,
+          discountTotal: Math.round((itemDiscount + discAmt) * 100) / 100,
+          taxTotal,
+          delivery: n(delivery),
           total,
-          paid: paidNum,
-          payMode,
-          status: paymentStatus(total, paidNum, payMode),
+          notes: r.notes,
+          convertFromId: editing?.id,
+          methodLabel,
           invoiceText: receiptText(r),
-          stock: cart.map((l) => ({ name: l.name, qty: stockDeduction(l) })),
+          payments: kind === "sale" ? [...payParts, ...(total - paidNum > 0 ? [{ method: "Credit" as const, amount: Math.round((total - paidNum) * 100) / 100 }] : [])] : [],
           items: cart.map((l) => ({
             name: l.name,
             unit: packLabel(l),
@@ -331,29 +407,77 @@ function PosPage() {
             stockQty: stockDeduction(l),
             rate: l.price,
             discount: l.discount || 0,
+            taxPercent: l.taxPercent || 0,
+            taxAmount: lineTax(l),
             lineTotal: lineTotal(l),
+            note: l.note || undefined,
           })),
-          subtotal,
-          discountTotal: n(billDiscount),
-          delivery: n(delivery),
+          ui: { cart, billDiscount, discType, delivery, notes, customerName, customerPhone },
         },
       });
       const final = { ...r, invoiceNumber: res.invoiceNumber };
-      setLast(final);
-      if (print) printReceipt(receiptHtml(final, printer));
-      toast.success(`Sale save: ${res.invoiceNumber}`);
+      if (kind === "held") {
+        toast.success(`Bill hold: ${res.invoiceNumber}`);
+      } else {
+        setLast(final);
+        if (print) printReceipt(receiptHtml(final, printer));
+        toast.success(`${kind === "quotation" ? "Quotation" : "Sale"} save: ${res.invoiceNumber}`);
+      }
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["pos-docs"] });
+      qc.invalidateQueries({ queryKey: ["pos-balance"] });
       reset();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Sale save nahi hui");
+      toast.error(e instanceof Error ? e.message : "Save nahi hua");
     } finally {
       setSaving(false);
     }
   };
 
+  const openDoc = (d: PosDocRow, asInvoice: boolean) => {
+    try {
+      const ui = d.payload ? (JSON.parse(d.payload) as Partial<{ cart: CartLine[]; billDiscount: string; discType: "amt" | "pct"; delivery: string; notes: string; customerName: string; customerPhone: string }>) : {};
+      setCart(ui.cart ?? []);
+      setBillDiscount(ui.billDiscount ?? "");
+      setDiscType(ui.discType ?? "amt");
+      setDelivery(ui.delivery ?? "");
+      setNotes(ui.notes ?? "");
+      setCustomerName(ui.customerName ?? d.customer_name ?? "");
+      setCustomerPhone(ui.customerPhone ?? d.customer_phone ?? "");
+      setPays([{ method: "Cash", amount: "" }]);
+      setEditing(asInvoice ? { id: d.id, number: d.doc_number } : null);
+      setDocsOpen(null);
+      toast.success(`${d.doc_number} khul gaya — ab Save karein`);
+    } catch {
+      toast.error("Bill khul nahi saka");
+    }
+  };
+
+  // Keyboard shortcuts: F2 naya, F4 search, F8 payment, F9 save+print, F10 hold
+  const keysRef = useRef({ checkout, reset });
+  keysRef.current = { checkout, reset };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "F2") { e.preventDefault(); keysRef.current.reset(); }
+      else if (e.key === "F4") { e.preventDefault(); scanRef.current?.focus(); }
+      else if (e.key === "F8") { e.preventDefault(); payRef.current?.querySelector("input")?.focus(); }
+      else if (e.key === "F9") { e.preventDefault(); void keysRef.current.checkout("sale", true); }
+      else if (e.key === "F10") { e.preventDefault(); void keysRef.current.checkout("held", false); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const whatsapp = (r: ReceiptInput) => {
     const digits = (r.customerPhone ?? "").replace(/\D/g, "").replace(/^0/, "92");
     window.open(`https://wa.me/${digits}?text=${encodeURIComponent(receiptText(r))}`, "_blank");
+  };
+  const share = async (r: ReceiptInput) => {
+    const text = receiptText(r);
+    try {
+      if (navigator.share) await navigator.share({ title: r.invoiceNumber, text });
+      else { await navigator.clipboard.writeText(text); toast.success("Bill copy ho gaya"); }
+    } catch { /* user ne cancel kiya */ }
   };
 
   return (
