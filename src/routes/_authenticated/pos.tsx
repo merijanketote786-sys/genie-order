@@ -44,6 +44,16 @@ export const Route = createFileRoute("/_authenticated/pos")({
 });
 
 const PRINTER_KEY = "pos-printer:v1";
+const LINKS_KEY = "pos-barcode-links:v1";
+/** Labels section ke auto code jaisa base (naam ke pehle 10 harf). */
+function labelBase(name: string) {
+  return name
+    .replace(/\s*\/\s*(kg|kilogram|g|gm|gram|ml|ltr|litre|liter|pcs|pc|piece|bottle)s?\b/gi, "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 10) || "ITEM";
+}
 const inputCls = "h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
 const n = (v: string) => {
   const x = Number(v.replace(/[^\d.]/g, ""));
@@ -79,6 +89,8 @@ function PosPage() {
   const [saving, setSaving] = useState(false);
   const [last, setLast] = useState<ReceiptInput | null>(null);
   const scanRef = useRef<HTMLInputElement>(null);
+  const [hi, setHi] = useState(-1);
+  const [dropOpen, setDropOpen] = useState(false);
 
   useEffect(() => setPrinter(loadPrinter()), []);
   const updatePrinter = (p: ReceiptPrinter) => {
@@ -96,30 +108,123 @@ function PosPage() {
     return products.filter((p) => p.name.toLowerCase().includes(t)).slice(0, 24);
   }, [products, term]);
 
-  const add = (p: DbProduct) => {
-    const price = priceFor(p, rate);
+  const add = (p: DbProduct, rateOverride?: RateType) => {
+    const r = rateOverride ?? rate;
+    const price = priceFor(p, r) ?? (rateOverride ? priceFor(p, rate) : null);
+    const useRate = priceFor(p, r) != null ? r : rate;
     if (price == null) {
-      toast.error(`${p.name} ka ${RATE_TYPES.find((r) => r.id === rate)?.label} rate nahi hai`);
+      toast.error(`${p.name} ka ${RATE_TYPES.find((x) => x.id === r)?.label} rate nahi hai`);
       return;
     }
     setCart((prev) => {
-      const key = `${p.name}|${rate}`;
+      const key = `${p.name}|${useRate}`;
       const ex = prev.find((l) => l.key === key);
       if (ex) return prev.map((l) => (l.key === key ? { ...l, qty: l.qty + 1 } : l));
-      return [...prev, { key, name: p.name, unit: p.unit, rateType: rate, price, qty: 1, discount: 0 }];
+      return [...prev, { key, name: p.name, unit: p.unit, rateType: useRate, price, qty: 1, discount: 0 }];
     });
+    toast.success(`${p.name} cart me add`, { duration: 1200 });
+  };
+
+  // Barcode ↔ product links (company ke apne barcodes ke liye), is device pe saved
+  const [links, setLinks] = useState<Record<string, { name: string; rate: RateType }>>({});
+  const [pendingCode, setPendingCode] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      setLinks(JSON.parse(localStorage.getItem(LINKS_KEY) || "{}"));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  const saveLink = (code: string, p: DbProduct) => {
+    const next = { ...links, [code]: { name: p.name, rate } };
+    setLinks(next);
+    try {
+      localStorage.setItem(LINKS_KEY, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+    setPendingCode(null);
+    setTerm("");
+    add(p);
+  };
+
+  const findByCode = (raw: string): { p: DbProduct; rate?: RateType } | null => {
+    const code = raw.trim().toUpperCase();
+    if (!code) return null;
+    const link = links[code];
+    if (link) {
+      const p = products.find((x) => x.name === link.name);
+      if (p) return { p, rate: link.rate };
+    }
+    const lower = code.toLowerCase();
+    const byName = products.find((x) => x.name.toLowerCase() === lower);
+    if (byName) return { p: byName };
+    // Labels section wala code: NAAM(10 harf)-PACK, e.g. GLYCERINE-100G
+    const [base, suffix = ""] = code.split("-");
+    const p = products.find((x) => labelBase(x.name) === base);
+    if (p) {
+      const g = suffix.replace(/\D/g, "");
+      const r: RateType | undefined = g === "100" ? "p100" : g === "250" ? "p250" : g === "500" ? "p500" : undefined;
+      return { p, rate: r };
+    }
+    return null;
+  };
+
+  const handleCode = (raw: string) => {
+    const hit = findByCode(raw);
+    if (hit) {
+      add(hit.p, hit.rate);
+      setTerm("");
+      setPendingCode(null);
+      return true;
+    }
+    return false;
   };
 
   // Barcode scanner: code type hota hai + Enter
   const onScan = () => {
-    const t = term.trim().toLowerCase();
+    const t = term.trim();
     if (!t) return;
-    const exact = products.find((p) => p.name.toLowerCase() === t) ?? results[0];
-    if (exact) {
-      add(exact);
+    if (handleCode(t)) return;
+    if (results.length === 1) {
+      add(results[0]);
       setTerm("");
-    } else toast.error("Product nahi mila");
+      return;
+    }
+    setPendingCode(t.toUpperCase());
+    setTerm("");
+    toast.error("Ye barcode kisi product se juda nahi — neeche product chun kar link karein");
   };
+
+  // Scanner input page pe kahin bhi aaye (box focus na ho tab bhi) pakar lein
+  const handleCodeRef = useRef(handleCode);
+  handleCodeRef.current = handleCode;
+  useEffect(() => {
+    let buf = "";
+    let lastAt = 0;
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
+      const t = Date.now();
+      if (t - lastAt > 80) buf = "";
+      lastAt = t;
+      if (e.key === "Enter" || e.key === "Tab") {
+        if (buf.length >= 3) {
+          e.preventDefault();
+          const code = buf;
+          buf = "";
+          if (!handleCodeRef.current(code)) {
+            setPendingCode(code.toUpperCase());
+            toast.error("Ye barcode kisi product se juda nahi — product chun kar link karein");
+          }
+        }
+        return;
+      }
+      if (e.key.length === 1) buf += e.key;
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const patch = (key: string, v: Partial<CartLine>) =>
     setCart((prev) => prev.map((l) => (l.key === key ? { ...l, ...v } : l)));
@@ -215,18 +320,67 @@ function PosPage() {
                 </Button>
               ))}
             </div>
-            <label className="mt-3 flex h-11 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
+            <div className="relative mt-3">
+            <label className="flex h-11 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
               <ScanBarcode className="size-4 text-primary" />
               <input
                 ref={scanRef}
                 autoFocus
                 value={term}
-                onChange={(e) => setTerm(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), onScan())}
-                placeholder="Barcode scan karein ya product naam likhein + Enter"
+                role="combobox"
+                aria-expanded={dropOpen}
+                onChange={(e) => { setTerm(e.target.value); setHi(-1); setDropOpen(true); }}
+                onFocus={() => setDropOpen(true)}
+                onBlur={() => setTimeout(() => setDropOpen(false), 150)}
+                onKeyDown={(e) => {
+                  const list = term.trim() ? results.slice(0, 10) : [];
+                  if (e.key === "ArrowDown" && list.length) {
+                    e.preventDefault(); setDropOpen(true); setHi((h) => (h + 1) % list.length);
+                  } else if (e.key === "ArrowUp" && list.length) {
+                    e.preventDefault(); setHi((h) => (h <= 0 ? list.length - 1 : h - 1));
+                  } else if (e.key === "Escape") {
+                    setDropOpen(false); setHi(-1);
+                  } else if ((e.key === "Enter" || e.key === "Tab") && term.trim()) {
+                    e.preventDefault();
+                    if (hi >= 0 && list[hi]) {
+                      if (pendingCode) saveLink(pendingCode, list[hi]); else add(list[hi]);
+                      setTerm(""); setHi(-1);
+                    } else if (!handleCode(term) && list[0] && !pendingCode) {
+                      add(list[0]); setTerm("");
+                    } else if (!list.length) onScan();
+                  }
+                }}
+                placeholder="Barcode scan karein ya product naam likhein (↓ ↑ + Enter)"
                 className="min-w-0 flex-1 bg-transparent text-sm outline-none"
               />
             </label>
+            {dropOpen && term.trim() && results.length ? (
+              <ul role="listbox" className="absolute inset-x-0 top-12 z-30 max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg">
+                {results.slice(0, 10).map((p, i) => {
+                  const price = priceFor(p, rate);
+                  return (
+                    <li
+                      key={p.name}
+                      role="option"
+                      aria-selected={i === hi}
+                      onMouseDown={(e) => { e.preventDefault(); if (pendingCode) saveLink(pendingCode, p); else add(p); setTerm(""); setHi(-1); }}
+                      onMouseEnter={() => setHi(i)}
+                      className={`flex cursor-pointer items-center justify-between gap-2 rounded-md px-3 py-2 text-sm ${i === hi ? "bg-accent text-accent-foreground" : ""}`}
+                    >
+                      <span className="truncate font-medium">{p.name}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground">{price != null ? `Rs ${money(price)}` : "Rate nahi"} · {p.stock ?? "-"}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+            </div>
+            {pendingCode ? (
+              <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-primary bg-accent p-2.5 text-xs text-accent-foreground">
+                <span>Barcode <b>{pendingCode}</b> naya hai — neeche product search kar ke <b>Link</b> dabayein, agli dafa scan se seedha add hoga.</span>
+                <Button size="sm" variant="ghost" onClick={() => { setPendingCode(null); setTerm(""); }}>Cancel</Button>
+              </div>
+            ) : null}
             <div className="mt-3 grid max-h-[26rem] grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
               {results.map((p) => {
                 const price = priceFor(p, rate);
@@ -234,7 +388,7 @@ function PosPage() {
                   <button
                     key={p.name}
                     type="button"
-                    onClick={() => add(p)}
+                    onClick={() => (pendingCode ? saveLink(pendingCode, p) : add(p))}
                     disabled={price == null}
                     className="rounded-xl border border-border bg-background p-2.5 text-left transition hover:border-primary disabled:opacity-40"
                   >
@@ -242,6 +396,7 @@ function PosPage() {
                     <p className="mt-1 text-xs text-muted-foreground">
                       {price != null ? `Rs ${money(price)}` : "Rate nahi"} · stock {p.stock ?? "-"}
                     </p>
+                    {pendingCode ? <p className="mt-1 text-xs font-bold text-primary">Link karein</p> : null}
                   </button>
                 );
               })}
