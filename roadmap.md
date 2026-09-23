@@ -1,12 +1,7 @@
-# Roadmap
-
-- [x] Audit authenticated routes, shared layout, and mobile clutter patterns
-- [x] Capture current preview and lock the mobile-first minimalist direction
-- [x] Build compact global navigation and header controls
-- [x] Move Order and Invoice helper tools into icon-triggered mobile sheets
-- [x] Compact secondary page controls, sync methods, rates, and admin sections
-- [x] Apply Premium Navy tokens with Sora/Manrope typography
-- [x] Verify compilation and runtime health without changing saved data or business logic
-- [x] Add touch-insert variables to order template creation and editing
-- [x] POS search dropdown with arrow-key + Enter selection
-- [x] POS Settings me printer/paper changes ke liye explicit Save settings button add karna
+# Roadmap — Vyapar-style POS
+- [ ] Phase 1: DB foundation (tables, product/customer columns, atomic sale RPC)
+- [ ] Phase 2: Billing screen upgrade (tax, split pay, hold/quotation, print/PDF/WhatsApp, shortcuts)
+- [ ] Phase 3: Returns, Purchases, Suppliers
+- [ ] Phase 4: Customer ledger, Expenses, Day book
+- [ ] Phase 5: Inventory, Reports, POS dashboard
+- [ ] Phase 6: Staff roles/permissions/PIN, POS settings
