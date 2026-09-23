@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Loader2, LogIn } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -18,6 +18,10 @@ function safeNext(value: unknown): string | undefined {
 export const Route = createFileRoute("/auth")({
   // Auth state sirf browser me hoti hai — SSR karne se hydration mismatch hota tha.
   ssr: false,
+  // Desktop (offline) app me login nahi hota — seedha workspace khulta hai.
+  beforeLoad: () => {
+    if (import.meta.env.VITE_OFFLINE === "1") throw redirect({ to: "/" });
+  },
   validateSearch: (s: Record<string, unknown>): { next?: string } => {
     const next = safeNext(s["next"]);
     return next ? { next } : {};

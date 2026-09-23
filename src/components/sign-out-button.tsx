@@ -15,6 +15,8 @@ export function SignOutButton() {
     navigate({ to: "/auth", replace: true });
   };
 
+  if (import.meta.env.VITE_OFFLINE === "1") return null;
+
   return (
     <Button
       variant="outline"
