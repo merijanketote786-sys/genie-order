@@ -1,14 +1,23 @@
 import { Button } from "@/components/ui/button";
 import { getPosAccess, verifyPosPin, type PosPerm } from "@/lib/pos-access.functions";
+import { resolveCfg } from "@/lib/pos-config";
+import { setMoneyDecimals } from "@/lib/pos";
 import { useQuery } from "@tanstack/react-query";
 import { KeyRound } from "lucide-react";
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 export function usePosAccess() {
   const { data } = useQuery({ queryKey: ["pos-access"], queryFn: () => getPosAccess(), staleTime: 60_000 });
   const can = useCallback((p: PosPerm) => (data ? data.perms.includes(p) : true), [data]);
-  return { access: data, can, config: data?.config ?? {} };
+  const config = data?.config ?? {};
+  const cfg = useMemo(() => {
+    const r = resolveCfg(config);
+    setMoneyDecimals(r.decimals);
+    return r;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+  return { access: data, can, config, cfg };
 }
 
 /**
