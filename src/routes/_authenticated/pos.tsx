@@ -809,7 +809,7 @@ function Row({ a, b, bold }: { a: string; b: string; bold?: boolean }) {
 }
 
 function PosAlerts({ cfg, products, credit }: { cfg: ReturnType<typeof usePosAccess>["cfg"]; products: DbProduct[]; credit: { limit: number; after: number } | null }) {
-  const low = cfg.notify.lowStock && cfg.inventory.trackStock ? products.filter((p) => p.stock != null && p.stock <= cfg.inventory.lowStockThreshold).length : 0;
+  const low = cfg.notify.lowStock && cfg.inventory.trackStock ? products.filter((p) => p.stock != null && p.stock > 0 && p.stock <= cfg.inventory.lowStockThreshold).length : 0;
   const { data: sync } = useQuery({ queryKey: ["sync-overview"], queryFn: () => getSyncOverview(), enabled: cfg.notify.syncFailed, staleTime: 5 * 60_000 });
   const lastSync = sync?.logs[0];
   const syncBad = cfg.notify.syncFailed && lastSync && (lastSync.status !== "success" || lastSync.errors > 0);
