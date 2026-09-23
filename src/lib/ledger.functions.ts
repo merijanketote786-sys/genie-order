@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { friendlyDbError } from "./pos-errors";
 
 type Sb = any;
 const r2 = (x: number) => Math.round(x * 100) / 100;
@@ -85,11 +86,12 @@ export const listExpenses = createServerFn({ method: "GET" })
 
 export const saveExpense = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ category: z.string().trim().min(1).max(60), amount: z.number().positive().max(1e9), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), method: z.string().max(30), description: z.string().max(500).optional() }).parse(d))
+  .inputValidator((d: unknown) => z.object({ category: z.string().trim().min(1).max(60), amount: z.number().positive().max(1e9), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), method: z.string().max(30), description: z.string().max(500).optional(), clientRef: z.string().uuid().optional() }).parse(d))
   .handler(async ({ data, context }) => {
     const sb = context.supabase as Sb;
-    const { data: row, error } = await sb.from("expenses").insert({ category: data.category, amount: data.amount, expense_date: data.date, method: data.method, description: data.description || null }).select("id").single();
-    if (error) throw new Error("Expense save nahi hua");
+    const { data: row, error } = await sb.from("expenses").insert({ category: data.category, amount: data.amount, expense_date: data.date, method: data.method, description: data.description || null, client_ref: data.clientRef ?? null }).select("id").single();
+    if (error?.code === "23505") return { ok: true, duplicate: true };
+    if (error) throw new Error(friendlyDbError(error, "Expense save nahi hua."));
     await sb.from("audit_log").insert({ action: "create", entity: "expense", entity_id: row.id, details: { amount: data.amount, category: data.category } }).then(() => null, () => null);
     return { ok: true };
   });

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { friendlyDbError } from "./pos-errors";
 
 const money = z.number().min(0).max(1e9);
 const docInput = z.object({
