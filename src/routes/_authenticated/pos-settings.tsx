@@ -126,11 +126,9 @@ function SettingsHub() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-base font-bold text-foreground">{meta.label}</h2>
           {id === "printing" || id === "invoices" ? (
-            <div className="flex flex-wrap gap-1">
-              {(["a4", "a5", "t80", "t58", "custom"] as PaperFormat[]).map((f) => (
-                <Button key={f} size="sm" variant="outline" onClick={() => pc.preview({ ...sampleDoc(), kind: "sale" })} title={`Preview (${f})`}><Eye /> {f.toUpperCase()}</Button>
-              )).slice(0, 1)}
-              <span className="self-center text-[11px] text-muted-foreground">Preview abhi-saved settings dikhata hai — pehle Save karein</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => pc.preview({ ...sampleDoc(), kind: "sale" })}><Eye /> Sample preview</Button>
+              <span className="text-[11px] text-muted-foreground">Preview saved settings dikhata hai — pehle Save karein</span>
             </div>
           ) : null}
         </div>
