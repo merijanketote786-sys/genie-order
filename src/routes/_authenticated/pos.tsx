@@ -4,14 +4,17 @@ import { WorkspaceHeader } from "@/components/workspace-header";
 import { Button } from "@/components/ui/button";
 import { getProducts, type DbProduct } from "@/lib/products.functions";
 import { getMySettings } from "@/lib/settings.functions";
-import { savePosSale } from "@/lib/pos.functions";
+import { closePosDoc, getCustomerBalance, listPosDocs, savePosDoc } from "@/lib/pos.functions";
 import {
+  PAY_METHODS,
   PRINTER_PRESETS,
   RATE_TYPES,
+  TAX_RATES,
+  downloadReceiptPdf,
+  lineTax,
   lineTotal,
   money,
   packLabel,
-  paymentStatus,
   priceFor,
   printReceipt,
   receiptHtml,
@@ -19,14 +22,49 @@ import {
   stockDeduction,
   totals,
   type CartLine,
-  type PayMode,
+  type PayMethod,
+  type PaymentPart,
   type RateType,
   type ReceiptInput,
   type ReceiptPrinter,
 } from "@/lib/pos";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Minus, Plus, Printer, ScanBarcode, ShoppingCart, Trash2, MessageCircle, LayoutGrid, Settings2, ReceiptText, Save } from "lucide-react";
+import { Minus, Plus, Printer, ScanBarcode, ShoppingCart, Trash2, MessageCircle, LayoutGrid, Settings2, ReceiptText, Save, StickyNote, Pause, FileText, FolderOpen, RotateCcw, Download, Share2, X } from "lucide-react";
+
+type PosDocRow = { id: string; doc_number: string; customer_name: string | null; customer_phone: string | null; grand_total: number; created_at: string; payload: string | null; status: string };
+
+function DocsList({ kind, onClose, onOpen }: { kind: "held" | "quotation"; onClose: () => void; onOpen: (d: PosDocRow, asInvoice: boolean) => void }) {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({ queryKey: ["pos-docs", kind], queryFn: () => listPosDocs({ data: { docType: kind } }) });
+  const docs = (data?.docs ?? []) as PosDocRow[];
+  const close = async (id: string) => {
+    await closePosDoc({ data: { id } });
+    qc.invalidateQueries({ queryKey: ["pos-docs"] });
+  };
+  return (
+    <div className="rounded-xl border border-primary p-2.5">
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-sm font-bold text-foreground">{kind === "held" ? "Held bills" : "Quotations"}</p>
+        <Button size="icon-sm" variant="ghost" onClick={onClose} aria-label="Band"><X /></Button>
+      </div>
+      {isLoading ? <p className="text-xs text-muted-foreground">Load ho raha hai…</p> : null}
+      {!isLoading && !docs.length ? <p className="text-xs text-muted-foreground">Koi {kind === "held" ? "held bill" : "quotation"} nahi.</p> : null}
+      <ul className="max-h-64 space-y-1 overflow-y-auto">
+        {docs.map((d) => (
+          <li key={d.id} className="flex items-center gap-2 rounded-lg border border-border p-2 text-xs">
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold text-foreground">{d.doc_number} · {d.customer_name || "Walk-in"}</p>
+              <p className="text-muted-foreground">Rs {money(d.grand_total)} · {new Date(d.created_at).toLocaleString("en-PK")}</p>
+            </div>
+            <Button size="sm" onClick={() => onOpen(d, true)}>{kind === "held" ? "Kholein" : "Invoice banayein"}</Button>
+            <Button size="icon-sm" variant="ghost" onClick={() => close(d.id)} aria-label="Band karein"><Trash2 /></Button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -83,9 +121,13 @@ function PosPage() {
   const [term, setTerm] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [billDiscount, setBillDiscount] = useState("");
+  const [discType, setDiscType] = useState<"amt" | "pct">("amt");
   const [delivery, setDelivery] = useState("");
-  const [payMode, setPayMode] = useState<PayMode>("Cash");
-  const [paid, setPaid] = useState("");
+  const [pays, setPays] = useState<{ method: PayMethod; amount: string }[]>([{ method: "Cash", amount: "" }]);
+  const [notes, setNotes] = useState("");
+  const [editing, setEditing] = useState<{ id: string; number: string } | null>(null);
+  const [docsOpen, setDocsOpen] = useState<"held" | "quotation" | null>(null);
+  const payRef = useRef<HTMLDivElement>(null);
   const pickCustomer = (c: { name: string | null; phone: string }) => {
     setCustomerName(c.name ?? "");
     setCustomerPhone(c.phone ?? "");
@@ -273,56 +315,90 @@ function PosPage() {
   const patch = (key: string, v: Partial<CartLine>) =>
     setCart((prev) => prev.map((l) => (l.key === key ? { ...l, ...v } : l)));
 
-  const { subtotal, total } = totals(cart, n(billDiscount), n(delivery));
-  const paidNum = payMode === "Udhaar" ? n(paid) : paid.trim() ? n(paid) : total;
+  const pre = totals(cart, 0, 0);
+  const discAmt = discType === "pct" ? Math.round(((pre.subtotal + pre.taxTotal) * Math.min(100, n(billDiscount))) / 100 * 100) / 100 : n(billDiscount);
+  const { subtotal, taxTotal, itemDiscount, total } = totals(cart, discAmt, n(delivery));
+
+  // Payments: sirf ek line aur amount khali = poora us method se
+  const payParts: PaymentPart[] = (() => {
+    const filled = pays.map((p) => ({ method: p.method, amount: n(p.amount) }));
+    if (pays.length === 1 && !pays[0].amount.trim()) return [{ method: pays[0].method, amount: total }];
+    return filled.filter((p) => p.amount > 0);
+  })();
+  const paidNum = payParts.filter((p) => p.method !== "Credit").reduce((s, p) => s + p.amount, 0);
+  const methodLabel = payParts.length ? payParts.map((p) => p.method).join("+") : "Credit";
+
+  const phoneDigits = customerPhone.replace(/\D/g, "");
+  const { data: balance } = useQuery({
+    queryKey: ["pos-balance", phoneDigits],
+    queryFn: () => getCustomerBalance({ data: { phone: phoneDigits } }),
+    enabled: phoneDigits.length >= 10,
+    staleTime: 30_000,
+  });
 
   const ws = me?.workspace;
-  const receipt = (invoiceNumber: string): ReceiptInput => ({
+  const receipt = (invoiceNumber: string, title = "Invoice"): ReceiptInput => ({
     business: ws?.businessName || "HB Chemicals Pakistan",
     phone: ws?.businessPhone,
     address: ws?.businessAddress,
     invoiceNumber,
+    title,
     date: new Date().toLocaleString("en-PK"),
     customerName: customerName.trim() || undefined,
     customerPhone: customerPhone.trim() || undefined,
     lines: cart,
-    billDiscount: n(billDiscount),
+    billDiscount: discAmt,
     delivery: n(delivery),
-    payMode,
+    payMode: methodLabel,
+    payments: payParts,
     paid: paidNum,
+    previousBalance: balance?.found && balance.balance > 0 ? balance.balance : undefined,
+    notes: notes.trim() || undefined,
     currency: ws?.currency || "Rs",
   });
 
   const reset = () => {
     setCart([]);
     setBillDiscount("");
+    setDiscType("amt");
     setDelivery("");
-    setPaid("");
+    setPays([{ method: "Cash", amount: "" }]);
+    setNotes("");
     setCustomerName("");
     setCustomerPhone("");
-    setPayMode("Cash");
+    setEditing(null);
     scanRef.current?.focus();
   };
 
-  const checkout = async (print: boolean) => {
+  const checkout = async (kind: "sale" | "held" | "quotation", print: boolean) => {
     if (!cart.length || saving) return;
-    if (payMode === "Udhaar" && !customerName.trim() && !customerPhone.trim()) {
-      toast.error("Udhaar ke liye customer ka naam ya phone likhein");
+    if (kind === "sale" && paidNum < total && !customerName.trim() && !customerPhone.trim()) {
+      toast.error("Udhaar / baqaya ke liye customer ka naam ya phone likhein");
+      return;
+    }
+    if (kind === "sale" && cart.some((l) => !(l.qty > 0))) {
+      toast.error("Har item ki quantity 0 se zyada honi chahiye");
       return;
     }
     setSaving(true);
     try {
-      const r = receipt("{{INVOICE}}");
-      const res = await savePosSale({
+      const title = kind === "quotation" ? "Quotation" : "Invoice";
+      const r = receipt("{{INVOICE}}", title);
+      const res = await savePosDoc({
         data: {
+          docType: kind,
           customerName: r.customerName,
           phone: r.customerPhone,
+          subtotal,
+          discountTotal: Math.round((itemDiscount + discAmt) * 100) / 100,
+          taxTotal,
+          delivery: n(delivery),
           total,
-          paid: paidNum,
-          payMode,
-          status: paymentStatus(total, paidNum, payMode),
+          notes: r.notes,
+          convertFromId: editing?.id,
+          methodLabel,
           invoiceText: receiptText(r),
-          stock: cart.map((l) => ({ name: l.name, qty: stockDeduction(l) })),
+          payments: kind === "sale" ? [...payParts, ...(total - paidNum > 0 ? [{ method: "Credit" as const, amount: Math.round((total - paidNum) * 100) / 100 }] : [])] : [],
           items: cart.map((l) => ({
             name: l.name,
             unit: packLabel(l),
@@ -331,29 +407,77 @@ function PosPage() {
             stockQty: stockDeduction(l),
             rate: l.price,
             discount: l.discount || 0,
+            taxPercent: l.taxPercent || 0,
+            taxAmount: lineTax(l),
             lineTotal: lineTotal(l),
+            note: l.note || undefined,
           })),
-          subtotal,
-          discountTotal: n(billDiscount),
-          delivery: n(delivery),
+          ui: { cart, billDiscount, discType, delivery, notes, customerName, customerPhone },
         },
       });
       const final = { ...r, invoiceNumber: res.invoiceNumber };
-      setLast(final);
-      if (print) printReceipt(receiptHtml(final, printer));
-      toast.success(`Sale save: ${res.invoiceNumber}`);
+      if (kind === "held") {
+        toast.success(`Bill hold: ${res.invoiceNumber}`);
+      } else {
+        setLast(final);
+        if (print) printReceipt(receiptHtml(final, printer));
+        toast.success(`${kind === "quotation" ? "Quotation" : "Sale"} save: ${res.invoiceNumber}`);
+      }
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["pos-docs"] });
+      qc.invalidateQueries({ queryKey: ["pos-balance"] });
       reset();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Sale save nahi hui");
+      toast.error(e instanceof Error ? e.message : "Save nahi hua");
     } finally {
       setSaving(false);
     }
   };
 
+  const openDoc = (d: PosDocRow, asInvoice: boolean) => {
+    try {
+      const ui = d.payload ? (JSON.parse(d.payload) as Partial<{ cart: CartLine[]; billDiscount: string; discType: "amt" | "pct"; delivery: string; notes: string; customerName: string; customerPhone: string }>) : {};
+      setCart(ui.cart ?? []);
+      setBillDiscount(ui.billDiscount ?? "");
+      setDiscType(ui.discType ?? "amt");
+      setDelivery(ui.delivery ?? "");
+      setNotes(ui.notes ?? "");
+      setCustomerName(ui.customerName ?? d.customer_name ?? "");
+      setCustomerPhone(ui.customerPhone ?? d.customer_phone ?? "");
+      setPays([{ method: "Cash", amount: "" }]);
+      setEditing(asInvoice ? { id: d.id, number: d.doc_number } : null);
+      setDocsOpen(null);
+      toast.success(`${d.doc_number} khul gaya — ab Save karein`);
+    } catch {
+      toast.error("Bill khul nahi saka");
+    }
+  };
+
+  // Keyboard shortcuts: F2 naya, F4 search, F8 payment, F9 save+print, F10 hold
+  const keysRef = useRef({ checkout, reset });
+  keysRef.current = { checkout, reset };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "F2") { e.preventDefault(); keysRef.current.reset(); }
+      else if (e.key === "F4") { e.preventDefault(); scanRef.current?.focus(); }
+      else if (e.key === "F8") { e.preventDefault(); payRef.current?.querySelector("input")?.focus(); }
+      else if (e.key === "F9") { e.preventDefault(); void keysRef.current.checkout("sale", true); }
+      else if (e.key === "F10") { e.preventDefault(); void keysRef.current.checkout("held", false); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const whatsapp = (r: ReceiptInput) => {
     const digits = (r.customerPhone ?? "").replace(/\D/g, "").replace(/^0/, "92");
     window.open(`https://wa.me/${digits}?text=${encodeURIComponent(receiptText(r))}`, "_blank");
+  };
+  const share = async (r: ReceiptInput) => {
+    const text = receiptText(r);
+    try {
+      if (navigator.share) await navigator.share({ title: r.invoiceNumber, text });
+      else { await navigator.clipboard.writeText(text); toast.success("Bill copy ho gaya"); }
+    } catch { /* user ne cancel kiya */ }
   };
 
   return (
@@ -500,40 +624,82 @@ function PosPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <label className="text-xs text-muted-foreground">Bill discount<input className={inputCls} value={billDiscount} onChange={(e) => setBillDiscount(e.target.value)} inputMode="decimal" placeholder="0" /></label>
+              <label className="text-xs text-muted-foreground">
+                <span className="flex items-center justify-between">Bill discount
+                  <span className="flex gap-0.5">
+                    {(["amt", "pct"] as const).map((k) => (
+                      <button key={k} type="button" onClick={() => setDiscType(k)} className={`rounded px-1.5 text-[10px] font-bold ${discType === k ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{k === "amt" ? "Rs" : "%"}</button>
+                    ))}
+                  </span>
+                </span>
+                <input className={inputCls} value={billDiscount} onChange={(e) => setBillDiscount(e.target.value)} inputMode="decimal" placeholder="0" />
+              </label>
               <label className="text-xs text-muted-foreground">Delivery<input className={inputCls} value={delivery} onChange={(e) => setDelivery(e.target.value)} inputMode="decimal" placeholder="0" /></label>
             </div>
 
-            <div className="flex gap-1.5">
-              {(["Cash", "Card", "Udhaar"] as PayMode[]).map((m) => (
-                <Button key={m} className="flex-1" variant={payMode === m ? "default" : "outline"} onClick={() => setPayMode(m)}>{m}</Button>
+            <div ref={payRef} className="space-y-2 rounded-xl border border-border p-2.5">
+              <p className="text-xs font-bold text-foreground">Payment {pays.length > 1 ? "(split)" : ""} <span className="font-normal text-muted-foreground">— F8</span></p>
+              {pays.map((p, i) => (
+                <div key={i} className="flex gap-1.5">
+                  <select className="h-10 rounded-lg border border-border bg-background px-2 text-sm" value={p.method} onChange={(e) => setPays((all) => all.map((x, j) => (j === i ? { ...x, method: e.target.value as PayMethod } : x)))} aria-label="Payment method">
+                    {PAY_METHODS.map((m) => <option key={m} value={m}>{m === "Credit" ? "Credit / Udhaar" : m}</option>)}
+                  </select>
+                  <input className={inputCls} value={p.amount} inputMode="decimal" placeholder={i === 0 && pays.length === 1 ? `${money(total)} (poora)` : "0"} onChange={(e) => setPays((all) => all.map((x, j) => (j === i ? { ...x, amount: e.target.value } : x)))} aria-label="Amount" />
+                  {pays.length > 1 ? <Button size="icon" variant="ghost" onClick={() => setPays((all) => all.filter((_, j) => j !== i))} aria-label="Hatayein"><Trash2 /></Button> : null}
+                </div>
               ))}
+              <div className="flex flex-wrap gap-1.5">
+                <Button size="sm" variant="outline" onClick={() => setPays((all) => [...all, { method: all.some((x) => x.method === "Cash") ? "Bank" : "Cash", amount: "" }])}><Plus /> Split payment</Button>
+                <Button size="sm" variant="outline" onClick={() => setPays([{ method: "Credit", amount: "" }])}>Poora udhaar</Button>
+              </div>
             </div>
-            <label className="block text-xs text-muted-foreground">
-              {payMode === "Udhaar" ? "Abhi kitna mila (optional)" : "Customer ne diya (khali = poora)"}
-              <input className={inputCls} value={paid} onChange={(e) => setPaid(e.target.value)} inputMode="decimal" placeholder={payMode === "Udhaar" ? "0" : money(total)} />
-            </label>
+
+            {balance?.found ? (
+              <div className={`rounded-lg border p-2 text-xs ${balance.balance > 0 ? "border-destructive text-destructive" : "border-border text-muted-foreground"}`}>
+                Purana baqaya: <b>Rs {money(balance.balance)}</b>{balance.creditLimit ? ` · Credit limit Rs ${money(balance.creditLimit)}` : ""}
+              </div>
+            ) : null}
+
+            <label className="block text-xs text-muted-foreground">Invoice note<input className={inputCls} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional — bill pe chhapega" /></label>
 
             <div className="space-y-1 rounded-xl bg-surface-2 p-3 text-sm">
               <Row a="Subtotal" b={`Rs ${money(subtotal)}`} />
-              {n(billDiscount) ? <Row a="Discount" b={`- Rs ${money(n(billDiscount))}`} /> : null}
+              {itemDiscount ? <Row a="Item discounts" b={`- Rs ${money(itemDiscount)}`} /> : null}
+              {taxTotal ? <Row a="Tax" b={`Rs ${money(taxTotal)}`} /> : null}
+              {discAmt ? <Row a="Bill discount" b={`- Rs ${money(discAmt)}`} /> : null}
               {n(delivery) ? <Row a="Delivery" b={`Rs ${money(n(delivery))}`} /> : null}
               <Row a="Grand Total" b={`Rs ${money(total)}`} bold />
+              <Row a="Paid" b={`Rs ${money(Math.min(paidNum, total))}`} />
               {paidNum > total ? <Row a="Change wapas" b={`Rs ${money(paidNum - total)}`} /> : null}
               {paidNum < total ? <Row a="Baqaya (udhaar)" b={`Rs ${money(total - paidNum)}`} /> : null}
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout(false)}>Save sale</Button>
-              <Button disabled={!cart.length || saving} onClick={() => checkout(true)}><Printer /> Save + Print</Button>
+            {editing ? <p className="rounded-lg bg-accent p-2 text-xs text-accent-foreground">Khula hua: <b>{editing.number}</b> — save karne par ye band ho jayega. <button className="underline" onClick={() => setEditing(null)}>Alag karein</button></p> : null}
+
+            <Button size="lg" className="h-14 w-full text-base" disabled={!cart.length || saving} onClick={() => checkout("sale", true)}><Printer /> Save + Print (F9) — Rs {money(total)}</Button>
+            <div className="grid grid-cols-3 gap-2">
+              <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("sale", false)}><Save /> Save</Button>
+              <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("held", false)}><Pause /> Hold (F10)</Button>
+              <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("quotation", false)}><FileText /> Quotation</Button>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setDocsOpen("held")}><FolderOpen /> Held bills</Button>
+              <Button variant="ghost" size="sm" onClick={() => setDocsOpen("quotation")}><FolderOpen /> Quotations</Button>
+              <Button variant="ghost" size="sm" onClick={() => reset()}><RotateCcw /> Naya (F2)</Button>
             </div>
 
             {last ? (
               <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border p-2.5 text-sm">
                 <span className="font-semibold">Aakhri: {last.invoiceNumber}</span>
-                <Button size="sm" variant="outline" onClick={() => printReceipt(receiptHtml(last, printer))}><Printer /> Dobara print</Button>
-                {last.customerPhone ? <Button size="sm" variant="outline" onClick={() => whatsapp(last)}><MessageCircle /> WhatsApp</Button> : null}
+                <Button size="sm" variant="outline" onClick={() => printReceipt(receiptHtml(last, printer))}><Printer /> Print</Button>
+                <Button size="sm" variant="outline" onClick={() => downloadReceiptPdf(last).catch(() => toast.error("PDF nahi bana"))}><Download /> PDF</Button>
+                <Button size="sm" variant="outline" onClick={() => share(last)}><Share2 /> Share</Button>
+                <Button size="sm" variant="outline" onClick={() => whatsapp(last)}><MessageCircle /> WhatsApp</Button>
               </div>
+            ) : null}
+
+            {docsOpen ? (
+              <DocsList kind={docsOpen} onClose={() => setDocsOpen(null)} onOpen={openDoc} />
             ) : null}
           </section>
         </div>
@@ -545,36 +711,44 @@ function PosPage() {
   );
 }
 
-/** Cart ki ek line — qty, rate, discount, unit aur total sab manually likhe ja sakte hain. */
+/** Cart ki ek line — qty, rate, discount, tax, unit, note aur total sab manually likhe ja sakte hain. */
 function CartRow({ line, onPatch, onRemove }: { line: CartLine; onPatch: (key: string, v: Partial<CartLine>) => void; onRemove: () => void }) {
   const [totalText, setTotalText] = useState<string | null>(null);
+  const [qtyText, setQtyText] = useState<string | null>(null);
+  const [showNote, setShowNote] = useState(!!line.note);
   const total = lineTotal(line);
   const setTotal = (raw: string) => {
     setTotalText(raw);
-    const t = n(raw);
+    const t = n(raw) / (1 + (line.taxPercent || 0) / 100);
     const q = line.qty || 1;
     onPatch(line.key, { price: Math.round(((t + (line.discount || 0)) / q) * 100) / 100 });
   };
+  const small = "h-8 rounded-md border border-border bg-background px-2 text-sm";
   return (
     <div className="rounded-xl border border-border p-2.5">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-foreground">{line.name}</p>
-          <p className="text-xs text-muted-foreground">{packLabel(line)} · Rs {money(line.price)}</p>
+          <p className="text-xs text-muted-foreground">{packLabel(line)} · Rs {money(line.price)}{line.taxPercent ? ` · tax ${line.taxPercent}%` : ""}</p>
         </div>
-        <Button size="icon-sm" variant="ghost" onClick={onRemove} aria-label="Remove">
-          <Trash2 />
-        </Button>
+        <div className="flex shrink-0 gap-1">
+          <Button size="icon-sm" variant="ghost" onClick={() => setShowNote((v) => !v)} aria-label="Note"><StickyNote /></Button>
+          <Button size="icon-sm" variant="ghost" onClick={onRemove} aria-label="Remove"><Trash2 /></Button>
+        </div>
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        <Button size="icon-sm" variant="outline" onClick={() => onPatch(line.key, { qty: Math.max(1, line.qty - 1) })} aria-label="Kam"><Minus /></Button>
-        <input className="h-8 w-14 rounded-md border border-border bg-background text-center text-sm" value={line.qty} inputMode="decimal" onChange={(e) => onPatch(line.key, { qty: n(e.target.value) || 0 })} aria-label="Qty" title="Quantity" />
-        <Button size="icon-sm" variant="outline" onClick={() => onPatch(line.key, { qty: line.qty + 1 })} aria-label="Zyada"><Plus /></Button>
-        <input className="h-8 w-20 rounded-md border border-border bg-background px-2 text-sm" value={String(line.price)} inputMode="decimal" onChange={(e) => onPatch(line.key, { price: n(e.target.value) })} aria-label="Rate" title="Rate" />
-        <input className="h-8 w-16 rounded-md border border-border bg-background px-2 text-sm" value={line.unitOverride ?? ""} placeholder={packLabel(line)} onChange={(e) => onPatch(line.key, { unitOverride: e.target.value })} aria-label="Unit" title="Unit (khali = default)" />
-        <input className="h-8 w-16 rounded-md border border-border bg-background px-2 text-sm" value={line.discount ? String(line.discount) : ""} placeholder="Disc" inputMode="decimal" onChange={(e) => onPatch(line.key, { discount: n(e.target.value) })} aria-label="Discount" title="Discount" />
-        <input className="ml-auto h-8 w-24 rounded-md border border-border bg-background px-2 text-right text-sm font-semibold text-foreground" value={totalText ?? String(total)} inputMode="decimal" onChange={(e) => setTotal(e.target.value)} onBlur={() => setTotalText(null)} aria-label="Total" title="Total (likhein to rate khud set hoga)" />
+      <div className="mt-2 flex flex-wrap items-end gap-2">
+        <div className="flex items-center gap-1">
+          <Button size="icon-sm" variant="outline" onClick={() => onPatch(line.key, { qty: Math.max(0.001, +(line.qty - 1).toFixed(3)) || 1 })} aria-label="Kam"><Minus /></Button>
+          <input className={`${small} w-16 text-center`} value={qtyText ?? String(line.qty)} inputMode="decimal" onChange={(e) => { setQtyText(e.target.value); onPatch(line.key, { qty: n(e.target.value) }); }} onBlur={() => setQtyText(null)} aria-label="Qty" title="Quantity (0.5, 1.25 kg bhi)" />
+          <Button size="icon-sm" variant="outline" onClick={() => onPatch(line.key, { qty: +(line.qty + 1).toFixed(3) })} aria-label="Zyada"><Plus /></Button>
+        </div>
+        <label className="text-[10px] text-muted-foreground">Rate<input className={`${small} block w-20`} value={String(line.price)} inputMode="decimal" onChange={(e) => onPatch(line.key, { price: n(e.target.value) })} aria-label="Rate" /></label>
+        <label className="text-[10px] text-muted-foreground">Unit<input className={`${small} block w-16`} value={line.unitOverride ?? ""} placeholder={packLabel(line)} onChange={(e) => onPatch(line.key, { unitOverride: e.target.value })} aria-label="Unit" /></label>
+        <label className="text-[10px] text-muted-foreground">Disc<input className={`${small} block w-16`} value={line.discount ? String(line.discount) : ""} placeholder="0" inputMode="decimal" onChange={(e) => onPatch(line.key, { discount: n(e.target.value) })} aria-label="Discount" /></label>
+        <label className="text-[10px] text-muted-foreground">Tax %<select className={`${small} block w-16 px-1`} value={line.taxPercent ?? 0} onChange={(e) => onPatch(line.key, { taxPercent: Number(e.target.value) })} aria-label="Tax">{TAX_RATES.map((t) => <option key={t} value={t}>{t}</option>)}</select></label>
+        <label className="ml-auto text-[10px] text-muted-foreground">Total<input className={`${small} block w-24 text-right font-semibold text-foreground`} value={totalText ?? String(total)} inputMode="decimal" onChange={(e) => setTotal(e.target.value)} onBlur={() => setTotalText(null)} aria-label="Total" /></label>
       </div>
+      {showNote ? <input className={`${small} mt-2 w-full`} value={line.note ?? ""} placeholder="Item note (receipt pe chhapega)" onChange={(e) => onPatch(line.key, { note: e.target.value })} aria-label="Item note" /> : null}
     </div>
   );
 }
