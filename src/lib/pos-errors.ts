@@ -18,7 +18,7 @@ const KNOWN = [
 export function friendlyDbError(err: { message?: string; code?: string } | null | undefined, fallback: string): string {
   const msg = err?.message ?? "";
   const hit = KNOWN.find((k) => msg.includes(k));
-  if (hit) return msg.replace(/^.*?(?=\b(?:[A-Z]))/, "").trim() || hit;
+  if (hit) return msg;
   if (err?.code === "23505") return "Yeh entry pehle hi save ho chuki hai (duplicate roki gayi).";
   if (/fetch|network|timeout/i.test(msg)) return "Internet masla — dobara try karein. Kuch bhi aadha save nahi hua.";
   return `${fallback} Dobara try karein.`;
