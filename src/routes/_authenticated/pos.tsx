@@ -26,7 +26,7 @@ import {
 } from "@/lib/pos";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Minus, Plus, Printer, ScanBarcode, ShoppingCart, Trash2, MessageCircle, LayoutGrid, Settings2, ReceiptText } from "lucide-react";
+import { Minus, Plus, Printer, ScanBarcode, ShoppingCart, Trash2, MessageCircle, LayoutGrid, Settings2, ReceiptText, Save } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -135,12 +135,12 @@ function PosPage() {
       /* ignore */
     }
   };
-  const updatePrinter = (p: ReceiptPrinter) => {
-    setPrinter(p);
+  const savePrinter = () => {
     try {
-      localStorage.setItem(PRINTER_KEY, JSON.stringify(p));
+      localStorage.setItem(PRINTER_KEY, JSON.stringify(printer));
+      toast.success("Printer aur paper settings save ho gayi hain");
     } catch {
-      /* ignore */
+      toast.error("Settings save nahi ho sakin");
     }
   };
 
@@ -525,7 +525,7 @@ function PosPage() {
           </section>
         </div>
         ) : (
-          <PosSettings printer={printer} onChange={updatePrinter} />
+          <PosSettings printer={printer} onChange={setPrinter} onSave={savePrinter} />
         )}
       </div>
     </AppShell>
@@ -575,7 +575,7 @@ function Row({ a, b, bold }: { a: string; b: string; bold?: boolean }) {
   );
 }
 
-function PosSettings({ printer, onChange }: { printer: ReceiptPrinter; onChange: (p: ReceiptPrinter) => void }) {
+function PosSettings({ printer, onChange, onSave }: { printer: ReceiptPrinter; onChange: (p: ReceiptPrinter) => void; onSave: () => void }) {
   const num = (v: string, min: number, max: number) => Math.min(max, Math.max(min, Number(v) || min));
   return (
     <section className="space-y-3">
@@ -598,6 +598,9 @@ function PosSettings({ printer, onChange }: { printer: ReceiptPrinter; onChange:
           <label className="text-xs text-muted-foreground">Height (mm, khali = roll)<input className={inputCls} type="number" value={printer.heightMm ?? ""} onChange={(e) => onChange({ ...printer, id: "custom", name: "Custom", heightMm: e.target.value ? num(e.target.value, 30, 500) : null })} /></label>
           <label className="text-xs text-muted-foreground">Margin (mm)<input className={inputCls} type="number" value={printer.marginMm} onChange={(e) => onChange({ ...printer, id: "custom", name: "Custom", marginMm: num(e.target.value, 0, 30) })} /></label>
           <label className="text-xs text-muted-foreground">Font (pt)<input className={inputCls} type="number" value={printer.fontPt} onChange={(e) => onChange({ ...printer, id: "custom", name: "Custom", fontPt: num(e.target.value, 6, 16) })} /></label>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <Button onClick={onSave}><Save /> Save settings</Button>
         </div>
       </div>
     </section>
