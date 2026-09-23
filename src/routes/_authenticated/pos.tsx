@@ -1,3 +1,4 @@
+import { PosCustomerSearch } from "@/components/pos-customer-search";
 import { AppShell } from "@/components/app-shell";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { Button } from "@/components/ui/button";
@@ -84,6 +85,10 @@ function PosPage() {
   const [delivery, setDelivery] = useState("");
   const [payMode, setPayMode] = useState<PayMode>("Cash");
   const [paid, setPaid] = useState("");
+  const pickCustomer = (c: { name: string | null; phone: string }) => {
+    setCustomerName(c.name ?? "");
+    setCustomerPhone(c.phone ?? "");
+  };
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [printer, setPrinter] = useState<ReceiptPrinter>(PRINTER_PRESETS[0]);
@@ -335,6 +340,10 @@ function PosPage() {
         <div className="grid gap-3 lg:grid-cols-[1.1fr_1fr]">
           {/* Products */}
           <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
+            <div className="mb-3 grid grid-cols-2 gap-2">
+              <PosCustomerSearch field="name" className={inputCls} value={customerName} onChange={setCustomerName} onPick={pickCustomer} placeholder="Customer naam (Walk-in)" />
+              <PosCustomerSearch field="phone" className={inputCls} value={customerPhone} onChange={setCustomerPhone} onPick={pickCustomer} placeholder="Phone (optional)" />
+            </div>
             <div className="flex flex-wrap gap-1.5">
               {RATE_TYPES.map((r) => (
                 <Button key={r.id} size="sm" variant={rate === r.id ? "default" : "outline"} onClick={() => setRate(r.id)}>
@@ -442,10 +451,6 @@ function PosPage() {
 
           {/* Cart */}
           <section className="space-y-3 rounded-2xl border border-border bg-card p-3 sm:p-4">
-            <div className="grid grid-cols-2 gap-2">
-              <input className={inputCls} value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Customer naam (Walk-in)" />
-              <input className={inputCls} value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value.replace(/[^\d+\s-]/g, ""))} inputMode="tel" placeholder="Phone (optional)" />
-            </div>
 
             <div className="space-y-2">
               {cart.map((l) => (
