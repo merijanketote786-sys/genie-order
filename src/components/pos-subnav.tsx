@@ -33,4 +33,4 @@ export function PosSubnav() {
 
 export const posInput = "h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
 export const PAY_OPTS = ["Cash", "Bank", "JazzCash", "Easypaisa", "Card", "Other"];
-export const rs = (n: number) => `Rs ${(Math.round(n * 100) / 100).toLocaleString("en-PK", { maximumFractionDigits: 2 })}`;
+export const rs = (n: number) => `Rs ${(Math.round(n * 100) / 100 + 0).toLocaleString("en-PK", { maximumFractionDigits: 2 })}`;
