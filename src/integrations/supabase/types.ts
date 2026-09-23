@@ -1137,6 +1137,10 @@ export type Database = {
       is_active_team_member: { Args: { _user_id: string }; Returns: boolean }
       next_invoice_number: { Args: never; Returns: string }
       next_order_number: { Args: never; Returns: string }
+      pos_adjust_stock: {
+        Args: { _id: string; _kind: string; _note: string; _qty: number }
+        Returns: undefined
+      }
       pos_cancel_sale: {
         Args: { _id: string; _reason: string }
         Returns: undefined
@@ -1168,6 +1172,10 @@ export type Database = {
       }
       pos_save_purchase: { Args: { _p: Json }; Returns: Json }
       pos_save_sale: { Args: { _p: Json }; Returns: Json }
+      pos_update_product: {
+        Args: { _id: string; _p: Json }
+        Returns: undefined
+      }
       set_order_number_start: { Args: { _start: number }; Returns: undefined }
     }
     Enums: {
