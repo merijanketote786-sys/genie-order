@@ -454,25 +454,7 @@ function PosPage() {
 
             <div className="space-y-2">
               {cart.map((l) => (
-                <div key={l.key} className="rounded-xl border border-border p-2.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground">{l.name}</p>
-                      <p className="text-xs text-muted-foreground">{packLabel(l)} · Rs {money(l.price)}</p>
-                    </div>
-                    <Button size="icon-sm" variant="ghost" onClick={() => setCart((p) => p.filter((x) => x.key !== l.key))} aria-label="Remove">
-                      <Trash2 />
-                    </Button>
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <Button size="icon-sm" variant="outline" onClick={() => patch(l.key, { qty: Math.max(1, l.qty - 1) })} aria-label="Kam"><Minus /></Button>
-                    <input className="h-8 w-14 rounded-md border border-border bg-background text-center text-sm" value={l.qty} inputMode="decimal" onChange={(e) => patch(l.key, { qty: n(e.target.value) || 0 })} aria-label="Qty" />
-                    <Button size="icon-sm" variant="outline" onClick={() => patch(l.key, { qty: l.qty + 1 })} aria-label="Zyada"><Plus /></Button>
-                    <input className="h-8 w-20 rounded-md border border-border bg-background px-2 text-sm" value={String(l.price)} inputMode="decimal" onChange={(e) => patch(l.key, { price: n(e.target.value) })} aria-label="Rate" title="Rate" />
-                    <input className="h-8 w-20 rounded-md border border-border bg-background px-2 text-sm" value={l.discount ? String(l.discount) : ""} placeholder="Disc" inputMode="decimal" onChange={(e) => patch(l.key, { discount: n(e.target.value) })} aria-label="Discount" />
-                    <span className="ml-auto text-sm font-bold text-foreground">Rs {money(lineTotal(l))}</span>
-                  </div>
-                </div>
+                <CartRow key={l.key} line={l} onPatch={patch} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
               ))}
               {!cart.length ? <p className="rounded-xl border border-dashed border-border py-8 text-center text-sm text-muted-foreground">Cart khali hai — product pe tap ya scan karein.</p> : null}
             </div>
@@ -519,6 +501,40 @@ function PosPage() {
         <PrinterSettings printer={printer} onChange={updatePrinter} />
       </div>
     </AppShell>
+  );
+}
+
+/** Cart ki ek line — qty, rate, discount, unit aur total sab manually likhe ja sakte hain. */
+function CartRow({ line, onPatch, onRemove }: { line: CartLine; onPatch: (key: string, v: Partial<CartLine>) => void; onRemove: () => void }) {
+  const [totalText, setTotalText] = useState<string | null>(null);
+  const total = lineTotal(line);
+  const setTotal = (raw: string) => {
+    setTotalText(raw);
+    const t = n(raw);
+    const q = line.qty || 1;
+    onPatch(line.key, { price: Math.round(((t + (line.discount || 0)) / q) * 100) / 100 });
+  };
+  return (
+    <div className="rounded-xl border border-border p-2.5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground">{line.name}</p>
+          <p className="text-xs text-muted-foreground">{packLabel(line)} · Rs {money(line.price)}</p>
+        </div>
+        <Button size="icon-sm" variant="ghost" onClick={onRemove} aria-label="Remove">
+          <Trash2 />
+        </Button>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <Button size="icon-sm" variant="outline" onClick={() => onPatch(line.key, { qty: Math.max(1, line.qty - 1) })} aria-label="Kam"><Minus /></Button>
+        <input className="h-8 w-14 rounded-md border border-border bg-background text-center text-sm" value={line.qty} inputMode="decimal" onChange={(e) => onPatch(line.key, { qty: n(e.target.value) || 0 })} aria-label="Qty" title="Quantity" />
+        <Button size="icon-sm" variant="outline" onClick={() => onPatch(line.key, { qty: line.qty + 1 })} aria-label="Zyada"><Plus /></Button>
+        <input className="h-8 w-20 rounded-md border border-border bg-background px-2 text-sm" value={String(line.price)} inputMode="decimal" onChange={(e) => onPatch(line.key, { price: n(e.target.value) })} aria-label="Rate" title="Rate" />
+        <input className="h-8 w-16 rounded-md border border-border bg-background px-2 text-sm" value={line.unitOverride ?? ""} placeholder={packLabel(line)} onChange={(e) => onPatch(line.key, { unitOverride: e.target.value })} aria-label="Unit" title="Unit (khali = default)" />
+        <input className="h-8 w-16 rounded-md border border-border bg-background px-2 text-sm" value={line.discount ? String(line.discount) : ""} placeholder="Disc" inputMode="decimal" onChange={(e) => onPatch(line.key, { discount: n(e.target.value) })} aria-label="Discount" title="Discount" />
+        <input className="ml-auto h-8 w-24 rounded-md border border-border bg-background px-2 text-right text-sm font-semibold text-foreground" value={totalText ?? String(total)} inputMode="decimal" onChange={(e) => setTotal(e.target.value)} onBlur={() => setTotalText(null)} aria-label="Total" title="Total (likhein to rate khud set hoga)" />
+      </div>
+    </div>
   );
 }
 

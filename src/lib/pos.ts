@@ -15,6 +15,7 @@ export type CartLine = {
   key: string;
   name: string;
   unit: string;
+  unitOverride?: string; // manually likha gaya unit — receipt/invoice me yehi chhapta hai
   rateType: RateType;
   price: number;
   qty: number;
@@ -25,7 +26,9 @@ export function priceFor(p: DbProduct, rate: RateType): number | null {
   return rate === "sale" ? p.sale : rate === "p100" ? p.p100 : rate === "p250" ? p.p250 : p.p500;
 }
 
-export function packLabel(line: Pick<CartLine, "rateType" | "unit">) {
+export function packLabel(line: Pick<CartLine, "rateType" | "unit" | "unitOverride">) {
+  const manual = line.unitOverride?.trim();
+  if (manual) return manual;
   const r = RATE_TYPES.find((x) => x.id === line.rateType);
   return r?.packGrams ? `${r.packGrams}gram` : line.unit || "unit";
 }
