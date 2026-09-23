@@ -141,6 +141,20 @@
       "when": 1790192751105,
       "tag": "0019_pos_inventory_tools",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1790193187161,
+      "tag": "0020_pos_roles_permissions_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790193401663,
+      "tag": "0021_pos_settings_hide_pin",
+      "breakpoints": true
     }
   ]
 }

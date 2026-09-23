@@ -360,6 +360,27 @@ export type Database = {
           },
         ]
       }
+      pos_member_roles: {
+        Row: {
+          role: string
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          role: string
+          updated_at?: string
+          user_id: string
+          workspace_id?: string
+        }
+        Update: {
+          role?: string
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
       pos_payments: {
         Row: {
           amount: number
@@ -617,6 +638,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pos_settings: {
+        Row: {
+          config: Json
+          pin_hash: string | null
+          updated_at: string
+          updated_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          config?: Json
+          pin_hash?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id?: string
+        }
+        Update: {
+          config?: Json
+          pin_hash?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: []
       }
       products: {
         Row: {
@@ -1141,8 +1186,17 @@ export type Database = {
         Args: { _id: string; _kind: string; _note: string; _qty: number }
         Returns: undefined
       }
+      pos_can: { Args: { _perm: string }; Returns: boolean }
       pos_cancel_sale: {
         Args: { _id: string; _reason: string }
+        Returns: undefined
+      }
+      pos_cancel_sale_core: {
+        Args: { _id: string; _reason: string }
+        Returns: undefined
+      }
+      pos_cancel_sale_pin: {
+        Args: { _id: string; _pin: string; _reason: string }
         Returns: undefined
       }
       pos_find_customer: {
@@ -1160,6 +1214,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      pos_my_access: { Args: never; Returns: Json }
       pos_party_payment: {
         Args: {
           _amount: number
@@ -1170,12 +1225,23 @@ export type Database = {
         }
         Returns: string
       }
+      pos_perms: { Args: { _role: string }; Returns: string[] }
+      pos_role: { Args: { _uid: string }; Returns: string }
       pos_save_purchase: { Args: { _p: Json }; Returns: Json }
       pos_save_sale: { Args: { _p: Json }; Returns: Json }
+      pos_save_settings: {
+        Args: { _config: Json; _pin: string }
+        Returns: undefined
+      }
+      pos_set_member_role: {
+        Args: { _role: string; _user: string }
+        Returns: undefined
+      }
       pos_update_product: {
         Args: { _id: string; _p: Json }
         Returns: undefined
       }
+      pos_verify_pin: { Args: { _pin: string }; Returns: boolean }
       set_order_number_start: { Args: { _start: number }; Returns: undefined }
     }
     Enums: {
