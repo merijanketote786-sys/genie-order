@@ -130,6 +130,7 @@ export type Database = {
           amount: number
           attachment: string | null
           category: string
+          client_ref: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -143,6 +144,7 @@ export type Database = {
           amount: number
           attachment?: string | null
           category: string
+          client_ref?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -156,6 +158,7 @@ export type Database = {
           amount?: number
           attachment?: string | null
           category?: string
+          client_ref?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -384,6 +387,7 @@ export type Database = {
       pos_payments: {
         Row: {
           amount: number
+          client_ref: string | null
           created_at: string
           created_by: string | null
           customer_id: string | null
@@ -400,6 +404,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          client_ref?: string | null
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
@@ -416,6 +421,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          client_ref?: string | null
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
@@ -539,6 +545,7 @@ export type Database = {
       pos_sales: {
         Row: {
           balance: number
+          client_ref: string | null
           cost_total: number
           created_at: string
           created_by: string | null
@@ -565,6 +572,7 @@ export type Database = {
         }
         Insert: {
           balance?: number
+          client_ref?: string | null
           cost_total?: number
           created_at?: string
           created_by?: string | null
@@ -591,6 +599,7 @@ export type Database = {
         }
         Update: {
           balance?: number
+          client_ref?: string | null
           cost_total?: number
           created_at?: string
           created_by?: string | null
@@ -849,6 +858,7 @@ export type Database = {
       purchases: {
         Row: {
           balance: number
+          client_ref: string | null
           created_at: string
           created_by: string | null
           discount_total: number
@@ -870,6 +880,7 @@ export type Database = {
         }
         Insert: {
           balance?: number
+          client_ref?: string | null
           created_at?: string
           created_by?: string | null
           discount_total?: number
@@ -891,6 +902,7 @@ export type Database = {
         }
         Update: {
           balance?: number
+          client_ref?: string | null
           created_at?: string
           created_by?: string | null
           discount_total?: number
@@ -1199,6 +1211,7 @@ export type Database = {
         Args: { _id: string; _pin: string; _reason: string }
         Returns: undefined
       }
+      pos_close_doc: { Args: { _id: string }; Returns: undefined }
       pos_find_customer: {
         Args: { _phone: string; _ws: string }
         Returns: string
@@ -1222,6 +1235,7 @@ export type Database = {
           _method: string
           _note: string
           _party: string
+          _ref?: string
         }
         Returns: string
       }
