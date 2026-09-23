@@ -8,6 +8,7 @@ import { PackagePlus, Trash2, Undo2 } from "lucide-react";
 import { useMemo, useState, useRef } from "react";
 import { toast } from "sonner";
 import { newRef } from "@/lib/pos-errors";
+import { usePrintCenter } from "@/components/print-center";
 
 export const Route = createFileRoute("/_authenticated/purchases")({
   head: () => ({
@@ -28,6 +29,7 @@ const num = (s: string) => Number(s.replace(/[^\d.]/g, "")) || 0;
 
 function PurchasesPage() {
   const qc = useQueryClient();
+  const pc = usePrintCenter();
   const { data: sup } = useQuery({ queryKey: ["suppliers"], queryFn: () => listSuppliers() });
   const { data: prod } = useQuery({ queryKey: ["products-lite"], queryFn: () => listProductsLite(), staleTime: 60_000 });
   const { data: hist } = useQuery({ queryKey: ["purchases"], queryFn: () => listPurchases() });
@@ -83,6 +85,14 @@ function PurchasesPage() {
       } });
       opRef.current = newRef();
       toast.success(`${docType === "purchase" ? "Purchase" : "Purchase return"} save: ${r.number} — ${rs(r.total)}`);
+      const supName = sup?.suppliers.find((x) => x.id === supplierId)?.name;
+      pc.afterSave({
+        kind: "purchase", title: docType === "purchase" ? "Purchase Invoice" : "Purchase Return", number: r.number, date: new Date(),
+        party: supName ? { label: "Supplier", name: supName } : undefined,
+        lines: valid.map((l) => ({ name: l.name, unit: l.unit, qty: num(l.qty), rate: num(l.rate), discount: num(l.discount), taxPercent: num(l.tax), total: lineTotal(l), note: [l.batch && `Batch ${l.batch}`, l.expiry && `Exp ${l.expiry}`].filter(Boolean).join(" · ") || undefined })),
+        totals: [...(num(discount) ? [{ label: "Discount", value: -num(discount) }] : []), { label: "Grand Total", value: r.total, bold: true }],
+        payments: paidNum ? [{ method, amount: paidNum }] : [], paid: paidNum, balance: Math.max(0, r.total - paidNum), notes: notes || undefined,
+      }, "purchase");
       reset();
       ["purchases", "suppliers", "products", "products-lite"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
     } catch (e) { toast.error(e instanceof Error ? e.message : "Purchase save nahi hui. Dobara try karein."); } finally { lockRef.current = false; setSaving(false); }
@@ -91,6 +101,7 @@ function PurchasesPage() {
   const cell = "h-8 rounded-md border border-border bg-background px-2 text-sm";
   return (
     <AppShell title="Purchases" subtitle="Stock khareed aur supplier credit" active="/pos">
+      {pc.node}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />
         <section className="space-y-3 rounded-xl border border-border bg-card p-3">

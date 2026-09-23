@@ -6,6 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Printer } from "lucide-react";
 import { useState } from "react";
+import { usePrintCenter } from "@/components/print-center";
+
 
 export const Route = createFileRoute("/_authenticated/daybook")({
   head: () => ({
@@ -26,6 +28,7 @@ const localDate = (d = new Date()) => new Date(d.getTime() - d.getTimezoneOffset
 function DayBookPage() {
   const [date, setDate] = useState(localDate());
   const [counted, setCounted] = useState("");
+  const pc = usePrintCenter();
   const { data } = useQuery({ queryKey: ["daybook", date], queryFn: () => getDayBook({ data: { date, tzOffsetMin: new Date(`${date}T12:00:00`).getTimezoneOffset() } }) });
   const diff = counted.trim() && data ? Number(counted) - data.closing : null;
 
@@ -35,11 +38,17 @@ function DayBookPage() {
 
   return (
     <AppShell title="Cash Day Book" subtitle="Rozana cash hisaab" active="/pos">
+      {pc.node}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />
         <div className="flex flex-wrap items-center gap-2">
           <input className={`${posInput} w-44`} type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Date" />
-          <Button variant="outline" onClick={() => window.print()}><Printer /> Print</Button>
+          <Button variant="outline" disabled={!data} onClick={() => data && pc.preview({
+            kind: "report", title: "Cash Day Book", number: date, date: new Date(),
+            meta: [["Opening cash", rs(data.opening)], ["Cash in", rs(data.cashIn)], ["Cash out", rs(data.cashOut)], ...Object.entries(data.byMethod).map(([k, v]) => [`${k} (net)`, rs(v)] as [string, string])],
+            table: { head: ["Time", "Detail", "Method", "Note", "In", "Out"], align: ["l", "l", "l", "l", "r", "r"], rows: data.rows.map((r) => [new Date(r.time).toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" }), r.kind, r.method, r.note, r.dir === "in" ? r.amount : "", r.dir === "out" ? r.amount : ""] as (string | number)[]) },
+            totals: [{ label: "Expected closing cash", value: data.closing, bold: true }],
+          })}><Printer /> Print</Button>
         </div>
         {data ? (
           <>

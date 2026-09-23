@@ -86,7 +86,7 @@ function pageHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, tpl: Tem
   const logo = f.logo && b.logo ? `<img class=logo src="${esc(b.logo)}" alt="">` : "";
   const bizLines = [f.address && b.address, f.phone && b.phone && `Ph: ${b.phone}`, f.email && b.email, f.website && b.website, f.taxId && b.taxId && `NTN/GST: ${b.taxId}`].filter(Boolean) as string[];
   const header = `<div class="hd ${L.logoAlign === "center" ? "hd-c" : L.logoAlign === "right" ? "hd-r" : ""}">
-    ${logo}<div class=biz>${f.businessName ? `<div class=bizname>${esc(b.name || "Business")}</div>` : ""}${bizLines.map((x) => `<div class=muted>${esc(x)}</div>`).join("")}</div>
+    ${logo}<div class=biz>${f.businessName ? `<div class=bizname>${esc(b.name || "HB Chemicals Pakistan")}</div>` : ""}${bizLines.map((x) => `<div class=muted>${esc(x)}</div>`).join("")}</div>
     <div class=docbox>${f.title ? `<div class=doc-title>${esc(doc.title)}</div>` : ""}${f.number ? `<div><b>${esc(doc.number)}</b></div>` : ""}<div class=muted>${esc(date)}</div></div>
   </div>`;
 
@@ -221,7 +221,7 @@ function thermalHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, ex: E
   .code{text-align:center;margin-top:1.5mm}.code svg{max-width:100%;height:${narrow ? 10 : 12}mm}.code img{width:${narrow ? 22 : 28}mm}
   .feed{height:${Math.max(0, t.feedLines) * font * 0.5}mm}
   .copy{page-break-after:always;break-after:page}.copy:last-child{page-break-after:auto}`;
-  const inner = `<div class=c>${f.logo && b.logo ? `<img class=logo src="${esc(b.logo)}" alt="">` : ""}${f.businessName ? `<div class=bn>${esc(b.name || "Business")}</div>` : ""}
+  const inner = `<div class=c>${f.logo && b.logo ? `<img class=logo src="${esc(b.logo)}" alt="">` : ""}${f.businessName ? `<div class=bn>${esc(b.name || "HB Chemicals Pakistan")}</div>` : ""}
     ${f.address && b.address ? `<div>${esc(b.address)}</div>` : ""}${f.phone && b.phone ? `<div>${esc(b.phone)}</div>` : ""}${f.taxId && b.taxId ? `<div>NTN/GST: ${esc(b.taxId)}</div>` : ""}
     ${f.title ? `<div><b>${esc(doc.title)}</b></div>` : ""}</div><hr>
     ${f.number ? kv("No.", esc(doc.number)) : ""}${kv("Date", esc(date))}

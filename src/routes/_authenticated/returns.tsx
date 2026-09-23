@@ -10,6 +10,7 @@ import { Search, Undo2 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { newRef } from "@/lib/pos-errors";
+import { usePrintCenter } from "@/components/print-center";
 
 export const Route = createFileRoute("/_authenticated/returns")({
   head: () => ({
@@ -27,6 +28,7 @@ export const Route = createFileRoute("/_authenticated/returns")({
 
 function ReturnsPage() {
   const qc = useQueryClient();
+  const pc = usePrintCenter();
   const [pinNode, askPin] = usePinPrompt();
   const cancelReturn = async (id: string) => {
     if (!confirm("Return cancel karein? Stock dobara kam hoga.")) return;
@@ -69,6 +71,13 @@ function ReturnsPage() {
       const r = await saveSalesReturn({ data: { saleId, mode, method, reason: reason || undefined, lines: lines.map((x) => ({ itemId: x.i.id, qty: x.q })), clientRef: opRef.current } });
       opRef.current = newRef();
       toast.success(`Return save: ${r.number} — ${rs(r.total)}`);
+      pc.afterSave({
+        kind: "return", title: "Sales Return", number: r.number, date: new Date(),
+        meta: [["Original bill", sale?.sale?.number ?? ""], ["Mode", mode === "refund" ? `Refund (${method})` : "Customer credit"]],
+        party: sale?.sale?.customerName ? { label: "Customer", name: sale.sale.customerName, phone: sale.sale.customerPhone || undefined } : undefined,
+        lines: lines.map((x) => ({ name: x.i.name, unit: x.i.unit ?? undefined, qty: x.q, rate: x.i.unitRefund, total: x.q * x.i.unitRefund })),
+        totals: [{ label: mode === "refund" ? "Refund amount" : "Credit amount", value: r.total, bold: true }], notes: reason || undefined,
+      }, "return");
       setQty({}); setReason("");
       qc.invalidateQueries({ queryKey: ["ret-sale"] });
       qc.invalidateQueries({ queryKey: ["ret-list"] });
@@ -80,6 +89,7 @@ function ReturnsPage() {
 
   return (
     <AppShell title="Sales Returns" subtitle="Refund ya customer credit" active="/pos">
+      {pc.node}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />
         {pinNode}
