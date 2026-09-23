@@ -323,6 +323,19 @@ function PosPage() {
           status: paymentStatus(total, paidNum, payMode),
           invoiceText: receiptText(r),
           stock: cart.map((l) => ({ name: l.name, qty: stockDeduction(l) })),
+          items: cart.map((l) => ({
+            name: l.name,
+            unit: packLabel(l),
+            rateType: l.rateType,
+            qty: l.qty,
+            stockQty: stockDeduction(l),
+            rate: l.price,
+            discount: l.discount || 0,
+            lineTotal: lineTotal(l),
+          })),
+          subtotal,
+          discountTotal: n(billDiscount),
+          delivery: n(delivery),
         },
       });
       const final = { ...r, invoiceNumber: res.invoiceNumber };

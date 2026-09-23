@@ -12,67 +12,74 @@ const input = z.object({
   /** text builder receives the invoice number via {{INVOICE}} placeholder */
   invoiceText: z.string().trim().min(5).max(20000),
   stock: z.array(z.object({ name: z.string().max(300), qty: z.number().min(0).max(1e7) })).max(300),
+  items: z
+    .array(
+      z.object({
+        name: z.string().max(300),
+        unit: z.string().max(60).optional(),
+        rateType: z.string().max(20).optional(),
+        qty: z.number().min(0).max(1e7),
+        stockQty: z.number().min(0).max(1e7),
+        rate: z.number().min(0).max(1e9),
+        discount: z.number().min(0).max(1e9),
+        lineTotal: z.number().min(0).max(1e9),
+      }),
+    )
+    .max(300)
+    .optional(),
+  subtotal: z.number().min(0).max(1e9).optional(),
+  discountTotal: z.number().min(0).max(1e9).optional(),
+  delivery: z.number().min(0).max(1e9).optional(),
 });
 
+/** Sale ek hi database transaction me save hoti hai: bill + items + payment + stock + invoice record. */
 export const savePosSale = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => input.parse(d))
   .handler(async ({ data, context }) => {
-    const { isActiveProfile } = await import("@/lib/access.server");
-    if (!(await isActiveProfile(context.supabase as never, context.userId))) throw new Error("Access band hai");
     const supabase = context.supabase as any;
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const names = [...new Set((data.items ?? data.stock).map((s) => s.name))];
+    const { data: prods } = names.length
+      ? await supabase.from("products").select("id, name").in("name", names)
+      : { data: [] };
+    const idOf = new Map<string, string>((prods ?? []).map((p: { id: string; name: string }) => [p.name, p.id]));
 
-    const { data: num, error: numErr } = await supabaseAdmin.rpc("next_invoice_number");
-    if (numErr || !num) throw new Error("Invoice number nahi ban saka");
-    const invoiceNumber = String(num);
+    const items =
+      data.items?.map((i) => ({
+        product_id: idOf.get(i.name) ?? null,
+        name: i.name,
+        unit: i.unit ?? null,
+        rate_type: i.rateType ?? null,
+        qty: i.qty,
+        stock_qty: i.stockQty,
+        rate: i.rate,
+        discount: i.discount,
+        line_total: i.lineTotal,
+      })) ??
+      data.stock.map((s) => ({ product_id: idOf.get(s.name) ?? null, name: s.name, qty: s.qty, stock_qty: s.qty, rate: 0, line_total: 0 }));
 
-    const phoneDigits = (data.phone ?? "").replace(/\D/g, "");
-    let customerId: string | null = null;
-    if (phoneDigits.length >= 10) {
-      const { data: ex } = await supabase.from("customers").select("id").eq("phone", phoneDigits).maybeSingle();
-      if (ex) customerId = ex.id;
-      else {
-        const { data: c } = await supabase
-          .from("customers")
-          .insert({ phone: phoneDigits, name: data.customerName || null, created_by: context.userId })
-          .select("id")
-          .maybeSingle();
-        customerId = c?.id ?? null;
-      }
-    }
+    const paidAmt = Math.min(data.paid, data.total);
+    const payments = [
+      ...(paidAmt > 0 ? [{ method: data.payMode === "Udhaar" ? "Cash" : data.payMode, amount: paidAmt }] : []),
+      ...(data.total - paidAmt > 0 ? [{ method: "Credit", amount: data.total - paidAmt }] : []),
+    ];
 
-    const { data: row, error } = await supabase
-      .from("invoices")
-      .insert({
-        invoice_number: invoiceNumber,
-        customer_name: data.customerName || "Walk-in",
-        phone: phoneDigits || null,
-        total: data.total,
-        payment_status: data.status,
-        paid_at: data.status === "paid" ? new Date().toISOString() : null,
-        payment_method: `POS-${data.payMode}`,
-        cod_amount: data.status === "paid" ? null : Math.max(0, data.total - data.paid),
-        invoice_text: data.invoiceText.replaceAll("{{INVOICE}}", invoiceNumber),
-        customer_id: customerId,
-        created_by: context.userId,
-      })
-      .select("id")
-      .maybeSingle();
-    if (error) throw new Error("Sale save nahi ho saki");
-
-    // Stock kam karein (sirf user ke workspace ke products)
-    const { data: prof } = await supabaseAdmin.from("profiles").select("workspace_id").eq("id", context.userId).maybeSingle();
-    const ws = prof?.workspace_id ?? context.userId;
-    for (const s of data.stock) {
-      if (!s.qty) continue;
-      const { data: p } = await supabaseAdmin
-        .from("products")
-        .select("id, stock")
-        .eq("workspace_id", ws)
-        .eq("name", s.name)
-        .maybeSingle();
-      if (p) await supabaseAdmin.from("products").update({ stock: Number(p.stock ?? 0) - s.qty }).eq("id", p.id);
-    }
-    return { ok: true, id: row?.id as string, invoiceNumber };
+    const { data: res, error } = await supabase.rpc("pos_save_sale", {
+      _p: {
+        doc_type: "sale",
+        customer_name: data.customerName ?? "",
+        customer_phone: data.phone ?? "",
+        subtotal: data.subtotal ?? data.total,
+        discount_total: data.discountTotal ?? 0,
+        delivery: data.delivery ?? 0,
+        grand_total: data.total,
+        items,
+        payments,
+        method_label: data.payMode,
+        invoice_text: data.invoiceText,
+      },
+    });
+    if (error || !res) throw new Error(error?.message?.includes("Access") ? "Access band hai" : "Sale save nahi ho saki");
+    const r = res as { id: string; number: string };
+    return { ok: true, id: r.id, invoiceNumber: r.number };
   });
