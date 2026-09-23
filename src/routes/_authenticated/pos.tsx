@@ -96,30 +96,123 @@ function PosPage() {
     return products.filter((p) => p.name.toLowerCase().includes(t)).slice(0, 24);
   }, [products, term]);
 
-  const add = (p: DbProduct) => {
-    const price = priceFor(p, rate);
+  const add = (p: DbProduct, rateOverride?: RateType) => {
+    const r = rateOverride ?? rate;
+    const price = priceFor(p, r) ?? (rateOverride ? priceFor(p, rate) : null);
+    const useRate = priceFor(p, r) != null ? r : rate;
     if (price == null) {
-      toast.error(`${p.name} ka ${RATE_TYPES.find((r) => r.id === rate)?.label} rate nahi hai`);
+      toast.error(`${p.name} ka ${RATE_TYPES.find((x) => x.id === r)?.label} rate nahi hai`);
       return;
     }
     setCart((prev) => {
-      const key = `${p.name}|${rate}`;
+      const key = `${p.name}|${useRate}`;
       const ex = prev.find((l) => l.key === key);
       if (ex) return prev.map((l) => (l.key === key ? { ...l, qty: l.qty + 1 } : l));
-      return [...prev, { key, name: p.name, unit: p.unit, rateType: rate, price, qty: 1, discount: 0 }];
+      return [...prev, { key, name: p.name, unit: p.unit, rateType: useRate, price, qty: 1, discount: 0 }];
     });
+    toast.success(`${p.name} cart me add`, { duration: 1200 });
+  };
+
+  // Barcode ↔ product links (company ke apne barcodes ke liye), is device pe saved
+  const [links, setLinks] = useState<Record<string, { name: string; rate: RateType }>>({});
+  const [pendingCode, setPendingCode] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      setLinks(JSON.parse(localStorage.getItem(LINKS_KEY) || "{}"));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  const saveLink = (code: string, p: DbProduct) => {
+    const next = { ...links, [code]: { name: p.name, rate } };
+    setLinks(next);
+    try {
+      localStorage.setItem(LINKS_KEY, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+    setPendingCode(null);
+    setTerm("");
+    add(p);
+  };
+
+  const findByCode = (raw: string): { p: DbProduct; rate?: RateType } | null => {
+    const code = raw.trim().toUpperCase();
+    if (!code) return null;
+    const link = links[code];
+    if (link) {
+      const p = products.find((x) => x.name === link.name);
+      if (p) return { p, rate: link.rate };
+    }
+    const lower = code.toLowerCase();
+    const byName = products.find((x) => x.name.toLowerCase() === lower);
+    if (byName) return { p: byName };
+    // Labels section wala code: NAAM(10 harf)-PACK, e.g. GLYCERINE-100G
+    const [base, suffix = ""] = code.split("-");
+    const p = products.find((x) => labelBase(x.name) === base);
+    if (p) {
+      const g = suffix.replace(/\D/g, "");
+      const r: RateType | undefined = g === "100" ? "p100" : g === "250" ? "p250" : g === "500" ? "p500" : undefined;
+      return { p, rate: r };
+    }
+    return null;
+  };
+
+  const handleCode = (raw: string) => {
+    const hit = findByCode(raw);
+    if (hit) {
+      add(hit.p, hit.rate);
+      setTerm("");
+      setPendingCode(null);
+      return true;
+    }
+    return false;
   };
 
   // Barcode scanner: code type hota hai + Enter
   const onScan = () => {
-    const t = term.trim().toLowerCase();
+    const t = term.trim();
     if (!t) return;
-    const exact = products.find((p) => p.name.toLowerCase() === t) ?? results[0];
-    if (exact) {
-      add(exact);
+    if (handleCode(t)) return;
+    if (results.length === 1) {
+      add(results[0]);
       setTerm("");
-    } else toast.error("Product nahi mila");
+      return;
+    }
+    setPendingCode(t.toUpperCase());
+    toast.error("Ye barcode kisi product se juda nahi — neeche product chun kar link karein");
   };
+
+  // Scanner input page pe kahin bhi aaye (box focus na ho tab bhi) pakar lein
+  const handleCodeRef = useRef(handleCode);
+  handleCodeRef.current = handleCode;
+  useEffect(() => {
+    let buf = "";
+    let lastAt = 0;
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
+      const t = Date.now();
+      if (t - lastAt > 80) buf = "";
+      lastAt = t;
+      if (e.key === "Enter" || e.key === "Tab") {
+        if (buf.length >= 3) {
+          e.preventDefault();
+          const code = buf;
+          buf = "";
+          if (!handleCodeRef.current(code)) {
+            setTerm(code);
+            setPendingCode(code.toUpperCase());
+            toast.error("Ye barcode kisi product se juda nahi — product chun kar link karein");
+          }
+        }
+        return;
+      }
+      if (e.key.length === 1) buf += e.key;
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const patch = (key: string, v: Partial<CartLine>) =>
     setCart((prev) => prev.map((l) => (l.key === key ? { ...l, ...v } : l)));
