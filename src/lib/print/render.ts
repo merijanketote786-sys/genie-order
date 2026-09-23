@@ -249,7 +249,7 @@ async function extrasFor(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg): 
       ex.barcodeSvg = svg.outerHTML;
     } catch { /* invalid barcode chars — skip */ }
   }
-  if ((thermal && t.showQr) || (!thermal && cfg.printing.fields.signature === false && false)) {
+  if (thermal && t.showQr) {
     try {
       const QR = await import("qrcode");
       ex.qrDataUrl = await QR.toDataURL(`${cfg.business.name || "Invoice"} | ${doc.title} ${doc.number} | Total ${doc.totals?.find((x) => x.bold)?.value ?? ""}`, { margin: 0, width: 180 });
@@ -268,7 +268,7 @@ export async function renderPrint(doc: PrintDoc, cfg: ResolvedCfg, o: RenderOpts
   const { css, inner } = thermalLike ? thermalHtml(doc, o.format, cfg, ex, spec.widthMm) : pageHtml(doc, o.format, cfg, tpl, ex);
   const copies = Math.min(10, Math.max(1, Math.round(o.copies ?? 1)));
   const sheets = Array.from({ length: copies }, (_, i) => `<div class="copy sheet">${copies > 1 && i > 0 ? `<div style="text-align:right;font-size:7pt;color:#666">Copy ${i + 1}</div>` : ""}${inner}</div>`).join("");
-  const pageCss = `@page{size:${spec.widthMm}mm ${spec.heightMm ? `${spec.heightMm}mm` : "auto"};margin:0}body{width:${spec.widthMm}mm}${spec.heightMm ? `.copy{min-height:${spec.heightMm}mm}` : ""}`;
+  const pageCss = `@page{size:${spec.widthMm}mm ${spec.heightMm ? `${spec.heightMm}mm` : "auto"};margin:0}body{width:${spec.widthMm}mm}`;
   const html = `<!doctype html><html><head><meta charset=utf-8><title>${esc(doc.title)} ${esc(doc.number)}</title><style>${css}${pageCss}</style></head><body>${sheets}</body></html>`;
   return { html, spec };
 }
