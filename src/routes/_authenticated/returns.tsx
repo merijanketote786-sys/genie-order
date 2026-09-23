@@ -73,8 +73,8 @@ function ReturnsPage() {
       toast.success(`Return save: ${r.number} — ${rs(r.total)}`);
       pc.afterSave({
         kind: "return", title: "Sales Return", number: r.number, date: new Date(),
-        meta: [["Original bill", sale?.sale?.doc_number ?? ""], ["Mode", mode === "refund" ? `Refund (${method})` : "Customer credit"]],
-        party: sale?.sale?.customer_name ? { label: "Customer", name: sale.sale.customer_name, phone: sale.sale.customer_phone ?? undefined } : undefined,
+        meta: [["Original bill", sale?.sale?.number ?? ""], ["Mode", mode === "refund" ? `Refund (${method})` : "Customer credit"]],
+        party: sale?.sale?.customerName ? { label: "Customer", name: sale.sale.customerName, phone: sale.sale.customerPhone || undefined } : undefined,
         lines: lines.map((x) => ({ name: x.i.name, unit: x.i.unit ?? undefined, qty: x.q, rate: x.i.unitRefund, total: x.q * x.i.unitRefund })),
         totals: [{ label: mode === "refund" ? "Refund amount" : "Credit amount", value: r.total, bold: true }], notes: reason || undefined,
       }, "return");
