@@ -16,6 +16,7 @@ type WorkspacePath =
   | "/"
   | "/dashboard"
   | "/invoice"
+  | "/pos"
   | "/confirmation"
   | "/extract"
   | "/rates"
