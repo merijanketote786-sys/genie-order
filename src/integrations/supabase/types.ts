@@ -1211,10 +1211,23 @@ export type Database = {
         Args: { _id: string; _pin: string; _reason: string }
         Returns: undefined
       }
+      pos_cfg_prefix: {
+        Args: { _cfg: Json; _def: string; _key: string }
+        Returns: string
+      }
       pos_close_doc: { Args: { _id: string }; Returns: undefined }
       pos_find_customer: {
         Args: { _phone: string; _ws: string }
         Returns: string
+      }
+      pos_log_event: {
+        Args: {
+          _action: string
+          _details: Json
+          _entity: string
+          _entity_id: string
+        }
+        Returns: undefined
       }
       pos_move_stock: {
         Args: {
@@ -1241,6 +1254,10 @@ export type Database = {
       }
       pos_perms: { Args: { _role: string }; Returns: string[] }
       pos_role: { Args: { _uid: string }; Returns: string }
+      pos_save_printers: {
+        Args: { _defaults: Json; _printers: Json }
+        Returns: undefined
+      }
       pos_save_purchase: { Args: { _p: Json }; Returns: Json }
       pos_save_sale: { Args: { _p: Json }; Returns: Json }
       pos_save_settings: {
