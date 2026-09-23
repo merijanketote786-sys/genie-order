@@ -31,6 +31,8 @@ export default defineConfig({
       { find: /^@\/lib\/dashboard\.functions$/, replacement: at("offline/dashboard.local.ts") },
       { find: /^@\/lib\/admin\.functions$/, replacement: at("offline/admin.local.ts") },
       { find: /^@\/lib\/pos\.functions$/, replacement: at("offline/pos.local.ts") },
+      { find: /^@\/lib\/pos-access\.functions$/, replacement: at("offline/pos-access.local.ts") },
+      { find: /^@\/lib\/print-admin\.functions$/, replacement: at("offline/print-admin.local.ts") },
       // Auth / server-only modules
       { find: /^@\/integrations\/supabase\/client$/, replacement: at("offline/supabase-client.ts") },
       { find: /^@\/integrations\/supabase\/client\.server$/, replacement: at("offline/server-stub.ts") },
