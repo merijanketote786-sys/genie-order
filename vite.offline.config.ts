@@ -30,6 +30,7 @@ export default defineConfig({
       { find: /^@\/lib\/courier-rates\.functions$/, replacement: at("offline/courier-rates.local.ts") },
       { find: /^@\/lib\/dashboard\.functions$/, replacement: at("offline/dashboard.local.ts") },
       { find: /^@\/lib\/admin\.functions$/, replacement: at("offline/admin.local.ts") },
+      { find: /^@\/lib\/pos\.functions$/, replacement: at("offline/pos.local.ts") },
       // Auth / server-only modules
       { find: /^@\/integrations\/supabase\/client$/, replacement: at("offline/supabase-client.ts") },
       { find: /^@\/integrations\/supabase\/client\.server$/, replacement: at("offline/server-stub.ts") },

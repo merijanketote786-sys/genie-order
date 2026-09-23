@@ -22,6 +22,7 @@ import {
   Shield,
   Tag,
   Users,
+  ShoppingCart,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getMyAccess } from "@/lib/admin.functions";
@@ -33,6 +34,7 @@ const TABS = [
   { to: "/dashboard", label: "Dashboard", description: "Poori progress ek nazar", icon: LayoutDashboard },
   { to: "/", label: "Order", description: "Format customer orders", icon: ClipboardList },
   { to: "/invoice", label: "Invoice", description: "Create item invoices", icon: ReceiptText },
+  { to: "/pos", label: "POS", description: "Counter billing aur receipt", icon: ShoppingCart },
   { to: "/confirmation", label: "Confirm", description: "Order performa aur WhatsApp", icon: FileSignature },
   { to: "/extract", label: "Extract", description: "Read images and PDFs", icon: FileScan },
   { to: "/rates", label: "Rates", description: "Search staff prices", icon: Tag },
@@ -65,6 +67,7 @@ type AppShellProps = {
     | "/"
     | "/dashboard"
     | "/invoice"
+    | "/pos"
     | "/confirmation"
     | "/extract"
     | "/rates"
