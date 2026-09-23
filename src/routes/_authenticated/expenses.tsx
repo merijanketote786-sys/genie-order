@@ -5,8 +5,9 @@ import { EXPENSE_CATEGORIES, cancelExpense, listExpenses, saveExpense } from "@/
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
+import { newRef } from "@/lib/pos-errors";
 
 export const Route = createFileRoute("/_authenticated/expenses")({
   head: () => ({
@@ -36,15 +37,20 @@ function ExpensesPage() {
   const byCat: Record<string, number> = {};
   for (const r of active) byCat[r.category] = (byCat[r.category] ?? 0) + r.amount;
 
+  const lockRef = useRef(false);
+  const opRef = useRef(newRef());
   const add = async () => {
     const a = Number(f.amount);
     if (!(a > 0)) return toast.error("Amount likhein");
+    if (lockRef.current) return;
+    lockRef.current = true;
     try {
-      await saveExpense({ data: { category: f.category, amount: a, date: f.date, method: f.method, description: f.description || undefined } });
+      await saveExpense({ data: { category: f.category, amount: a, date: f.date, method: f.method, description: f.description || undefined, clientRef: opRef.current } });
+      opRef.current = newRef();
       toast.success(`Expense ${rs(a)} save`);
       setF({ ...f, amount: "", description: "" });
       qc.invalidateQueries({ queryKey: ["expenses"] });
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Nahi hua"); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Expense save nahi hua. Dobara try karein."); } finally { lockRef.current = false; }
   };
 
   return (

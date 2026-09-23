@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { getProducts, type DbProduct } from "@/lib/products.functions";
 import { getMySettings } from "@/lib/settings.functions";
 import { closePosDoc, getCustomerBalance, listPosDocs, savePosDoc } from "@/lib/pos.functions";
+import { newRef } from "@/lib/pos-errors";
 import {
   PAY_METHODS,
   PRINTER_PRESETS,
@@ -387,8 +388,10 @@ function PosPage() {
     scanRef.current?.focus();
   };
 
+  const submitLock = useRef(false);
+  const docRef = useRef<string>(newRef());
   const checkout = async (kind: "sale" | "held" | "quotation", print: boolean) => {
-    if (!cart.length || saving) return;
+    if (!cart.length || saving || submitLock.current) return;
     if (kind === "sale" && paidNum < total && !customerName.trim() && !customerPhone.trim()) {
       toast.error("Udhaar / baqaya ke liye customer ka naam ya phone likhein");
       return;
@@ -397,6 +400,7 @@ function PosPage() {
       toast.error("Har item ki quantity 0 se zyada honi chahiye");
       return;
     }
+    submitLock.current = true;
     setSaving(true);
     try {
       const title = kind === "quotation" ? "Quotation" : "Invoice";
@@ -430,23 +434,26 @@ function PosPage() {
             note: l.note || undefined,
           })),
           ui: { cart, billDiscount, discType, delivery, notes, customerName, customerPhone },
+          clientRef: docRef.current,
         },
       });
+      docRef.current = newRef();
       const final = { ...r, invoiceNumber: res.invoiceNumber };
       if (kind === "held") {
         toast.success(`Bill hold: ${res.invoiceNumber}`);
       } else {
         setLast(final);
         if (print) printReceipt(receiptHtml(final, printer));
-        toast.success(`${kind === "quotation" ? "Quotation" : "Sale"} save: ${res.invoiceNumber}`);
+        toast.success(`${kind === "quotation" ? "Quotation" : "Sale"} save: ${res.invoiceNumber}${res.duplicate ? " (pehle se saved tha)" : ""}${res.change > 0 ? ` — wapas dein Rs ${money(res.change)}` : ""}`);
       }
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["pos-docs"] });
       qc.invalidateQueries({ queryKey: ["pos-balance"] });
       reset();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Save nahi hua");
+      toast.error(e instanceof Error ? e.message : "Unable to save invoice. Please try again.");
     } finally {
+      submitLock.current = false;
       setSaving(false);
     }
   };

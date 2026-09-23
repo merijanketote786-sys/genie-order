@@ -7,8 +7,9 @@ import { cancelDoc, getSaleForReturn, listReturns, saveSalesReturn, searchSales 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Search, Undo2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
+import { newRef } from "@/lib/pos-errors";
 
 export const Route = createFileRoute("/_authenticated/returns")({
   head: () => ({
@@ -58,11 +59,15 @@ function ReturnsPage() {
   const lines = items.map((i) => ({ i, q: Math.min(Number(qty[i.id] || 0), i.qty - i.returned) })).filter((x) => x.q > 0);
   const total = lines.reduce((s, x) => s + x.q * x.i.unitRefund, 0);
 
+  const lockRef = useRef(false);
+  const opRef = useRef(newRef());
   const submit = async () => {
-    if (!saleId || !lines.length) return;
+    if (!saleId || !lines.length || lockRef.current) return;
+    lockRef.current = true;
     setSaving(true);
     try {
-      const r = await saveSalesReturn({ data: { saleId, mode, method, reason: reason || undefined, lines: lines.map((x) => ({ itemId: x.i.id, qty: x.q })) } });
+      const r = await saveSalesReturn({ data: { saleId, mode, method, reason: reason || undefined, lines: lines.map((x) => ({ itemId: x.i.id, qty: x.q })), clientRef: opRef.current } });
+      opRef.current = newRef();
       toast.success(`Return save: ${r.number} — ${rs(r.total)}`);
       setQty({}); setReason("");
       qc.invalidateQueries({ queryKey: ["ret-sale"] });
@@ -70,7 +75,7 @@ function ReturnsPage() {
       qc.invalidateQueries({ queryKey: ["products"] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Return save nahi hua");
-    } finally { setSaving(false); }
+    } finally { lockRef.current = false; setSaving(false); }
   };
 
   return (

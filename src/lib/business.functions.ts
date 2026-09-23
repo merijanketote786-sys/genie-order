@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { friendlyDbError } from "./pos-errors";
 
 const amt = z.number().min(0).max(1e9);
 const r2 = (x: number) => Math.round(x * 100) / 100;
@@ -54,11 +55,11 @@ export const saveSupplier = createServerFn({ method: "POST" })
 export const partyPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ kind: z.enum(["supplier_payment", "receipt"]), partyId: z.string().uuid(), amount: z.number().positive().max(1e9), method: z.string().max(30), note: z.string().max(300).optional() }).parse(d),
+    z.object({ kind: z.enum(["supplier_payment", "receipt"]), partyId: z.string().uuid(), amount: z.number().positive().max(1e9), method: z.string().max(30), note: z.string().max(300).optional(), clientRef: z.string().uuid().optional() }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await (context.supabase as Sb).rpc("pos_party_payment", { _kind: data.kind, _party: data.partyId, _amount: data.amount, _method: data.method, _note: data.note ?? "" });
-    if (error) throw new Error("Payment save nahi hui");
+    const { error } = await (context.supabase as Sb).rpc("pos_party_payment", { _kind: data.kind, _party: data.partyId, _amount: data.amount, _method: data.method, _note: data.note ?? "", _ref: data.clientRef ?? null });
+    if (error) throw new Error(friendlyDbError(error, "Payment save nahi hui."));
     return { ok: true };
   });
 
@@ -115,6 +116,7 @@ export const savePurchase = createServerFn({ method: "POST" })
       discount: amt,
       notes: z.string().max(1000).optional(),
       refPurchaseId: z.string().uuid().optional(),
+      clientRef: z.string().uuid().optional(),
       items: z.array(z.object({ productId: z.string().uuid().optional(), name: z.string().min(1).max(300), unit: z.string().max(40).optional(), qty: z.number().positive().max(1e7), rate: amt, discount: amt, taxPercent: z.number().min(0).max(100), batch: z.string().max(60).optional(), expiry: z.string().max(10).optional() })).min(1).max(300),
     }).parse(d),
   )
@@ -128,9 +130,9 @@ export const savePurchase = createServerFn({ method: "POST" })
     const tax = r2(items.reduce((s, i) => s + i.tax_amount, 0));
     const total = Math.max(0, r2(subtotal + tax - data.discount));
     const { data: res, error } = await (context.supabase as Sb).rpc("pos_save_purchase", {
-      _p: { doc_type: data.docType, supplier_id: data.supplierId ?? "", supplier_name: data.supplierName ?? "", subtotal, discount_total: data.discount, tax_total: tax, grand_total: total, paid: data.paid, method: data.method, notes: data.notes ?? "", ref_purchase_id: data.refPurchaseId ?? "", items },
+      _p: { client_ref: data.clientRef ?? "", doc_type: data.docType, supplier_id: data.supplierId ?? "", supplier_name: data.supplierName ?? "", subtotal, discount_total: data.discount, tax_total: tax, grand_total: total, paid: data.paid, method: data.method, notes: data.notes ?? "", ref_purchase_id: data.refPurchaseId ?? "", items },
     });
-    if (error || !res) { console.error(error); throw new Error("Purchase save nahi hui"); }
+    if (error || !res) { console.error(error); throw new Error(friendlyDbError(error, "Purchase save nahi hui.")); }
     return { ...(res as { id: string; number: string }), total };
   });
 
@@ -198,7 +200,7 @@ export const getSaleForReturn = createServerFn({ method: "GET" })
 export const saveSalesReturn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ saleId: z.string().uuid(), mode: z.enum(["refund", "credit"]), method: z.string().max(30), reason: z.string().max(300).optional(), lines: z.array(z.object({ itemId: z.string().uuid(), qty: z.number().positive().max(1e7) })).min(1).max(300) }).parse(d),
+    z.object({ saleId: z.string().uuid(), mode: z.enum(["refund", "credit"]), method: z.string().max(30), reason: z.string().max(300).optional(), lines: z.array(z.object({ itemId: z.string().uuid(), qty: z.number().positive().max(1e7) })).min(1).max(300), clientRef: z.string().uuid().optional() }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const sb = context.supabase as Sb;
@@ -215,6 +217,7 @@ export const saveSalesReturn = createServerFn({ method: "POST" })
     const { data: res, error } = await sb.rpc("pos_save_sale", {
       _p: {
         doc_type: "return",
+        client_ref: data.clientRef ?? "",
         customer_id: r.sale.customer_id ?? "",
         customer_name: r.sale.customer_name ?? "",
         customer_phone: "",
@@ -227,7 +230,7 @@ export const saveSalesReturn = createServerFn({ method: "POST" })
         items,
       },
     });
-    if (error || !res) { console.error(error); throw new Error("Return save nahi hua"); }
+    if (error || !res) { console.error(error); throw new Error(friendlyDbError(error, "Return save nahi hua.")); }
     return { ...(res as { id: string; number: string }), total };
   });
 
@@ -243,6 +246,6 @@ export const cancelDoc = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), reason: z.string().max(300) }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await (context.supabase as Sb).rpc("pos_cancel_sale", { _id: data.id, _reason: data.reason });
-    if (error) throw new Error(error.message || "Cancel nahi hua");
+    if (error) throw new Error(friendlyDbError(error, "Cancel nahi hua."));
     return { ok: true };
   });

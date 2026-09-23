@@ -5,8 +5,9 @@ import { getPurchaseItems, listProductsLite, listPurchases, listSuppliers, saveP
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { PackagePlus, Trash2, Undo2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { toast } from "sonner";
+import { newRef } from "@/lib/pos-errors";
 
 export const Route = createFileRoute("/_authenticated/purchases")({
   head: () => ({
@@ -66,20 +67,25 @@ function PurchasesPage() {
     toast.message("Return ke liye quantity kam/zyada karein, phir save");
   };
 
+  const lockRef = useRef(false);
+  const opRef = useRef(newRef());
   const save = async () => {
     const valid = lines.filter((l) => l.name.trim() && num(l.qty) > 0);
     if (!valid.length) return toast.error("Kam az kam ek item likhein");
     if (paidNum < total && !supplierId) return toast.error("Credit purchase ke liye supplier chunein");
+    if (lockRef.current) return;
+    lockRef.current = true;
     setSaving(true);
     try {
       const r = await savePurchase({ data: {
-        docType, supplierId: supplierId || undefined, paid: paidNum, method, discount: num(discount), notes: notes || undefined, refPurchaseId: refId,
+        docType, supplierId: supplierId || undefined, paid: paidNum, method, discount: num(discount), notes: notes || undefined, refPurchaseId: refId, clientRef: opRef.current,
         items: valid.map((l) => ({ productId: l.productId, name: l.name, unit: l.unit, qty: num(l.qty), rate: num(l.rate), discount: num(l.discount), taxPercent: num(l.tax), batch: l.batch || undefined, expiry: l.expiry || undefined })),
       } });
+      opRef.current = newRef();
       toast.success(`${docType === "purchase" ? "Purchase" : "Purchase return"} save: ${r.number} — ${rs(r.total)}`);
       reset();
       ["purchases", "suppliers", "products", "products-lite"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Nahi hua"); } finally { setSaving(false); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Purchase save nahi hui. Dobara try karein."); } finally { lockRef.current = false; setSaving(false); }
   };
 
   const cell = "h-8 rounded-md border border-border bg-background px-2 text-sm";

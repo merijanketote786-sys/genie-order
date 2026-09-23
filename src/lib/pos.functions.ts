@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { friendlyDbError } from "./pos-errors";
 
 const money = z.number().min(0).max(1e9);
 const docInput = z.object({
@@ -38,10 +39,12 @@ const docInput = z.object({
     .max(300),
   /** cart/UI state — held bill aur quotation wapas kholne ke liye */
   ui: z.unknown().optional(),
+  /** Idempotency key — double click / retry par duplicate bill nahi banta */
+  clientRef: z.string().uuid().optional(),
 });
 export type PosDocInput = z.infer<typeof docInput>;
 
-/** Bill / quotation / hold / return — ek database transaction me (stock + payment + invoice record). */
+/** Bill / quotation / hold / return — ek database transaction me (stock + payment + invoice record + conversion). */
 export const savePosDoc = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => docInput.parse(d))
@@ -54,6 +57,8 @@ export const savePosDoc = createServerFn({ method: "POST" })
     const { data: res, error } = await supabase.rpc("pos_save_sale", {
       _p: {
         doc_type: data.docType,
+        client_ref: data.clientRef ?? "",
+        convert_from_id: data.convertFromId ?? "",
         customer_id: data.customerId ?? "",
         customer_name: data.customerName ?? "",
         customer_phone: data.phone ?? "",
@@ -86,13 +91,10 @@ export const savePosDoc = createServerFn({ method: "POST" })
     });
     if (error || !res) {
       console.error("pos_save_sale", error);
-      throw new Error(error?.message?.includes("Access") ? "Access band hai" : "Bill save nahi ho saka");
+      throw new Error(friendlyDbError(error, "Unable to save invoice."));
     }
-    if (data.convertFromId) {
-      await supabase.from("pos_sales").update({ status: "converted" }).eq("id", data.convertFromId);
-    }
-    const r = res as { id: string; number: string; payment_status: string };
-    return { ok: true, id: r.id, invoiceNumber: r.number, paymentStatus: r.payment_status };
+    const r = res as { id: string; number: string; payment_status: string; duplicate?: boolean; change?: number };
+    return { ok: true, id: r.id, invoiceNumber: r.number, paymentStatus: r.payment_status, duplicate: !!r.duplicate, change: Number(r.change ?? 0) };
   });
 
 /** Held bills / quotations ki list (sirf open wale). */
@@ -118,8 +120,8 @@ export const closePosDoc = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await (context.supabase as any).from("pos_sales").update({ status: "converted" }).eq("id", data.id).in("doc_type", ["held", "quotation"]);
-    if (error) throw new Error("Update nahi hua");
+    const { error } = await (context.supabase as any).rpc("pos_close_doc", { _id: data.id });
+    if (error) throw new Error(friendlyDbError(error, "Update nahi hua."));
     return { ok: true };
   });
 

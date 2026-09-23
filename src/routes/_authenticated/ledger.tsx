@@ -6,8 +6,9 @@ import { getCustomerLedger, listCustomerBalances, saveCustomerAccount } from "@/
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { MessageCircle, Printer, Search, Wallet } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { toast } from "sonner";
+import { newRef } from "@/lib/pos-errors";
 
 export const Route = createFileRoute("/_authenticated/ledger")({
   head: () => ({
@@ -42,15 +43,19 @@ function LedgerPage() {
   const receivable = all.reduce((s, c) => s + Math.max(0, c.balance), 0);
 
   const refresh = () => { qc.invalidateQueries({ queryKey: ["cust-bal"] }); qc.invalidateQueries({ queryKey: ["cust-ledger"] }); };
+  const lockRef = useRef(false);
+  const opRef = useRef(newRef());
   const receive = async () => {
     const a = Number(pay.amount);
-    if (!sel || !(a > 0)) return;
+    if (!sel || !(a > 0) || lockRef.current) return;
+    lockRef.current = true;
     try {
-      await partyPayment({ data: { kind: "receipt", partyId: sel, amount: a, method: pay.method, note: pay.note || undefined } });
+      await partyPayment({ data: { kind: "receipt", partyId: sel, amount: a, method: pay.method, note: pay.note || undefined, clientRef: opRef.current } });
+      opRef.current = newRef();
       toast.success(`Payment ${rs(a)} mil gayi`);
       setPay({ amount: "", method: "Cash", note: "" });
       refresh();
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Nahi hua"); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Payment save nahi hui. Dobara try karein."); } finally { lockRef.current = false; }
   };
   const saveAcct = async () => {
     if (!sel || !acct) return;
