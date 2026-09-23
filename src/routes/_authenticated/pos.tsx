@@ -44,6 +44,16 @@ export const Route = createFileRoute("/_authenticated/pos")({
 });
 
 const PRINTER_KEY = "pos-printer:v1";
+const LINKS_KEY = "pos-barcode-links:v1";
+/** Labels section ke auto code jaisa base (naam ke pehle 10 harf). */
+function labelBase(name: string) {
+  return name
+    .replace(/\s*\/\s*(kg|kilogram|g|gm|gram|ml|ltr|litre|liter|pcs|pc|piece|bottle)s?\b/gi, "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 10) || "ITEM";
+}
 const inputCls = "h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
 const n = (v: string) => {
   const x = Number(v.replace(/[^\d.]/g, ""));
@@ -315,11 +325,17 @@ function PosPage() {
                 autoFocus
                 value={term}
                 onChange={(e) => setTerm(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), onScan())}
+                onKeyDown={(e) => (e.key === "Enter" || e.key === "Tab") && term.trim() && (e.preventDefault(), onScan())}
                 placeholder="Barcode scan karein ya product naam likhein + Enter"
                 className="min-w-0 flex-1 bg-transparent text-sm outline-none"
               />
             </label>
+            {pendingCode ? (
+              <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-primary bg-accent p-2.5 text-xs text-accent-foreground">
+                <span>Barcode <b>{pendingCode}</b> naya hai — neeche product search kar ke <b>Link</b> dabayein, agli dafa scan se seedha add hoga.</span>
+                <Button size="sm" variant="ghost" onClick={() => { setPendingCode(null); setTerm(""); }}>Cancel</Button>
+              </div>
+            ) : null}
             <div className="mt-3 grid max-h-[26rem] grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
               {results.map((p) => {
                 const price = priceFor(p, rate);
@@ -327,7 +343,7 @@ function PosPage() {
                   <button
                     key={p.name}
                     type="button"
-                    onClick={() => add(p)}
+                    onClick={() => (pendingCode ? saveLink(pendingCode, p) : add(p))}
                     disabled={price == null}
                     className="rounded-xl border border-border bg-background p-2.5 text-left transition hover:border-primary disabled:opacity-40"
                   >
@@ -335,6 +351,7 @@ function PosPage() {
                     <p className="mt-1 text-xs text-muted-foreground">
                       {price != null ? `Rs ${money(price)}` : "Rate nahi"} · stock {p.stock ?? "-"}
                     </p>
+                    {pendingCode ? <p className="mt-1 text-xs font-bold text-primary">Link karein</p> : null}
                   </button>
                 );
               })}
