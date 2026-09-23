@@ -5,8 +5,9 @@ import { getSupplierLedger, listSuppliers, partyPayment, saveSupplier } from "@/
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Plus, Printer, Wallet } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
+import { newRef } from "@/lib/pos-errors";
 
 export const Route = createFileRoute("/_authenticated/suppliers")({
   head: () => ({
@@ -41,16 +42,20 @@ function SuppliersPage() {
       qc.invalidateQueries({ queryKey: ["suppliers"] });
     } catch (e) { toast.error(e instanceof Error ? e.message : "Nahi hua"); }
   };
+  const lockRef = useRef(false);
+  const opRef = useRef(newRef());
   const paySupplier = async () => {
     const a = Number(pay.amount);
-    if (!sel || !(a > 0)) return;
+    if (!sel || !(a > 0) || lockRef.current) return;
+    lockRef.current = true;
     try {
-      await partyPayment({ data: { kind: "supplier_payment", partyId: sel, amount: a, method: pay.method, note: pay.note || undefined } });
+      await partyPayment({ data: { kind: "supplier_payment", partyId: sel, amount: a, method: pay.method, note: pay.note || undefined, clientRef: opRef.current } });
+      opRef.current = newRef();
       toast.success(`Payment ${rs(a)} save`);
       setPay({ amount: "", method: "Cash", note: "" });
       qc.invalidateQueries({ queryKey: ["suppliers"] });
       qc.invalidateQueries({ queryKey: ["sup-ledger"] });
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Nahi hua"); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Payment save nahi hui. Dobara try karein."); } finally { lockRef.current = false; }
   };
 
   return (
