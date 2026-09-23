@@ -155,6 +155,8 @@ function PosPage() {
       /* ignore */
     }
   }, []);
+  // Naya barcode link karte waqt boxes khud khul jate hain, warna sirf toggle se
+  const gridVisible = showGrid || !!pendingCode;
   const saveLink = (code: string, p: DbProduct) => {
     const next = { ...links, [code]: { name: p.name, rate } };
     setLinks(next);
