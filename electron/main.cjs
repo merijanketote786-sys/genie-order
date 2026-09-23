@@ -1,7 +1,7 @@
 // HB Chemicals Pakistan Workspace — offline desktop app.
 // Static build (dist-offline) ko ek local server se serve karta hai taake router aur
 // printing browser jaisi hi chalein. Koi internet ki zaroorat nahi.
-const { app, BrowserWindow, Menu, shell } = require("electron");
+const { app, BrowserWindow, Menu, shell, ipcMain } = require("electron");
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -55,7 +55,7 @@ async function createWindow() {
     backgroundColor: "#0b1220",
     title: "HB Chemicals Pakistan Workspace",
     icon: path.join(ROOT, "app-icon.png"),
-    webPreferences: { contextIsolation: true, nodeIntegration: false },
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, preload: path.join(__dirname, "preload.cjs") },
   });
 
   Menu.setApplicationMenu(
@@ -103,6 +103,40 @@ async function createWindow() {
 
   win.loadURL(base);
 }
+
+// ---- Printer bridge (Windows printers list + silent print) ----
+ipcMain.handle("hb:get-printers", async (e) => {
+  const list = await e.sender.getPrintersAsync();
+  return list.map((p) => ({ name: p.name, displayName: p.displayName || p.name, description: p.description || "", isDefault: !!p.isDefault, status: p.status || 0 }));
+});
+
+ipcMain.handle("hb:print", async (_e, o) => {
+  if (!o || typeof o.html !== "string" || o.html.length > 5_000_000) return { ok: false, error: "Invalid print job" };
+  const w = new BrowserWindow({ show: false, webPreferences: { javascript: false, sandbox: true } });
+  try {
+    await w.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(o.html));
+    await new Promise((r) => setTimeout(r, 300));
+    const widthUm = Math.round(Number(o.widthMm || 80) * 1000);
+    const heightUm = Math.round(Number(o.heightMm || 297) * 1000);
+    return await new Promise((resolve) => {
+      w.webContents.print(
+        {
+          silent: !!o.silent && !!o.deviceName,
+          deviceName: o.deviceName || undefined,
+          copies: Math.min(10, Math.max(1, Number(o.copies) || 1)),
+          printBackground: true,
+          margins: { marginType: "none" },
+          pageSize: { width: widthUm, height: heightUm },
+        },
+        (ok, reason) => resolve(ok ? { ok: true } : { ok: false, error: reason || "Print cancel/failed" }),
+      );
+    });
+  } catch (err) {
+    return { ok: false, error: String(err && err.message ? err.message : err) };
+  } finally {
+    setTimeout(() => { if (!w.isDestroyed()) w.destroy(); }, 1500);
+  }
+});
 
 app.whenReady().then(createWindow);
 
