@@ -1,4 +1,6 @@
 import { AppShell } from "@/components/app-shell";
+import { usePinPrompt } from "@/components/pos-access";
+import { cancelWithPin } from "@/lib/pos-access.functions";
 import { PAY_OPTS, PosSubnav, posInput, rs } from "@/components/pos-subnav";
 import { Button } from "@/components/ui/button";
 import { cancelDoc, getSaleForReturn, listReturns, saveSalesReturn, searchSales } from "@/lib/business.functions";
@@ -24,6 +26,20 @@ export const Route = createFileRoute("/_authenticated/returns")({
 
 function ReturnsPage() {
   const qc = useQueryClient();
+  const [pinNode, askPin] = usePinPrompt();
+  const cancelReturn = async (id: string) => {
+    if (!confirm("Return cancel karein? Stock dobara kam hoga.")) return;
+    try { await cancelDoc({ data: { id, reason: "manual" } }); }
+    catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      if (!msg.includes("PIN")) return toast.error(msg || "Nahi hua");
+      const pin = await askPin("Cancel ki ijazat nahi — manager PIN likhein.");
+      if (!pin) return;
+      try { await cancelWithPin({ data: { id, reason: "manual", pin } }); } catch (er) { return toast.error(er instanceof Error ? er.message : "Nahi hua"); }
+    }
+    toast.success("Return cancel ho gaya");
+    qc.invalidateQueries({ queryKey: ["ret-list"] });
+  };
   const [q, setQ] = useState("");
   const [dq, setDq] = useState("");
   useEffect(() => { const t = setTimeout(() => setDq(q), 250); return () => clearTimeout(t); }, [q]);
@@ -61,6 +77,7 @@ function ReturnsPage() {
     <AppShell title="Sales Returns" subtitle="Refund ya customer credit" active="/pos">
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />
+        {pinNode}
         <div className="grid gap-3 lg:grid-cols-[1fr_1.2fr]">
           <section className="rounded-xl border border-border bg-card p-3">
             <label className="flex h-10 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
@@ -131,7 +148,7 @@ function ReturnsPage() {
                   <tr key={r.id} className={`border-t border-border ${r.status === "cancelled" ? "opacity-50" : ""}`}>
                     <td className="py-1.5 font-semibold">{r.doc_number}</td><td>{r.customer_name}</td><td>{rs(r.grand_total)}</td><td>{r.paid_total ? rs(r.paid_total) : "Credit"}</td>
                     <td className="max-w-48 truncate text-xs">{r.notes}</td><td className="text-xs">{new Date(r.created_at).toLocaleString("en-PK")}</td>
-                    <td>{r.status === "cancelled" ? "Cancelled" : <Button size="sm" variant="ghost" onClick={async () => { if (!confirm("Return cancel karein? Stock dobara kam hoga.")) return; try { await cancelDoc({ data: { id: r.id, reason: "manual" } }); qc.invalidateQueries({ queryKey: ["ret-list"] }); } catch (e) { toast.error(e instanceof Error ? e.message : "Nahi hua"); } }}>Cancel</Button>}</td>
+                    <td>{r.status === "cancelled" ? "Cancelled" : <Button size="sm" variant="ghost" onClick={() => void cancelReturn(r.id)}>Cancel</Button>}</td>
                   </tr>
                 ))}
               </tbody>

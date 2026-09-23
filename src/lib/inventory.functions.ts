@@ -74,6 +74,8 @@ export const getReport = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), tzOffsetMin: z.number().min(-840).max(840) }).parse(d))
   .handler(async ({ data, context }) => {
     const sb = context.supabase as Sb;
+    const { data: allowed } = await sb.rpc("pos_can", { _perm: "view_reports" });
+    if (!allowed) throw new Error("Reports ki ijazat nahi");
     const start = new Date(Date.parse(`${data.from}T00:00:00Z`) + data.tzOffsetMin * 60000).toISOString();
     const end = new Date(Date.parse(`${data.to}T00:00:00Z`) + data.tzOffsetMin * 60000 + 86400000).toISOString();
     const [{ data: sales }, { data: purs }, { data: pays }, { data: exps }, { data: prods }, { data: profs }] = await Promise.all([
