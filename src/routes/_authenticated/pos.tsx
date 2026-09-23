@@ -92,6 +92,26 @@ function PosPage() {
   const scanRef = useRef<HTMLInputElement>(null);
   const [hi, setHi] = useState(-1);
   const [dropOpen, setDropOpen] = useState(false);
+  // Product shortcut boxes: default hidden, toggle se khulti hain (is device pe yaad rehta hai)
+  const [showGrid, setShowGrid] = useState(false);
+  useEffect(() => {
+    try {
+      setShowGrid(localStorage.getItem(GRID_KEY) === "1");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  const toggleGrid = () => {
+    setShowGrid((v) => {
+      try {
+        localStorage.setItem(GRID_KEY, v ? "0" : "1");
+      } catch {
+        /* ignore */
+      }
+      return !v;
+    });
+  };
+  const gridVisible = showGrid || !!pendingCode;
 
   useEffect(() => setPrinter(loadPrinter()), []);
   const updatePrinter = (p: ReceiptPrinter) => {
