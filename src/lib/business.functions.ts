@@ -24,8 +24,9 @@ export const listSuppliers = createServerFn({ method: "GET" })
       bal.set(p.supplier_id, (bal.get(p.supplier_id) ?? 0) + (p.doc_type === "purchase" ? due : -due));
     }
     for (const p of pays ?? []) if (p.supplier_id) bal.set(p.supplier_id, (bal.get(p.supplier_id) ?? 0) - Number(p.amount));
+    type Sup = { id: string; name: string; phone: string; address: string; openingBalance: number; balance: number };
     return {
-      suppliers: (sups ?? []).map((s: any) => ({
+      suppliers: ((sups ?? []) as any[]).map((s: any): Sup => ({
         id: s.id as string,
         name: s.name as string,
         phone: (s.phone ?? "") as string,
@@ -98,7 +99,8 @@ export const listProductsLite = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data } = await (context.supabase as Sb).from("products").select("id, name, unit, purchase_price, sale_price, stock").eq("is_active", true).order("name").limit(5000);
-    return { products: (data ?? []).map((p: any) => ({ id: p.id as string, name: p.name as string, unit: p.unit as string, purchasePrice: p.purchase_price == null ? null : Number(p.purchase_price), salePrice: Number(p.sale_price), stock: Number(p.stock ?? 0) })) };
+    type P = { id: string; name: string; unit: string; purchasePrice: number | null; salePrice: number; stock: number };
+    return { products: ((data ?? []) as any[]).map((p: any): P => ({ id: p.id as string, name: p.name as string, unit: p.unit as string, purchasePrice: p.purchase_price == null ? null : Number(p.purchase_price), salePrice: Number(p.sale_price), stock: Number(p.stock ?? 0) })) };
   });
 
 export const savePurchase = createServerFn({ method: "POST" })
@@ -148,7 +150,7 @@ export const getPurchaseItems = createServerFn({ method: "GET" })
       sb.from("purchases").select("id, doc_number, supplier_id, supplier_name").eq("id", data.id).maybeSingle(),
       sb.from("purchase_items").select("product_id, name, unit, qty, rate, discount, tax_percent").eq("purchase_id", data.id),
     ]);
-    return { purchase: p as { id: string; doc_number: string; supplier_id: string | null; supplier_name: string | null } | null, items: (items ?? []).map((i: any) => ({ productId: i.product_id as string | null, name: i.name as string, unit: (i.unit ?? "") as string, qty: Number(i.qty), rate: Number(i.rate), discount: Number(i.discount), taxPercent: Number(i.tax_percent) })) };
+    return { purchase: p as { id: string; doc_number: string; supplier_id: string | null; supplier_name: string | null } | null, items: ((items ?? []) as any[]).map((i: any): { productId: string | null; name: string; unit: string; qty: number; rate: number; discount: number; taxPercent: number } => ({ productId: i.product_id as string | null, name: i.name as string, unit: (i.unit ?? "") as string, qty: Number(i.qty), rate: Number(i.rate), discount: Number(i.discount), taxPercent: Number(i.tax_percent) })) };
   });
 
 /* ---------------------------- Sales returns ---------------------------- */
@@ -164,6 +166,7 @@ export const searchSales = createServerFn({ method: "GET" })
     return { sales: (rows ?? []).map((r: any) => ({ ...r, grand_total: Number(r.grand_total) })) as Array<{ id: string; doc_number: string; customer_name: string | null; customer_phone: string | null; grand_total: number; payment_status: string; created_at: string }> };
   });
 
+type RetItem = { id: string; productId: string | null; name: string; unit: string; rateType: string | null; qty: number; stockPerUnit: number; unitRefund: number; returned: number };
 async function returnable(sb: Sb, saleId: string) {
   const [{ data: sale }, { data: items }, { data: rets }] = await Promise.all([
     sb.from("pos_sales").select("id, doc_number, customer_id, customer_name, customer_phone, grand_total, delivery, paid_total").eq("id", saleId).eq("doc_type", "sale").maybeSingle(),
@@ -176,7 +179,7 @@ async function returnable(sb: Sb, saleId: string) {
   const factor = lineSum > 0 ? Math.max(0, (Number(sale?.grand_total ?? 0) - Number(sale?.delivery ?? 0)) / lineSum) : 1;
   return {
     sale,
-    items: (items ?? []).map((i: any) => {
+    items: ((items ?? []) as any[]).map((i: any): RetItem => {
       const qty = Number(i.qty);
       return { id: i.id as string, productId: i.product_id as string | null, name: i.name as string, unit: (i.unit ?? "") as string, rateType: i.rate_type as string | null, qty, stockPerUnit: qty ? Number(i.stock_qty) / qty : 0, unitRefund: qty ? r2((Number(i.line_total) / qty) * factor) : 0, returned: done.get(i.id) ?? 0 };
     }),
