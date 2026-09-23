@@ -98,5 +98,5 @@ export const exportPosBackup = createServerFn({ method: "GET" })
     const tables = ["customers", "suppliers", "pos_sales", "pos_sale_items", "purchases", "purchase_items", "pos_payments", "expenses", "stock_movements", "products"];
     const out: Record<string, unknown[]> = {};
     for (const t of tables) { const { data } = await sb.from(t).select("*").limit(50000); out[t] = data ?? []; }
-    return { exportedAt: new Date().toISOString(), tables: out };
+    return { json: JSON.stringify({ exportedAt: new Date().toISOString(), tables: out }) };
   });
