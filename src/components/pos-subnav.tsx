@@ -13,7 +13,7 @@ const ITEMS = [
   { to: "/daybook", label: "Day Book", icon: Notebook, perm: "view_reports" },
   { to: "/inventory", label: "Inventory", icon: Boxes, perm: "edit_stock" },
   { to: "/reports", label: "Reports", icon: BarChart3, perm: "view_reports" },
-  { to: "/invoices", label: "Invoices", icon: FileCheck2, perm: "view_pos" },
+  { to: "/pos-invoices", label: "Invoices", icon: FileCheck2, perm: "view_pos" },
   { to: "/accounting", label: "Accounting", icon: Landmark, perm: "view_accounting" },
   { to: "/pos-settings", label: "POS Settings", icon: Settings2, perm: "view_pos" },
 ] as const satisfies ReadonlyArray<{ to: string; label: string; icon: unknown; perm: PosPerm }>;
