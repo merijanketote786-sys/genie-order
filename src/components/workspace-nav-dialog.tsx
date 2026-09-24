@@ -43,7 +43,7 @@ export function WorkspaceNavDialog({ tabs, active }: { tabs: readonly NavItem[];
       <DialogContent className="max-h-[88dvh] w-full gap-0 overflow-y-auto p-0 sm:max-w-lg sm:rounded-xl">
         <DialogHeader className="border-b border-border px-5 py-4 pr-12 text-left">
           <DialogTitle className="font-display text-base">All sections</DialogTitle>
-          <DialogDescription>Jis workspace ki zaroorat ho usay kholein.</DialogDescription>
+          <DialogDescription>Open the workspace section you need.</DialogDescription>
         </DialogHeader>
         <nav className="grid grid-cols-3 gap-2 p-4" aria-label="All workspace sections">
           {tabs.map((tab) => {

@@ -55,9 +55,9 @@ export function ResultCard({
   phone?: string | null;
   exportable?: boolean;
   onSave?: (text: string) => Promise<void>;
-  /** Doosre section (Order/Invoice) me forward karne ka button. */
+  /** Button to forward to another section (Order/Invoice). */
   forward?: { label: string; onClick: (text: string) => void };
-  /** Teesre section (jaise Order Confirmation) me forward karne ka button. */
+  /** Button to forward to a third section (e.g. Order Confirmation). */
   forward2?: { label: string; onClick: (text: string) => void };
 }) {
 
@@ -73,7 +73,7 @@ export function ResultCard({
       await onSave(text);
       setSaved(true);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Save nahi ho saka");
+      toast.error(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSaving(false);
     }
@@ -83,10 +83,10 @@ export function ResultCard({
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      toast.success("Copy ho gaya");
+      toast.success("Copied");
       setTimeout(() => setCopied(false), 1600);
     } catch {
-      toast.error("Copy nahi ho saka");
+      toast.error("Copy failed");
     }
   };
 
@@ -111,7 +111,7 @@ export function ResultCard({
             rel="noopener noreferrer"
           >
             <MessageCircle className="h-4 w-4" />
-            {toWhatsAppNumber(phone) ? "Customer ko bhejo" : "WhatsApp par bhejo"}
+            {toWhatsAppNumber(phone) ? "Send to customer" : "Send via WhatsApp"}
           </a>
         </Button>
         <Button
@@ -213,10 +213,10 @@ function ExportDialog({
     try {
       if (format === "pdf") await exportInvoicePdf(finalText());
       else await exportInvoiceExcel(finalText());
-      toast.success(`${label} download ho gaya`);
+      toast.success(`${label} downloaded`);
       onClose();
     } catch {
-      toast.error("Export nahi ho saka");
+      toast.error("Export failed");
     } finally {
       setBusy(false);
     }
@@ -233,19 +233,19 @@ function ExportDialog({
           : await buildInvoiceExcelFile(built);
       const outcome = await shareInvoiceFile(file, () => {
         window.open(
-          whatsappUrl("Invoice file download ho gayi hai — yahan attach kar ke bhej dein.", phone),
+          whatsappUrl("The invoice file has been downloaded — please attach it here and send.", phone),
           "_blank",
           "noopener,noreferrer",
         );
       });
       toast.success(
         outcome === "shared"
-          ? `${label} WhatsApp par share ho gaya`
-          : `${label} download ho gaya — WhatsApp chat mein attach kar dein`,
+          ? `${label} shared via WhatsApp`
+          : `${label} downloaded — attach it in the WhatsApp chat`,
       );
       onClose();
     } catch {
-      toast.error("Export nahi ho saka");
+      toast.error("Export failed");
     } finally {
       setBusy(false);
     }
@@ -259,7 +259,7 @@ function ExportDialog({
             {format === "xlsx" ? "Excel export" : "PDF export"}
           </DialogTitle>
           <DialogDescription>
-            Delivery charges ki tafseel confirm karein, phir file download hogi.
+            Confirm the delivery charges details, then the file will download.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
@@ -270,20 +270,20 @@ function ExportDialog({
               value={delivery}
               onChange={(e) => setDelivery(e.target.value)}
               inputMode="numeric"
-              placeholder="Khali chorr dein ya amount likhein (e.g. 250)"
+              placeholder="Leave blank or enter amount (e.g. 250)"
               disabled={!showDelivery}
             />
             <p className="text-xs text-muted-foreground">
-              Amount likhne par Grand Total us hisaab se update ho jayega.
+              Entering an amount will update the Grand Total accordingly.
             </p>
           </div>
           <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface-2/60 px-3 py-3">
             <div>
               <p className="text-sm font-semibold text-foreground">
-                Invoice mein delivery charges dikhayen?
+                Show delivery charges in invoice?
               </p>
               <p className="text-xs text-muted-foreground">
-                Off karne par ye line invoice se hat jayegi.
+                Turning this off will remove the line from the invoice.
               </p>
             </div>
             <Switch checked={showDelivery} onCheckedChange={setShowDelivery} />
@@ -296,14 +296,14 @@ function ExportDialog({
             className="w-full gap-1.5 rounded-xl bg-success text-primary-foreground hover:bg-success/90"
           >
             <Send className="h-4 w-4" />
-            {busy ? "Ban rahi hai…" : `${format === "xlsx" ? "Excel" : "PDF"} WhatsApp par bhejo`}
+            {busy ? "Preparing…" : `Send ${format === "xlsx" ? "Excel" : "PDF"} via WhatsApp`}
           </Button>
           <div className="flex w-full gap-2">
             <Button variant="outline" onClick={onClose} className="flex-1 rounded-xl">
               Cancel
             </Button>
             <Button onClick={run} disabled={busy} variant="secondary" className="flex-1 rounded-xl">
-              {busy ? "Ban rahi hai…" : "Sirf download"}
+              {busy ? "Preparing…" : "Download only"}
             </Button>
           </div>
         </DialogFooter>
