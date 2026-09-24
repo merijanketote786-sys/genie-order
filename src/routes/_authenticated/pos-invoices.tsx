@@ -52,7 +52,7 @@ function saleToDoc(s: SaleRow): PrintDoc {
   return {
     kind: "pos",
     id: s.id,
-    title: isReturn ? "Sale Return" : "Invoice",
+    title: isReturn ? "Sale Return" : s.doc_type === "quotation" ? "Estimate" : "Invoice",
     number: s.doc_number,
     date: s.created_at,
     party: { label: "Customer", name: s.customer_name ?? undefined, phone: s.customer_phone ?? undefined },
@@ -67,7 +67,7 @@ function saleToDoc(s: SaleRow): PrintDoc {
 
 function shareText(s: SaleRow): string {
   const lines = [
-    `*${s.doc_type === "return" ? "Sale Return" : "Invoice"} ${s.doc_number}*`,
+    `*${s.doc_type === "return" ? "Sale Return" : s.doc_type === "quotation" ? "Estimate" : "Invoice"} ${s.doc_number}*`,
     new Date(s.created_at).toLocaleString("en-PK"),
     s.customer_name ? `Customer: ${s.customer_name}` : "",
     "",
@@ -85,13 +85,26 @@ function PosInvoicesPage() {
   const pc = usePrintCenter();
   const [search, setSearch] = useState("");
   const [share, setShare] = useState<SaleRow | null>(null);
-  const q = useQuery({ queryKey: ["pos-sales", search], queryFn: () => listPosSales({ data: { search } }) });
+  const [estimates, setEstimates] = useState(false);
+  const q = useQuery({ queryKey: ["pos-sales", search, estimates], queryFn: () => listPosSales({ data: { search, estimates } }) });
   const sales = (q.data?.sales ?? []) as SaleRow[];
 
   return (
     <AppShell title="POS Invoices" subtitle="POS billing record — reprint, PDF, share" active="/pos">
       <div className="space-y-3">
         <PosSubnav />
+        <div className="inline-flex rounded-lg border border-border bg-muted p-1">
+          {([false, true] as const).map((v) => (
+            <button
+              key={String(v)}
+              type="button"
+              onClick={() => setEstimates(v)}
+              className={`rounded-md px-4 py-1.5 text-sm font-semibold ${estimates === v ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+            >
+              {v ? "Estimates" : "Invoices"}
+            </button>
+          ))}
+        </div>
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <input

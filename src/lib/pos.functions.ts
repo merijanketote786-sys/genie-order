@@ -118,13 +118,13 @@ export const listPosDocs = createServerFn({ method: "GET" })
 /** POS invoice record — sirf POS sales (items + payments ke saath), print/share ke liye. */
 export const listPosSales = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ search: z.string().trim().max(80).optional() }).parse(d))
+  .inputValidator((d: unknown) => z.object({ search: z.string().trim().max(80).optional(), estimates: z.boolean().optional() }).parse(d))
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
     let q = supabase
       .from("pos_sales")
       .select("id, doc_number, doc_type, status, payment_status, customer_name, customer_phone, subtotal, discount_total, tax_total, delivery, grand_total, paid_total, balance, notes, created_at")
-      .in("doc_type", ["sale", "return"])
+      .in("doc_type", data.estimates ? ["quotation"] : ["sale", "return"])
       .order("created_at", { ascending: false })
       .limit(200);
     const s = (data.search ?? "").trim();
