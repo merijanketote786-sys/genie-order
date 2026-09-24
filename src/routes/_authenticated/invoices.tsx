@@ -3,10 +3,11 @@ import { WorkspaceHeader } from "@/components/workspace-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ResultCard } from "@/components/result-card";
+import { ShareDialog } from "@/components/share-dialog";
 import { type InvoiceRow, deleteInvoice, listInvoices, setInvoiceStatus } from "@/lib/records.functions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { FileCheck2, Search, Trash2 } from "lucide-react";
+import { FileCheck2, Search, Share2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -38,6 +39,7 @@ function InvoicesPage() {
   const [search, setSearch] = useState("");
   const [term, setTerm] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [shareInv, setShareInv] = useState<InvoiceRow | null>(null);
   const qc = useQueryClient();
 
   const invoices = useQuery({
@@ -136,14 +138,35 @@ function InvoicesPage() {
                       {when(inv.createdAt)}
                     </span>
                   </span>
-                  <span className="shrink-0 text-right">
-                    <span className="block font-display text-base font-bold text-foreground">
-                      {money(inv.total)}
+                  <span className="flex shrink-0 items-center gap-2">
+                    <span className="text-right">
+                      <span className="block font-display text-base font-bold text-foreground">
+                        {money(inv.total)}
+                      </span>
+                      <span
+                        className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${badge.cls}`}
+                      >
+                        {badge.label}
+                      </span>
                     </span>
                     <span
-                      className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${badge.cls}`}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Share ${inv.invoiceNumber}`}
+                      title="Share"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShareInv(inv);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.stopPropagation();
+                          setShareInv(inv);
+                        }
+                      }}
+                      className="grid size-9 place-items-center rounded-full border border-border text-muted-foreground transition hover:bg-accent hover:text-foreground"
                     >
-                      {badge.label}
+                      <Share2 className="size-4" />
                     </span>
                   </span>
                 </button>
@@ -183,6 +206,15 @@ function InvoicesPage() {
           })
         )}
       </div>
+
+      {shareInv ? (
+        <ShareDialog
+          title={shareInv.invoiceNumber}
+          text={shareInv.invoiceText}
+          phone={shareInv.phone}
+          onClose={() => setShareInv(null)}
+        />
+      ) : null}
     </AppShell>
   );
 }
