@@ -31,7 +31,7 @@ import {
 } from "@/lib/pos";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Minus, Plus, Printer, ScanBarcode, ShoppingCart, Trash2, MessageCircle, LayoutGrid, Settings2, ReceiptText, Save, StickyNote, Pause, FileText, FolderOpen, RotateCcw, Download, Share2, X } from "lucide-react";
+import { Minus, Plus, Printer, ScanBarcode, ShoppingCart, Trash2, MessageCircle, LayoutGrid, ReceiptText, Save, StickyNote, Pause, FileText, FolderOpen, RotateCcw, Download, Share2, X } from "lucide-react";
 
 type PosDocRow = { id: string; doc_number: string; customer_name: string | null; customer_phone: string | null; grand_total: number; created_at: string; payload: string | null; status: string };
 
@@ -85,7 +85,6 @@ export const Route = createFileRoute("/_authenticated/pos")({
 
 const LINKS_KEY = "pos-barcode-links:v1";
 const GRID_KEY = "pos-show-grid:v1";
-const POS_VIEW_KEY = "pos-active-view:v1";
 /** Labels section ke auto code jaisa base (naam ke pehle 10 harf). */
 function labelBase(name: string) {
   return name
@@ -137,7 +136,6 @@ function PosPage() {
   };
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
-  const [view, setView] = useState<"billing" | "settings">("billing");
   const [saving, setSaving] = useState(false);
   const [last, setLast] = useState<ReceiptInput | null>(null);
   const scanRef = useRef<HTMLInputElement>(null);
@@ -171,21 +169,6 @@ function PosPage() {
     });
   };
 
-  useEffect(() => {
-    try {
-      localStorage.removeItem(POS_VIEW_KEY);
-    } catch {
-      /* ignore */
-    }
-  }, []);
-  const changeView = (next: "billing" | "settings") => {
-    setView(next);
-    try {
-      localStorage.setItem(POS_VIEW_KEY, next);
-    } catch {
-      /* ignore */
-    }
-  };
 
   const results = useMemo(() => {
     const t = term.trim().toLowerCase();
@@ -529,16 +512,6 @@ function PosPage() {
         {pc.node}
         <PosAlerts cfg={cfg} products={products} credit={balance?.found && balance.creditLimit != null && balance.balance + Math.max(0, total - paidNum) > balance.creditLimit ? { limit: balance.creditLimit, after: balance.balance + Math.max(0, total - paidNum) } : null} />
 
-        <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-card p-1 sm:w-fit sm:min-w-80">
-          <Button variant={view === "billing" ? "default" : "ghost"} onClick={() => changeView("billing")}>
-            <ReceiptText /> Billing
-          </Button>
-          <Button variant="ghost" asChild>
-            <Link to="/pos-settings"><Settings2 /> POS Settings</Link>
-          </Button>
-        </div>
-
-        {view === "billing" ? (
         <div className="grid gap-3 lg:grid-cols-[1.1fr_1fr]">
           {/* Products */}
           <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
@@ -742,16 +715,6 @@ function PosPage() {
             ) : null}
           </section>
         </div>
-        ) : (
-          <section className="space-y-2 rounded-lg border border-border bg-card p-4">
-            <p className="flex items-center gap-2 font-bold text-foreground"><Settings2 className="size-4 text-primary" /> POS, printing and printers</p>
-            <p className="text-sm text-muted-foreground">Paper (A4/A5/58mm/80mm/custom), design, auto-print, printers, tax, payment methods and all other settings are now in one place — the same on every device.</p>
-            <div className="flex flex-wrap gap-2">
-              <Button asChild><Link to="/pos-settings">Open Settings</Link></Button>
-              <Button variant="outline" onClick={() => pc.preview({ kind: "pos", title: "Test Receipt", number: "TEST-0001", date: new Date(), lines: [{ name: "Test item", unit: "kg", qty: 1, rate: 100, total: 100 }], totals: [{ label: "Grand Total", value: 100, bold: true }] })}><Printer /> Test print</Button>
-            </div>
-          </section>
-        )}
       </div>
     </AppShell>
   );
