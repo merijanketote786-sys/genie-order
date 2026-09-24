@@ -8,7 +8,9 @@ export const POS_ROLES = ["manager", "cashier", "salesman", "staff"] as const;
 export type PosPerm =
   | "view_pos" | "create_sale" | "edit_price" | "apply_discount" | "cancel_invoice" | "view_reports" | "view_profit"
   | "edit_stock" | "edit_products" | "view_balances" | "manage_expenses" | "manage_purchases" | "manage_users" | "settings"
-  | "edit_sale" | "return_sale" | "manage_customers" | "manage_suppliers" | "manage_printers";
+  | "edit_sale" | "return_sale" | "manage_customers" | "manage_suppliers" | "manage_printers"
+  | "view_accounting" | "create_journal" | "post_journal" | "view_ledger" | "view_trial_balance" | "view_pnl"
+  | "view_balance_sheet" | "view_ar_ap" | "manage_accounts" | "close_period";
 
 export type { PosConfig } from "./pos-config";
 import type { PosConfig } from "./pos-config";

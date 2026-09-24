@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import {
   Calculator,
+  Landmark,
   ClipboardList,
   FileCheck2,
   FileScan,
@@ -44,6 +45,7 @@ const TABS = [
   { to: "/customers", label: "Customers", description: "Customer record", icon: Users },
   { to: "/labels", label: "Labels", description: "Barcode labels print", icon: QrCode },
   { to: "/sync", label: "Sync", description: "Update trade rates", icon: RefreshCw },
+  { to: "/accounting", label: "Accounting", description: "Ledger, P&L, balance sheet", icon: Landmark },
 ] as const;
 
 const ADMIN_TAB = {
@@ -77,6 +79,7 @@ type AppShellProps = {
     | "/customers"
     | "/labels"
     | "/sync"
+    | "/accounting"
     | "/settings"
     | "/admin";
   onClear?: () => void;

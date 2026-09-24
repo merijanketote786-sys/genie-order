@@ -12,6 +12,7 @@ export const APP_SECTIONS = [
   { key: "/customers", label: "Customers" },
   { key: "/labels", label: "Labels" },
   { key: "/sync", label: "Sync" },
+  { key: "/accounting", label: "Accounting" },
 ] as const;
 
 export type SectionKey = (typeof APP_SECTIONS)[number]["key"];
