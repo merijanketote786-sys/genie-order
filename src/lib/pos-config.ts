@@ -75,6 +75,7 @@ export type PosConfig = {
     };
     custom?: { widthMm?: number; heightMm?: number | null };
     signatureLabel?: string;
+    preset?: string;
   };
   printers?: PrinterCfg[];
   printerDefaults?: Partial<Record<PrinterRole, string>>;
