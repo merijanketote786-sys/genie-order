@@ -7,20 +7,20 @@ import { toast } from "sonner";
 
 type Col = { k: string; label: string; w: string; num?: boolean };
 const COLS: Col[] = [
-  { k: "name", label: "Product name", w: "w-52" },
-  { k: "sku", label: "Item code", w: "w-24" },
-  { k: "barcode", label: "Barcode", w: "w-28" },
-  { k: "category", label: "Category", w: "w-28" },
-  { k: "brand", label: "Brand", w: "w-24" },
-  { k: "unit", label: "Unit", w: "w-16" },
-  { k: "purchase_price", label: "Purchase price", w: "w-24", num: true },
-  { k: "sale_price", label: "Sale price", w: "w-24", num: true },
-  { k: "wholesale_price", label: "Wholesale price", w: "w-24", num: true },
-  { k: "min_sale_price", label: "Min sale price", w: "w-24", num: true },
-  { k: "stock", label: "Stock qty", w: "w-20", num: true },
-  { k: "stock_value", label: "Stock value", w: "w-24", num: true },
-  { k: "min_stock", label: "Min stock", w: "w-20", num: true },
-  { k: "tax_percent", label: "Tax %", w: "w-16", num: true },
+  { k: "name", label: "Product name", w: "w-64" },
+  { k: "sku", label: "Item code", w: "w-28" },
+  { k: "barcode", label: "Barcode", w: "w-32" },
+  { k: "category", label: "Category", w: "w-32" },
+  { k: "brand", label: "Brand", w: "w-28" },
+  { k: "unit", label: "Unit", w: "w-20" },
+  { k: "purchase_price", label: "Purchase price", w: "w-32", num: true },
+  { k: "sale_price", label: "Sale price", w: "w-32", num: true },
+  { k: "wholesale_price", label: "Wholesale price", w: "w-32", num: true },
+  { k: "min_sale_price", label: "Min sale price", w: "w-32", num: true },
+  { k: "stock", label: "Stock qty", w: "w-24", num: true },
+  { k: "stock_value", label: "Stock value", w: "w-32", num: true },
+  { k: "min_stock", label: "Min stock", w: "w-24", num: true },
+  { k: "tax_percent", label: "Tax %", w: "w-20", num: true },
 ];
 type Row = Record<string, string>;
 const base = (p: InvProduct): Row => ({
@@ -96,19 +96,23 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
       <label className="flex h-10 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
         <Search className="size-4 text-primary" /><input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Product dhoondein" />
       </label>
-      <div className="max-h-[60vh] overflow-auto">
-        <table className="text-sm">
-          <thead className="sticky top-0 z-10 bg-card"><tr className="text-left text-xs text-muted-foreground">
-            <th className="px-1"><input type="checkbox" checked={allPicked} onChange={() => setPicked(allPicked ? new Set() : new Set(list.map((p) => p.id)))} aria-label="Sab chunein" /></th>
-            {COLS.map((c) => <th key={c.k} className="px-1 whitespace-nowrap">{c.label}</th>)}
+      <div className="max-h-[60vh] overflow-auto rounded-lg border border-border">
+        <table className="w-full min-w-[1800px] table-fixed border-collapse text-sm">
+          <colgroup>
+            <col className="w-12" />
+            {COLS.map((c) => <col key={c.k} className={c.w} />)}
+          </colgroup>
+          <thead className="sticky top-0 z-10 bg-card shadow-[0_1px_0_0] shadow-border"><tr className="text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <th className="px-2 py-2"><input type="checkbox" checked={allPicked} onChange={() => setPicked(allPicked ? new Set() : new Set(list.map((p) => p.id)))} aria-label="Sab chunein" /></th>
+            {COLS.map((c) => <th key={c.k} className="truncate px-2 py-2" title={c.label}>{c.label}</th>)}
           </tr></thead>
           <tbody>
             {list.slice(0, 1000).map((p) => { const r = rowOf(p.id); return (
               <tr key={p.id} className={`border-t border-border ${dirtyIds.includes(p.id) ? "bg-accent" : ""}`}>
-                <td className="px-1"><input type="checkbox" checked={picked.has(p.id)} onChange={() => setPicked((s) => { const n = new Set(s); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; })} aria-label={`Chunein ${p.name}`} /></td>
+                <td className="px-2 py-1"><input type="checkbox" checked={picked.has(p.id)} onChange={() => setPicked((s) => { const n = new Set(s); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; })} aria-label={`Chunein ${p.name}`} /></td>
                 {COLS.map((c) => (
-                  <td key={c.k} className="px-0.5 py-0.5">
-                    <input className={`${posInput} h-8 ${c.w} ${c.num ? "text-right" : ""} ${c.k !== "stock_value" && r[c.k] !== orig[p.id][c.k] ? "border-primary" : ""}`} value={r[c.k]} inputMode={c.num ? "decimal" : undefined}
+                  <td key={c.k} className="px-1 py-1">
+                    <input className={`${posInput} h-9 w-full px-2 ${c.num ? "text-right" : ""} ${c.k !== "stock_value" && r[c.k] !== orig[p.id][c.k] ? "border-primary" : ""}`} value={r[c.k]} inputMode={c.num ? "decimal" : undefined}
                       title={c.k === "stock_value" ? "Stock value badlne se purchase price khud calculate hoga" : undefined} onChange={(e) => set(p.id, c.k, e.target.value)} aria-label={`${c.label} ${p.name}`} />
                   </td>
                 ))}
