@@ -43,6 +43,15 @@ export const updateProductDetails = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const bulkUpdateProducts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ rows: z.array(z.record(z.string(), z.union([z.string().max(200), z.boolean()])).refine((r) => typeof r.id === "string")).min(1).max(2000) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: res, error } = await (context.supabase as Sb).rpc("pos_bulk_update_products", { _rows: data.rows });
+    if (error) throw new Error(error.message || "Bulk update nahi hua");
+    return res as { updated: number };
+  });
+
 export const adjustStock = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), qty: z.number().positive().max(1e7), kind: z.enum(["adjust_in", "adjust_out", "damage", "opening"]), note: z.string().max(300) }).parse(d))
