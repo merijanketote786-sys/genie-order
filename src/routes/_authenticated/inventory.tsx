@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { adjustStock, getStockLedger, listInventory, updateProductDetails, type InvProduct } from "@/lib/inventory.functions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, Download, Search, Table2 } from "lucide-react";
+import { NewPosProduct } from "@/components/new-pos-product";
+import { AlertTriangle, Download, Plus, Search, Table2 } from "lucide-react";
 import { BulkUpdateProducts } from "@/components/bulk-update-products";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -37,6 +38,7 @@ function InventoryPage() {
   const [sel, setSel] = useState<string | null>(null);
   const [edit, setEdit] = useState<Edit | null>(null);
   const [adj, setAdj] = useState({ qty: "", kind: "adjust_in", note: "" });
+  const [adding, setAdding] = useState(false);
   const [bulk, setBulk] = useState(false);
   const { data: led } = useQuery({ queryKey: ["stock-ledger", sel], queryFn: () => getStockLedger({ data: { id: sel! } }), enabled: !!sel });
 
@@ -88,7 +90,8 @@ function InventoryPage() {
           ))}
         </div>
         {noCost ? <p className="text-xs text-muted-foreground">{noCost} products ka purchase price khali hai — stock value aur profit sahi dikhane ke liye product chun kar purchase price likhein (ya purchase karne par khud lag jata hai).</p> : null}
-        <div className="flex justify-end"><Button variant={bulk ? "secondary" : "default"} onClick={() => setBulk((b) => !b)}><Table2 /> {bulk ? "Bulk update band karein" : "Bulk update items"}</Button></div>
+        <div className="flex justify-end gap-2"><Button variant={adding ? "secondary" : "outline"} onClick={() => setAdding((b) => !b)}><Plus /> Naya item</Button><Button variant={bulk ? "secondary" : "default"} onClick={() => setBulk((b) => !b)}><Table2 /> {bulk ? "Bulk update band karein" : "Bulk update items"}</Button></div>
+        {adding ? <NewPosProduct onClose={() => setAdding(false)} onSaved={() => { setAdding(false); refresh(); }} /> : null}
         {bulk ? <BulkUpdateProducts products={all} onClose={() => setBulk(false)} onSaved={refresh} /> : null}
         <div className={`grid gap-3 lg:grid-cols-[1.2fr_1fr] ${bulk ? "hidden" : ""}`}>
           <section className="space-y-2 rounded-xl border border-border bg-card p-3">

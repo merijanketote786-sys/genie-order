@@ -1220,6 +1220,8 @@ export type Database = {
         Returns: string
       }
       pos_close_doc: { Args: { _id: string }; Returns: undefined }
+      pos_create_product: { Args: { _p: Json }; Returns: string }
+      pos_delete_products: { Args: { _ids: string[] }; Returns: number }
       pos_find_customer: {
         Args: { _phone: string; _ws: string }
         Returns: string

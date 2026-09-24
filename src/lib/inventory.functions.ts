@@ -162,3 +162,22 @@ export const getReport = createServerFn({ method: "GET" })
       lowStock,
     };
   });
+
+const txt = z.string().max(200).optional();
+export const createPosProduct = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ name: z.string().trim().min(1).max(200), unit: txt, sku: txt, barcode: txt, category: txt, brand: txt, sale_price: txt, purchase_price: txt, wholesale_price: txt, stock: txt, min_stock: txt, tax_percent: txt }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: id, error } = await (context.supabase as Sb).rpc("pos_create_product", { _p: data });
+    if (error) throw new Error(error.message || "Product add nahi hua");
+    return { id: id as string };
+  });
+
+export const deletePosProducts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ ids: z.array(z.string().uuid()).min(1).max(2000) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: n, error } = await (context.supabase as Sb).rpc("pos_delete_products", { _ids: data.ids });
+    if (error) throw new Error(error.message || "Delete nahi hua");
+    return { deleted: Number(n) };
+  });
