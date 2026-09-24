@@ -45,7 +45,7 @@ Advance: {{advance}}
 Grand Total: {{grand_total}}
 {{payment}}
 
-Shukriya! Order confirm karne ke liye reply karein.`;
+Thank you! Please reply to confirm your order.`;
 
 export const CONFIRMATION_TEMPLATE_VARIABLES = [
   { label: "Order #", token: "{{order_number}}" },

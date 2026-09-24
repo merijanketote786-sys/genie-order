@@ -1,6 +1,6 @@
 /**
- * Compact customer search — Order/Invoice pages ke andar.
- * Naam / city / phone se search, select kar ke copy ya seedha composer me add.
+ * Compact customer search — used inside Order/Invoice pages.
+ * Search by name / city / phone, select and copy or add directly to the composer.
  */
 import { listCustomers, type CustomerRow } from "@/lib/records.functions";
 import { useQuery } from "@tanstack/react-query";
@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type Props = {
-  /** Selected customer ka detail composer me daalne ke liye. */
+  /** Used to insert the selected customer's detail into the composer. */
   onUse?: (text: string, customer: CustomerRow) => void;
   useLabel?: string;
 };
@@ -37,7 +37,7 @@ export function CustomerPicker({ onUse, useLabel = "Add" }: Props) {
         <Users className="size-4 shrink-0 text-primary" />
         <span className="text-sm font-semibold text-foreground">Customer search</span>
         <span className="hidden truncate text-xs text-muted-foreground sm:inline">
-          · naam, city ya phone se saved customer
+          · saved customers by name, city or phone
         </span>
         <ChevronDown
           className={`ml-auto size-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
@@ -71,9 +71,9 @@ export function CustomerPickerBody({ onUse, useLabel = "Add" }: Props) {
   const copy = async (c: CustomerRow) => {
     try {
       await navigator.clipboard.writeText(customerToText(c));
-      toast.success("Customer detail copy ho gaya");
+      toast.success("Customer detail copied");
     } catch {
-      toast.error("Copy nahi ho saka");
+      toast.error("Copy failed");
     }
   };
 
@@ -84,7 +84,7 @@ export function CustomerPickerBody({ onUse, useLabel = "Add" }: Props) {
         <input
           value={term}
           onChange={(e) => setTerm(e.target.value)}
-          placeholder="Naam, city ya phone number likhein"
+          placeholder="Enter name, city or phone number"
           aria-label="Customer search"
           className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-9 text-sm text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/30"
         />
@@ -95,7 +95,7 @@ export function CustomerPickerBody({ onUse, useLabel = "Add" }: Props) {
 
       {customers.length === 0 ? (
         <p className="py-3 text-center text-xs text-muted-foreground">
-          {search ? "Koi customer nahi mila." : "Saved customers yahan dikhenge."}
+          {search ? "No customer found." : "Saved customers will appear here."}
         </p>
       ) : (
         <ul className="max-h-64 space-y-1.5 overflow-y-auto">
@@ -112,7 +112,7 @@ export function CustomerPickerBody({ onUse, useLabel = "Add" }: Props) {
                     className="w-full text-left"
                   >
                     <p className="truncate text-sm font-semibold text-foreground">
-                      {c.name || "Bina naam"}
+                      {c.name || "No name"}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {c.phone}

@@ -25,14 +25,14 @@ export async function saveMySettings(arg: Arg<Partial<UserSettings>>) {
   const d = db();
   d.user = { ...d.user, ...(arg?.data ?? {}) };
   commit();
-  return { ok: true as const, message: "Settings save ho gayin" };
+  return { ok: true as const, message: "Settings saved" };
 }
 
 export async function saveMyProfileName(arg: Arg<{ fullName: string }>) {
   const d = db();
   d.profileName = arg!.data.fullName;
   commit();
-  return { ok: true as const, message: "Naam update ho gaya" };
+  return { ok: true as const, message: "Name updated" };
 }
 
 export async function getWorkspaceSettings() {
@@ -43,7 +43,7 @@ export async function saveWorkspaceSettings(arg: Arg<Partial<WorkspaceSettings>>
   const d = db();
   d.workspace = { ...d.workspace, ...(arg?.data ?? {}) };
   commit();
-  return { ok: true as const, message: "Workspace settings save ho gayin" };
+  return { ok: true as const, message: "Workspace settings saved" };
 }
 
 export async function listMemberSections() {
@@ -51,7 +51,7 @@ export async function listMemberSections() {
 }
 
 export async function saveMemberSections() {
-  return { ok: false as const, message: "Offline app me team access change nahi hota." };
+  return { ok: false as const, message: "Team access cannot be changed in the offline app." };
 }
 
 export async function exportMyRecordsCsv(arg: Arg<{ kind: "orders" | "invoices" | "customers" }>) {

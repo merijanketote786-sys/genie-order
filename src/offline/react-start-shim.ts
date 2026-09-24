@@ -4,11 +4,11 @@ export function useServerFn<T>(fn: T): T {
 }
 
 export function createServerFn() {
-  throw new Error("createServerFn offline build me available nahi hai.");
+  throw new Error("createServerFn is not available in the offline build.");
 }
 
 export function createMiddleware() {
-  throw new Error("createMiddleware offline build me available nahi hai.");
+  throw new Error("createMiddleware is not available in the offline build.");
 }
 
 export function createStart() {

@@ -30,7 +30,7 @@ export async function saveOrderTemplate(arg: Arg<{ id?: string | null; name: str
   const clash = d.templates.find(
     (t) => t.kind === kind && t.name.toLowerCase() === data.name.trim().toLowerCase() && t.id !== data.id,
   );
-  if (clash) throw new Error("Is naam se template pehle se mojood hai");
+  if (clash) throw new Error("A template with this name already exists");
 
   for (const t of d.templates) if (t.kind === kind) t.is_selected = false;
 

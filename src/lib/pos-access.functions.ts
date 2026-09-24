@@ -37,12 +37,12 @@ export const verifyPosPin = createServerFn({ method: "POST" })
 export const savePosSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({
-    config: z.record(z.string(), z.unknown()).refine((c) => JSON.stringify(c).length < 600_000, "Settings bohat bari hain (logo chhota karein)"),
+    config: z.record(z.string(), z.unknown()).refine((c) => JSON.stringify(c).length < 600_000, "Settings are too large (shrink the logo)"),
     pin: z.string().max(8).nullable(),
   }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await (context.supabase as Sb).rpc("pos_save_settings", { _config: data.config, _pin: data.pin });
-    if (error) throw new Error(error.message.includes("PIN") ? "PIN 4 se 8 digits ka ho" : error.message.includes("permission") ? "Settings badalne ki ijazat nahi" : "Settings save nahi huin. Dobara try karein.");
+    if (error) throw new Error(error.message.includes("PIN") ? "PIN must be 4 to 8 digits" : error.message.includes("permission") ? "Not allowed to change settings" : "Settings could not be saved. Try again.");
     return { ok: true };
   });
 
@@ -65,7 +65,7 @@ export const setPosMemberRole = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ userId: z.string().uuid(), role: z.enum(POS_ROLES) }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await (context.supabase as Sb).rpc("pos_set_member_role", { _user: data.userId, _role: data.role });
-    if (error) throw new Error("Role save nahi hua");
+    if (error) throw new Error("Could not save role");
     return { ok: true };
   });
 
@@ -74,7 +74,7 @@ export const cancelWithPin = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), reason: z.string().max(300), pin: z.string().max(8) }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await (context.supabase as Sb).rpc("pos_cancel_sale_pin", { _id: data.id, _reason: data.reason, _pin: data.pin });
-    if (error) throw new Error(error.message.includes("PIN") ? "PIN ghalat" : "Cancel nahi hua");
+    if (error) throw new Error(error.message.includes("PIN") ? "Incorrect PIN" : "Could not cancel");
     return { ok: true };
   });
 
@@ -84,7 +84,7 @@ export const exportPosBackup = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const sb = context.supabase as Sb;
     const { data: ok } = await sb.rpc("pos_can", { _perm: "settings" });
-    if (!ok) throw new Error("Ijazat nahi");
+    if (!ok) throw new Error("Not allowed");
     const tables = ["customers", "suppliers", "pos_sales", "pos_sale_items", "purchases", "purchase_items", "pos_payments", "expenses", "stock_movements", "products"];
     const out: Record<string, unknown[]> = {};
     for (const t of tables) { const { data } = await sb.from(t).select("*").limit(50000); out[t] = data ?? []; }

@@ -12,9 +12,9 @@ export const Route = createFileRoute("/_authenticated/customers")({
   head: () => ({
     meta: [
       { title: "Customers — OrderBot" },
-      { name: "description", content: "Customer record: phone, city, address aur unke purane orders." },
+      { name: "description", content: "Customer record: phone, city, address and their past orders." },
       { property: "og:title", content: "Customers — OrderBot" },
-      { property: "og:description", content: "Customer record aur unke purane orders." },
+      { property: "og:description", content: "Customer record and their past orders." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -44,7 +44,7 @@ function CustomersPage() {
         icon={Users}
         eyebrow="Records"
         title="Customers"
-        description="Har order se customer khud record ho jata hai — phone, city, address aur kharch ka hisaab."
+        description="Every order automatically records the customer — phone, city, address and spending history."
         meta={["Auto-saved", "Order history", "Search"]}
       />
 
@@ -58,7 +58,7 @@ function CustomersPage() {
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Naam, phone ya city"
+          placeholder="Name, phone or city"
           className="h-12 rounded-2xl"
         />
         <Button type="submit" className="h-12 gap-1.5 rounded-2xl px-4">
@@ -68,12 +68,12 @@ function CustomersPage() {
 
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-6">
         {customers.isLoading ? (
-          <p className="py-10 text-center text-sm text-muted-foreground">Load ho raha hai…</p>
+          <p className="py-10 text-center text-sm text-muted-foreground">Loading…</p>
         ) : rows.length === 0 ? (
           <div className="rounded-3xl border border-border bg-card p-8 text-center">
-            <h3 className="font-display text-base font-bold text-foreground">Koi customer nahi</h3>
+            <h3 className="font-display text-base font-bold text-foreground">No customers</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Order save hote hi customer yahan khud aa jayega.
+              Once an order is saved, the customer will appear here automatically.
             </p>
           </div>
         ) : (
@@ -86,7 +86,7 @@ function CustomersPage() {
               >
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-semibold text-foreground">
-                    {c.name || "Bina naam"}
+                    {c.name || "No name"}
                   </span>
                   <span className="block truncate text-xs text-muted-foreground">
                     {[c.phone, c.city].filter(Boolean).join(" · ")}
@@ -120,7 +120,7 @@ function CustomerDetail({ id }: { id: string }) {
   });
 
   if (detail.isLoading) {
-    return <p className="border-t border-border px-4 py-4 text-sm text-muted-foreground">Load ho raha hai…</p>;
+    return <p className="border-t border-border px-4 py-4 text-sm text-muted-foreground">Loading…</p>;
   }
 
   const orders = detail.data?.orders ?? [];
@@ -132,7 +132,7 @@ function CustomerDetail({ id }: { id: string }) {
         <p className="text-[11px] font-bold uppercase text-muted-foreground">Orders</p>
         <ul className="mt-2 space-y-1.5">
           {orders.length === 0 ? (
-            <li className="text-sm text-muted-foreground">Koi order nahi</li>
+            <li className="text-sm text-muted-foreground">No orders</li>
           ) : (
             orders.map((o: any) => (
               <li key={o.id} className="rounded-xl bg-surface-2 px-3 py-2 text-xs text-foreground">
@@ -149,7 +149,7 @@ function CustomerDetail({ id }: { id: string }) {
         <p className="text-[11px] font-bold uppercase text-muted-foreground">Invoices</p>
         <ul className="mt-2 space-y-1.5">
           {invoices.length === 0 ? (
-            <li className="text-sm text-muted-foreground">Koi invoice nahi</li>
+            <li className="text-sm text-muted-foreground">No invoices</li>
           ) : (
             invoices.map((i: any) => (
               <li key={i.id} className="rounded-xl bg-surface-2 px-3 py-2 text-xs text-foreground">

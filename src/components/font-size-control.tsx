@@ -20,9 +20,9 @@ function applySize(px: number | null) {
 }
 
 /**
- * Poori workspace ka text/layout chhota-bara karne ka control.
- * Browser zoom (Ctrl+scroll) ki jagah ye use karein — is se layout nahi tootta
- * aur cheezen chhup nahi jaati. Setting is browser me save rehti hai.
+ * Control to shrink/enlarge the text/layout across the workspace.
+ * Use this instead of browser zoom (Ctrl+scroll) — it does not break the layout
+ * or hide things. The setting is saved in this browser.
  */
 function defaultSize() {
   return BASE;
@@ -51,7 +51,7 @@ export function FontSizeControl() {
   return (
     <div
       className="hidden shrink-0 items-center gap-0.5 rounded-lg border border-border bg-card p-0.5 sm:flex"
-      title="Text size chhota/bara karein"
+      title="Increase/decrease text size"
     >
       <Button
         variant="ghost"
@@ -59,7 +59,7 @@ export function FontSizeControl() {
         onClick={() => change(-1)}
         disabled={size <= MIN}
         className="size-8"
-        aria-label="Text chhota karein"
+        aria-label="Decrease text size"
       >
         <Minus className="h-3.5 w-3.5" />
       </Button>
@@ -72,7 +72,7 @@ export function FontSizeControl() {
         onClick={() => change(1)}
         disabled={size >= MAX}
         className="size-8"
-        aria-label="Text bara karein"
+        aria-label="Increase text size"
       >
         <Plus className="h-3.5 w-3.5" />
       </Button>

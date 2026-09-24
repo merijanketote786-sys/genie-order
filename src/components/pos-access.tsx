@@ -21,8 +21,8 @@ export function usePosAccess() {
 }
 
 /**
- * Manager PIN prompt. `ask()` true tab deta hai jab PIN sahi ho.
- * `onlyPin` = raw PIN wapas (jaise server-side cancel ke liye).
+ * Manager PIN prompt. `ask()` returns true when the PIN is correct.
+ * `onlyPin` = raw PIN returned (e.g. for server-side cancel).
  */
 export function usePinPrompt(): [ReactNode, (why: string) => Promise<string | null>] {
   const [open, setOpen] = useState<string | null>(null);
@@ -36,7 +36,7 @@ export function usePinPrompt(): [ReactNode, (why: string) => Promise<string | nu
     setBusy(true);
     try {
       const r = await verifyPosPin({ data: { pin } });
-      if (r.ok) close(pin); else toast.error("PIN ghalat hai");
+      if (r.ok) close(pin); else toast.error("Incorrect PIN");
     } finally { setBusy(false); }
   };
 
@@ -46,7 +46,7 @@ export function usePinPrompt(): [ReactNode, (why: string) => Promise<string | nu
         <p className="flex items-center gap-2 font-bold text-foreground"><KeyRound className="size-4 text-primary" /> Manager PIN</p>
         <p className="text-xs text-muted-foreground">{open}</p>
         <input autoFocus type="password" inputMode="numeric" maxLength={8} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))} onKeyDown={(e) => { if (e.key === "Enter") void submit(); if (e.key === "Escape") close(null); }} className="h-11 w-full rounded-lg border border-border bg-background px-3 text-center text-lg tracking-widest outline-none focus:border-primary" aria-label="PIN" />
-        <div className="flex gap-2"><Button className="flex-1" disabled={busy || pin.length < 4} onClick={submit}>Theek hai</Button><Button variant="ghost" onClick={() => close(null)}>Cancel</Button></div>
+        <div className="flex gap-2"><Button className="flex-1" disabled={busy || pin.length < 4} onClick={submit}>OK</Button><Button variant="ghost" onClick={() => close(null)}>Cancel</Button></div>
       </div>
     </div>
   ) : null;

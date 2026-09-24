@@ -54,56 +54,56 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
   const applyAll = () => {
     const ids = picked.size ? [...picked] : list.map((p) => p.id);
     const col = COLS.find((c) => c.k === applyCol)!;
-    if (col.num && applyMode !== "set" && applyVal.trim() === "") return toast.error("Value likhein");
+    if (col.num && applyMode !== "set" && applyVal.trim() === "") return toast.error("Enter a value");
     ids.forEach((id) => {
       const r = rowOf(id); let v = applyVal;
       if (col.num && applyMode !== "set") { const cur = Number(r[applyCol]) || 0, x = Number(applyVal) || 0; v = String(Math.round((applyMode === "pct" ? cur * (1 + x / 100) : cur + x) * 100) / 100); }
       set(id, applyCol, v);
     });
-    toast.success(`${ids.length} products par lagaya — Save dabayein`);
+    toast.success(`Applied to ${ids.length} products — press Save`);
   };
 
   const save = async () => {
-    if (!dirtyIds.length) return toast.info("Koi tabdeeli nahi");
+    if (!dirtyIds.length) return toast.info("No changes");
     for (const id of dirtyIds) {
       const r = rowOf(id);
-      if (!r.name.trim()) return toast.error("Product name khali nahi ho sakta");
-      for (const c of COLS) if (c.num && c.k !== "stock_value" && r[c.k] !== "" && (!isFinite(Number(r[c.k])) || (c.k !== "stock" && Number(r[c.k]) < 0))) return toast.error(`${r.name}: ${c.label} ghalat hai`);
+      if (!r.name.trim()) return toast.error("Product name cannot be empty");
+      for (const c of COLS) if (c.num && c.k !== "stock_value" && r[c.k] !== "" && (!isFinite(Number(r[c.k])) || (c.k !== "stock" && Number(r[c.k]) < 0))) return toast.error(`${r.name}: ${c.label} is invalid`);
     }
     const rows = dirtyIds.map((id) => { const r = rowOf(id); const o: Record<string, string> = { id }; COLS.forEach((c) => { if (c.k !== "stock_value" && r[c.k] !== orig[id][c.k]) o[c.k] = r[c.k].trim(); }); return o; });
     setSaving(true);
     try {
       for (let i = 0; i < rows.length; i += 500) await bulkUpdateProducts({ data: { rows: rows.slice(i, i + 500) } });
-      toast.success(`${rows.length} products update ho gaye`); setEdits({}); onSaved();
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Save nahi hua"); } finally { setSaving(false); }
+      toast.success(`${rows.length} products updated`); setEdits({}); onSaved();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Save failed"); } finally { setSaving(false); }
   };
 
   const del = async (ids: string[]) => {
-    if (!ids.length) return toast.info("Pehle products chunein");
-    if (!confirm(`${ids.length} product delete karne hain? Purani bills me in ka record rahega.`)) return;
-    try { const r = await deletePosProducts({ data: { ids } }); toast.success(`${r.deleted} product delete ho gaye`); setPicked(new Set()); setEdits((e) => { const n = { ...e }; ids.forEach((i) => delete n[i]); return n; }); onSaved(); }
-    catch (e) { toast.error(e instanceof Error ? e.message : "Delete nahi hua"); }
+    if (!ids.length) return toast.info("Select products first");
+    if (!confirm(`Delete ${ids.length} product(s)? They will still appear on past bills.`)) return;
+    try { const r = await deletePosProducts({ data: { ids } }); toast.success(`${r.deleted} product(s) deleted`); setPicked(new Set()); setEdits((e) => { const n = { ...e }; ids.forEach((i) => delete n[i]); return n; }); onSaved(); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Delete failed"); }
   };
 
   const allPicked = list.length > 0 && list.every((p) => picked.has(p.id));
   return (
     <section className="space-y-2 rounded-xl border border-border bg-card p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <p className="mr-auto font-bold text-foreground">Bulk update items <span className="text-xs font-normal text-muted-foreground">{dirtyIds.length} tabdeel</span></p>
+        <p className="mr-auto font-bold text-foreground">Bulk update items <span className="text-xs font-normal text-muted-foreground">{dirtyIds.length} changed</span></p>
         <Button variant="destructive" onClick={() => del([...picked])} disabled={!picked.size || saving}><Trash2 /> Delete ({picked.size})</Button>
         <Button variant="outline" onClick={() => setEdits({})} disabled={!dirtyIds.length || saving}>Reset</Button>
-        <Button onClick={save} disabled={saving || !dirtyIds.length}>{saving ? "Save ho raha..." : `Save (${dirtyIds.length})`}</Button>
-        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Band karein"><X /></Button>
+        <Button onClick={save} disabled={saving || !dirtyIds.length}>{saving ? "Saving..." : `Save (${dirtyIds.length})`}</Button>
+        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close"><X /></Button>
       </div>
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-2 text-sm">
-        <span className="text-xs text-muted-foreground">{picked.size ? `${picked.size} chune hue` : "Sab dikhne wale"} products par:</span>
+        <span className="text-xs text-muted-foreground">{picked.size ? `${picked.size} selected` : "All visible"} products:</span>
         <select className={`${posInput} w-40`} value={applyCol} onChange={(e) => setApplyCol(e.target.value)} aria-label="Field">{COLS.filter((c) => !["name", "sku", "barcode", "stock_value"].includes(c.k)).map((c) => <option key={c.k} value={c.k}>{c.label}</option>)}</select>
-        {COLS.find((c) => c.k === applyCol)?.num ? <select className={`${posInput} w-32`} value={applyMode} onChange={(e) => setApplyMode(e.target.value as "set")} aria-label="Tareeqa"><option value="set">Yeh value</option><option value="pct">% barhao/ghatao</option><option value="add">+/− raqam</option></select> : null}
+        {COLS.find((c) => c.k === applyCol)?.num ? <select className={`${posInput} w-32`} value={applyMode} onChange={(e) => setApplyMode(e.target.value as "set")} aria-label="Method"><option value="set">This value</option><option value="pct">% increase/decrease</option><option value="add">+/− amount</option></select> : null}
         {applyCol === "unit" ? <UnitSelect className={`${posInput} w-40`} value={applyVal} onChange={setApplyVal} /> : <input className={`${posInput} w-28`} value={applyVal} onChange={(e) => setApplyVal(e.target.value)} placeholder="Value" />}
-        <Button variant="outline" onClick={applyAll}>Lagao</Button>
+        <Button variant="outline" onClick={applyAll}>Apply</Button>
       </div>
       <label className="flex h-10 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
-        <Search className="size-4 text-primary" /><input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Product dhoondein" />
+        <Search className="size-4 text-primary" /><input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search product" />
       </label>
       <div className="max-h-[60vh] overflow-auto rounded-lg border border-border">
         <table className="w-full min-w-[1900px] table-fixed border-collapse text-sm">
@@ -113,18 +113,18 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
             <col className="w-14" />
           </colgroup>
           <thead className="sticky top-0 z-10 bg-card shadow-[0_1px_0_0] shadow-border"><tr className="text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            <th className="px-2 py-2"><input type="checkbox" checked={allPicked} onChange={() => setPicked(allPicked ? new Set() : new Set(list.map((p) => p.id)))} aria-label="Sab chunein" /></th>
+            <th className="px-2 py-2"><input type="checkbox" checked={allPicked} onChange={() => setPicked(allPicked ? new Set() : new Set(list.map((p) => p.id)))} aria-label="Select all" /></th>
             {COLS.map((c) => <th key={c.k} className="truncate px-2 py-2" title={c.label}>{c.label}</th>)}
             <th className="px-2 py-2">Delete</th>
           </tr></thead>
           <tbody>
             {list.slice(0, 1000).map((p) => { const r = rowOf(p.id); return (
               <tr key={p.id} className={`border-t border-border ${dirtyIds.includes(p.id) ? "bg-accent" : ""}`}>
-                <td className="px-2 py-1"><input type="checkbox" checked={picked.has(p.id)} onChange={() => setPicked((s) => { const n = new Set(s); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; })} aria-label={`Chunein ${p.name}`} /></td>
+                <td className="px-2 py-1"><input type="checkbox" checked={picked.has(p.id)} onChange={() => setPicked((s) => { const n = new Set(s); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; })} aria-label={`Select ${p.name}`} /></td>
                 {COLS.map((c) => (
                   <td key={c.k} className="px-1 py-1">
                     {c.k === "unit" ? <UnitSelect className={`${posInput} h-9 w-full px-1 ${r.unit !== orig[p.id].unit ? "border-primary" : ""}`} value={r.unit} onChange={(v) => set(p.id, "unit", v)} label={`Unit ${p.name}`} /> : <input className={`${posInput} h-9 w-full px-2 ${c.num ? "text-right" : ""} ${c.k !== "stock_value" && r[c.k] !== orig[p.id][c.k] ? "border-primary" : ""}`} value={r[c.k]} inputMode={c.num ? "decimal" : undefined}
-                      title={c.k === "stock_value" ? "Stock value badlne se purchase price khud calculate hoga" : undefined} onChange={(e) => set(p.id, c.k, e.target.value)} aria-label={`${c.label} ${p.name}`} />}
+                      title={c.k === "stock_value" ? "Changing stock value will auto-calculate the purchase price" : undefined} onChange={(e) => set(p.id, c.k, e.target.value)} aria-label={`${c.label} ${p.name}`} />}
                   </td>
                 ))}
                 <td className="px-1 py-1 text-center"><Button variant="ghost" size="icon" onClick={() => del([p.id])} aria-label={`Delete ${p.name}`}><Trash2 className="text-destructive" /></Button></td>
@@ -133,7 +133,7 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-muted-foreground">Stock qty badlne par farq "Bulk update" ke naam se stock ledger me darj hota hai. Stock value = stock × purchase price; value badlein to purchase price khud nikal aata hai. Kul value: {rs(list.reduce((s, p) => s + (Number(rowOf(p.id).stock_value) || 0), 0))}</p>
+      <p className="text-xs text-muted-foreground">Changing stock qty records the difference in the stock ledger as "Bulk update". Stock value = stock × purchase price; changing the value auto-derives the purchase price. Total value: {rs(list.reduce((s, p) => s + (Number(rowOf(p.id).stock_value) || 0), 0))}</p>
     </section>
   );
 }

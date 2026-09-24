@@ -87,7 +87,7 @@ export function CustomCourierCalculator() {
       setPreview({ config: res.config as CourierConfig, fileName: res.fileName });
       setCourierName((n) => n || file.name.replace(/\.[^.]+$/, "").slice(0, 60));
     },
-    onError: () => setError("File upload nahi ho saki. Dobara koshish karein."),
+    onError: () => setError("File upload failed. Please try again."),
   });
 
   const saveMutation = useMutation({
@@ -120,7 +120,7 @@ export function CustomCourierCalculator() {
   const pickFile = (file: File | null | undefined) => {
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      setError("File 10MB se bari hai.");
+      setError("File is larger than 10MB.");
       return;
     }
     setError(null);
@@ -188,11 +188,11 @@ export function CustomCourierCalculator() {
         {/* Upload */}
         <div>
           <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Upload className="h-4 w-4 text-primary" /> Apni courier rate sheet upload karein
+            <Upload className="h-4 w-4 text-primary" /> Upload your courier rate sheet
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            PDF, Word (.docx), Excel (.xlsx/.xls), CSV ya rate chart ki tasveer — rates khud parh kar
-            calculator me lag jayenge.
+            PDF, Word (.docx), Excel (.xlsx/.xls), CSV, or a picture of the rate chart — rates will be
+            read automatically and applied to the calculator.
           </p>
           <input
             ref={fileRef}
@@ -212,11 +212,11 @@ export function CustomCourierCalculator() {
           >
             {importMutation.isPending ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" /> File parhi ja rahi hai…
+                <Loader2 className="h-4 w-4 animate-spin" /> Reading file…
               </>
             ) : (
               <>
-                <Upload className="h-4 w-4" /> File choose karein
+                <Upload className="h-4 w-4" /> Choose file
               </>
             )}
           </button>
@@ -230,7 +230,7 @@ export function CustomCourierCalculator() {
           {preview && (
             <div className="mt-4 rounded-xl border border-border bg-muted/40 p-4">
               <p className="text-sm font-semibold text-foreground">
-                {preview.config.slabs.length} rate slabs mile ({preview.config.services.length}{" "}
+                {preview.config.slabs.length} rate slabs found ({preview.config.services.length}{" "}
                 service)
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -243,7 +243,7 @@ export function CustomCourierCalculator() {
                 </p>
               ))}
               <label className="mt-3 block text-xs font-semibold text-muted-foreground">
-                Courier ka naam
+                Courier name
               </label>
               <input
                 value={courierName}
@@ -276,13 +276,13 @@ export function CustomCourierCalculator() {
         {/* Courier select */}
         <div className="mt-6 border-t border-border pt-6">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Truck className="h-4 w-4 text-primary" /> Courier select karein
+            <Truck className="h-4 w-4 text-primary" /> Select courier
           </h2>
           {isLoading ? (
-            <p className="mt-2 text-sm text-muted-foreground">Load ho raha hai…</p>
+            <p className="mt-2 text-sm text-muted-foreground">Loading…</p>
           ) : couriers.length === 0 ? (
             <p className="mt-2 text-sm text-muted-foreground">
-              Abhi koi courier save nahi. Upar se apni rate sheet upload karein.
+              No courier saved yet. Upload your rate sheet above.
             </p>
           ) : (
             <div className="mt-2 grid gap-2">
@@ -384,7 +384,7 @@ export function CustomCourierCalculator() {
                 <p className="mt-2 text-sm font-medium text-destructive">{weightError}</p>
               ) : (
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Aakhri slab ke baad har shuru hua extra kg Rs {selected.config.additionalKgRate}.
+                  Every extra kg started after the last slab costs Rs {selected.config.additionalKgRate}.
                 </p>
               )}
             </div>
@@ -633,7 +633,7 @@ export function CustomCourierCalculator() {
               </p>
               {result.codAmount > 0 && (
                 <p className="mt-2 text-sm opacity-90">
-                  Customer se collect karein: {formatPKR(result.codAmount)}
+                  Collect from customer: {formatPKR(result.codAmount)}
                 </p>
               )}
             </div>
@@ -643,8 +643,8 @@ export function CustomCourierCalculator() {
             <Info className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
               {couriers.length === 0
-                ? "Pehle apni courier rate sheet upload karein — phir weight aur city daal kar charges dekhein."
-                : "Courier select kar ke weight aur city daalein."}
+                ? "Upload your courier rate sheet first — then enter weight and city to see charges."
+                : "Select a courier and enter weight and city."}
             </span>
           </p>
         )}

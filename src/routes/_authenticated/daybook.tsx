@@ -13,9 +13,9 @@ export const Route = createFileRoute("/_authenticated/daybook")({
   head: () => ({
     meta: [
       { title: "Cash Day Book — HB Chemicals Pakistan Workspace" },
-      { name: "description", content: "Opening cash, din bhar ki cash aamad/kharch aur expected closing cash." },
+      { name: "description", content: "Opening cash, cash in/out throughout the day, and expected closing cash." },
       { property: "og:title", content: "Cash Day Book — HB Chemicals Pakistan Workspace" },
-      { property: "og:description", content: "Rozana cash hisaab." },
+      { property: "og:description", content: "Daily cash accounting." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -37,7 +37,7 @@ function DayBookPage() {
   );
 
   return (
-    <AppShell title="Cash Day Book" subtitle="Rozana cash hisaab" active="/pos">
+    <AppShell title="Cash Day Book" subtitle="Daily cash accounting" active="/pos">
       {pc.node}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />
@@ -54,27 +54,27 @@ function DayBookPage() {
           <>
             <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
               <Stat label="Opening cash" value={data.opening} />
-              <Stat label="Cash aaya" value={data.cashIn} />
-              <Stat label="Cash gaya" value={data.cashOut} />
+              <Stat label="Cash in" value={data.cashIn} />
+              <Stat label="Cash out" value={data.cashOut} />
               <Stat label="Expected closing cash" value={data.closing} strong />
             </div>
             <div className="grid gap-3 lg:grid-cols-2">
               <section className="rounded-xl border border-border bg-card p-3 text-sm">
                 <p className="mb-2 font-bold text-foreground">Cash breakdown</p>
                 {Object.entries(data.byKind).map(([k, v]) => <p key={k} className="flex justify-between border-t border-border py-1.5"><span>{k}</span><b className={v < 0 ? "text-destructive" : ""}>{rs(v)}</b></p>)}
-                {!Object.keys(data.byKind).length ? <p className="text-xs text-muted-foreground">Aaj koi cash entry nahi.</p> : null}
+                {!Object.keys(data.byKind).length ? <p className="text-xs text-muted-foreground">No cash entries today.</p> : null}
               </section>
               <section className="rounded-xl border border-border bg-card p-3 text-sm">
                 <p className="mb-2 font-bold text-foreground">Payment method wise (net)</p>
                 {Object.entries(data.byMethod).map(([k, v]) => <p key={k} className="flex justify-between border-t border-border py-1.5"><span>{k}</span><b>{rs(v)}</b></p>)}
                 <div className="mt-3 flex items-center gap-2">
-                  <input className={posInput} value={counted} inputMode="decimal" onChange={(e) => setCounted(e.target.value)} placeholder="Galle me gini hui cash" aria-label="Counted cash" />
-                  {diff != null ? <b className={Math.abs(diff) < 0.01 ? "text-primary" : "text-destructive"}>{Math.abs(diff) < 0.01 ? "Barabar" : `${diff > 0 ? "Zyada" : "Kam"} ${rs(Math.abs(diff))}`}</b> : null}
+                  <input className={posInput} value={counted} inputMode="decimal" onChange={(e) => setCounted(e.target.value)} placeholder="Cash counted in the till" aria-label="Counted cash" />
+                  {diff != null ? <b className={Math.abs(diff) < 0.01 ? "text-primary" : "text-destructive"}>{Math.abs(diff) < 0.01 ? "Matched" : `${diff > 0 ? "Excess" : "Short"} ${rs(Math.abs(diff))}`}</b> : null}
                 </div>
               </section>
             </div>
             <section className="rounded-xl border border-border bg-card p-3">
-              <p className="mb-2 text-sm font-bold text-foreground">Din ki tamam entries</p>
+              <p className="mb-2 text-sm font-bold text-foreground">All entries for the day</p>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead><tr className="text-left text-xs text-muted-foreground"><th>Time</th><th>Detail</th><th>Method</th><th>Note</th><th className="text-right">In</th><th className="text-right">Out</th></tr></thead>
@@ -87,11 +87,11 @@ function DayBookPage() {
                     ))}
                   </tbody>
                 </table>
-                {!data.rows.length ? <p className="py-4 text-center text-xs text-muted-foreground">Is din koi entry nahi.</p> : null}
+                {!data.rows.length ? <p className="py-4 text-center text-xs text-muted-foreground">No entries for this day.</p> : null}
               </div>
             </section>
           </>
-        ) : <p className="py-10 text-center text-sm text-muted-foreground">Load ho raha hai…</p>}
+        ) : <p className="py-10 text-center text-sm text-muted-foreground">Loading…</p>}
       </div>
     </AppShell>
   );

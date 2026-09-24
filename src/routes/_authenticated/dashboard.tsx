@@ -20,9 +20,9 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "Dashboard — HB Chemicals Pakistan Workspace" },
-      { name: "description", content: "Orders, invoices, customers aur stock ki poori progress ek nazar mein." },
+      { name: "description", content: "Full progress of orders, invoices, customers and stock at a glance." },
       { property: "og:title", content: "Dashboard — HB Chemicals Pakistan Workspace" },
-      { property: "og:description", content: "Workspace ki detailed progress aur reports." },
+      { property: "og:description", content: "Detailed workspace progress and reports." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -79,7 +79,7 @@ function RankList({ title, rows, currency }: { title: string; rows: DashboardRan
     <section className="rounded-2xl border border-border bg-card p-4">
       <h3 className="font-display text-sm font-bold text-foreground">{title}</h3>
       {rows.length === 0 ? (
-        <p className="mt-3 text-xs text-muted-foreground">Abhi koi data nahi.</p>
+        <p className="mt-3 text-xs text-muted-foreground">No data yet.</p>
       ) : (
         <ul className="mt-3 space-y-2.5">
           {rows.map((r) => (
@@ -110,34 +110,34 @@ function DashboardPage() {
   const maxOrders = Math.max(1, ...series.map((p) => p.orders));
 
   return (
-    <AppShell title="Dashboard" subtitle="Workspace ki poori progress" active="/dashboard">
+    <AppShell title="Dashboard" subtitle="Full workspace progress" active="/dashboard">
       <WorkspaceHeader
         icon={LayoutDashboard}
         eyebrow="Overview"
         title="Workspace Dashboard"
-        description="Orders, invoices, customers, payments aur stock — sab ki detailed progress ek hi jagah."
-        meta={["Live data", "14 din ka trend", "Reports"]}
+        description="Detailed progress of orders, invoices, customers, payments and stock — all in one place."
+        meta={["Live data", "14-day trend", "Reports"]}
       />
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-8 pt-3">
         {q.isLoading ? (
-          <p className="py-16 text-center text-sm text-muted-foreground">Dashboard load ho raha hai…</p>
+          <p className="py-16 text-center text-sm text-muted-foreground">Dashboard loading…</p>
         ) : !d ? (
-          <p className="py-16 text-center text-sm text-muted-foreground">Data load nahi ho saka.</p>
+          <p className="py-16 text-center text-sm text-muted-foreground">Could not load data.</p>
         ) : (
           <>
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <StatCard
                 icon={ClipboardList}
-                label="Orders aaj"
+                label="Orders today"
                 value={num(d.orders.today)}
-                hint={`7 din: ${num(d.orders.week)} · 30 din: ${num(d.orders.month)}`}
+                hint={`7 days: ${num(d.orders.week)} · 30 days: ${num(d.orders.month)}`}
               />
               <StatCard
                 icon={TrendingUp}
-                label="Revenue (30 din)"
+                label="Revenue (30 days)"
                 value={`${cur} ${num(Math.round(d.orders.revenueMonth))}`}
-                hint={`Aaj: ${cur} ${num(Math.round(d.orders.revenueToday))}`}
+                hint={`Today: ${cur} ${num(Math.round(d.orders.revenueToday))}`}
                 tone="success"
               />
               <StatCard
@@ -151,15 +151,15 @@ function DashboardPage() {
                 icon={Users}
                 label="Customers"
                 value={num(d.customers.total)}
-                hint={`Naye (30 din): ${num(d.customers.newMonth)} · Repeat: ${num(d.customers.repeat)}`}
+                hint={`New (30 days): ${num(d.customers.newMonth)} · Repeat: ${num(d.customers.repeat)}`}
               />
             </div>
 
             <section className="rounded-2xl border border-border bg-card p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="font-display text-sm font-bold text-foreground">Pichle 14 din ka trend</h3>
+                <h3 className="font-display text-sm font-bold text-foreground">Last 14 days trend</h3>
                 <p className="text-xs text-muted-foreground">
-                  Sab se zyada din: {cur} {num(Math.round(maxRevenue))}
+                  Highest day: {cur} {num(Math.round(maxRevenue))}
                 </p>
               </div>
               <div className="mt-4 grid grid-cols-14 items-end gap-1" style={{ gridTemplateColumns: "repeat(14, minmax(0,1fr))" }}>
@@ -203,13 +203,13 @@ function DashboardPage() {
                 <h3 className="font-display text-sm font-bold text-foreground">Invoices &amp; payments</h3>
                 <dl className="mt-3 space-y-2 text-sm">
                   <Row label="Total invoices" value={num(d.invoices.total)} />
-                  <Row label="Is mahine" value={num(d.invoices.month)} />
+                  <Row label="This month" value={num(d.invoices.month)} />
                   <Row label="Paid" value={`${num(d.invoices.paid)} · ${cur} ${num(Math.round(d.invoices.amountPaid))}`} />
                   <Row label="Partial" value={num(d.invoices.partial)} />
                   <Row label="Unpaid" value={`${num(d.invoices.unpaid)} · ${cur} ${num(Math.round(d.invoices.amountOutstanding))}`} />
                 </dl>
                 <Button asChild variant="outline" size="sm" className="mt-3 w-full rounded-xl">
-                  <Link to="/invoices">Invoices kholein</Link>
+                  <Link to="/invoices">Open invoices</Link>
                 </Button>
               </section>
 
@@ -224,7 +224,7 @@ function DashboardPage() {
                 </dl>
                 {d.sync ? (
                   <p className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                    <RefreshCw className="size-3" /> Aakhri sync: {when(d.sync.at!)} ({d.sync.status})
+                    <RefreshCw className="size-3" /> Last sync: {when(d.sync.at!)} ({d.sync.status})
                   </p>
                 ) : null}
               </section>
@@ -261,7 +261,7 @@ function DashboardPage() {
                 </Button>
               </div>
               {d.activity.length === 0 ? (
-                <p className="mt-3 text-xs text-muted-foreground">Abhi koi record nahi.</p>
+                <p className="mt-3 text-xs text-muted-foreground">No records yet.</p>
               ) : (
                 <ul className="mt-2 divide-y divide-border">
                   {d.activity.map((a) => (
@@ -288,8 +288,8 @@ function DashboardPage() {
             </section>
 
             <section className="grid grid-cols-2 gap-3 pb-4 sm:grid-cols-4">
-              <QuickLink to="/" label="Naya order" icon={ClipboardList} />
-              <QuickLink to="/invoice" label="Invoice banayein" icon={ReceiptText} />
+              <QuickLink to="/" label="New order" icon={ClipboardList} />
+              <QuickLink to="/invoice" label="Create invoice" icon={ReceiptText} />
               <QuickLink to="/customers" label="Customers" icon={Users} />
               <QuickLink to="/rates" label="Rates" icon={Boxes} />
             </section>

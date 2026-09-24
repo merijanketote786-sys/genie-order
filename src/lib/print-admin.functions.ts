@@ -22,7 +22,7 @@ export const savePrinters = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await (context.supabase as Sb).rpc("pos_save_printers", { _printers: data.printers, _defaults: data.defaults });
-    if (error) throw new Error(error.message.includes("permission") ? "Printer settings ki ijazat nahi" : "Printer settings save nahi huin. Dobara try karein.");
+    if (error) throw new Error(error.message.includes("permission") ? "Not allowed to change printer settings" : "Printer settings could not be saved. Try again.");
     return { ok: true };
   });
 
@@ -49,7 +49,7 @@ export const listAuditLog = createServerFn({ method: "GET" })
     if (data.action) q = q.eq("action", data.action);
     if (data.entity) q = q.ilike("entity", `%${data.entity}%`);
     const [{ data: rows, error }, { data: profs }] = await Promise.all([q, sb.from("profiles").select("id, full_name")]);
-    if (error) throw new Error("Audit log load nahi hua");
+    if (error) throw new Error("Could not load audit log");
     const nm = new Map<string, string>(((profs ?? []) as any[]).map((p) => [p.id, p.full_name || "User"]));
     return { rows: ((rows ?? []) as any[]).map((r) => ({ id: r.id as string, action: r.action as string, entity: r.entity as string, entityId: (r.entity_id ?? null) as string | null, details: JSON.stringify(r.details ?? {}), user: nm.get(r.created_by) ?? "-", at: r.created_at as string })) };
   });
@@ -74,9 +74,9 @@ export const exportData = createServerFn({ method: "POST" })
     const sb = context.supabase as Sb;
     const { data: ok } = await sb.rpc("pos_can", { _perm: "settings" });
     const { data: ok2 } = await sb.rpc("pos_can", { _perm: "view_reports" });
-    if (!ok && !ok2) throw new Error("Export ki ijazat nahi");
+    if (!ok && !ok2) throw new Error("Not allowed to export");
     const { data: rows, error } = await sb.from(TABLE[data.what]).select(EXPORTS[data.what]).limit(50000);
-    if (error) throw new Error("Export nahi hua");
+    if (error) throw new Error("Export failed");
     await sb.rpc("pos_log_event", { _action: "export", _entity: data.what, _entity_id: null, _details: { rows: (rows ?? []).length } });
     return { columns: EXPORTS[data.what].split(",").map((c) => c.trim()), rows: ((rows ?? []) as Record<string, unknown>[]).map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, v == null ? "" : String(v)]))) as Record<string, string>[] };
   });

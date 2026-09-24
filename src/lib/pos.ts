@@ -192,7 +192,7 @@ ${r.address ? `<div class=c>${esc(r.address)}</div>` : ""}${r.phone ? `<div clas
       : `${line("Payment", esc(payLabel(r)))}${line("Paid", `${c} ${money(Math.min(r.paid, total))}`)}${r.paid > total ? line("Change", `${c} ${money(r.paid - total)}`) : ""}${r.paid < total ? line("Balance", `${c} ${money(total - r.paid)}`, true) : ""}${r.previousBalance ? line("Previous balance", `${c} ${money(r.previousBalance)}`) : ""}`
   }</table>
 ${r.notes ? `<hr><div><small>Note: ${esc(r.notes)}</small></div>` : ""}${r.terms ? `<div><small>${esc(r.terms)}</small></div>` : ""}
-<hr><div class=c>${esc(r.footer || "Shukriya! Dobara tashreef layein.")}</div></body></html>`;
+<hr><div class=c>${esc(r.footer || "Thank you! Please visit again.")}</div></body></html>`;
 }
 
 export function printReceipt(html: string) {

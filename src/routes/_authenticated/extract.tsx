@@ -23,12 +23,12 @@ export const Route = createFileRoute("/_authenticated/extract")({
       {
         name: "description",
         content:
-          "Koi bhi image ya PDF upload karo aur accurate text form me data hasil karo.",
+          "Upload any image or PDF and get the data in accurate text form.",
       },
       { property: "og:title", content: "Extract Bot — Image/PDF to Text" },
       {
         property: "og:description",
-        content: "Image ya PDF upload karein aur accurate text foran hasil karein.",
+        content: "Upload an image or PDF and get accurate text instantly.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -70,12 +70,12 @@ function ExtractChat() {
 
   const attachFile = (file: File) => {
     if (file.size > 15 * 1024 * 1024) {
-      toast.error("File 15MB se kam honi chahiye");
+      toast.error("File must be less than 15MB");
       return false;
     }
     const isSupported = file.type.startsWith("image/") || file.type === "application/pdf";
     if (!isSupported) {
-      toast.error("Sirf image ya PDF file support hai");
+      toast.error("Only image or PDF files are supported");
       return false;
     }
     if (pendingPreview?.startsWith("blob:")) URL.revokeObjectURL(pendingPreview);
@@ -133,7 +133,7 @@ function ExtractChat() {
     const namedFile = pastedFile.name
       ? pastedFile
       : new File([pastedFile], `pasted-${Date.now()}.${extension}`, { type: pastedFile.type });
-    if (attachFile(namedFile)) toast.success("Copied file attach ho gayi");
+    if (attachFile(namedFile)) toast.success("Copied file attached");
   };
 
   const clearPending = () => {
@@ -191,7 +191,7 @@ function ExtractChat() {
       setMessages((m) =>
         m.map((msg) =>
           msg.id === loadingId
-            ? { ...msg, text: text || "Kuch nahi mila.", loading: false }
+            ? { ...msg, text: text || "Nothing found.", loading: false }
             : msg
         )
       );
@@ -262,7 +262,7 @@ function ExtractChat() {
               <ChatMessage key={msg.id} from="assistant">
                 {msg.loading || !msg.text ? (
                   <ChatMessageContent>
-                    <Shimmer>Text extract ho rahi hai...</Shimmer>
+                    <Shimmer>Extracting text...</Shimmer>
                   </ChatMessageContent>
                 ) : (
                   <ResultCard text={msg.text} label="Extracted text" />
@@ -317,7 +317,7 @@ function ExtractChat() {
                 void handleSend();
               }
             }}
-            placeholder="Image/PDF yahan paste karein, ya optional instruction likhein"
+            placeholder="Paste image/PDF here, or write an optional instruction"
             disabled={busy}
             rows={2}
             aria-label="Extraction instructions"
@@ -342,7 +342,7 @@ function ExtractChat() {
               {pendingFile ? "Change" : "Attach"}
             </Button>
             <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
-              <ClipboardPaste className="size-3.5" /> Ctrl+V se paste
+              <ClipboardPaste className="size-3.5" /> Paste with Ctrl+V
             </span>
             <Button
               size="sm"
@@ -356,7 +356,7 @@ function ExtractChat() {
           </div>
         </div>
         <p className="mt-2 hidden text-center text-xs text-muted-foreground sm:block">
-          Image ya PDF paste/attach karein → text extract ho jayegi.
+          Paste/attach an image or PDF → text will be extracted.
         </p>
       </div>
     </AppShell>

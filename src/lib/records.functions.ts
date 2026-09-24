@@ -71,7 +71,7 @@ export const saveOrder = createServerFn({ method: "POST" })
   )
 
   .handler(async ({ data, context }) => {
-    if (await blocked(context)) throw new Error("Access band hai");
+    if (await blocked(context)) throw new Error("Access is blocked");
     const supabase = context.supabase as any;
     const p = parseOrderText(data.orderText);
 
@@ -113,7 +113,7 @@ export const saveOrder = createServerFn({ method: "POST" })
       .select("id")
       .maybeSingle();
 
-    if (error) throw new Error("Order save nahi ho saka");
+    if (error) throw new Error("Could not save order");
     return { ok: true, id: row?.id as string, duplicate: false };
   });
 
@@ -160,7 +160,7 @@ export const listOrders = createServerFn({ method: "GET" })
     }
 
     const { data: rows, error } = await query;
-    if (error) throw new Error("Orders load nahi ho sake");
+    if (error) throw new Error("Could not load orders");
 
     const names = await profileNames(supabase, (rows ?? []).map((r: any) => r.created_by));
 
@@ -199,7 +199,7 @@ export const deleteOrder = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
     const { error } = await supabase.from("orders").delete().eq("id", data.id);
-    if (error) throw new Error("Delete nahi ho saka (sirf admin)");
+    if (error) throw new Error("Could not delete (admin only)");
     return { ok: true };
   });
 
@@ -238,7 +238,7 @@ export const listCustomers = createServerFn({ method: "GET" })
     }
 
     const { data: rows, error } = await query;
-    if (error) throw new Error("Customers load nahi ho sake");
+    if (error) throw new Error("Could not load customers");
 
     const ids = (rows ?? []).map((r: any) => r.id);
     const stats: Record<string, { count: number; total: number; last: string | null }> = {};
@@ -322,7 +322,7 @@ export const saveInvoice = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    if (await blocked(context)) throw new Error("Access band hai");
+    if (await blocked(context)) throw new Error("Access is blocked");
     const supabase = context.supabase as any;
 
     const { data: dup } = await supabase
@@ -342,7 +342,7 @@ export const saveInvoice = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: numberData, error: numberError } = await supabaseAdmin.rpc("next_invoice_number");
-    if (numberError || !numberData) throw new Error("Invoice number nahi ban saka");
+    if (numberError || !numberData) throw new Error("Could not generate invoice number");
 
     const { data: row, error } = await supabase
       .from("invoices")
@@ -360,7 +360,7 @@ export const saveInvoice = createServerFn({ method: "POST" })
       .select("id, invoice_number")
       .maybeSingle();
 
-    if (error) throw new Error("Invoice save nahi ho saki");
+    if (error) throw new Error("Could not save invoice");
     return {
       ok: true,
       id: row?.id as string,
@@ -398,7 +398,7 @@ export const listInvoices = createServerFn({ method: "GET" })
     const { data: rows, error } = await query;
     if (error) {
       console.error("listInvoices failed", error);
-      throw new Error(`Invoices load nahi ho sakin: ${error.message ?? "unknown"}`);
+      throw new Error(`Could not load invoices: ${error.message ?? "unknown"}`);
     }
 
     const names = await profileNames(supabase, (rows ?? []).map((r: any) => r.created_by));
@@ -429,7 +429,7 @@ export const setInvoiceStatus = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    if (await blocked(context)) throw new Error("Access band hai");
+    if (await blocked(context)) throw new Error("Access is blocked");
     const supabase = context.supabase as any;
     const { error } = await supabase
       .from("invoices")
@@ -438,7 +438,7 @@ export const setInvoiceStatus = createServerFn({ method: "POST" })
         paid_at: data.status === "paid" ? new Date().toISOString() : null,
       })
       .eq("id", data.id);
-    if (error) throw new Error("Status update nahi ho saka");
+    if (error) throw new Error("Could not update status");
     return { ok: true };
   });
 
@@ -448,6 +448,6 @@ export const deleteInvoice = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
     const { error } = await supabase.from("invoices").delete().eq("id", data.id);
-    if (error) throw new Error("Delete nahi ho saka (sirf admin)");
+    if (error) throw new Error("Could not delete (admin only)");
     return { ok: true };
   });

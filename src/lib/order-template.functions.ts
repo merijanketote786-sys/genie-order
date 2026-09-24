@@ -10,14 +10,14 @@ import {
 const templateSchema = z
   .string()
   .trim()
-  .min(10, "Template bohat chhoti hai")
-  .max(ORDER_TEMPLATE_MAX_LENGTH, "Template bohat lambi hai");
+  .min(10, "Template is too short")
+  .max(ORDER_TEMPLATE_MAX_LENGTH, "Template is too long");
 
 const nameSchema = z
   .string()
   .trim()
-  .min(2, "Template ka naam likhein")
-  .max(60, "Naam bohat lamba hai");
+  .min(2, "Enter a template name")
+  .max(60, "Name is too long");
 
 const kindSchema = z.enum(["order", "confirmation"]).default("order");
 
@@ -40,7 +40,7 @@ async function loadAll(context: { supabase: any; userId: string }, kind: string)
     .eq("kind", kind)
     .order("created_at", { ascending: true });
 
-  if (error) throw new Error("Templates load nahi ho sakin");
+  if (error) throw new Error("Could not load templates");
 
   const templates: OrderTemplateRow[] = (data ?? []).map((row: any) => ({
     id: row.id as string,
@@ -90,7 +90,7 @@ export const saveOrderTemplate = createServerFn({ method: "POST" })
         .update({ name: data.name, template_text: data.template, is_selected: true })
         .eq("id", data.id)
         .eq("user_id", ctx.userId);
-      if (error) throw new Error("Template save nahi ho saki");
+      if (error) throw new Error("Could not save template");
     } else {
       const { error } = await ctx.supabase.from("order_templates").insert({
         user_id: ctx.userId,
@@ -101,7 +101,7 @@ export const saveOrderTemplate = createServerFn({ method: "POST" })
       });
       if (error)
         throw new Error(
-          error.code === "23505" ? "Is naam se template pehle se mojood hai" : "Template save nahi ho saki",
+          error.code === "23505" ? "A template with this name already exists" : "Could not save template",
         );
     }
 
@@ -127,7 +127,7 @@ export const selectOrderTemplate = createServerFn({ method: "POST" })
         .update({ is_selected: true })
         .eq("id", data.id)
         .eq("user_id", ctx.userId);
-      if (error) throw new Error("Template select nahi ho saki");
+      if (error) throw new Error("Could not select template");
     }
 
     return loadAll(ctx, data.kind);
@@ -145,7 +145,7 @@ export const deleteOrderTemplate = createServerFn({ method: "POST" })
       .delete()
       .eq("id", data.id)
       .eq("user_id", ctx.userId);
-    if (error) throw new Error("Template delete nahi ho saki");
+    if (error) throw new Error("Could not delete template");
     return loadAll(ctx, data.kind);
   });
 
@@ -159,6 +159,6 @@ export const resetOrderTemplate = createServerFn({ method: "POST" })
       .update({ is_selected: false })
       .eq("user_id", ctx.userId)
       .eq("kind", data.kind);
-    if (error) throw new Error("Default template set nahi ho saki");
+    if (error) throw new Error("Could not reset to default template");
     return loadAll(ctx, data.kind);
   });

@@ -14,9 +14,9 @@ export const Route = createFileRoute("/_authenticated/history")({
   head: () => ({
     meta: [
       { title: "Order History — OrderBot" },
-      { name: "description", content: "Saare save kiye hue orders ek jagah — search, copy aur WhatsApp." },
+      { name: "description", content: "All saved orders in one place — search, copy and WhatsApp." },
       { property: "og:title", content: "Order History — OrderBot" },
-      { property: "og:description", content: "Saare save kiye hue orders ek jagah." },
+      { property: "og:description", content: "All saved orders in one place." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -46,7 +46,7 @@ function HistoryPage() {
   const remove = useMutation({
     mutationFn: (id: string) => deleteOrder({ data: { id } }),
     onSuccess: () => {
-      toast.success("Order delete ho gaya");
+      toast.success("Order deleted");
       qc.invalidateQueries({ queryKey: ["orders"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -55,12 +55,12 @@ function HistoryPage() {
   const rows = orders.data?.orders ?? [];
 
   return (
-    <AppShell title="Order History" subtitle="Saved orders ka record" active="/history">
+    <AppShell title="Order History" subtitle="Record of saved orders" active="/history">
       <WorkspaceHeader
         icon={History}
         eyebrow="Records"
         title="Order History"
-        description="Har save hua order yahan mehfooz hai — search karein, copy karein ya WhatsApp par bhej dein."
+        description="Every saved order is kept here — search, copy or send it on WhatsApp."
         meta={["Shared record", "Search", "WhatsApp"]}
       />
 
@@ -74,7 +74,7 @@ function HistoryPage() {
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Naam, phone, city ya product se dhoondein"
+          placeholder="Search by name, phone, city or product"
           className="h-12 rounded-2xl"
         />
         <Button type="submit" className="h-12 gap-1.5 rounded-2xl px-4">
@@ -84,12 +84,12 @@ function HistoryPage() {
 
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-6">
         {orders.isLoading ? (
-          <p className="py-10 text-center text-sm text-muted-foreground">Load ho raha hai…</p>
+          <p className="py-10 text-center text-sm text-muted-foreground">Loading…</p>
         ) : rows.length === 0 ? (
           <div className="rounded-3xl border border-border bg-card p-8 text-center">
-            <h3 className="font-display text-base font-bold text-foreground">Koi order nahi mila</h3>
+            <h3 className="font-display text-base font-bold text-foreground">No orders found</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Order section se order banayein — wo khud yahan save ho jayega.
+              Create an order from the Order section — it will be saved here automatically.
             </p>
           </div>
         ) : (
@@ -102,7 +102,7 @@ function HistoryPage() {
               >
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-semibold text-foreground">
-                    {o.customerName || "Bina naam"} {o.orderNumber ? `· ${o.orderNumber}` : ""}
+                    {o.customerName || "No name"} {o.orderNumber ? `· ${o.orderNumber}` : ""}
                   </span>
                   <span className="block truncate text-xs text-muted-foreground">
                     {[o.phone, o.city, o.product].filter(Boolean).join(" · ") || "—"}

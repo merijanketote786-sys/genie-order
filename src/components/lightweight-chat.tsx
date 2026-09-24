@@ -50,10 +50,10 @@ type ChatComposerProps = {
   disabled?: boolean;
   placeholder: string;
   textareaClassName?: string;
-  /** Optional controlled value (e.g. rate calculator se text insert karne ke liye). */
+  /** Optional controlled value (e.g. to insert text from the rate calculator). */
   value?: string;
   onValueChange?: (value: string) => void;
-  /** Enter key se submit ho ya sirf send button se. Default true. */
+  /** Whether Enter submits, or only the send button does. Default true. */
   submitOnEnter?: boolean;
 };
 

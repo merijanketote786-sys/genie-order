@@ -62,12 +62,12 @@ export const Route = createFileRoute("/_authenticated/admin")({
       { title: "Admin Panel — HB Chemicals OrderBot" },
       {
         name: "description",
-        content: "Users, records aur app access manage karein — sirf owner ke liye.",
+        content: "Manage users, records and app access — owner only.",
       },
       { property: "og:title", content: "Admin Panel — HB Chemicals OrderBot" },
       {
         property: "og:description",
-        content: "Team accounts, dashboard stats, records control aur data export ek jagah.",
+        content: "Team accounts, dashboard stats, records control and data export in one place.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -91,13 +91,13 @@ function AdminPage() {
   ];
 
   return (
-    <AppShell title="Admin Panel" subtitle="Users, records aur access control" active="/admin">
+    <AppShell title="Admin Panel" subtitle="Users, records and access control" active="/admin">
       <div className="shrink-0 pt-3 sm:pt-4">
         <WorkspaceHeader
           icon={Users}
           eyebrow="Control center"
-          title="Team, records aur data"
-          description="Yahan se accounts banayein, roles set karein, records manage karein aur data export karein."
+          title="Team, records and data"
+          description="Create accounts, set roles, manage records and export data from here."
         />
       </div>
 
@@ -109,9 +109,9 @@ function AdminPage() {
         ) : !isOwner ? (
           <div className="glass-panel rounded-2xl px-4 py-8 text-center">
             <ShieldOff className="mx-auto size-8 text-muted-foreground" />
-            <h2 className="mt-3 font-display text-base font-bold">Access nahi hai</h2>
+            <h2 className="mt-3 font-display text-base font-bold">No Access</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Ye panel sirf owner account ke liye hai.
+              This panel is only for the owner account.
             </p>
           </div>
         ) : (
@@ -148,7 +148,7 @@ function StatsSection() {
   if (stats.isLoading) {
     return (
       <div className="glass-panel flex items-center gap-2 rounded-2xl px-4 py-6 text-sm text-muted-foreground">
-        <Loader2 className="size-4 animate-spin" /> Dashboard load ho raha hai…
+        <Loader2 className="size-4 animate-spin" /> Dashboard loading…
       </div>
     );
   }
@@ -159,7 +159,7 @@ function StatsSection() {
       <SectionTitle>Dashboard</SectionTitle>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         <StatCard label="Team users" value={s.users} hint={`${s.activeUsers} active · ${s.blockedUsers} blocked`} />
-        <StatCard label="Orders" value={s.orders} hint={`Aaj ${s.ordersToday}`} />
+        <StatCard label="Orders" value={s.orders} hint={`Today ${s.ordersToday}`} />
         <StatCard label="Invoices" value={s.invoices} hint={`${s.unpaidInvoices} unpaid`} />
         <StatCard label="Unpaid amount" value={Math.round(s.unpaidAmount)} hint="Rs" />
         <StatCard label="Customers" value={s.customers} />
@@ -168,7 +168,7 @@ function StatsSection() {
         <div className="glass-panel rounded-2xl px-3 py-3 sm:px-4">
           <p className="text-[10px] font-bold uppercase text-muted-foreground">Last sync</p>
           <p className="mt-1 text-sm font-semibold text-foreground">
-            {s.lastSyncAt ? new Date(s.lastSyncAt).toLocaleString() : "Abhi tak nahi"}
+            {s.lastSyncAt ? new Date(s.lastSyncAt).toLocaleString() : "Not yet"}
           </p>
         </div>
       </div>
@@ -194,7 +194,7 @@ function UsersSection() {
         void qc.invalidateQueries({ queryKey: ["admin-users"] });
       } else toast.error(res.message);
     },
-    onError: () => toast.error("Update nahi ho saka. Dobara koshish karein."),
+    onError: () => toast.error("Update failed. Please try again."),
   });
 
   const remove = useMutation({
@@ -206,7 +206,7 @@ function UsersSection() {
         void qc.invalidateQueries({ queryKey: ["admin-stats"] });
       } else toast.error(res.message);
     },
-    onError: () => toast.error("User delete nahi ho saka."),
+    onError: () => toast.error("Could not delete user."),
   });
 
   const rows = useMemo(() => {
@@ -223,7 +223,7 @@ function UsersSection() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <SectionTitle>Users</SectionTitle>
         <Button size="sm" className="h-9 gap-1.5 text-xs" onClick={() => setShowCreate(true)}>
-          <UserPlus className="size-3.5" /> Naya user
+          <UserPlus className="size-3.5" /> New user
         </Button>
       </div>
 
@@ -232,18 +232,18 @@ function UsersSection() {
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Email ya naam se dhoondein"
+          placeholder="Search by email or name"
           className="h-11 pl-9"
         />
       </div>
 
       {users.isLoading ? (
         <div className="glass-panel flex items-center gap-2 rounded-2xl px-4 py-6 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" /> Users load ho rahe hain…
+          <Loader2 className="size-4 animate-spin" /> Loading users…
         </div>
       ) : !users.data?.ok ? (
         <div className="glass-panel rounded-2xl px-4 py-6 text-sm text-destructive">
-          Users load nahi ho sake. {users.data?.message}
+          Could not load users. {users.data?.message}
         </div>
       ) : (
         <div className="glass-panel overflow-hidden rounded-2xl">
@@ -276,7 +276,7 @@ function UsersSection() {
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {u.lastSignInAt ? new Date(u.lastSignInAt).toLocaleString() : "Kabhi nahi"}
+                      {u.lastSignInAt ? new Date(u.lastSignInAt).toLocaleString() : "Never"}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap justify-end gap-2">
@@ -293,7 +293,7 @@ function UsersSection() {
                           className="h-9 gap-1.5 text-xs"
                         >
                           <ShieldCheck className="size-3.5" />
-                          {u.role === "admin" ? "Admin hataen" : "Admin banaen"}
+                          {u.role === "admin" ? "Remove admin" : "Make admin"}
                         </Button>
                         <Button
                           size="sm"
@@ -319,7 +319,7 @@ function UsersSection() {
                           variant="outline"
                           disabled={remove.isPending}
                           onClick={() => {
-                            if (window.confirm(`${u.email} ka account delete karein?`)) {
+                            if (window.confirm(`Delete account for ${u.email}?`)) {
                               remove.mutate(u.id);
                             }
                           }}
@@ -339,8 +339,8 @@ function UsersSection() {
       )}
 
       <p className="px-1 text-xs text-muted-foreground">
-        Purana password kisi ko nazar nahi aata (woh encrypted mehfooz hai) — naya password set
-        karein ya reset link bhejein. Block kiye gaye user app ka koi data nahi dekh sakte.
+        The old password is not visible to anyone (it is encrypted and secure) — set a new password
+        or send a reset link. Blocked users cannot see any data in the app.
       </p>
 
       <PasswordDialog user={pwUser} onClose={() => setPwUser(null)} />
@@ -379,16 +379,16 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
         onClose();
       } else toast.error(res.message);
     },
-    onError: () => toast.error("User nahi ban saka."),
+    onError: () => toast.error("Could not create user."),
   });
 
   return (
     <Dialog open={open} onOpenChange={(v) => (!v ? onClose() : null)}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-display">Naya user banayein</DialogTitle>
+          <DialogTitle className="font-display">Create new user</DialogTitle>
           <DialogDescription>
-            Password khud set karein, ya invite email bhejein taake user apna password bana le.
+            Set the password yourself, or send an invite email so the user can create their own password.
           </DialogDescription>
         </DialogHeader>
 
@@ -405,23 +405,23 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="nu-name">Poora naam</Label>
+            <Label htmlFor="nu-name">Full name</Label>
             <Input
               id="nu-name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="Naam"
+              placeholder="Name"
               className="h-11"
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="nu-pw">Password (invite bhejna ho to khali chhorein)</Label>
+            <Label htmlFor="nu-pw">Password (leave blank to send an invite)</Label>
             <Input
               id="nu-pw"
               type="text"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Kam az kam 8 characters"
+              placeholder="At least 8 characters"
               className="h-11"
             />
           </div>
@@ -450,7 +450,7 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
             onClick={() => create.mutate(false)}
           >
             {create.isPending ? <Loader2 className="size-4 animate-spin" /> : <UserPlus className="size-4" />}
-            User banayein
+            Create user
           </Button>
           <Button
             variant="outline"
@@ -458,7 +458,7 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
             disabled={create.isPending || !email}
             onClick={() => create.mutate(true)}
           >
-            <Mail className="size-4" /> Invite bhejein
+            <Mail className="size-4" /> Send invite
           </Button>
         </div>
       </DialogContent>
@@ -480,7 +480,7 @@ function ExportSection() {
     mutationFn: (kind: (typeof EXPORTS)[number]["kind"]) => exportRecordsCsv({ data: { kind } }),
     onSuccess: (res) => {
       if (!res.ok) return toast.error(res.message);
-      if (!res.csv) return toast.error("Export ke liye koi record nahi mila.");
+      if (!res.csv) return toast.error("No records found to export.");
       const blob = new Blob([res.csv], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -488,9 +488,9 @@ function ExportSection() {
       a.download = res.fileName;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success(`${res.rows} records download ho gaye`);
+      toast.success(`${res.rows} records downloaded`);
     },
-    onError: () => toast.error("Export nahi ho saka."),
+    onError: () => toast.error("Export failed."),
   });
 
   return (
@@ -540,28 +540,28 @@ function RecordsSection() {
   const removeOrder = useMutation({
     mutationFn: (id: string) => deleteOrder({ data: { id } }),
     onSuccess: () => {
-      toast.success("Order delete ho gaya");
+      toast.success("Order deleted");
       refresh();
     },
-    onError: () => toast.error("Delete nahi ho saka."),
+    onError: () => toast.error("Delete failed."),
   });
 
   const removeInvoice = useMutation({
     mutationFn: (id: string) => deleteInvoice({ data: { id } }),
     onSuccess: () => {
-      toast.success("Invoice delete ho gayi");
+      toast.success("Invoice deleted");
       refresh();
     },
-    onError: () => toast.error("Delete nahi ho saka."),
+    onError: () => toast.error("Delete failed."),
   });
 
   const status = useMutation({
     mutationFn: (input: { id: string; status: "unpaid" | "paid" }) => setInvoiceStatus({ data: input }),
     onSuccess: () => {
-      toast.success("Status update ho gaya");
+      toast.success("Status updated");
       refresh();
     },
-    onError: () => toast.error("Status update nahi ho saka."),
+    onError: () => toast.error("Could not update status."),
   });
 
   return (
@@ -616,7 +616,7 @@ function RecordsSection() {
                           variant="outline"
                           className="h-9 gap-1.5 text-xs text-destructive"
                           disabled={removeOrder.isPending}
-                          onClick={() => window.confirm("Order delete karein?") && removeOrder.mutate(o.id)}
+                          onClick={() => window.confirm("Delete this order?") && removeOrder.mutate(o.id)}
                         >
                           <Trash2 className="size-3.5" /> Delete
                         </Button>
@@ -668,14 +668,14 @@ function RecordsSection() {
                             })
                           }
                         >
-                          {i.paymentStatus === "paid" ? "Unpaid karein" : "Paid karein"}
+                          {i.paymentStatus === "paid" ? "Mark unpaid" : "Mark paid"}
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           className="h-9 gap-1.5 text-xs text-destructive"
                           disabled={removeInvoice.isPending}
-                          onClick={() => window.confirm("Invoice delete karein?") && removeInvoice.mutate(i.id)}
+                          onClick={() => window.confirm("Delete this invoice?") && removeInvoice.mutate(i.id)}
                         >
                           <Trash2 className="size-3.5" /> Delete
                         </Button>
@@ -697,7 +697,7 @@ function RecordsSection() {
 function Loading() {
   return (
     <div className="flex items-center gap-2 px-4 py-6 text-sm text-muted-foreground">
-      <Loader2 className="size-4 animate-spin" /> Load ho raha hai…
+      <Loader2 className="size-4 animate-spin" /> Loading…
     </div>
   );
 }
@@ -751,7 +751,7 @@ function PasswordDialog({ user, onClose }: { user: AdminUserRow | null; onClose:
         onClose();
       } else toast.error(res.message);
     },
-    onError: () => toast.error("Password set nahi ho saka."),
+    onError: () => toast.error("Could not set password."),
   });
 
   const reset = useMutation({
@@ -760,35 +760,35 @@ function PasswordDialog({ user, onClose }: { user: AdminUserRow | null; onClose:
         data: { email, redirectTo: `${window.location.origin}/reset-password` },
       }),
     onSuccess: (res) => (res.ok ? toast.success(res.message) : toast.error(res.message)),
-    onError: () => toast.error("Email nahi bheja ja saka."),
+    onError: () => toast.error("Could not send email."),
   });
 
   return (
     <Dialog open={user !== null} onOpenChange={(open) => (!open ? onClose() : null)}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-display">Password manage karein</DialogTitle>
+          <DialogTitle className="font-display">Manage password</DialogTitle>
           <DialogDescription>
-            {user?.email} — purana password kisi ko nazar nahi aa sakta, woh encrypted mehfooz hai.
+            {user?.email} — the old password is not visible to anyone, it is encrypted and secure.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2">
-          <Label htmlFor="new-pw">Naya password</Label>
+          <Label htmlFor="new-pw">New password</Label>
           <div className="relative">
             <Input
               id="new-pw"
               type={show ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Kam az kam 8 characters"
+              placeholder="At least 8 characters"
               className="h-11 pr-11"
               autoComplete="new-password"
             />
             <button
               type="button"
               onClick={() => setShow((v) => !v)}
-              aria-label={show ? "Password chhupayein" : "Password dikhayein"}
+              aria-label={show ? "Hide password" : "Show password"}
               className="absolute inset-y-0 right-0 grid w-11 place-items-center text-muted-foreground hover:text-foreground"
             >
               {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -803,7 +803,7 @@ function PasswordDialog({ user, onClose }: { user: AdminUserRow | null; onClose:
             onClick={() => user && save.mutate({ userId: user.id, password })}
           >
             {save.isPending ? <Loader2 className="size-4 animate-spin" /> : <KeyRound className="size-4" />}
-            Password set karein
+            Set password
           </Button>
           <Button
             variant="outline"
@@ -812,7 +812,7 @@ function PasswordDialog({ user, onClose }: { user: AdminUserRow | null; onClose:
             onClick={() => user?.email && reset.mutate(user.email)}
           >
             {reset.isPending ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
-            Reset link bhejein
+            Send reset link
           </Button>
         </div>
       </DialogContent>

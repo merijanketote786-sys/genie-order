@@ -49,12 +49,12 @@ export const Route = createFileRoute("/_authenticated/labels")({
       {
         name: "description",
         content:
-          "Apna label design karein — custom text, font size, position aur printer profile — phir barcode labels print karein.",
+          "Design your label — custom text, font size, position and printer profile — then print barcode labels.",
       },
       { property: "og:title", content: "Barcode Labels — HB Chemicals OrderBot" },
       {
         property: "og:description",
-        content: "Custom barcode labels: apna text, apna font size aur apna printer — foran print.",
+        content: "Custom barcode labels: your own text, font size and printer — print instantly.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -128,7 +128,7 @@ function LabelsPage() {
       if (res.ok) toast.success(res.message);
       else toast.error(res.message);
     },
-    onError: () => toast.error("Save nahi hua, dobara koshish karein"),
+    onError: () => toast.error("Save failed, please try again"),
   });
 
   const printer =
@@ -137,7 +137,7 @@ function LabelsPage() {
   const addManual = () => {
     const name = manual.name.trim();
     if (!name && !manual.code.trim()) {
-      toast.error("Naam ya code likhein");
+      toast.error("Enter name or code");
       return;
     }
     setRows((prev) => {
@@ -204,7 +204,7 @@ function LabelsPage() {
 
   const removePrinter = () => {
     if (config.printers.length <= 1) {
-      toast.error("Kam se kam ek printer profile rakhna zaroori hai");
+      toast.error("At least one printer profile is required");
       return;
     }
     setConfig((c) => {
@@ -226,7 +226,7 @@ function LabelsPage() {
         {
           id,
           label: headline ? `Headline ${c.fields.length + 1}` : `Custom text ${c.fields.length + 1}`,
-          template: headline ? "NAYI HEADLINE" : "Apna text likhein",
+          template: headline ? "NEW HEADLINE" : "Enter your text",
           enabled: true,
           xMm: 1,
           yMm: Math.min(printer.heightMm - 3, 2 + c.fields.length * 3.5),
@@ -262,7 +262,7 @@ function LabelsPage() {
   };
 
   return (
-    <AppShell title="Labels" subtitle="Apna label design karein aur print karein" active="/labels">
+    <AppShell title="Labels" subtitle="Design your label and print" active="/labels">
       <style>{`
         #label-sheet { position: fixed; left: -10000px; top: 0; }
       `}</style>
@@ -274,7 +274,7 @@ function LabelsPage() {
           icon={QrCode}
           eyebrow="Labeling"
           title="Barcode Labels"
-          description="Apna text, font size aur position khud set karein. Har user ka apna label setup aur printer profile save hota hai."
+          description="Set your own text, font size and position. Each user's label setup and printer profile is saved separately."
           meta={[`${printer.widthMm} x ${printer.heightMm} mm`, config.barcode.format, `${printer.dpi} dpi`]}
         />
 
@@ -296,13 +296,13 @@ function LabelsPage() {
               </select>
             </label>
             <label className="min-w-[200px] flex-1 text-xs font-semibold text-muted-foreground">
-              Naya profile (preset se)
+              New profile (from preset)
               <select
                 value=""
                 onChange={(e) => e.target.value !== "" && addPrinter(Number(e.target.value))}
                 className={`${inputCls} mt-1`}
               >
-                <option value="">Preset chunein…</option>
+                <option value="">Choose a preset…</option>
                 {PRINTER_PRESETS.map((p, i) => (
                   <option key={p.name} value={i}>
                     {p.name}
@@ -315,12 +315,12 @@ function LabelsPage() {
               onClick={() => setShowDesign((v) => !v)}
               className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-semibold text-foreground hover:bg-muted"
             >
-              <Settings2 className="size-4" /> {showDesign ? "Design band karein" : "Design edit karein"}
+              <Settings2 className="size-4" /> {showDesign ? "Close design" : "Edit design"}
             </button>
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            Print dabane par browser ka print dialog khulta hai — wahan apna printer (TSC 244 Pro ya koi bhi
-            brand) chunein aur paper size {printer.widthMm}x{printer.heightMm} mm, scale 100%, margins none rakhein.
+            Pressing Print opens the browser's print dialog — there, choose your printer (TSC 244 Pro or any
+            brand) and set paper size {printer.widthMm}x{printer.heightMm} mm, scale 100%, margins none.
           </p>
         </section>
 
@@ -349,7 +349,7 @@ function LabelsPage() {
 
             {/* printer size */}
             <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
-              <Labeled title="Profile naam">
+              <Labeled title="Profile name">
                 <input
                   className={smallInput}
                   value={printer.name}
@@ -382,7 +382,7 @@ function LabelsPage() {
                   onClick={removePrinter}
                   className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-border text-xs font-semibold text-muted-foreground hover:bg-muted"
                 >
-                  <Trash2 className="size-4" /> Profile delete
+                  <Trash2 className="size-4" /> Delete profile
                 </button>
               </Labeled>
             </div>
@@ -391,9 +391,9 @@ function LabelsPage() {
             <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-[11px] font-semibold text-muted-foreground">
-                  Text pe double-click karke seedha yahin likhein; drag karke move karein; corner ko tircha drag
-                  karke font aur width chhoti bari karein. Jo line "(khali)" dikhe us pe double-click karke apna
-                  text likhein — warna wo label pe print nahi hogi.
+                  Double-click on text to edit it directly; drag to move it; drag a corner diagonally
+                  to resize font and width. If a line shows "(empty)", double-click it to enter your
+                  own text — otherwise it won't print on the label.
                 </p>
                 <label className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
                   Zoom
@@ -466,7 +466,7 @@ function LabelsPage() {
                   }}
                   className="inline-flex h-8 items-center gap-1 rounded-lg border border-dashed border-primary px-2.5 text-[11px] font-semibold text-primary hover:bg-primary/10"
                 >
-                  <Plus className="size-3.5" /> Nayi headline
+                  <Plus className="size-3.5" /> New headline
                 </button>
               </div>
             </div>
@@ -478,7 +478,7 @@ function LabelsPage() {
                   <input
                     className={`${smallInput} w-40`}
                     value={selectedField.label}
-                    aria-label="Text block naam"
+                    aria-label="Text block name"
                     onChange={(e) => patchField(selectedField.id, { label: e.target.value })}
                   />
                   <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
@@ -496,7 +496,7 @@ function LabelsPage() {
                         patchField(selectedField.id, { fontPt: Math.max(3, selectedField.fontPt - 0.5) })
                       }
                       className="inline-flex size-9 items-center justify-center rounded-lg border border-border text-xs font-bold hover:bg-muted"
-                      aria-label="Font chhota"
+                      aria-label="Decrease font"
                     >
                       A-
                     </button>
@@ -506,7 +506,7 @@ function LabelsPage() {
                         patchField(selectedField.id, { fontPt: Math.min(72, selectedField.fontPt + 0.5) })
                       }
                       className="inline-flex size-9 items-center justify-center rounded-lg border border-border text-xs font-bold hover:bg-muted"
-                      aria-label="Font bara"
+                      aria-label="Increase font"
                     >
                       A+
                     </button>
@@ -516,7 +516,7 @@ function LabelsPage() {
                         removeField(selectedField.id);
                         setSelection(null);
                       }}
-                      aria-label="Text hatayein"
+                      aria-label="Remove text"
                       className="inline-flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted"
                     >
                       <Trash2 className="size-4" />
@@ -528,7 +528,7 @@ function LabelsPage() {
                   className={`${inputCls} mt-2`}
                   value={selectedField.template}
                   aria-label="Text"
-                  placeholder="Apna text ya {{name}} jaise variables"
+                  placeholder="Your text or variables like {{name}}"
                   onChange={(e) => patchField(selectedField.id, { template: e.target.value })}
                 />
                 <div className="mt-2 flex flex-wrap gap-1">
@@ -568,7 +568,7 @@ function LabelsPage() {
                       step={0.5}
                       min={3}
                       max={72}
-                      ariaLabel="Font size points mein"
+                      ariaLabel="Font size in points"
                       onChange={(v) => patchField(selectedField.id, { fontPt: v })}
                     />
                   </Labeled>
@@ -741,13 +741,13 @@ function LabelsPage() {
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <input
                 className={`${inputCls} sm:col-span-2`}
-                placeholder="Product naam"
+                placeholder="Product name"
                 value={manual.name}
                 onChange={(e) => setManual({ ...manual, name: e.target.value })}
               />
               <input
                 className={inputCls}
-                placeholder="Code (khali = auto)"
+                placeholder="Code (blank = auto)"
                 value={manual.code}
                 onChange={(e) => setManual({ ...manual, code: e.target.value })}
               />
@@ -777,7 +777,7 @@ function LabelsPage() {
               onClick={addManual}
               className="mt-3 inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground hover:opacity-90"
             >
-              <Plus className="size-4" /> Label add karein
+              <Plus className="size-4" /> Add label
             </button>
           </section>
         </div>
@@ -810,7 +810,7 @@ function LabelsPage() {
 
           {rows.length === 0 ? (
             <p className="mt-4 rounded-2xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
-              Abhi koi label nahi. Upar se manual label add karein.
+              No labels yet. Add a manual label above.
             </p>
           ) : (
             <ul className="mt-4 space-y-3">
@@ -820,9 +820,9 @@ function LabelsPage() {
                     <div className="grid gap-2 sm:grid-cols-4">
                       <input
                         className={`${inputCls} sm:col-span-2`}
-                        placeholder="Product naam"
+                        placeholder="Product name"
                         value={r.name}
-                        aria-label="Naam"
+                        aria-label="Name"
                         onChange={(e) => update(r.id, { name: e.target.value })}
                       />
                       <input
@@ -867,7 +867,7 @@ function LabelsPage() {
                       <button
                         type="button"
                         onClick={() => remove(r.id)}
-                        aria-label="Label hatayein"
+                        aria-label="Remove label"
                         className="inline-flex size-10 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted"
                       >
                         <Trash2 className="size-4" />
@@ -908,7 +908,7 @@ function printLabelSheet(printer: PrinterProfile, expectedCount: number) {
   const h = Math.min(printer.widthMm, printer.heightMm);
   const pages = sheet.querySelectorAll(".label-print-page");
   if (pages.length !== expectedCount || expectedCount < 1) {
-    toast.error("Labels tayyar nahi hue. Dobara Print dabayein.");
+    toast.error("Labels are not ready. Please press Print again.");
     return;
   }
   const frame = document.createElement("iframe");

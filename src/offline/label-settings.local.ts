@@ -11,5 +11,5 @@ export async function saveMyLabelSettings(arg: Arg<{ config: unknown }>) {
   const d = db();
   d.label = normalizeConfig(arg?.data?.config);
   commit();
-  return { ok: true as const, message: "Label setup save ho gaya" };
+  return { ok: true as const, message: "Label setup saved" };
 }

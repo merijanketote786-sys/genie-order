@@ -1,5 +1,5 @@
 /** Offline app me team/admin features band hain — sab kuch is device par local hai. */
-const unavailable = { ok: false as const, message: "Ye feature sirf online workspace me chalta hai." };
+const unavailable = { ok: false as const, message: "This feature only works in an online workspace." };
 
 export async function getMyAccess() {
   const { db } = await import("./store");

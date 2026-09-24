@@ -27,14 +27,14 @@ export async function listCouriers() {
 export async function importCourierDocument() {
   return {
     ok: false as const,
-    message: "Courier rate sheet padhne ke liye internet chahiye. Offline me built-in calculator use karein.",
+    message: "Reading courier rate sheets requires internet. Use the built-in calculator offline.",
   };
 }
 
 export async function saveCourier(arg: Arg<{ id?: string | null; name: string; config: unknown; fileName?: string | null }>) {
   const data = arg!.data;
   const config = normalizeConfig(data.config);
-  if (!config) return { ok: false as const, message: "Courier config theek nahi." };
+  if (!config) return { ok: false as const, message: "Courier config is not valid." };
   const d = db();
   const existing = data.id ? d.couriers.find((c) => c.id === data.id) : undefined;
   if (existing) {
@@ -52,12 +52,12 @@ export async function saveCourier(arg: Arg<{ id?: string | null; name: string; c
     });
   }
   commit();
-  return { ok: true as const, message: `${data.name} save ho gaya` };
+  return { ok: true as const, message: `${data.name} saved` };
 }
 
 export async function deleteCourier(arg: Arg<{ id: string }>) {
   const d = db();
   d.couriers = d.couriers.filter((c) => c.id !== arg!.data.id);
   commit();
-  return { ok: true as const, message: "Courier delete ho gaya" };
+  return { ok: true as const, message: "Courier deleted" };
 }

@@ -98,7 +98,7 @@ export function OrderTemplateDialog({
   useEffect(() => {
     if (!templateQuery.isError) return;
     setLoading(false);
-    toast.error("Order templates load nahi ho sakin");
+    toast.error("Order templates could not be loaded");
   }, [templateQuery.isError]);
 
   const focusName = () => {
@@ -134,7 +134,7 @@ export function OrderTemplateDialog({
     setFormError(null);
     setEditorOpen(true);
     focusName();
-    toast.info("Default template edit mode — tabdeeli ke baad Save dabayein, aapki apni Default ban jayegi");
+    toast.info("Default template edit mode — press Save after making changes, it will become your own Default");
   };
 
   const run = async (fn: () => Promise<any>, successMessage: string, fallback: string) => {
@@ -160,20 +160,20 @@ export function OrderTemplateDialog({
     const cleanName = name.trim();
     const clean = draft.trim();
     if (cleanName.length < 2) {
-      setFormError("Template ka naam likhein");
-      toast.error("Template ka naam likhein");
+      setFormError("Enter a template name");
+      toast.error("Enter a template name");
       document.getElementById("order-template-name")?.focus();
       return;
     }
     if (clean.length < 10) {
-      setFormError("Template mein kam az kam ek mukammal field likhein");
-      toast.error("Template mein kam az kam ek mukammal field likhein");
+      setFormError("Template must include at least one complete field");
+      toast.error("Template must include at least one complete field");
       return;
     }
     const result = await run(
       () => saveTemplate({ data: { id: editingId ?? undefined, name: cleanName, template: clean, kind } }),
-      "Template save ho gayi",
-      "Template save nahi ho saki",
+      "Template saved",
+      "Template could not be saved",
     );
     if (result) {
       setEditingId(result.selectedId);
@@ -187,7 +187,7 @@ export function OrderTemplateDialog({
       return;
     }
     startEdit(row);
-    toast.info(`"${row.name}" khul gayi — tabdeeli ke baad Update dabayein`);
+    toast.info(`"${row.name}" opened — press Update after making changes`);
   };
 
   const insertVariable = (token: string) => {
@@ -196,7 +196,7 @@ export function OrderTemplateDialog({
     const end = editor?.selectionEnd ?? start;
     const next = `${draft.slice(0, start)}${token}${draft.slice(end)}`;
     if (next.length > ORDER_TEMPLATE_MAX_LENGTH) {
-      toast.error("Template ki maximum length poori ho gayi hai");
+      toast.error("Template has reached its maximum length");
       return;
     }
     setDraft(next);
@@ -234,8 +234,8 @@ export function OrderTemplateDialog({
         <DialogHeader>
           <DialogTitle>{isConfirm ? "Confirmation templates" : "Order templates"}</DialogTitle>
           <DialogDescription>
-            Multiple templates save karein aur jo chahiye woh select karein. Har naya{" "}
-            {isConfirm ? "order performa" : "order"} selected template mein banega.
+            Save multiple templates and select whichever you need. Every new{" "}
+            {isConfirm ? "order proforma" : "order"} will be created using the selected template.
           </DialogDescription>
         </DialogHeader>
 
@@ -250,7 +250,7 @@ export function OrderTemplateDialog({
               <button
                 type="button"
                 disabled={saving}
-                onClick={() => run(() => resetTemplate({ data: { kind } }), "Default template active", "Default set nahi ho saki")}
+                onClick={() => run(() => resetTemplate({ data: { kind } }), "Default template active", "Could not set Default")}
                 className="flex min-w-0 flex-1 items-center gap-2 text-left"
               >
                 {selectedId === null ? <Check className="size-4 shrink-0 text-primary" /> : <span className="size-4 shrink-0" />}
@@ -261,8 +261,8 @@ export function OrderTemplateDialog({
                 variant="ghost"
                 size="sm"
                 disabled={saving}
-                aria-label="Default template edit karein"
-                title="Default template edit karein"
+                aria-label="Edit default template"
+                title="Edit default template"
                 onClick={startEditDefault}
               >
                 <FilePenLine />
@@ -279,7 +279,7 @@ export function OrderTemplateDialog({
                 <button
                   type="button"
                   disabled={saving}
-                  onClick={() => run(() => pickTemplate({ data: { id: row.id, kind } }), `"${row.name}" select ho gayi`, "Select nahi ho saki")}
+                  onClick={() => run(() => pickTemplate({ data: { id: row.id, kind } }), `"${row.name}" selected`, "Selection failed")}
                   className="flex min-w-0 flex-1 items-center gap-2 text-left"
                 >
                   {row.id === selectedId ? <Check className="size-4 shrink-0 text-primary" /> : <span className="size-4 shrink-0" />}
@@ -290,7 +290,7 @@ export function OrderTemplateDialog({
                   variant="ghost"
                   size="sm"
                   disabled={saving}
-                  aria-label={`"${row.name}" edit karein`}
+                  aria-label={`Edit "${row.name}"`}
                   title="Edit template"
                   onClick={() => handleRowEdit(row)}
                 >
@@ -301,7 +301,7 @@ export function OrderTemplateDialog({
                   variant="ghost"
                   size="sm"
                   disabled={saving}
-                  onClick={() => run(() => removeTemplate({ data: { id: row.id, kind } }), "Template delete ho gayi", "Delete nahi ho saki")}
+                  onClick={() => run(() => removeTemplate({ data: { id: row.id, kind } }), "Template deleted", "Delete failed")}
                 >
                   <Trash2 className="text-destructive" />
                 </Button>
@@ -309,14 +309,14 @@ export function OrderTemplateDialog({
             ))}
           </div>
           <Button type="button" variant="outline" size="sm" onClick={startNew} disabled={saving}>
-            <Plus /> Nayi template
+            <Plus /> New template
           </Button>
         </div>
 
         {editorOpen ? (
         <div className="space-y-2 border-t border-border pt-3">
           <label htmlFor="order-template-name" className="text-sm font-semibold text-foreground">
-            {editingId ? "Template edit karein" : "Nayi template"}
+            {editingId ? "Edit template" : "New template"}
           </label>
           <Input
             id="order-template-name"
@@ -324,11 +324,11 @@ export function OrderTemplateDialog({
             onChange={(event) => setName(event.target.value)}
             maxLength={60}
             disabled={saving}
-            placeholder="Template ka naam (jaise: COD orders)"
+            placeholder="Template name (e.g. COD orders)"
             className="rounded-xl bg-card"
           />
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground">Variables — touch karke cursor par add karein</p>
+            <p className="text-xs font-semibold text-muted-foreground">Variables — tap to add at cursor</p>
             <div className="flex max-h-24 flex-wrap gap-1.5 overflow-y-auto rounded-xl border border-border bg-surface-2 p-2">
               {variables.map((variable) => (
                 <Button
@@ -340,7 +340,7 @@ export function OrderTemplateDialog({
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => insertVariable(variable.token)}
                   className="h-8 rounded-md bg-card px-2.5 text-[11px]"
-                  title={`${variable.token} insert karein`}
+                  title={`Insert ${variable.token}`}
                 >
                   {variable.label}
                 </Button>
@@ -368,7 +368,7 @@ export function OrderTemplateDialog({
           <Button
             type="button"
             variant="outline"
-            onClick={() => run(() => resetTemplate({ data: { kind } }), "Default template active", "Default set nahi ho saki")}
+            onClick={() => run(() => resetTemplate({ data: { kind } }), "Default template active", "Could not set Default")}
             disabled={saving || selectedId === null}
           >
             <RotateCcw /> Default template
@@ -379,7 +379,7 @@ export function OrderTemplateDialog({
             </Button>
           ) : (
             <Button type="button" onClick={startNew} disabled={saving}>
-              <Plus /> Nayi template
+              <Plus /> New template
             </Button>
           )}
         </DialogFooter>
