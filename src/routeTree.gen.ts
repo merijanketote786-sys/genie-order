@@ -26,6 +26,7 @@ import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedRatesRouteImport } from './routes/_authenticated/rates'
 import { Route as AuthenticatedPurchasesRouteImport } from './routes/_authenticated/purchases'
 import { Route as AuthenticatedPosSettingsRouteImport } from './routes/_authenticated/pos-settings'
+import { Route as AuthenticatedPosInvoicesRouteImport } from './routes/_authenticated/pos-invoices'
 import { Route as AuthenticatedPosRouteImport } from './routes/_authenticated/pos'
 import { Route as AuthenticatedLedgerRouteImport } from './routes/_authenticated/ledger'
 import { Route as AuthenticatedLabelsRouteImport } from './routes/_authenticated/labels'
@@ -130,6 +131,12 @@ const AuthenticatedPosSettingsRoute =
   AuthenticatedPosSettingsRouteImport.update({
     id: '/pos-settings',
     path: '/pos-settings',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPosInvoicesRoute =
+  AuthenticatedPosInvoicesRouteImport.update({
+    id: '/pos-invoices',
+    path: '/pos-invoices',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedPosRoute = AuthenticatedPosRouteImport.update({
@@ -257,6 +264,7 @@ export interface FileRoutesByFullPath {
   '/labels': typeof AuthenticatedLabelsRoute
   '/ledger': typeof AuthenticatedLedgerRoute
   '/pos': typeof AuthenticatedPosRoute
+  '/pos-invoices': typeof AuthenticatedPosInvoicesRoute
   '/pos-settings': typeof AuthenticatedPosSettingsRoute
   '/purchases': typeof AuthenticatedPurchasesRoute
   '/rates': typeof AuthenticatedRatesRoute
@@ -294,6 +302,7 @@ export interface FileRoutesByTo {
   '/labels': typeof AuthenticatedLabelsRoute
   '/ledger': typeof AuthenticatedLedgerRoute
   '/pos': typeof AuthenticatedPosRoute
+  '/pos-invoices': typeof AuthenticatedPosInvoicesRoute
   '/pos-settings': typeof AuthenticatedPosSettingsRoute
   '/purchases': typeof AuthenticatedPurchasesRoute
   '/rates': typeof AuthenticatedRatesRoute
@@ -334,6 +343,7 @@ export interface FileRoutesById {
   '/_authenticated/labels': typeof AuthenticatedLabelsRoute
   '/_authenticated/ledger': typeof AuthenticatedLedgerRoute
   '/_authenticated/pos': typeof AuthenticatedPosRoute
+  '/_authenticated/pos-invoices': typeof AuthenticatedPosInvoicesRoute
   '/_authenticated/pos-settings': typeof AuthenticatedPosSettingsRoute
   '/_authenticated/purchases': typeof AuthenticatedPurchasesRoute
   '/_authenticated/rates': typeof AuthenticatedRatesRoute
@@ -375,6 +385,7 @@ export interface FileRouteTypes {
     | '/labels'
     | '/ledger'
     | '/pos'
+    | '/pos-invoices'
     | '/pos-settings'
     | '/purchases'
     | '/rates'
@@ -412,6 +423,7 @@ export interface FileRouteTypes {
     | '/labels'
     | '/ledger'
     | '/pos'
+    | '/pos-invoices'
     | '/pos-settings'
     | '/purchases'
     | '/rates'
@@ -451,6 +463,7 @@ export interface FileRouteTypes {
     | '/_authenticated/labels'
     | '/_authenticated/ledger'
     | '/_authenticated/pos'
+    | '/_authenticated/pos-invoices'
     | '/_authenticated/pos-settings'
     | '/_authenticated/purchases'
     | '/_authenticated/rates'
@@ -603,6 +616,13 @@ declare module '@tanstack/react-router' {
       path: '/pos-settings'
       fullPath: '/pos-settings'
       preLoaderRoute: typeof AuthenticatedPosSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/pos-invoices': {
+      id: '/_authenticated/pos-invoices'
+      path: '/pos-invoices'
+      fullPath: '/pos-invoices'
+      preLoaderRoute: typeof AuthenticatedPosInvoicesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/pos': {
@@ -765,6 +785,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedLabelsRoute: typeof AuthenticatedLabelsRoute
   AuthenticatedLedgerRoute: typeof AuthenticatedLedgerRoute
   AuthenticatedPosRoute: typeof AuthenticatedPosRoute
+  AuthenticatedPosInvoicesRoute: typeof AuthenticatedPosInvoicesRoute
   AuthenticatedPosSettingsRoute: typeof AuthenticatedPosSettingsRoute
   AuthenticatedPurchasesRoute: typeof AuthenticatedPurchasesRoute
   AuthenticatedRatesRoute: typeof AuthenticatedRatesRoute
@@ -793,6 +814,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedLabelsRoute: AuthenticatedLabelsRoute,
   AuthenticatedLedgerRoute: AuthenticatedLedgerRoute,
   AuthenticatedPosRoute: AuthenticatedPosRoute,
+  AuthenticatedPosInvoicesRoute: AuthenticatedPosInvoicesRoute,
   AuthenticatedPosSettingsRoute: AuthenticatedPosSettingsRoute,
   AuthenticatedPurchasesRoute: AuthenticatedPurchasesRoute,
   AuthenticatedRatesRoute: AuthenticatedRatesRoute,
