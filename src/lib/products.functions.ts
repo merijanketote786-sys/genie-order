@@ -40,7 +40,8 @@ async function workspaceOf(userId: string): Promise<string> {
 
 export const getProducts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d: unknown) => z.object({ scope: z.enum(["rates", "pos"]).optional() }).optional().parse(d ?? undefined))
+  .handler(async ({ context, data: input }) => {
     if (await blocked(context)) return { products: [] as DbProduct[], ok: false };
   const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabase
@@ -49,6 +50,7 @@ export const getProducts = createServerFn({ method: "GET" })
       "name, unit, sale_price, p100_staff_price, p250_staff_price, p500_staff_price, stock, custom_sale_price, custom_p100_price, custom_p250_price, custom_p500_price, sku, barcode, category",
     )
     .eq("is_active", true)
+    .eq("scope", input?.scope ?? "rates")
     .eq("workspace_id", await workspaceOf(context.userId))
     .order("name", { ascending: true })
     .limit(5000);
@@ -116,6 +118,7 @@ export const saveProductPrices = createServerFn({ method: "POST" })
         custom_p500_price: data.p500,
       })
       .eq("workspace_id", await workspaceOf(context.userId))
+      .eq("scope", "rates")
       .eq("name", data.name);
 
     if (error) return { ok: false, message: error.message };
@@ -159,6 +162,7 @@ export const saveProductPricesBulk = createServerFn({ method: "POST" })
           custom_p500_price: item.p500,
         })
         .eq("workspace_id", ws)
+        .eq("scope", "rates")
         .eq("name", item.name);
       if (error) failed += 1;
       else saved += 1;
@@ -403,6 +407,7 @@ export const getSyncStatus = createServerFn({ method: "GET" })
       .from("products")
       .select("id", { count: "exact", head: true })
       .eq("is_active", true)
+      .eq("scope", "rates")
       .eq("workspace_id", ws),
     supabase
       .from("sync_logs")
