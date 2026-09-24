@@ -115,6 +115,44 @@ export const listPosDocs = createServerFn({ method: "GET" })
     return { docs: ((rows ?? []) as Row[]).map((r) => ({ ...r, grand_total: Number(r.grand_total), payload: r.payload == null ? null : JSON.stringify(r.payload) })) };
   });
 
+/** POS invoice record — sirf POS sales (items + payments ke saath), print/share ke liye. */
+export const listPosSales = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ search: z.string().trim().max(80).optional() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    let q = supabase
+      .from("pos_sales")
+      .select("id, doc_number, doc_type, status, payment_status, customer_name, customer_phone, subtotal, discount_total, tax_total, delivery, grand_total, paid_total, balance, notes, created_at")
+      .in("doc_type", ["sale", "return"])
+      .order("created_at", { ascending: false })
+      .limit(200);
+    const s = (data.search ?? "").trim();
+    if (s) q = q.or(`doc_number.ilike.%${s}%,customer_name.ilike.%${s}%,customer_phone.ilike.%${s}%`);
+    const { data: rows, error } = await q;
+    if (error) throw new Error("Failed to load invoices");
+    const ids = (rows ?? []).map((r: { id: string }) => r.id);
+    const [{ data: items }, { data: pays }] = ids.length
+      ? await Promise.all([
+          supabase.from("pos_sale_items").select("sale_id, name, sku, unit, qty, rate, discount, tax_percent, line_total, note").in("sale_id", ids),
+          supabase.from("pos_payments").select("sale_id, method, amount, kind, status").in("sale_id", ids).eq("status", "completed"),
+        ])
+      : [{ data: [] }, { data: [] }];
+    type Item = { sale_id: string; name: string; sku: string | null; unit: string | null; qty: number; rate: number; discount: number; tax_percent: number; line_total: number; note: string | null };
+    type Pay = { sale_id: string; method: string; amount: number; kind: string; status: string };
+    const itemsOf = new Map<string, Item[]>();
+    for (const it of (items ?? []) as Item[]) itemsOf.set(it.sale_id, [...(itemsOf.get(it.sale_id) ?? []), it]);
+    const paysOf = new Map<string, Pay[]>();
+    for (const p of (pays ?? []) as Pay[]) paysOf.set(p.sale_id, [...(paysOf.get(p.sale_id) ?? []), p]);
+    return {
+      sales: (rows ?? []).map((r: Record<string, unknown>) => ({
+        ...r,
+        items: itemsOf.get(r.id as string) ?? [],
+        payments: paysOf.get(r.id as string) ?? [],
+      })),
+    };
+  });
+
 /** Held bill wapas kholne par band (converted) mark karein. */
 export const closePosDoc = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
