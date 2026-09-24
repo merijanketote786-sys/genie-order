@@ -94,7 +94,8 @@ export function AppShell({
   onClear,
   showClear,
   children,
-}: AppShellProps) {
+  wide,
+}: AppShellProps & { wide?: boolean }) {
   const access = useQuery({
     queryKey: ["my-access"],
     queryFn: () => getMyAccess(),
@@ -225,7 +226,7 @@ export function AppShell({
 
         </header>
 
-        <main className="mx-auto flex min-h-0 w-full max-w-[1180px] flex-1 flex-col overflow-y-auto px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:px-5 xl:px-8 xl:pb-0">
+        <main className="mx-auto flex min-h-0 w-full ${wide ? "max-w-[1600px]" : "max-w-[1180px]"} flex-1 flex-col overflow-y-auto px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:px-5 xl:px-8 xl:pb-0">
           {access.data && access.data.isActive === false ? (
             <div className="glass-panel my-6 rounded-3xl px-4 py-10 text-center">
               <h2 className="font-display text-base font-bold text-foreground">Access blocked</h2>
