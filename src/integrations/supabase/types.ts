@@ -1201,6 +1201,7 @@ export type Database = {
         Args: { _id: string; _kind: string; _note: string; _qty: number }
         Returns: undefined
       }
+      pos_bulk_update_products: { Args: { _rows: Json }; Returns: Json }
       pos_can: { Args: { _perm: string }; Returns: boolean }
       pos_cancel_sale: {
         Args: { _id: string; _reason: string }

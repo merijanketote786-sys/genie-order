@@ -1,0 +1,123 @@
+import { Button } from "@/components/ui/button";
+import { posInput, rs } from "@/components/pos-subnav";
+import { bulkUpdateProducts, type InvProduct } from "@/lib/inventory.functions";
+import { Search, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+
+type Col = { k: string; label: string; w: string; num?: boolean };
+const COLS: Col[] = [
+  { k: "name", label: "Product name", w: "w-52" },
+  { k: "sku", label: "Item code", w: "w-24" },
+  { k: "barcode", label: "Barcode", w: "w-28" },
+  { k: "category", label: "Category", w: "w-28" },
+  { k: "brand", label: "Brand", w: "w-24" },
+  { k: "unit", label: "Unit", w: "w-16" },
+  { k: "purchase_price", label: "Purchase price", w: "w-24", num: true },
+  { k: "sale_price", label: "Sale price", w: "w-24", num: true },
+  { k: "wholesale_price", label: "Wholesale price", w: "w-24", num: true },
+  { k: "min_sale_price", label: "Min sale price", w: "w-24", num: true },
+  { k: "stock", label: "Stock qty", w: "w-20", num: true },
+  { k: "stock_value", label: "Stock value", w: "w-24", num: true },
+  { k: "min_stock", label: "Min stock", w: "w-20", num: true },
+  { k: "tax_percent", label: "Tax %", w: "w-16", num: true },
+];
+type Row = Record<string, string>;
+const base = (p: InvProduct): Row => ({
+  name: p.name, sku: p.sku, barcode: p.barcode, category: p.category, brand: p.brand, unit: p.unit,
+  purchase_price: p.purchasePrice?.toString() ?? "", sale_price: String(p.salePrice ?? 0), wholesale_price: p.wholesalePrice?.toString() ?? "",
+  min_sale_price: p.minSalePrice?.toString() ?? "", stock: String(p.stock), min_stock: p.minStock?.toString() ?? "", tax_percent: p.taxPercent?.toString() ?? "",
+});
+const val = (r: Row) => { const s = Number(r.stock) || 0, c = Number(r.purchase_price) || 0; return r.purchase_price === "" ? "" : String(Math.round(Math.max(0, s) * c * 100) / 100); };
+
+export function BulkUpdateProducts({ products, onClose, onSaved }: { products: InvProduct[]; onClose: () => void; onSaved: () => void }) {
+  const orig = useMemo(() => Object.fromEntries(products.map((p) => [p.id, base(p)])), [products]);
+  const [edits, setEdits] = useState<Record<string, Row>>({});
+  const [q, setQ] = useState("");
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [applyCol, setApplyCol] = useState("sale_price");
+  const [applyMode, setApplyMode] = useState<"set" | "pct" | "add">("set");
+  const [applyVal, setApplyVal] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const list = useMemo(() => { const t = q.trim().toLowerCase(); return products.filter((p) => !t || [p.name, p.sku, p.barcode, p.category, p.brand].some((v) => v.toLowerCase().includes(t))); }, [products, q]);
+  const rowOf = (id: string): Row => { const r = { ...orig[id], ...edits[id] }; return { ...r, stock_value: edits[id]?.stock_value ?? val(r) }; };
+  const set = (id: string, k: string, v: string) => setEdits((e) => {
+    const cur = { ...orig[id], ...e[id], [k]: v };
+    if (k === "stock_value") { const s = Number(cur.stock) || 0; if (s > 0 && v !== "") cur.purchase_price = String(Math.round((Number(v) / s) * 100) / 100); }
+    else delete cur.stock_value;
+    return { ...e, [id]: cur };
+  });
+  const dirtyIds = Object.keys(edits).filter((id) => COLS.some((c) => c.k !== "stock_value" && (edits[id][c.k] ?? orig[id][c.k]) !== orig[id][c.k]));
+
+  const applyAll = () => {
+    const ids = picked.size ? [...picked] : list.map((p) => p.id);
+    const col = COLS.find((c) => c.k === applyCol)!;
+    if (col.num && applyMode !== "set" && applyVal.trim() === "") return toast.error("Value likhein");
+    ids.forEach((id) => {
+      const r = rowOf(id); let v = applyVal;
+      if (col.num && applyMode !== "set") { const cur = Number(r[applyCol]) || 0, x = Number(applyVal) || 0; v = String(Math.round((applyMode === "pct" ? cur * (1 + x / 100) : cur + x) * 100) / 100); }
+      set(id, applyCol, v);
+    });
+    toast.success(`${ids.length} products par lagaya — Save dabayein`);
+  };
+
+  const save = async () => {
+    if (!dirtyIds.length) return toast.info("Koi tabdeeli nahi");
+    for (const id of dirtyIds) {
+      const r = rowOf(id);
+      if (!r.name.trim()) return toast.error("Product name khali nahi ho sakta");
+      for (const c of COLS) if (c.num && c.k !== "stock_value" && r[c.k] !== "" && (!isFinite(Number(r[c.k])) || (c.k !== "stock" && Number(r[c.k]) < 0))) return toast.error(`${r.name}: ${c.label} ghalat hai`);
+    }
+    const rows = dirtyIds.map((id) => { const r = rowOf(id); const o: Record<string, string> = { id }; COLS.forEach((c) => { if (c.k !== "stock_value" && r[c.k] !== orig[id][c.k]) o[c.k] = r[c.k].trim(); }); return o; });
+    setSaving(true);
+    try {
+      for (let i = 0; i < rows.length; i += 500) await bulkUpdateProducts({ data: { rows: rows.slice(i, i + 500) } });
+      toast.success(`${rows.length} products update ho gaye`); setEdits({}); onSaved();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Save nahi hua"); } finally { setSaving(false); }
+  };
+
+  const allPicked = list.length > 0 && list.every((p) => picked.has(p.id));
+  return (
+    <section className="space-y-2 rounded-xl border border-border bg-card p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="mr-auto font-bold text-foreground">Bulk update items <span className="text-xs font-normal text-muted-foreground">{dirtyIds.length} tabdeel</span></p>
+        <Button variant="outline" onClick={() => setEdits({})} disabled={!dirtyIds.length || saving}>Reset</Button>
+        <Button onClick={save} disabled={saving || !dirtyIds.length}>{saving ? "Save ho raha..." : `Save (${dirtyIds.length})`}</Button>
+        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Band karein"><X /></Button>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-2 text-sm">
+        <span className="text-xs text-muted-foreground">{picked.size ? `${picked.size} chune hue` : "Sab dikhne wale"} products par:</span>
+        <select className={`${posInput} w-40`} value={applyCol} onChange={(e) => setApplyCol(e.target.value)} aria-label="Field">{COLS.filter((c) => !["name", "sku", "barcode", "stock_value"].includes(c.k)).map((c) => <option key={c.k} value={c.k}>{c.label}</option>)}</select>
+        {COLS.find((c) => c.k === applyCol)?.num ? <select className={`${posInput} w-32`} value={applyMode} onChange={(e) => setApplyMode(e.target.value as "set")} aria-label="Tareeqa"><option value="set">Yeh value</option><option value="pct">% barhao/ghatao</option><option value="add">+/− raqam</option></select> : null}
+        <input className={`${posInput} w-28`} value={applyVal} onChange={(e) => setApplyVal(e.target.value)} placeholder="Value" />
+        <Button variant="outline" onClick={applyAll}>Lagao</Button>
+      </div>
+      <label className="flex h-10 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
+        <Search className="size-4 text-primary" /><input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Product dhoondein" />
+      </label>
+      <div className="max-h-[60vh] overflow-auto">
+        <table className="text-sm">
+          <thead className="sticky top-0 z-10 bg-card"><tr className="text-left text-xs text-muted-foreground">
+            <th className="px-1"><input type="checkbox" checked={allPicked} onChange={() => setPicked(allPicked ? new Set() : new Set(list.map((p) => p.id)))} aria-label="Sab chunein" /></th>
+            {COLS.map((c) => <th key={c.k} className="px-1 whitespace-nowrap">{c.label}</th>)}
+          </tr></thead>
+          <tbody>
+            {list.slice(0, 1000).map((p) => { const r = rowOf(p.id); return (
+              <tr key={p.id} className={`border-t border-border ${dirtyIds.includes(p.id) ? "bg-accent" : ""}`}>
+                <td className="px-1"><input type="checkbox" checked={picked.has(p.id)} onChange={() => setPicked((s) => { const n = new Set(s); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; })} aria-label={`Chunein ${p.name}`} /></td>
+                {COLS.map((c) => (
+                  <td key={c.k} className="px-0.5 py-0.5">
+                    <input className={`${posInput} h-8 ${c.w} ${c.num ? "text-right" : ""} ${c.k !== "stock_value" && r[c.k] !== orig[p.id][c.k] ? "border-primary" : ""}`} value={r[c.k]} inputMode={c.num ? "decimal" : undefined}
+                      title={c.k === "stock_value" ? "Stock value badlne se purchase price khud calculate hoga" : undefined} onChange={(e) => set(p.id, c.k, e.target.value)} aria-label={`${c.label} ${p.name}`} />
+                  </td>
+                ))}
+              </tr>
+            ); })}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-xs text-muted-foreground">Stock qty badlne par farq "Bulk update" ke naam se stock ledger me darj hota hai. Stock value = stock × purchase price; value badlein to purchase price khud nikal aata hai. Kul value: {rs(list.reduce((s, p) => s + (Number(rowOf(p.id).stock_value) || 0), 0))}</p>
+    </section>
+  );
+}
