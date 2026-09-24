@@ -466,6 +466,7 @@ function Aging({ kind, bar }: { kind: "ar" | "ap"; bar: Bar }) {
 }
 
 /* -------------------------------- Settings -------------------------------- */
+const Field = ({ label, children }: { label: string; children: ReactNode }) => <label className="grid gap-1 text-sm"><span className="text-xs text-muted-foreground">{label}</span>{children}</label>;
 function Settings({ s, canEdit }: { s: { fyStart: string | null; fyEnd: string | null; lockDate: string | null; creditDays: number }; canEdit: boolean }) {
   const qc = useQueryClient();
   const [f, setF] = useState({ fyStart: s.fyStart ?? "", fyEnd: s.fyEnd ?? "", lockDate: s.lockDate ?? "", creditDays: String(s.creditDays) });
@@ -476,7 +477,6 @@ function Settings({ s, canEdit }: { s: { fyStart: string | null; fyEnd: string |
       toast.success("Accounting settings saved"); qc.invalidateQueries();
     } catch (e) { toast.error(errMsg(e)); }
   };
-  const Field = ({ label, children }: { label: string; children: ReactNode }) => <label className="grid gap-1 text-sm"><span className="text-xs text-muted-foreground">{label}</span>{children}</label>;
   return (
     <Card className="max-w-xl space-y-3">
       <p className="font-bold">Financial period</p>
