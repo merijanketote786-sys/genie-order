@@ -93,6 +93,18 @@ function PosInvoicesPage() {
     <AppShell title="POS Invoices" subtitle="POS billing record — reprint, PDF, share" active="/pos">
       <div className="space-y-3">
         <PosSubnav />
+        <div className="inline-flex rounded-lg border border-border bg-muted p-1">
+          {([false, true] as const).map((v) => (
+            <button
+              key={String(v)}
+              type="button"
+              onClick={() => setEstimates(v)}
+              className={`rounded-md px-4 py-1.5 text-sm font-semibold ${estimates === v ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+            >
+              {v ? "Estimates" : "Invoices"}
+            </button>
+          ))}
+        </div>
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
