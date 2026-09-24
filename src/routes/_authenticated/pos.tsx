@@ -137,7 +137,6 @@ function PosPage() {
   };
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
-  const [view, setView] = useState<"billing" | "settings">("billing");
   const [saving, setSaving] = useState(false);
   const [last, setLast] = useState<ReceiptInput | null>(null);
   const scanRef = useRef<HTMLInputElement>(null);
@@ -171,21 +170,6 @@ function PosPage() {
     });
   };
 
-  useEffect(() => {
-    try {
-      localStorage.removeItem(POS_VIEW_KEY);
-    } catch {
-      /* ignore */
-    }
-  }, []);
-  const changeView = (next: "billing" | "settings") => {
-    setView(next);
-    try {
-      localStorage.setItem(POS_VIEW_KEY, next);
-    } catch {
-      /* ignore */
-    }
-  };
 
   const results = useMemo(() => {
     const t = term.trim().toLowerCase();
