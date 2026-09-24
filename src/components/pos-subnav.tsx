@@ -8,7 +8,7 @@ const ITEMS = [
   { to: "/returns", label: "Returns", icon: Undo2, perm: "create_sale" },
   { to: "/purchases", label: "Purchases", icon: Truck, perm: "manage_purchases" },
   { to: "/suppliers", label: "Suppliers", icon: Users, perm: "manage_purchases" },
-  { to: "/ledger", label: "Udhaar", icon: BookOpen, perm: "view_balances" },
+  { to: "/ledger", label: "Credit", icon: BookOpen, perm: "view_balances" },
   { to: "/expenses", label: "Expenses", icon: Receipt, perm: "manage_expenses" },
   { to: "/daybook", label: "Day Book", icon: Notebook, perm: "view_reports" },
   { to: "/inventory", label: "Inventory", icon: Boxes, perm: "edit_stock" },
@@ -16,7 +16,7 @@ const ITEMS = [
   { to: "/pos-settings", label: "POS Settings", icon: Settings2, perm: "view_pos" },
 ] as const satisfies ReadonlyArray<{ to: string; label: string; icon: unknown; perm: PosPerm }>;
 
-/** POS module ke andar tez navigation. */
+/** Quick navigation within the POS module. */
 export function PosSubnav() {
   const { can } = usePosAccess();
   return (

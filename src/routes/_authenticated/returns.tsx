@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/returns")({
   head: () => ({
     meta: [
       { title: "Sales Returns — HB Chemicals Pakistan Workspace" },
-      { name: "description", content: "Purane bill se poora ya partial return, refund ya customer credit, stock khud wapas." },
+      { name: "description", content: "Full or partial return from an old bill, refund or customer credit, stock restored automatically." },
       { property: "og:title", content: "Sales Returns — HB Chemicals Pakistan Workspace" },
       { property: "og:description", content: "Sales return aur refund history." },
       { property: "og:type", content: "website" },
@@ -31,16 +31,16 @@ function ReturnsPage() {
   const pc = usePrintCenter();
   const [pinNode, askPin] = usePinPrompt();
   const cancelReturn = async (id: string) => {
-    if (!confirm("Return cancel karein? Stock dobara kam hoga.")) return;
+    if (!confirm("Cancel this return? Stock will be reduced again.")) return;
     try { await cancelDoc({ data: { id, reason: "manual" } }); }
     catch (e) {
       const msg = e instanceof Error ? e.message : "";
-      if (!msg.includes("PIN")) return toast.error(msg || "Nahi hua");
-      const pin = await askPin("Cancel ki ijazat nahi — manager PIN likhein.");
+      if (!msg.includes("PIN")) return toast.error(msg || "Failed");
+      const pin = await askPin("Not allowed to cancel — enter manager PIN.");
       if (!pin) return;
-      try { await cancelWithPin({ data: { id, reason: "manual", pin } }); } catch (er) { return toast.error(er instanceof Error ? er.message : "Nahi hua"); }
+      try { await cancelWithPin({ data: { id, reason: "manual", pin } }); } catch (er) { return toast.error(er instanceof Error ? er.message : "Failed"); }
     }
-    toast.success("Return cancel ho gaya");
+    toast.success("Return cancelled");
     qc.invalidateQueries({ queryKey: ["ret-list"] });
   };
   const [q, setQ] = useState("");
@@ -83,7 +83,7 @@ function ReturnsPage() {
       qc.invalidateQueries({ queryKey: ["ret-list"] });
       qc.invalidateQueries({ queryKey: ["products"] }); qc.invalidateQueries({ queryKey: ["pos-products"] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Return save nahi hua");
+      toast.error(e instanceof Error ? e.message : "Return could not be saved");
     } finally { lockRef.current = false; setSaving(false); }
   };
 
@@ -97,7 +97,7 @@ function ReturnsPage() {
           <section className="rounded-xl border border-border bg-card p-3">
             <label className="flex h-10 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
               <Search className="size-4 text-primary" />
-              <input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Invoice number, naam ya phone" />
+              <input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Invoice number, name or phone" />
             </label>
             <ul className="mt-2 max-h-[28rem] space-y-1 overflow-y-auto">
               {(found?.sales ?? []).map((s) => (
@@ -108,17 +108,17 @@ function ReturnsPage() {
                   </button>
                 </li>
               ))}
-              {found && !found.sales.length ? <p className="py-4 text-center text-xs text-muted-foreground">Koi bill nahi mila.</p> : null}
+              {found && !found.sales.length ? <p className="py-4 text-center text-xs text-muted-foreground">No bill found.</p> : null}
             </ul>
           </section>
 
           <section className="space-y-3 rounded-xl border border-border bg-card p-3">
-            {!sale ? <p className="py-10 text-center text-sm text-muted-foreground">Baen taraf se bill chunein.</p> : (
+            {!sale ? <p className="py-10 text-center text-sm text-muted-foreground">Select a bill from the left.</p> : (
               <>
                 <p className="font-bold text-foreground">{sale.sale.number} · {sale.sale.customerName || "Walk-in"} · {rs(sale.sale.total)}</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead><tr className="text-left text-xs text-muted-foreground"><th>Item</th><th>Becha</th><th>Wapas ho chuka</th><th>Rate</th><th>Return qty</th></tr></thead>
+                    <thead><tr className="text-left text-xs text-muted-foreground"><th>Item</th><th>Sold</th><th>Already returned</th><th>Rate</th><th>Return qty</th></tr></thead>
                     <tbody>
                       {items.map((i) => {
                         const left = Math.round((i.qty - i.returned) * 1000) / 1000;
@@ -129,7 +129,7 @@ function ReturnsPage() {
                             <td className="w-28">
                               <div className="flex gap-1">
                                 <input className="h-8 w-16 rounded-md border border-border bg-background px-2" inputMode="decimal" disabled={left <= 0} value={qty[i.id] ?? ""} placeholder="0" onChange={(e) => setQty((m) => ({ ...m, [i.id]: e.target.value.replace(/[^\d.]/g, "") }))} aria-label={`${i.name} return qty`} />
-                                <Button size="sm" variant="ghost" disabled={left <= 0} onClick={() => setQty((m) => ({ ...m, [i.id]: String(left) }))}>Sab</Button>
+                                <Button size="sm" variant="ghost" disabled={left <= 0} onClick={() => setQty((m) => ({ ...m, [i.id]: String(left) }))}>All</Button>
                               </div>
                             </td>
                           </tr>
@@ -140,14 +140,14 @@ function ReturnsPage() {
                 </div>
                 <div className="grid gap-2 sm:grid-cols-3">
                   <select className={posInput} value={mode} onChange={(e) => setMode(e.target.value as "refund" | "credit")} aria-label="Return mode">
-                    <option value="refund">Paise wapas (refund)</option>
-                    <option value="credit" disabled={!sale.sale.hasCustomer}>Customer account me credit</option>
+                    <option value="refund">Money back (refund)</option>
+                    <option value="credit" disabled={!sale.sale.hasCustomer}>Credit to customer account</option>
                   </select>
                   {mode === "refund" ? <select className={posInput} value={method} onChange={(e) => setMethod(e.target.value)} aria-label="Refund method">{PAY_OPTS.map((m) => <option key={m}>{m}</option>)}</select> : <div />}
-                  <input className={posInput} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Wajah (optional)" />
+                  <input className={posInput} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (optional)" />
                 </div>
-                <Button size="lg" className="w-full" disabled={!lines.length || saving} onClick={submit}><Undo2 /> Return save — {rs(total)}</Button>
-                <p className="text-xs text-muted-foreground">Asal bill tabdeel nahi hota — alag return record banta hai aur stock khud wapas aata hai.</p>
+                <Button size="lg" className="w-full" disabled={!lines.length || saving} onClick={submit}><Undo2 /> Save return — {rs(total)}</Button>
+                <p className="text-xs text-muted-foreground">The original bill is not changed — a separate return record is created and stock is restored automatically.</p>
               </>
             )}
           </section>
@@ -168,7 +168,7 @@ function ReturnsPage() {
                 ))}
               </tbody>
             </table>
-            {hist && !hist.returns.length ? <p className="py-3 text-center text-xs text-muted-foreground">Abhi koi return nahi.</p> : null}
+            {hist && !hist.returns.length ? <p className="py-3 text-center text-xs text-muted-foreground">No returns yet.</p> : null}
           </div>
         </section>
       </div>

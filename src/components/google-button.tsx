@@ -23,7 +23,7 @@ export function GoogleButton({ disabled, next }: { disabled?: boolean; next?: st
       });
       if (result.error) throw new Error(String(result.error));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Google sign-in nahi ho saka");
+      toast.error(err instanceof Error ? err.message : "Google sign-in failed");
     } finally {
       setBusy(false);
     }

@@ -1,6 +1,6 @@
 /**
- * Compact product picker — Invoice/Order pages ke andar icon popup me.
- * Rate list se product dhoondein, pack size + qty choose karein aur line insert karein.
+ * Compact product picker — used inside an icon popup on the Invoice/Order pages.
+ * Search for a product from the rate list, choose pack size + qty, and insert the line.
  */
 import { getProducts, type DbProduct } from "@/lib/products.functions";
 import { useQuery } from "@tanstack/react-query";
@@ -26,7 +26,7 @@ function priceFor(p: DbProduct, pack: Pack): number | null {
 }
 
 
-/** Naam ke end se unit suffix (/kg, /gram...) hata deta hai. */
+/** Removes the unit suffix (/kg, /gram...) from the end of the name. */
 function cleanName(name: string): string {
   return name
     .replace(/\s*\/\s*(kg|kilogram|g|gm|gram|gramme|ml|ltr|litre|liter|pcs|pc|piece|bottle|bundle)s?\b/gi, "")
@@ -81,9 +81,9 @@ export function ProductPickerBody({
   const copy = async (line: string) => {
     try {
       await navigator.clipboard.writeText(line);
-      toast.success("Product line copy ho gayi");
+      toast.success("Product line copied");
     } catch {
-      toast.error("Copy nahi ho saka");
+      toast.error("Copy failed");
     }
   };
 
@@ -94,7 +94,7 @@ export function ProductPickerBody({
         <input
           value={term}
           onChange={(e) => setTerm(e.target.value)}
-          placeholder="Product ka naam likhein"
+          placeholder="Enter product name"
           aria-label="Product search"
           className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-9 text-sm text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/30"
         />
@@ -105,7 +105,7 @@ export function ProductPickerBody({
 
       {results.length === 0 ? (
         <p className="py-3 text-center text-xs text-muted-foreground">
-          {isFetching ? "Rate list load ho rahi hai…" : "Koi product nahi mila."}
+          {isFetching ? "Loading rate list…" : "No product found."}
         </p>
       ) : (
         <ul className="max-h-64 space-y-1.5 overflow-y-auto">
@@ -161,7 +161,7 @@ export function ProductPickerBody({
                           className="h-9 w-20 rounded-lg border border-input bg-background px-2 text-sm outline-none focus:border-ring"
                         />
                         <span className="truncate text-xs text-muted-foreground">
-                          {unitPrice == null ? "Is pack ka rate nahi hai" : line}
+                          {unitPrice == null ? "No rate for this pack" : line}
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-2">

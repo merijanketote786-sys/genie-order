@@ -126,7 +126,7 @@ export const saveMySettings = createServerFn({ method: "POST" })
         .insert({ user_id: userId, workspace_id: workspaceId, ...patch });
       if (error) return { ok: false as const, message: error.message };
     }
-    return { ok: true as const, message: "Settings save ho gayin" };
+    return { ok: true as const, message: "Settings saved" };
   });
 
 export const saveMyProfileName = createServerFn({ method: "POST" })
@@ -139,7 +139,7 @@ export const saveMyProfileName = createServerFn({ method: "POST" })
       .update({ full_name: data.fullName })
       .eq("id", context.userId);
     if (error) return { ok: false as const, message: error.message };
-    return { ok: true as const, message: "Naam update ho gaya" };
+    return { ok: true as const, message: "Name updated" };
   });
 
 /* ------------------------------ admin side ------------------------------ */
@@ -149,7 +149,7 @@ export const getWorkspaceSettings = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const supabase = context.supabase as unknown as AnySupabase;
     if (!(await isAdminUser(context.supabase, context.userId))) {
-      return { ok: false as const, settings: { ...DEFAULT_WORKSPACE_SETTINGS }, message: "Sirf admin" };
+      return { ok: false as const, settings: { ...DEFAULT_WORKSPACE_SETTINGS }, message: "Admin only" };
     }
     const { data } = await supabase.from("workspace_settings").select("*").maybeSingle();
     return { ok: true as const, settings: toWorkspaceSettings(data), message: "" };
@@ -175,7 +175,7 @@ export const saveWorkspaceSettings = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as unknown as AnySupabase;
     if (!(await isAdminUser(context.supabase, context.userId))) {
-      return { ok: false as const, message: "Sirf admin workspace settings badal sakta hai." };
+      return { ok: false as const, message: "Only an admin can change workspace settings." };
     }
     const workspaceId = await workspaceOf(context.supabase, context.userId);
 
@@ -211,7 +211,7 @@ export const saveWorkspaceSettings = createServerFn({ method: "POST" })
     if (data.orderNumberStart !== undefined) {
       await supabase.rpc("set_order_number_start", { _start: data.orderNumberStart });
     }
-    return { ok: true as const, message: "Workspace settings save ho gayin" };
+    return { ok: true as const, message: "Workspace settings saved" };
   });
 
 export type MemberSectionRow = { userId: string; allowedSections: string[] };
@@ -240,7 +240,7 @@ export const saveMemberSections = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     if (!(await isAdminUser(context.supabase, context.userId))) {
-      return { ok: false as const, message: "Sirf admin ye change kar sakta hai." };
+      return { ok: false as const, message: "Only an admin can make this change." };
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const workspaceId = await workspaceOf(context.supabase, context.userId);
@@ -255,7 +255,7 @@ export const saveMemberSections = createServerFn({ method: "POST" })
         { onConflict: "user_id" },
       );
     if (error) return { ok: false as const, message: error.message };
-    return { ok: true as const, message: "Access update ho gaya" };
+    return { ok: true as const, message: "Access updated" };
   });
 
 /* ---------------------------- personal export ---------------------------- */

@@ -33,12 +33,12 @@ export const Route = createFileRoute("/_authenticated/invoice")({
       {
         name: "description",
         content:
-          "Kisi bhi format mein inquiry ya order paste karo aur foran clean invoice hasil karo.",
+          "Paste an inquiry or order in any format and instantly get a clean invoice.",
       },
       { property: "og:title", content: "Invoice Bot — Instant Invoice Generator" },
       {
         property: "og:description",
-        content: "Products paste karein aur foran professional invoice hasil karein.",
+        content: "Paste products and instantly get a professional invoice.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -82,7 +82,7 @@ function InvoiceChat() {
 
   const { messages, sendMessage, status, setMessages, error } = useChat({
     transport,
-    onError: (err) => toast.error(err.message || "Kuch masla ho gaya"),
+    onError: (err) => toast.error(err.message || "Something went wrong"),
   });
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -117,8 +117,8 @@ function InvoiceChat() {
     }
     const incoming = takeHandoff("invoice");
     if (incoming) {
-      setComposerText(`${incoming.trim()}\n\nIs order ki invoice banayein.\n`);
-      toast.success("Order invoice section me aa gaya");
+      setComposerText(`${incoming.trim()}\n\nCreate invoice for this order.\n`);
+      toast.success("Order added to invoice section");
     }
   }, []);
 
@@ -153,7 +153,7 @@ function InvoiceChat() {
   return (
     <AppShell
       title="Invoice Bot"
-      subtitle="Order/inquiry → foran invoice"
+      subtitle="Order/inquiry → instant invoice"
       active="/invoice"
       onClear={handleClear}
       showClear={messages.length > 0}
@@ -166,26 +166,26 @@ function InvoiceChat() {
         meta={["Live rates", "Editable", "WhatsApp ready"]}
       />
       <WorkspaceToolDock>
-        <WorkspaceTool icon={Users} label="Customer" title="Customer search" description="Saved customer ko invoice mein add karein.">
-          <CustomerPickerBody useLabel="Invoice me daalein" onUse={(block) => {
+        <WorkspaceTool icon={Users} label="Customer" title="Customer search" description="Add a saved customer to the invoice.">
+          <CustomerPickerBody useLabel="Add to invoice" onUse={(block) => {
             appendToComposer(block);
             textareaRef.current?.focus();
-            toast.success("Customer detail invoice me daal diya");
+            toast.success("Customer details added to invoice");
           }} />
         </WorkspaceTool>
-        <WorkspaceTool icon={Package} label="Product" title="Product select" description="Rate list se product, pack aur qty choose karein.">
-          <ProductPickerBody useLabel="Invoice me daalein" onUse={(line) => {
+        <WorkspaceTool icon={Package} label="Product" title="Product select" description="Choose product, pack and qty from the rate list.">
+          <ProductPickerBody useLabel="Add to invoice" onUse={(line) => {
             appendToComposer(line);
             textareaRef.current?.focus();
-            toast.success("Product invoice me daal diya");
+            toast.success("Product added to invoice");
           }} />
         </WorkspaceTool>
-        <WorkspaceTool icon={Calculator} label="Courier" title="Courier rate" description="Delivery charge foran calculate karein.">
+        <WorkspaceTool icon={Calculator} label="Courier" title="Courier rate" description="Instantly calculate delivery charge.">
 
-          <RateMiniCalculatorBody useLabel="Invoice me daalein" onUse={(amount) => {
+          <RateMiniCalculatorBody useLabel="Add to invoice" onUse={(amount) => {
             appendToComposer(`Delivery Charges: ${amount}`);
             textareaRef.current?.focus();
-            toast.success(`Delivery Rs ${amount} invoice me daal diya`);
+            toast.success(`Delivery Rs ${amount} added to invoice`);
           }} />
         </WorkspaceTool>
         <WorkspaceTool icon={CreditCard} label="Payment" title="Payment status" active={paymentEnabled}>
@@ -239,19 +239,19 @@ function InvoiceChat() {
                         });
                         toast.success(
                           res.duplicate
-                            ? `Pehle se saved: ${res.invoiceNumber}`
-                            : `Save ho gayi: ${res.invoiceNumber}`,
+                            ? `Already saved: ${res.invoiceNumber}`
+                            : `Saved: ${res.invoiceNumber}`,
                         );
                       }}
                       forward={{
-                        label: "Order me bhejein",
+                        label: "Send to Order",
                         onClick: (value) => {
                           setHandoff("order", value);
                           navigate({ to: "/" });
                         },
                       }}
                       forward2={{
-                        label: "Confirmation me bhejein",
+                        label: "Send to Confirmation",
                         onClick: (value) => {
                           setHandoff("confirmation", value);
                           navigate({ to: "/confirmation" });
@@ -261,7 +261,7 @@ function InvoiceChat() {
                     />
                   ) : (
                     <ChatMessageContent>
-                      <Shimmer>Invoice ban rahi hai...</Shimmer>
+                      <Shimmer>Generating invoice...</Shimmer>
                     </ChatMessageContent>
                   )
                 ) : (
@@ -276,7 +276,7 @@ function InvoiceChat() {
           {status === "submitted" ? (
             <ChatMessage from="assistant">
               <ChatMessageContent>
-                <Shimmer>Invoice ban rahi hai...</Shimmer>
+                <Shimmer>Generating invoice...</Shimmer>
               </ChatMessageContent>
             </ChatMessage>
           ) : null}
@@ -298,13 +298,13 @@ function InvoiceChat() {
             disabled={isBusy}
             value={composerText}
             onValueChange={setComposerText}
-            placeholder="Products + prices paste karein... (e.g. Conditioner 250ml 750, Glycerine 250ml 250 ...)"
+            placeholder="Paste products + prices... (e.g. Conditioner 250ml 750, Glycerine 250ml 250 ...)"
             textareaClassName="min-h-20 px-3 py-2.5 text-sm leading-6 sm:min-h-28 sm:px-4 sm:py-3"
           />
         </div>
         <p className="mt-2 hidden items-center justify-center gap-1.5 text-center text-xs text-muted-foreground sm:flex">
           <ShieldCheck className="size-3.5" />
-          Delivery Charges blank rehti hain — baad mein manually add karain.
+          Delivery Charges remain blank — add them manually later.
         </p>
       </div>
     </AppShell>

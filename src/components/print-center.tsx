@@ -11,8 +11,8 @@ import { toast } from "sonner";
 const PX_PER_MM = 96 / 25.4;
 
 /**
- * Central print hook: print / preview / PDF / reprint har document ke liye.
- * Reprint kabhi naya sale nahi banata — sirf audit log me "reprint" entry.
+ * Central print hook: print / preview / PDF / reprint for every document.
+ * Reprint never creates a new sale — it only adds a "reprint" entry to the audit log.
  */
 export function usePrintCenter() {
   const { cfg } = usePosAccess();
@@ -20,7 +20,7 @@ export function usePrintCenter() {
 
   const report = useCallback(async (doc: PrintDoc, reprint: boolean, res: { via: string; printer?: string; error?: string }) => {
     if (res.error) {
-      if (cfg.notify.printErrors) toast.error(`Printer "${res.printer ?? ""}" se silent print nahi hua — print window khol di gayi. (${res.error})`);
+      if (cfg.notify.printErrors) toast.error(`Silent print failed on printer "${res.printer ?? ""}" — the print window has been opened. (${res.error})`);
       logPosEvent({ data: { action: "print_error", entity: doc.kind, entityId: doc.id, details: { number: doc.number, error: res.error.slice(0, 200) } } }).catch(() => null);
     }
     if (reprint) logPosEvent({ data: { action: "reprint", entity: doc.kind, entityId: doc.id, details: { number: doc.number } } }).catch(() => null);
@@ -30,19 +30,19 @@ export function usePrintCenter() {
     try {
       const res = await printDocument(doc, cfg, o);
       await report(doc, !!o.reprint, res);
-      if (res.via === "desktop") toast.success(`Print bheja: ${res.printer}`);
+      if (res.via === "desktop") toast.success(`Print sent: ${res.printer}`);
     } catch (e) {
-      toast.error(`Print nahi hua: ${e instanceof Error ? e.message : "unknown"}`);
+      toast.error(`Print failed: ${e instanceof Error ? e.message : "unknown"}`);
     }
   }, [cfg, report]);
 
   const pdf = useCallback(async (doc: PrintDoc, o: { format?: PaperFormat; template?: TemplateId } = {}) => {
-    try { await downloadPdf(doc, cfg, o); } catch { toast.error("PDF nahi bana. Dobara try karein."); }
+    try { await downloadPdf(doc, cfg, o); } catch { toast.error("PDF could not be created. Please try again."); }
   }, [cfg]);
 
   const preview = useCallback((doc: PrintDoc, reprint = false) => setPreviewDoc({ doc, reprint }), []);
 
-  /** Settings ke mutabiq: auto = seedha print, ask = preview, never = kuch nahi. */
+  /** Based on settings: auto = print directly, ask = preview, never = nothing. */
   const afterSave = useCallback((doc: PrintDoc, behaviorKey: "pos" | "sale" | "quotation" | "return" | "purchase" | "receipt") => {
     const b = cfg.printing.behavior[behaviorKey];
     if (b === "auto") void print(doc);
@@ -110,12 +110,12 @@ function PrintPreviewDialog({ doc, onClose, onPrint, onPdf }: { doc: PrintDoc; o
             ) : <div className="grid h-40 place-items-center"><Loader2 className="animate-spin" /></div>}
           </div>
           <p className="mt-2 text-center text-xs text-muted-foreground">
-            {FORMAT_LABEL[format]} · {spec.widthMm}×{spec.heightMm ?? "auto"} mm · {spec.heightMm ? "page par agar content zyada ho to agla page banega" : "roll — lambai content ke mutabiq"}
+            {FORMAT_LABEL[format]} · {spec.widthMm}×{spec.heightMm ?? "auto"} mm · {spec.heightMm ? "if content overflows the page, a new page will be created" : "roll — length based on content"}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t border-border p-3">
           <p className="mr-auto text-xs text-muted-foreground">
-            {bridge && printer?.deviceName ? `Desktop app: seedha "${printer.deviceName}" par jayega` : printer ? `Saved printer: ${printer.name} — print window me yahi printer chunein (browser yaad rakhta hai)` : "Print window me printer chunein · Margins: None · Scale: 100%"}
+            {bridge && printer?.deviceName ? `Desktop app: will go directly to "${printer.deviceName}"` : printer ? `Saved printer: ${printer.name} — select this same printer in the print window (the browser remembers it)` : "Select a printer in the print window · Margins: None · Scale: 100%"}
           </p>
           <Button variant="outline" disabled={busy} onClick={async () => { setBusy(true); await onPdf({ format, template }); setBusy(false); }}><Download /> PDF</Button>
           <Button disabled={busy} onClick={async () => { setBusy(true); await onPrint({ format, template, copies: Math.max(1, Number(copies) || 1) }); setBusy(false); }}><Printer /> Print</Button>

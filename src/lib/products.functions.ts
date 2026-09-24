@@ -172,7 +172,7 @@ export const saveProductPricesBulk = createServerFn({ method: "POST" })
       ok: failed === 0,
       saved,
       failed,
-      message: failed === 0 ? `${saved} products save ho gaye` : `${saved} save, ${failed} fail`,
+      message: failed === 0 ? `${saved} products saved` : `${saved} saved, ${failed} failed`,
     };
   });
 
@@ -188,7 +188,7 @@ export const syncProductsFromSheet = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     if (await blocked(context)) {
-      return { ok: false as const, message: "Aapka access band hai. Admin se rabta karein." };
+      return { ok: false as const, message: "Your access is blocked. Contact the admin." };
     }
     let bytes: Uint8Array;
     try {
@@ -196,17 +196,17 @@ export const syncProductsFromSheet = createServerFn({ method: "POST" })
       bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
     } catch {
-      return { ok: false as const, message: "File parh nahi saka. Dobara upload karein." };
+      return { ok: false as const, message: "Could not read file. Please upload again." };
     }
     if (bytes.length > 10 * 1024 * 1024) {
-      return { ok: false as const, message: "File 10MB se bari hai." };
+      return { ok: false as const, message: "File is larger than 10MB." };
     }
 
     const ext = (data.fileName.split(".").pop() ?? "").toLowerCase();
     if (!["xlsx", "xls", "csv", "txt"].includes(ext)) {
       return {
         ok: false as const,
-        message: `".${ext}" file support nahi hoti. Sirf Excel (.xlsx/.xls) ya CSV upload karein — PDF/tasveer ke liye neeche wala card use karein.`,
+        message: `".${ext}" files are not supported. Upload Excel (.xlsx/.xls) or CSV only — use the card below for PDF/image.`,
       };
     }
 
@@ -239,7 +239,7 @@ async function applyRows(
 
   return {
     ok: true as const,
-    message: "Rates update ho gaye",
+    message: "Rates updated",
     fileName: meta.fileName,
     sheetName: meta.sheetName,
     emptyRows: meta.emptyRows ?? 0,
@@ -259,7 +259,7 @@ export const syncProductsFromText = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     if (await blocked(context)) {
-      return { ok: false as const, message: "Aapka access band hai. Admin se rabta karein." };
+      return { ok: false as const, message: "Your access is blocked. Contact the admin." };
     }
     const { parseDelimitedText } = await import("@/lib/vyapar-sheet.server");
     const parsed = parseDelimitedText(data.text);
@@ -298,19 +298,19 @@ export const previewProductsFromDocument = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     if (await blocked(context)) {
-      return { ok: false as const, message: "Aapka access band hai. Admin se rabta karein." };
+      return { ok: false as const, message: "Your access is blocked. Contact the admin." };
     }
     const isImage = data.fileType.startsWith("image/");
     const isPdf = data.fileType === "application/pdf";
     if (!isImage && !isPdf) {
       return {
         ok: false as const,
-        message: "Sirf PDF ya tasveer (JPG/PNG) support hoti hai.",
+        message: "Only PDF or image (JPG/PNG) is supported.",
       };
     }
 
     const key = process.env["LOVABLE_API_KEY"];
-    if (!key) return { ok: false as const, message: "AI service configure nahi hai." };
+    if (!key) return { ok: false as const, message: "AI service is not configured." };
 
     const content: unknown[] = [{ type: "text", text: "Is file ki rate list TSV me dein." }];
     if (isImage) content.push({ type: "image_url", image_url: { url: data.dataUrl } });
@@ -334,23 +334,23 @@ export const previewProductsFromDocument = createServerFn({ method: "POST" })
         }),
       });
       if (res.status === 429) {
-        return { ok: false as const, message: "Abhi requests zyada hain — thori dair baad koshish karein." };
+        return { ok: false as const, message: "Too many requests right now — try again in a bit." };
       }
       if (res.status === 402) {
-        return { ok: false as const, message: "AI credits khatam ho gaye hain. Credits add karein." };
+        return { ok: false as const, message: "AI credits have run out. Please add credits." };
       }
       if (!res.ok) {
-        return { ok: false as const, message: "File parhne me masla hua. Dobara koshish karein." };
+        return { ok: false as const, message: "There was a problem reading the file. Try again." };
       }
       const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
       text = json.choices?.[0]?.message?.content ?? "";
     } catch {
-      return { ok: false as const, message: "File parhne me masla hua. Dobara koshish karein." };
+      return { ok: false as const, message: "There was a problem reading the file. Try again." };
     }
 
     const cleaned = text.replace(/```[a-z]*/gi, "").trim();
     if (!cleaned || /NO_TABLE/i.test(cleaned)) {
-      return { ok: false as const, message: "File me rate list ka table nahi mila." };
+      return { ok: false as const, message: "No rate list table found in the file." };
     }
 
     const { parseDelimitedText } = await import("@/lib/vyapar-sheet.server");
@@ -387,7 +387,7 @@ export const applyProductRows = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     if (await blocked(context)) {
-      return { ok: false as const, message: "Aapka access band hai. Admin se rabta karein." };
+      return { ok: false as const, message: "Your access is blocked. Contact the admin." };
     }
     return applyRows(data.rows, await workspaceOf(context.userId), {
       sheetName: "Document import",

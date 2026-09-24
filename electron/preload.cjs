@@ -1,4 +1,4 @@
-// Secure bridge: web page ko sirf printer list aur print ki ijazat, aur kuch nahi.
+// Secure bridge: only allow the web page to list printers and print, nothing else.
 const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("hbPrint", {
   getPrinters: () => ipcRenderer.invoke("hb:get-printers"),

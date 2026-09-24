@@ -68,7 +68,7 @@ export async function printDocument(doc: PrintDoc, cfg: ResolvedCfg, o: { format
     // silent print fail -> browser dialog fallback, error report
     const fb = await renderPrint(doc, cfg, { format, template: o.template, copies });
     await browserPrint(fb.html);
-    return { via: "browser", printer: printer.name, error: r.error || "Printer ne jawab nahi diya" };
+    return { via: "browser", printer: printer.name, error: r.error || "The printer did not respond" };
   }
   const { html } = await renderPrint(doc, cfg, { format, template: o.template, copies });
   await browserPrint(html);

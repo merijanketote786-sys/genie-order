@@ -7,9 +7,9 @@ import { useStickToBottomContext } from "use-stick-to-bottom";
  * Jumps the conversation to the latest message once history is loaded
  * (e.g. restored from localStorage after a refresh / app open).
  *
- * Sirf conversation container ko scroll karta hai — document ko nahi.
- * (window.scrollTo/scrollIntoView mobile par address-bar resize loop bana kar
- * screen blink aur hang karta tha.)
+ * Scrolls only the conversation container — not the document.
+ * (window.scrollTo/scrollIntoView caused an address-bar resize loop on mobile,
+ * making the screen blink and hang.)
  */
 export function ScrollToEnd({ count }: { count: number }) {
   const { scrollRef, scrollToBottom } = useStickToBottomContext();
@@ -26,7 +26,7 @@ export function ScrollToEnd({ count }: { count: number }) {
     };
 
     const frame = window.requestAnimationFrame(jump);
-    // Content (cards, fonts) thoda baad me bhi grow kar sakta hai.
+    // Content (cards, fonts) may still grow a bit later.
     const timer = window.setTimeout(jump, 300);
     return () => {
       window.cancelAnimationFrame(frame);

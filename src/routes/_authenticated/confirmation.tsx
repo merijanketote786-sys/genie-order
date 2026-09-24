@@ -31,16 +31,16 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/confirmation")({
   head: () => ({
     meta: [
-      { title: "Order Confirmation — Performa aur WhatsApp Share" },
+      { title: "Order Confirmation — Performa and WhatsApp Share" },
       {
         name: "description",
         content:
-          "Invoice aur customer details se order confirmation performa banayein aur foran WhatsApp par customer ko bhejein.",
+          "Create an order confirmation performa from invoice and customer details, and send it to the customer on WhatsApp instantly.",
       },
-      { property: "og:title", content: "Order Confirmation — Performa aur WhatsApp Share" },
+      { property: "og:title", content: "Order Confirmation — Performa and WhatsApp Share" },
       {
         property: "og:description",
-        content: "Customer details, COD/CC status aur apni template se order performa banayein.",
+        content: "Build an order performa from customer details, COD/CC status and your own template.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -140,7 +140,7 @@ function ConfirmationPage() {
         // Nayi invoice par purana performa hata kar naya foran bana dein.
         buildFrom(merged, pay.method ? { method: pay.method, codAmount: pay.codAmount, status: pay.status } : undefined);
       })();
-      toast.success("Invoice confirmation section me aa gayi");
+      toast.success("Invoice added to the confirmation section");
     } else {
       setValues(draft);
     }
@@ -179,7 +179,7 @@ function ConfirmationPage() {
 
   const build = async () => {
     if (!values.name.trim() && !values.phone.trim() && !values.invoice.trim()) {
-      toast.error("Customer detail ya invoice text zaroori hai");
+      toast.error("Customer details or invoice text is required");
       return;
     }
     const sorted = { ...values, invoice: numberInvoiceItems(values.invoice) };
@@ -187,7 +187,7 @@ function ConfirmationPage() {
     const numbered = await withAutoOrderNumber(sorted);
     setValues(numbered);
     buildFrom(numbered);
-    toast.success("Order performa taiyar hai");
+    toast.success("Order performa is ready");
   };
 
   const fillFromText = async (text: string) => {
@@ -216,9 +216,9 @@ function ConfirmationPage() {
       });
       buildFrom(next);
       setPasted("");
-      toast.success("Data template ke mutabiq bhar diya");
+      toast.success("Data filled in as per the template");
     } catch {
-      toast.error("Text samajh nahi aaya — dobara koshish karein");
+      toast.error("Could not understand the text — please try again");
     } finally {
       setParsing(false);
     }
@@ -250,7 +250,7 @@ function ConfirmationPage() {
           icon={FileSignature}
           eyebrow="Customer confirmation"
           title="Order Performa"
-          description="Invoice section se aayi invoice, customer details aur payment status ko apni template mein daal kar customer ko WhatsApp par bhejein."
+          description="Fill invoice from the Invoice section, customer details and payment status into your template, and send it to the customer on WhatsApp."
           meta={["Templates", "COD / CC", "WhatsApp"]}
         />
 
@@ -259,10 +259,10 @@ function ConfirmationPage() {
             icon={Users}
             label="Customer"
             title="Customer search"
-            description="Saved customer choose karein — details khud bhar jayengi."
+            description="Choose a saved customer — details will fill in automatically."
           >
             <CustomerPickerBody
-              useLabel="Confirmation me daalein"
+              useLabel="Add to confirmation"
               onUse={(_text, customer) => {
                 setPerforma("");
                 setValues((prev) => ({
@@ -272,7 +272,7 @@ function ConfirmationPage() {
                   city: customer.city || prev.city,
                   address: customer.address || prev.address,
                 }));
-                toast.success("Customer detail bhar di gayi");
+                toast.success("Customer details filled in");
               }}
             />
           </WorkspaceTool>
@@ -280,14 +280,14 @@ function ConfirmationPage() {
             icon={Calculator}
             label="Courier"
             title="Courier rate"
-            description="Weight aur city se delivery charge calculate karein."
+            description="Calculate delivery charge from weight and city."
           >
             <RateMiniCalculatorBody
-              useLabel="Performa me daalein"
+              useLabel="Add to performa"
               onUse={(amount) => {
                 setPerforma("");
                 set("delivery", String(amount));
-                toast.success(`Delivery Rs ${amount} performa me daal diya`);
+                toast.success(`Delivery Rs ${amount} added to performa`);
               }}
             />
           </WorkspaceTool>
@@ -309,11 +309,11 @@ function ConfirmationPage() {
 
         <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
           <p className="text-[11px] font-bold uppercase text-muted-foreground">
-            Customer details paste karein
+            Paste customer details
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Kisi bhi format me customer ki details likhein ya paste karein — send button dabate hi
-            sirf naam, phone, city, address waghera neeche fields me bhar jayenge.
+            Write or paste customer details in any format — as soon as you press send, only the
+            name, phone, city, address etc. will be filled into the fields below.
           </p>
           <div className="mt-2 rounded-xl border border-border bg-background">
             <ChatComposer
@@ -321,7 +321,7 @@ function ConfirmationPage() {
               onValueChange={setPasted}
               disabled={parsing}
               submitOnEnter={false}
-              placeholder="Yahan customer ki details paste karein…"
+              placeholder="Paste customer details here…"
               textareaClassName="min-h-24 px-3 pt-3 text-sm"
               onSubmit={({ text }) => fillFromText(text)}
             />
@@ -334,7 +334,7 @@ function ConfirmationPage() {
           <p className="text-[11px] font-bold uppercase text-muted-foreground">Customer details</p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <Field label="Order #" value={values.orderNumber} onChange={(v) => set("orderNumber", v)} placeholder="00370" />
-            <Field label="Name" value={values.name} onChange={(v) => set("name", v)} placeholder="Customer ka naam" />
+            <Field label="Name" value={values.name} onChange={(v) => set("name", v)} placeholder="Customer's name" />
             <Field label="Phone" value={values.phone} onChange={(v) => set("phone", v)} placeholder="03xxxxxxxxx" inputMode="tel" />
             <Field label="City" value={values.city} onChange={(v) => set("city", v)} placeholder="Lahore" />
           </div>
@@ -346,7 +346,7 @@ function ConfirmationPage() {
               id="conf-address"
               value={values.address}
               onChange={(e) => set("address", e.target.value)}
-              placeholder="Poora address"
+              placeholder="Full address"
               className="mt-1 min-h-16 rounded-xl bg-background text-sm"
             />
           </div>
@@ -358,11 +358,11 @@ function ConfirmationPage() {
             value={values.invoice}
             onChange={(e) => set("invoice", e.target.value)}
             onBlur={cleanInvoiceField}
-            placeholder="Invoice section se 'Confirmation me bhejein' dabayein, ya yahan items paste karein."
+            placeholder="Press 'Send to Confirmation' in the Invoice section, or paste items here."
             className="mt-2 min-h-32 rounded-xl bg-background font-mono text-[13px] leading-6"
           />
           <p className="mt-1 text-[11px] text-muted-foreground">
-            Kuch bhi paste karein — box sirf invoice items rakhega, baqi text khud hata dega.
+            Paste anything — the box will keep only the invoice items and remove the rest automatically.
           </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
             <Field label="Product Total" value={values.productTotal} onChange={(v) => set("productTotal", v)} placeholder="5000" inputMode="decimal" />
@@ -377,7 +377,7 @@ function ConfirmationPage() {
               id="conf-notes"
               value={values.notes}
               onChange={(e) => set("notes", e.target.value)}
-              placeholder="Koi khaas hidayat…"
+              placeholder="Any special instructions…"
               className="mt-1 min-h-14 rounded-xl bg-background text-sm"
             />
           </div>
@@ -405,7 +405,7 @@ function ConfirmationPage() {
             </div>
           </div>
           <Button type="button" onClick={build} className="mt-3 h-11 w-full gap-1.5 rounded-xl sm:w-auto">
-            <Sparkles className="size-4" /> Performa banayein
+            <Sparkles className="size-4" /> Generate performa
           </Button>
         </section>
 
@@ -419,7 +419,7 @@ function ConfirmationPage() {
                 size="sm"
                 onClick={() => {
                   setPerforma("");
-                  toast.success("Performa delete ho gaya");
+                  toast.success("Performa deleted");
                 }}
                 className="h-8 gap-1.5 rounded-lg text-xs"
               >
@@ -431,7 +431,7 @@ function ConfirmationPage() {
               label="Order performa"
               phone={values.phone}
               forward={{
-                label: "Order me bhejein",
+                label: "Send to order",
                 onClick: (value) => {
                   setHandoff("order", value);
                   navigate({ to: "/" });
@@ -441,7 +441,7 @@ function ConfirmationPage() {
           </div>
         ) : (
           <p className="pb-4 text-center text-xs text-muted-foreground">
-            Performa banane ke baad yahan preview aur WhatsApp share button aa jayega.
+            After generating the performa, the preview and WhatsApp share button will appear here.
           </p>
         )}
       </div>

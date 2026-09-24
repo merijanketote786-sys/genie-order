@@ -14,9 +14,9 @@ export const Route = createFileRoute("/_authenticated/invoices")({
   head: () => ({
     meta: [
       { title: "Invoice Record — OrderBot" },
-      { name: "description", content: "Saari invoices, payment status aur dobara download/WhatsApp." },
+      { name: "description", content: "All invoices, payment status and re-download/WhatsApp." },
       { property: "og:title", content: "Invoice Record — OrderBot" },
-      { property: "og:description", content: "Saari invoices aur unka payment status ek jagah." },
+      { property: "og:description", content: "All invoices and their payment status in one place." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -55,7 +55,7 @@ function InvoicesPage() {
   const remove = useMutation({
     mutationFn: (id: string) => deleteInvoice({ data: { id } }),
     onSuccess: () => {
-      toast.success("Invoice delete ho gayi");
+      toast.success("Invoice deleted");
       qc.invalidateQueries({ queryKey: ["invoices"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -72,19 +72,19 @@ function InvoicesPage() {
     .reduce((s: number, r: InvoiceRow) => s + (r.total ?? 0), 0);
 
   return (
-    <AppShell title="Invoices" subtitle="Invoice record aur payment status" active="/invoices">
+    <AppShell title="Invoices" subtitle="Invoice record and payment status" active="/invoices">
       <WorkspaceHeader
         icon={FileCheck2}
         eyebrow="Records"
         title="Invoice Record"
-        description="Har invoice apne number ke sath mehfooz — status badlein, dobara download ya WhatsApp karein."
+        description="Every invoice is saved with its own number — change status, re-download or send via WhatsApp."
         meta={["Numbering", "Paid / Unpaid", "Re-download"]}
       />
 
       <div className="grid grid-cols-3 gap-2 py-3">
-        <SummaryTile label="Is mahine" value={money(totalValue)} />
+        <SummaryTile label="This month" value={money(totalValue)} />
         <SummaryTile label="Paid" value={money(paidValue)} />
-        <SummaryTile label="Baqaya" value={money(totalValue - paidValue)} />
+        <SummaryTile label="Outstanding" value={money(totalValue - paidValue)} />
       </div>
 
       <form
@@ -97,7 +97,7 @@ function InvoicesPage() {
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Invoice number, naam ya phone"
+          placeholder="Invoice number, name or phone"
           className="h-12 rounded-2xl"
         />
         <Button type="submit" className="h-12 gap-1.5 rounded-2xl px-4">
@@ -107,12 +107,12 @@ function InvoicesPage() {
 
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-6">
         {invoices.isLoading ? (
-          <p className="py-10 text-center text-sm text-muted-foreground">Load ho raha hai…</p>
+          <p className="py-10 text-center text-sm text-muted-foreground">Loading…</p>
         ) : rows.length === 0 ? (
           <div className="rounded-3xl border border-border bg-card p-8 text-center">
-            <h3 className="font-display text-base font-bold text-foreground">Koi invoice nahi</h3>
+            <h3 className="font-display text-base font-bold text-foreground">No invoices</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Invoice section me invoice banayein aur "Save" dabayein — wo yahan aa jayegi.
+              Create an invoice in the Invoice section and press "Save" — it will appear here.
             </p>
           </div>
         ) : (

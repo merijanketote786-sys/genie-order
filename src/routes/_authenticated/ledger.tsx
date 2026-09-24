@@ -15,10 +15,10 @@ import { usePosAccess } from "@/components/pos-access";
 export const Route = createFileRoute("/_authenticated/ledger")({
   head: () => ({
     meta: [
-      { title: "Customer Ledger (Udhaar) — HB Chemicals Pakistan Workspace" },
-      { name: "description", content: "Customer udhaar, running balance ledger, payment receive aur statement print." },
+      { title: "Customer Ledger (Credit) — HB Chemicals Pakistan Workspace" },
+      { name: "description", content: "Customer credit, running balance ledger, receive payments and print statements." },
       { property: "og:title", content: "Customer Ledger — HB Chemicals Pakistan Workspace" },
-      { property: "og:description", content: "Customer udhaar aur statements." },
+      { property: "og:description", content: "Customer credit and statements." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -56,18 +56,18 @@ function LedgerPage() {
     try {
       await partyPayment({ data: { kind: "receipt", partyId: sel, amount: a, method: pay.method, note: pay.note || undefined, clientRef: opRef.current } });
       opRef.current = newRef();
-      toast.success(`Payment ${rs(a)} mil gayi`);
+      toast.success(`Payment ${rs(a)} received`);
       if (cur) pc.afterSave({ kind: "receipt", title: "Payment Receipt", number: `RCPT-${Date.now().toString().slice(-6)}`, date: new Date(), party: { label: "Received from", name: cur.name, phone: cur.phone }, payments: [{ method: pay.method, amount: a }], totals: [{ label: "Amount received", value: a, bold: true }, { label: "Balance after payment", value: Math.max(0, cur.balance - a) }], notes: pay.note || undefined }, "receipt");
       setPay({ amount: "", method: "Cash", note: "" });
       refresh();
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Payment save nahi hui. Dobara try karein."); } finally { lockRef.current = false; }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Payment could not be saved. Please try again."); } finally { lockRef.current = false; }
   };
   const saveAcct = async () => {
     if (!sel || !acct) return;
     try {
       await saveCustomerAccount({ data: { id: sel, openingBalance: Number(acct.opening) || 0, creditLimit: acct.limit.trim() ? Number(acct.limit) || 0 : null } });
-      toast.success("Save ho gaya"); setAcct(null); refresh();
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Nahi hua"); }
+      toast.success("Saved"); setAcct(null); refresh();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
   };
   const printStatement = () => {
     if (!led || !cur) return;
@@ -82,24 +82,24 @@ function LedgerPage() {
   const whatsapp = () => {
     if (!cur) return;
     const ph = cur.phone.replace(/\D/g, "").replace(/^0/, "92");
-    const tpl = cfg.customers.reminderText || "Assalam o Alaikum {name}, aap ka baqaya {balance} hai. Shukriya.";
+    const tpl = cfg.customers.reminderText || "Assalam o Alaikum {name}, your outstanding balance is {balance}. Thank you.";
     const msg = tpl.replace(/\{name\}/g, cur.name).replace(/\{balance\}/g, `Rs ${cur.balance.toLocaleString("en-PK")}`);
     window.open(`https://wa.me/${ph}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
   return (
-    <AppShell title="Customer Ledger" subtitle="Udhaar aur payments" active="/pos">
+    <AppShell title="Customer Ledger" subtitle="Credit and payments" active="/pos">
       {pc.node}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />
         <div className="grid gap-3 lg:grid-cols-[1fr_1.4fr]">
           <section className="space-y-2 rounded-xl border border-border bg-card p-3">
-            <p className="text-sm font-bold text-foreground">Kul lena (receivable): <span className="text-destructive">{rs(receivable)}</span></p>
+            <p className="text-sm font-bold text-foreground">Total receivable: <span className="text-destructive">{rs(receivable)}</span></p>
             <label className="flex h-10 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
               <Search className="size-4 text-primary" />
-              <input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Naam, phone ya city" />
+              <input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name, phone or city" />
             </label>
-            <label className="flex items-center gap-2 text-xs text-muted-foreground"><input type="checkbox" checked={onlyDue} onChange={(e) => setOnlyDue(e.target.checked)} /> Sirf baqaya wale customers</label>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground"><input type="checkbox" checked={onlyDue} onChange={(e) => setOnlyDue(e.target.checked)} /> Only customers with outstanding balance</label>
             <ul className="max-h-[30rem] space-y-1 overflow-y-auto">
               {list.slice(0, 300).map((c) => (
                 <li key={c.id}>
@@ -109,18 +109,18 @@ function LedgerPage() {
                   </button>
                 </li>
               ))}
-              {data && !list.length ? <p className="py-4 text-center text-xs text-muted-foreground">Koi customer nahi mila.</p> : null}
+              {data && !list.length ? <p className="py-4 text-center text-xs text-muted-foreground">No customer found.</p> : null}
             </ul>
           </section>
 
           <section className="space-y-3 rounded-xl border border-border bg-card p-3">
-            {!cur ? <p className="py-10 text-center text-sm text-muted-foreground">Customer chunein — ledger, payment aur statement yahan.</p> : (
+            {!cur ? <p className="py-10 text-center text-sm text-muted-foreground">Select a customer — ledger, payment and statement will appear here.</p> : (
               <>
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <p className="font-bold text-foreground">{cur.name}</p>
                     <p className="text-xs text-muted-foreground">{cur.phone} {cur.city} · Sales {rs(cur.sales)} · Paid {rs(cur.paid)}{cur.creditLimit != null ? ` · Limit ${rs(cur.creditLimit)}` : ""}</p>
-                    <p className={`text-lg font-bold ${cur.balance > 0 ? "text-destructive" : "text-foreground"}`}>Baqaya {rs(cur.balance)}</p>
+                    <p className={`text-lg font-bold ${cur.balance > 0 ? "text-destructive" : "text-foreground"}`}>Outstanding {rs(cur.balance)}</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button size="sm" variant="outline" onClick={() => setAcct({ opening: String(cur.opening), limit: cur.creditLimit == null ? "" : String(cur.creditLimit) })}>Opening / Limit</Button>
@@ -131,12 +131,12 @@ function LedgerPage() {
                 {acct ? (
                   <div className="grid gap-2 rounded-lg border border-primary p-2 sm:grid-cols-[1fr_1fr_auto]">
                     <input className={posInput} value={acct.opening} inputMode="decimal" onChange={(e) => setAcct({ ...acct, opening: e.target.value })} placeholder="Opening balance" aria-label="Opening balance" />
-                    <input className={posInput} value={acct.limit} inputMode="decimal" onChange={(e) => setAcct({ ...acct, limit: e.target.value })} placeholder="Credit limit (khali = koi nahi)" aria-label="Credit limit" />
+                    <input className={posInput} value={acct.limit} inputMode="decimal" onChange={(e) => setAcct({ ...acct, limit: e.target.value })} placeholder="Credit limit (blank = none)" aria-label="Credit limit" />
                     <Button onClick={saveAcct}>Save</Button>
                   </div>
                 ) : null}
                 <div className="grid gap-2 rounded-lg border border-border p-2 sm:grid-cols-[1fr_auto_1fr_auto]">
-                  <input className={posInput} value={pay.amount} inputMode="decimal" onChange={(e) => setPay({ ...pay, amount: e.target.value })} placeholder="Amount mili" aria-label="Receive amount" />
+                  <input className={posInput} value={pay.amount} inputMode="decimal" onChange={(e) => setPay({ ...pay, amount: e.target.value })} placeholder="Amount received" aria-label="Receive amount" />
                   <select className={posInput} value={pay.method} onChange={(e) => setPay({ ...pay, method: e.target.value })} aria-label="Method">{cfg.payMethods.filter((m) => m !== "Credit").map((m) => <option key={m}>{m}</option>)}</select>
                   <input className={posInput} value={pay.note} onChange={(e) => setPay({ ...pay, note: e.target.value })} placeholder="Note" />
                   <Button onClick={receive}><Wallet /> Receive Payment</Button>

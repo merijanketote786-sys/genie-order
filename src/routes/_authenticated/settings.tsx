@@ -36,12 +36,12 @@ export const Route = createFileRoute("/_authenticated/settings")({
       { title: "Settings — HB Chemicals OrderBot" },
       {
         name: "description",
-        content: "Apna profile, order/invoice defaults, courier aur data controls set karein.",
+        content: "Set your profile, order/invoice defaults, courier and data controls.",
       },
       { property: "og:title", content: "Settings — HB Chemicals OrderBot" },
       {
         property: "og:description",
-        content: "Har user apni settings khud manage kar sakta hai — theme, defaults aur data export.",
+        content: "Every user can manage their own settings — theme, defaults and data export.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -65,13 +65,13 @@ function SettingsPage() {
   ];
 
   return (
-    <AppShell title="Settings" subtitle="Apne account ke controls" active="/settings">
+    <AppShell title="Settings" subtitle="Controls for your account" active="/settings">
       <div className="shrink-0 pt-3 sm:pt-4">
         <WorkspaceHeader
           icon={Settings2}
           eyebrow="My settings"
-          title="Apni settings"
-          description="Yahan sirf aapke account ki settings hain — har user ki alag hoti hain."
+          title="My settings"
+          description="These are only your account's settings — each user has their own."
         />
       </div>
 
@@ -95,7 +95,7 @@ function SettingsPage() {
 
         {mine.isLoading ? (
           <div className="glass-panel flex items-center gap-2 rounded-2xl px-4 py-6 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" /> Load ho raha hai…
+            <Loader2 className="size-4 animate-spin" /> Loading…
           </div>
         ) : (
           <>
@@ -179,9 +179,9 @@ function ProfileTab({ data, qc }: { data: MineData; qc: QC }) {
     },
     onSuccess: () => {
       setPassword("");
-      toast.success("Password badal gaya");
+      toast.success("Password changed");
     },
-    onError: (e: Error) => toast.error(e.message || "Password change nahi hua"),
+    onError: (e: Error) => toast.error(e.message || "Password change failed"),
   });
 
   return (
@@ -190,12 +190,12 @@ function ProfileTab({ data, qc }: { data: MineData; qc: QC }) {
         <Field label="Email">
           <Input value={data?.email ?? ""} readOnly className="bg-muted/40" />
         </Field>
-        <Field label="Poora naam">
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Aapka naam" />
+        <Field label="Full name">
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
         </Field>
         <Button onClick={() => saveName.mutate()} disabled={saveName.isPending} className="gap-2">
           {saveName.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-          Naam save karein
+          Save name
         </Button>
       </Panel>
 
@@ -229,7 +229,7 @@ function ProfileTab({ data, qc }: { data: MineData; qc: QC }) {
       </Panel>
 
       <Panel title="Password">
-        <Field label="Naya password (kam az kam 8 characters)">
+        <Field label="New password (at least 8 characters)">
           <Input
             type="password"
             value={password}
@@ -247,7 +247,7 @@ function ProfileTab({ data, qc }: { data: MineData; qc: QC }) {
           ) : (
             <KeyRound className="size-4" />
           )}
-          Password update karein
+          Update password
         </Button>
       </Panel>
     </div>
@@ -285,7 +285,7 @@ function DefaultsTab({ data, qc }: { data: MineData; qc: QC }) {
 
   return (
     <div className="space-y-4">
-      <Panel title="Order aur invoice defaults">
+      <Panel title="Order and invoice defaults">
         <div className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2.5">
           <span className="text-sm font-semibold">Payment status by default on</span>
           <Button
@@ -329,7 +329,7 @@ function DefaultsTab({ data, qc }: { data: MineData; qc: QC }) {
         </Field>
 
         <div className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2.5">
-          <span className="text-sm font-semibold">Auto order number lagayein</span>
+          <span className="text-sm font-semibold">Assign auto order number</span>
           <Button
             variant={form.autoOrderNumber ? "default" : "outline"}
             size="sm"
@@ -341,7 +341,7 @@ function DefaultsTab({ data, qc }: { data: MineData; qc: QC }) {
 
         <Button onClick={() => save.mutate()} disabled={save.isPending} className="gap-2">
           {save.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-          Save karein
+          Save
         </Button>
       </Panel>
     </div>
@@ -369,7 +369,7 @@ function CourierTab({ data, qc }: { data: MineData; qc: QC }) {
   });
 
   return (
-    <Panel title="Courier aur rates">
+    <Panel title="Courier and rates">
       <Field label="Default courier">
         <div className="space-y-2">
           <Button
@@ -377,7 +377,7 @@ function CourierTab({ data, qc }: { data: MineData; qc: QC }) {
             className="h-10 w-full justify-start"
             onClick={() => setSelected(null)}
           >
-            Built-in / koi default nahi
+            Built-in / no default
           </Button>
           {(couriers.data?.couriers ?? []).map((c) => (
             <Button
@@ -398,7 +398,7 @@ function CourierTab({ data, qc }: { data: MineData; qc: QC }) {
 
       <Button onClick={() => save.mutate()} disabled={save.isPending} className="gap-2">
         {save.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-        Save karein
+        Save
       </Button>
     </Panel>
   );
@@ -422,7 +422,7 @@ function DataTab() {
       a.download = res.fileName;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success(`${res.rows} rows download ho gaye`);
+      toast.success(`${res.rows} rows downloaded`);
     } finally {
       setBusy(null);
     }
@@ -433,15 +433,15 @@ function DataTab() {
       Object.keys(localStorage)
         .filter((k) => k.includes("chat") || k.startsWith("workspace-handoff"))
         .forEach((k) => localStorage.removeItem(k));
-      toast.success("Chat history clear ho gayi");
+      toast.success("Chat history cleared");
     } catch {
-      toast.error("Clear nahi hua");
+      toast.error("Clear failed");
     }
   };
 
   return (
     <div className="space-y-4">
-      <Panel title="Mera data export">
+      <Panel title="Export my data">
         <div className="grid gap-2 sm:grid-cols-3">
           {(["orders", "invoices", "customers"] as const).map((k) => (
             <Button
@@ -456,15 +456,15 @@ function DataTab() {
             </Button>
           ))}
         </div>
-        <p className="text-xs text-muted-foreground">Sirf wo records jo aap ne banaye hain.</p>
+        <p className="text-xs text-muted-foreground">Only records that you created.</p>
       </Panel>
 
-      <Panel title="Is device ki chat history">
+      <Panel title="Chat history on this device">
         <Button variant="outline" className="h-11 gap-2" onClick={clearChats}>
-          <Trash2 className="size-4" /> Chat history clear karein
+          <Trash2 className="size-4" /> Clear chat history
         </Button>
         <p className="text-xs text-muted-foreground">
-          Saved orders, invoices aur customers mehfooz rahenge — sirf chat box ki purani baatein hatengi.
+          Saved orders, invoices and customers will remain intact — only old chat box messages will be removed.
         </p>
       </Panel>
     </div>

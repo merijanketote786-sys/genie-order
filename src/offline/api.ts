@@ -213,7 +213,7 @@ export function installOfflineApi() {
       return jsonResponse(confirmParse(String(body["text"] ?? "")));
     }
     if (path === "/api/extract") {
-      return new Response("Offline app me file se text nikalna available nahi hai.", { status: 503 });
+      return new Response("Extracting text from files is not available in the offline app.", { status: 503 });
     }
     return new Response("Offline", { status: 503 });
   };

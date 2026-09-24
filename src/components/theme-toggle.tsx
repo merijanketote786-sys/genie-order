@@ -43,7 +43,7 @@ export function ThemeToggle() {
       variant="outline"
       size="sm"
       onClick={toggle}
-      aria-label={theme === "dark" ? "Light theme on karein" : "Dark theme on karein"}
+      aria-label={theme === "dark" ? "Turn on light theme" : "Turn on dark theme"}
       title={theme === "dark" ? "Light theme" : "Dark theme"}
       className="size-10 shrink-0 border-border bg-card p-0"
     >

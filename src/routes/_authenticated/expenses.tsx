@@ -15,9 +15,9 @@ export const Route = createFileRoute("/_authenticated/expenses")({
   head: () => ({
     meta: [
       { title: "Expenses — HB Chemicals Pakistan Workspace" },
-      { name: "description", content: "Rent, bijli, salary, courier waghera ke kharche record aur category-wise total." },
+      { name: "description", content: "Record expenses like rent, electricity, salary, courier etc. and see category-wise totals." },
       { property: "og:title", content: "Expenses — HB Chemicals Pakistan Workspace" },
-      { property: "og:description", content: "Business kharchon ka record." },
+      { property: "og:description", content: "Record of business expenses." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -45,20 +45,20 @@ function ExpensesPage() {
   const opRef = useRef(newRef());
   const add = async () => {
     const a = Number(f.amount);
-    if (!(a > 0)) return toast.error("Amount likhein");
+    if (!(a > 0)) return toast.error("Enter an amount");
     if (lockRef.current) return;
     lockRef.current = true;
     try {
       await saveExpense({ data: { category: f.category, amount: a, date: f.date, method: f.method, description: f.description || undefined, clientRef: opRef.current } });
       opRef.current = newRef();
-      toast.success(`Expense ${rs(a)} save`);
+      toast.success(`Expense ${rs(a)} saved`);
       setF({ ...f, amount: "", description: "" });
       qc.invalidateQueries({ queryKey: ["expenses"] });
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Expense save nahi hua. Dobara try karein."); } finally { lockRef.current = false; }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not save expense. Please try again."); } finally { lockRef.current = false; }
   };
 
   return (
-    <AppShell title="Expenses" subtitle="Business kharche" active="/pos">
+    <AppShell title="Expenses" subtitle="Business expenses" active="/pos">
       {pc.node}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />
@@ -74,9 +74,9 @@ function ExpensesPage() {
         <section className="space-y-3 rounded-xl border border-border bg-card p-3">
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <input className={`${posInput} w-40`} type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From" />
-            <span>se</span>
+            <span>to</span>
             <input className={`${posInput} w-40`} type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="To" />
-            <b className="ml-auto text-foreground">Kul: {rs(active.reduce((s, r) => s + r.amount, 0))}</b>
+            <b className="ml-auto text-foreground">Total: {rs(active.reduce((s, r) => s + r.amount, 0))}</b>
           </div>
           <div className="flex flex-wrap gap-2">
             {Object.entries(byCat).map(([k, v]) => <span key={k} className="rounded-full border border-border px-3 py-1 text-xs">{k}: <b>{rs(v)}</b></span>)}
@@ -88,12 +88,12 @@ function ExpensesPage() {
                 {rows.map((r) => (
                   <tr key={r.id} className={`border-t border-border ${r.status === "cancelled" ? "opacity-50 line-through" : ""}`}>
                     <td className="py-1.5">{r.date}</td><td>{r.category}</td><td className="text-xs">{r.description}</td><td>{r.method}</td><td className="text-right font-semibold">{rs(r.amount)}</td>
-                    <td className="whitespace-nowrap text-right"><Button size="sm" variant="ghost" onClick={() => pc.preview({ kind: "expense", id: r.id, title: "Expense Voucher", number: `EXP-${r.id.slice(0, 6).toUpperCase()}`, date: r.date, meta: [["Category", r.category], ["Method", r.method], ["Status", r.status]], notes: r.description || undefined, totals: [{ label: "Amount", value: r.amount, bold: true }] })}>Print</Button>{r.status !== "cancelled" ? <Button size="sm" variant="ghost" onClick={async () => { if (!confirm("Ye expense cancel karein?")) return; await cancelExpense({ data: { id: r.id } }); qc.invalidateQueries({ queryKey: ["expenses"] }); }}>Cancel</Button> : null}</td>
+                    <td className="whitespace-nowrap text-right"><Button size="sm" variant="ghost" onClick={() => pc.preview({ kind: "expense", id: r.id, title: "Expense Voucher", number: `EXP-${r.id.slice(0, 6).toUpperCase()}`, date: r.date, meta: [["Category", r.category], ["Method", r.method], ["Status", r.status]], notes: r.description || undefined, totals: [{ label: "Amount", value: r.amount, bold: true }] })}>Print</Button>{r.status !== "cancelled" ? <Button size="sm" variant="ghost" onClick={async () => { if (!confirm("Cancel this expense?")) return; await cancelExpense({ data: { id: r.id } }); qc.invalidateQueries({ queryKey: ["expenses"] }); }}>Cancel</Button> : null}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {data && !rows.length ? <p className="py-4 text-center text-xs text-muted-foreground">Is muddat me koi expense nahi.</p> : null}
+            {data && !rows.length ? <p className="py-4 text-center text-xs text-muted-foreground">No expenses in this period.</p> : null}
           </div>
         </section>
       </div>

@@ -42,7 +42,7 @@ function applyPrices(item: PriceInput) {
 export async function saveProductPrices(arg: Arg<PriceInput>) {
   const ok = applyPrices(arg!.data);
   commit();
-  return ok ? { ok: true, message: "Saved" } : { ok: false, message: "Product nahi mila" };
+  return ok ? { ok: true, message: "Saved" } : { ok: false, message: "Product not found" };
 }
 
 export async function saveProductPricesBulk(arg: Arg<{ items: PriceInput[] }>) {
@@ -54,7 +54,7 @@ export async function saveProductPricesBulk(arg: Arg<{ items: PriceInput[] }>) {
     ok: failed === 0,
     saved,
     failed,
-    message: failed === 0 ? `${saved} products save ho gaye` : `${saved} save, ${failed} fail`,
+    message: failed === 0 ? `${saved} products saved` : `${saved} saved, ${failed} failed`,
   };
 }
 
@@ -122,7 +122,7 @@ function rowsFromMatrix(matrix: unknown[][]): { rows: Row[]; skipped: number; er
   }
 
   if (headerIndex === -1) {
-    return { rows: [], skipped: 0, error: "Sheet me 'Item Name' aur 'Sale Price' columns nahi mile." };
+    return { rows: [], skipped: 0, error: "Could not find 'Item Name' and 'Sale Price' columns in the sheet." };
   }
 
   const unitRaw = findColumn(headers, UNIT_KEYS);
@@ -148,8 +148,8 @@ function rowsFromMatrix(matrix: unknown[][]): { rows: Row[]; skipped: number; er
     });
   }
 
-  if (rows.length === 0) return { rows, skipped, error: "Sheet me rate wali koi product row nahi mili." };
-  if (rows.length > 5000) return { rows: [], skipped, error: "5000 se zyada rows hain. File chhoti karein." };
+  if (rows.length === 0) return { rows, skipped, error: "No product row with a rate found in the sheet." };
+  if (rows.length > 5000) return { rows: [], skipped, error: "There are more than 5000 rows. Please use a smaller file." };
   return { rows, skipped };
 }
 
@@ -198,7 +198,7 @@ function applyRows(rows: Row[], sheetName: string, skippedCount = 0) {
   commit();
   return {
     ok: true as const,
-    message: `${inserted} naye, ${updated} update (${sheetName})`,
+    message: `${inserted} new, ${updated} updated (${sheetName})`,
     total_rows: rows.length + skippedCount,
     inserted_count: inserted,
     updated_count: updated,
@@ -222,7 +222,7 @@ export async function syncProductsFromText(arg: Arg<{ text: string }>) {
     const stock = Number((cols[3] ?? "0").replace(/[^\d.]/g, "")) || 0;
     rows.push({ name, unit, sale_price: price, stock });
   }
-  if (rows.length === 0) return { ok: false as const, message: "Koi rate row nahi mili. Name aur price ka table paste karein." };
+  if (rows.length === 0) return { ok: false as const, message: "No rate row found. Please paste a table with name and price." };
   return applyRows(rows, "Paste");
 }
 
@@ -232,36 +232,36 @@ export async function applyProductRows(arg: Arg<{ rows: Row[] }>) {
 
 export async function syncProductsFromSheet(arg: Arg<{ fileName: string; fileBase64: string }>) {
   const input = arg?.data;
-  if (!input) return { ok: false as const, message: "File nahi mili." };
+  if (!input) return { ok: false as const, message: "File not found." };
   const extension = (input.fileName.split(".").pop() ?? "").toLowerCase();
   if (!["xlsx", "xls", "csv"].includes(extension)) {
-    return { ok: false as const, message: "Sirf Excel (.xlsx/.xls) ya CSV file upload karein." };
+    return { ok: false as const, message: "Please upload only Excel (.xlsx/.xls) or CSV files." };
   }
 
   try {
     const binary = atob(input.fileBase64);
     const bytes = new Uint8Array(binary.length);
     for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
-    if (bytes.length > 10 * 1024 * 1024) return { ok: false as const, message: "File 10MB se bari hai." };
+    if (bytes.length > 10 * 1024 * 1024) return { ok: false as const, message: "File is larger than 10MB." };
 
     const { read, utils } = await import("xlsx");
     const workbook = read(bytes, { type: "array" });
     const sheetName = workbook.SheetNames[0] ?? "Excel";
     const sheet = workbook.Sheets[sheetName];
-    if (!sheet) return { ok: false as const, message: "File me koi sheet nahi mili." };
+    if (!sheet) return { ok: false as const, message: "No sheet found in the file." };
     const matrix = utils.sheet_to_json<unknown[]>(sheet, { header: 1, blankrows: false, defval: "" });
     const parsed = rowsFromMatrix(matrix);
     if (parsed.error) return { ok: false as const, message: parsed.error };
     return applyRows(parsed.rows, sheetName, parsed.skipped);
   } catch {
-    return { ok: false as const, message: "File parh nahi saki. Vyapar se Excel dobara export karein." };
+    return { ok: false as const, message: "Could not read the file. Please re-export Excel from Vyapar." };
   }
 }
 
 export async function previewProductsFromDocument() {
   return {
     ok: false as const,
-    message: "PDF/tasveer padhne ke liye internet chahiye. Offline me rates paste karein.",
+    message: "Reading PDF/image requires internet. Please paste rates while offline.",
   };
 }
 

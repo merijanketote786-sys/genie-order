@@ -1,7 +1,7 @@
 /**
- * LabelCanvas — actual label ka WYSIWYG preview.
- * Element pe click kar ke select karein, drag kar ke move karein,
- * corner handle se width aur font size resize karein — sab kuch preview ke upar hi.
+ * LabelCanvas — WYSIWYG preview of the actual label.
+ * Click an element to select it, drag to move it,
+ * use the corner handle to resize width and font size — all directly on the preview.
  */
 import { Barcode } from "@/components/barcode";
 import { renderTemplate, type LabelConfig, type LabelValues, type PrinterProfile } from "@/lib/label-settings";
@@ -37,7 +37,7 @@ export function LabelCanvas({
   onSelect: (s: CanvasSelection) => void;
   onPatchField: (id: string, patch: Record<string, number>) => void;
   onPatchBarcode: (patch: Record<string, number>) => void;
-  /** Preview ke upar double-click kar ke text edit — template text wapas bhejta hai. */
+  /** Double-click on the preview to edit text — returns the template text. */
   onEditText?: (id: string, template: string) => void;
 }) {
   const drag = useRef<DragState | null>(null);
@@ -105,7 +105,7 @@ export function LabelCanvas({
       {config.fields
         .filter((f) => f.enabled)
         .map((f) => {
-          // Print jaisa hi text — koi fallback nahi, warna canvas aur asli label alag lagte hain.
+          // Same text as print — no fallback, otherwise the canvas and actual label look different.
           const text = renderTemplate(f.template, values);
           const active = selection?.kind === "field" && selection.id === f.id;
           return (
@@ -127,7 +127,7 @@ export function LabelCanvas({
                 setEditDraft(f.template);
                 setEditingId(f.id);
               }}
-              title="Double-click karke seedha yahin text edit karein"
+              title="Double-click to edit text right here"
               className={`absolute cursor-move ${active ? "outline outline-1 outline-primary" : ""}`}
               style={{
                 left: f.xMm * scale,
@@ -157,7 +157,7 @@ export function LabelCanvas({
                     if (e.key === "Enter") commitEdit();
                     if (e.key === "Escape") setEditingId(null);
                   }}
-                  aria-label="Label text edit karein"
+                  aria-label="Edit label text"
                   className="w-full bg-white/90 text-inherit outline outline-1 outline-primary"
                   style={{
                     font: "inherit",
@@ -171,7 +171,7 @@ export function LabelCanvas({
               ) : text ? (
                 text
               ) : (
-                <span className="text-muted-foreground/70 italic">{f.label} (khali)</span>
+                <span className="text-muted-foreground/70 italic">{f.label} (empty)</span>
               )}
               {active && editingId !== f.id ? (
                 <span
@@ -186,8 +186,8 @@ export function LabelCanvas({
                     })
                   }
                   className="absolute -bottom-1.5 -right-1.5 size-4 cursor-nwse-resize rounded-full border-2 border-background bg-primary shadow-sm"
-                  title="Drag karke font aur width chhota bara karein"
-                  aria-label="Font aur width resize karein"
+                  title="Drag to resize font and width"
+                  aria-label="Resize font and width"
                 />
               ) : null}
             </div>

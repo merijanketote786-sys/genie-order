@@ -49,7 +49,7 @@ export const Route = createFileRoute("/_authenticated/calculator")({
       {
         property: "og:description",
         content:
-          "Parcel weight, zone, service type, packaging aur COD fee ke saath poora charges breakdown.",
+          "Full charges breakdown with parcel weight, zone, service type, packaging and COD fee.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -71,7 +71,7 @@ function CalculatorPage() {
   return (
     <AppShell
       title="Courier Rate Calculator"
-      subtitle="Parcel charges ka poora breakdown"
+      subtitle="Full breakdown of parcel charges"
       active="/calculator"
     >
       <div className="min-h-0 flex-1 overflow-y-auto pb-6">
@@ -79,11 +79,11 @@ function CalculatorPage() {
           icon={CalculatorIcon}
           eyebrow="Logistics"
           title="Courier Rate Calculator"
-          description="Weight, pickup aur delivery city se zone detect kar ke freight, fuel, tax, packaging aur COD fee ka itemized total."
-          meta={builtin ? ["PostEx rates", "Standard", "Overland"] : ["Apni rate sheet", "Multi courier"]}
+          description="Detects the zone from weight, pickup and delivery city to give an itemized total of freight, fuel, tax, packaging and COD fee."
+          meta={builtin ? ["PostEx rates", "Standard", "Overland"] : ["Your own rate sheet", "Multi courier"]}
         />
         {isLoading ? (
-          <p className="mt-6 text-sm text-muted-foreground">Load ho raha hai…</p>
+          <p className="mt-6 text-sm text-muted-foreground">Loading…</p>
         ) : builtin ? (
           <BuiltinCalculator />
         ) : (

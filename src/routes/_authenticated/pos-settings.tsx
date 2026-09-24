@@ -17,9 +17,9 @@ export const Route = createFileRoute("/_authenticated/pos-settings")({
   head: () => ({
     meta: [
       { title: "Business Settings & Printing — HB Chemicals Pakistan Workspace" },
-      { name: "description", content: "Business, POS, sales, inventory, tax, printing, printers, permissions, backup, Vyapar sync aur audit settings ek jagah — search ke saath." },
+      { name: "description", content: "Business, POS, sales, inventory, tax, printing, printers, permissions, backup, Vyapar sync and audit settings in one place — with search." },
       { property: "og:title", content: "Business Settings & Printing — HB Chemicals Pakistan Workspace" },
-      { property: "og:description", content: "Advanced POS settings aur printing system." },
+      { property: "og:description", content: "Advanced POS settings and printing system." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -79,10 +79,10 @@ function SettingsHub() {
     setSaving(true);
     try {
       await savePosSettings({ data: { config: stripPrinters(draft) as Record<string, unknown>, pin: null } });
-      toast.success("Settings save ho gayi — har device par lagu");
+      toast.success("Settings saved — applied on all devices");
       setSaved(draft); setConfirm(null);
       qc.invalidateQueries({ queryKey: ["pos-access"] });
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Save nahi hua"); } finally { setSaving(false); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Save failed"); } finally { setSaving(false); }
   };
   const trySave = () => {
     const warns = FIELDS.filter((f) => f.danger && JSON.stringify(getPath(draft, f.path) ?? null) !== JSON.stringify(getPath(saved, f.path) ?? null)).map((f) => f.danger!);
@@ -93,7 +93,7 @@ function SettingsHub() {
     const raw = getPath(draft, f.path);
     const val = raw ?? getPath(resolved, f.path) ?? f.def;
     const dis = !admin;
-    const lbl = <span className="flex items-center gap-1">{f.label}{f.danger ? <AlertTriangle className="size-3 text-destructive" aria-label="Ahem setting" /> : null}</span>;
+    const lbl = <span className="flex items-center gap-1">{f.label}{f.danger ? <AlertTriangle className="size-3 text-destructive" aria-label="Important setting" /> : null}</span>;
     let control: ReactNode;
     if (f.type === "bool") {
       return (
@@ -128,7 +128,7 @@ function SettingsHub() {
           {id === "printing" || id === "invoices" ? (
             <div className="flex flex-wrap items-center gap-2">
               <Button size="sm" variant="outline" onClick={() => pc.preview({ ...sampleDoc(), kind: "sale" })}><Eye /> Sample preview</Button>
-              <span className="text-[11px] text-muted-foreground">Preview saved settings dikhata hai — pehle Save karein</span>
+              <span className="text-[11px] text-muted-foreground">Preview shows saved settings — save first</span>
             </div>
           ) : null}
         </div>
@@ -149,7 +149,7 @@ function SettingsHub() {
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <input className="h-11 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm outline-none focus:border-primary" value={q} onChange={(e) => setQ(e.target.value)} placeholder='Settings search — "printer", "invoice", "discount", "barcode"…' aria-label="Settings search" />
         </div>
-        {!admin ? <p className="rounded-lg border border-border bg-muted/40 p-2 text-xs text-muted-foreground">Aap settings dekh sakte hain; badalne ki ijazat sirf Admin ko hai{can("manage_printers") ? " (Printers aap manage kar sakte hain)" : ""}.</p> : null}
+        {!admin ? <p className="rounded-lg border border-border bg-muted/40 p-2 text-xs text-muted-foreground">You can view settings; only Admin can make changes{can("manage_printers") ? " (you can manage Printers)" : ""}.</p> : null}
         <div className="flex flex-col gap-3 lg:flex-row">
           <nav className="flex gap-1 overflow-x-auto lg:w-52 lg:shrink-0 lg:flex-col" aria-label="Settings sections">
             {SECTIONS.map((s) => (
@@ -157,7 +157,7 @@ function SettingsHub() {
             ))}
           </nav>
           <div className="min-w-0 flex-1 space-y-3">
-            {sectionHits && !sectionHits.length ? <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">"{q}" se koi setting nahi mili</p> : null}
+            {sectionHits && !sectionHits.length ? <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">No setting found for "{q}"</p> : null}
             {visible.map((id) => renderSection(id, !!sectionHits))}
           </div>
         </div>
@@ -165,8 +165,8 @@ function SettingsHub() {
       {admin && dirty ? (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 p-3 backdrop-blur">
           <div className="mx-auto flex max-w-5xl items-center justify-end gap-2">
-            <span className="mr-auto text-sm text-muted-foreground">Save nahi hui tabdeeliyan</span>
-            <Button variant="ghost" onClick={() => setDraft(saved)}>Wapas</Button>
+            <span className="mr-auto text-sm text-muted-foreground">Unsaved changes</span>
+            <Button variant="ghost" onClick={() => setDraft(saved)}>Revert</Button>
             <Button disabled={saving} onClick={trySave}><Save /> Save changes</Button>
           </div>
         </div>
@@ -174,10 +174,10 @@ function SettingsHub() {
       {confirm ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/50 p-4" role="alertdialog" aria-modal="true" aria-label="Confirm">
           <div className="w-full max-w-md space-y-3 rounded-xl border border-border bg-card p-4 shadow-xl">
-            <p className="flex items-center gap-2 font-bold text-foreground"><AlertTriangle className="size-5 text-destructive" /> Ahem tabdeeli — tasdeeq karein</p>
+            <p className="flex items-center gap-2 font-bold text-foreground"><AlertTriangle className="size-5 text-destructive" /> Important change — please confirm</p>
             <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">{confirm.map((w) => <li key={w}>{w}</li>)}</ul>
-            <p className="text-xs text-muted-foreground">Purana financial data kabhi nahi badla jata.</p>
-            <div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setConfirm(null)}>Cancel</Button><Button disabled={saving} onClick={doSave}>Haan, save karein</Button></div>
+            <p className="text-xs text-muted-foreground">Past financial data is never changed.</p>
+            <div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setConfirm(null)}>Cancel</Button><Button disabled={saving} onClick={doSave}>Yes, save</Button></div>
           </div>
         </div>
       ) : null}

@@ -20,7 +20,7 @@ export function LogoField({ draft, upd, disabled }: { draft: PosConfig; upd: Upd
   const logo = draft.business?.logo;
   const onFile = (f: File | undefined) => {
     if (!f) return;
-    if (!/^image\/(png|jpe?g|webp|svg\+xml)$/.test(f.type)) return toast.error("PNG/JPG/WebP/SVG logo chunein");
+    if (!/^image\/(png|jpe?g|webp|svg\+xml)$/.test(f.type)) return toast.error("Choose a PNG/JPG/WebP/SVG logo");
     const img = new Image();
     img.onload = () => {
       const s = Math.min(1, 400 / Math.max(img.width, img.height));
@@ -28,7 +28,7 @@ export function LogoField({ draft, upd, disabled }: { draft: PosConfig; upd: Upd
       c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
       c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
       const url = c.toDataURL("image/png");
-      if (url.length > 350_000) return toast.error("Logo bohat bara hai — chhoti file chunein");
+      if (url.length > 350_000) return toast.error("Logo is too large — choose a smaller file");
       upd("business.logo", url);
       URL.revokeObjectURL(img.src);
     };
@@ -41,10 +41,10 @@ export function LogoField({ draft, upd, disabled }: { draft: PosConfig; upd: Upd
       </div>
       <div className="space-y-1">
         <p className="text-sm font-semibold text-foreground">Business logo</p>
-        <p className="text-xs text-muted-foreground">Invoices/receipts par chhapta hai (400px tak resize).</p>
+        <p className="text-xs text-muted-foreground">Prints on invoices/receipts (resized up to 400px).</p>
         <div className="flex gap-2">
           <label className={`inline-flex h-8 cursor-pointer items-center gap-1 rounded-md border border-border px-3 text-sm ${disabled ? "pointer-events-none opacity-50" : ""}`}><Upload className="size-4" /> Upload<input type="file" accept="image/*" className="sr-only" onChange={(e) => onFile(e.target.files?.[0])} /></label>
-          {logo ? <Button size="sm" variant="ghost" disabled={disabled} onClick={() => upd("business.logo", "")}>Hatayein</Button> : null}
+          {logo ? <Button size="sm" variant="ghost" disabled={disabled} onClick={() => upd("business.logo", "")}>Remove</Button> : null}
         </div>
       </div>
     </div>
@@ -65,18 +65,18 @@ export function PaymentsEditor({ draft, upd, disabled }: { draft: PosConfig; upd
         {BASE_PAY_METHODS.map((m) => (
           <label key={m} className="flex items-center gap-2 rounded-lg border border-border p-2 text-sm">
             <input type="checkbox" disabled={disabled || m === "Cash"} checked={enabled.includes(m)} onChange={(e) => upd("payments.enabled", e.target.checked ? [...enabled, m] : enabled.filter((x) => x !== m))} />
-            {m}{m === "Cash" ? <span className="text-xs text-muted-foreground">(hamesha on)</span> : m === "Credit" ? <span className="text-xs text-muted-foreground">(udhaar)</span> : null}
+            {m}{m === "Cash" ? <span className="text-xs text-muted-foreground">(always on)</span> : m === "Credit" ? <span className="text-xs text-muted-foreground">(credit)</span> : null}
           </label>
         ))}
         {custom.map((m) => (
           <div key={m} className="flex items-center justify-between rounded-lg border border-border p-2 text-sm">
             <span>{m} <span className="text-xs text-muted-foreground">(custom)</span></span>
-            <Button size="icon" variant="ghost" disabled={disabled} aria-label={`${m} hatayein`} onClick={() => upd("payments.custom", custom.filter((x) => x !== m))}><Trash2 className="size-4" /></Button>
+            <Button size="icon" variant="ghost" disabled={disabled} aria-label={`Remove ${m}`} onClick={() => upd("payments.custom", custom.filter((x) => x !== m))}><Trash2 className="size-4" /></Button>
           </div>
         ))}
       </div>
       <div className="flex flex-wrap gap-2">
-        <input className={`${inp} max-w-56`} value={nm} maxLength={30} onChange={(e) => setNm(e.target.value)} placeholder="Naya method (jaise Meezan Bank)" aria-label="Custom payment method" disabled={disabled} />
+        <input className={`${inp} max-w-56`} value={nm} maxLength={30} onChange={(e) => setNm(e.target.value)} placeholder="New method (e.g. Meezan Bank)" aria-label="Custom payment method" disabled={disabled} />
         <Button size="sm" variant="outline" disabled={disabled || !nm.trim() || all.includes(nm.trim())} onClick={() => { upd("payments.custom", [...custom, nm.trim()]); setNm(""); }}><Plus /> Add</Button>
       </div>
       <label className="block max-w-xs text-xs text-muted-foreground">Default payment method
@@ -92,12 +92,12 @@ export function TaxRatesEditor({ draft, upd, disabled }: { draft: PosConfig; upd
   const set = (i: number, k: "name" | "pct", v: string) => upd("tax.rates", rates.map((r, j) => (j === i ? { ...r, [k]: k === "pct" ? Math.min(100, Math.max(0, Number(v) || 0)) : v.slice(0, 30) } : r)));
   return (
     <div className="space-y-2">
-      <p className="text-sm font-semibold text-foreground">Tax rates (POS me product-level chunne ke liye)</p>
+      <p className="text-sm font-semibold text-foreground">Tax rates (for choosing at product level in POS)</p>
       {rates.map((r, i) => (
         <div key={i} className="flex gap-2">
           <input className={inp} value={r.name} onChange={(e) => set(i, "name", e.target.value)} aria-label="Tax name" disabled={disabled} />
           <input className={`${inp} w-24`} inputMode="decimal" value={r.pct} onChange={(e) => set(i, "pct", e.target.value)} aria-label="Tax %" disabled={disabled} />
-          <Button size="icon" variant="ghost" disabled={disabled || rates.length <= 1} aria-label="Hatayein" onClick={() => upd("tax.rates", rates.filter((_, j) => j !== i))}><Trash2 className="size-4" /></Button>
+          <Button size="icon" variant="ghost" disabled={disabled || rates.length <= 1} aria-label="Remove" onClick={() => upd("tax.rates", rates.filter((_, j) => j !== i))}><Trash2 className="size-4" /></Button>
         </div>
       ))}
       <Button size="sm" variant="outline" disabled={disabled || rates.length >= 12} onClick={() => upd("tax.rates", [...rates, { name: "New tax", pct: 0 }])}><Plus /> Rate add</Button>
@@ -108,7 +108,7 @@ export function TaxRatesEditor({ draft, upd, disabled }: { draft: PosConfig; upd
 /* ------------------------------ Invoice fields ------------------------------ */
 const FIELD_LABEL: Record<FieldKey, string> = {
   logo: "Logo", businessName: "Business name", address: "Business address", phone: "Phone", email: "Email", website: "Website", taxId: "NTN/GST",
-  title: "Invoice title", number: "Invoice number", dateTime: "Time (date ke saath)", customer: "Customer name", customerPhone: "Customer phone", customerAddress: "Customer address",
+  title: "Invoice title", number: "Invoice number", dateTime: "Time (with date)", customer: "Customer name", customerPhone: "Customer phone", customerAddress: "Customer address",
   subtotal: "Subtotal", paid: "Paid", balance: "Balance", paymentMethod: "Payment method", notes: "Notes", terms: "Terms", footer: "Footer", signature: "Signature",
 };
 const COL_LABEL: Record<ColKey, string> = { sku: "SKU", barcode: "Barcode", unit: "Unit", qty: "Quantity", rate: "Rate", discount: "Discount", tax: "Tax" };
@@ -120,7 +120,7 @@ export function InvoiceFieldsEditor({ draft, upd, disabled }: { draft: PosConfig
   return (
     <div className="space-y-4">
       <div>
-        <p className="mb-2 text-sm font-semibold text-foreground">Invoice par kya dikhe</p>
+        <p className="mb-2 text-sm font-semibold text-foreground">What to show on invoice</p>
         <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
           {(Object.keys(FIELD_LABEL) as FieldKey[]).map((k) => (
             <label key={k} className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={disabled} checked={f[k] ?? true} onChange={(e) => upd(`printing.fields.${k}`, e.target.checked)} />{FIELD_LABEL[k]}</label>
@@ -129,7 +129,7 @@ export function InvoiceFieldsEditor({ draft, upd, disabled }: { draft: PosConfig
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <div>
-          <p className="mb-2 text-sm font-semibold text-foreground">Table columns — A4 / custom (width %, khali = auto)</p>
+          <p className="mb-2 text-sm font-semibold text-foreground">Table columns — A4 / custom (width %, empty = auto)</p>
           {(Object.keys(COL_LABEL) as ColKey[]).map((k) => (
             <div key={k} className="mb-1 flex items-center gap-2 text-sm">
               <label className="flex flex-1 items-center gap-2"><input type="checkbox" disabled={disabled} checked={c[k]} onChange={(e) => upd(`printing.columns.${k}`, e.target.checked)} />{COL_LABEL[k]}</label>
@@ -139,7 +139,7 @@ export function InvoiceFieldsEditor({ draft, upd, disabled }: { draft: PosConfig
           <div className="flex items-center gap-2 text-sm"><span className="flex-1">Item name width %</span><input className={`${inp} w-20`} inputMode="numeric" disabled={disabled} value={w.item ?? ""} placeholder="auto" aria-label="Item width" onChange={(e) => upd("printing.colWidths.item", e.target.value ? Math.min(80, Math.max(10, Number(e.target.value) || 0)) : undefined)} /></div>
         </div>
         <div>
-          <p className="mb-2 text-sm font-semibold text-foreground">A5 columns (A5 ka apna set)</p>
+          <p className="mb-2 text-sm font-semibold text-foreground">A5 columns (A5's own set)</p>
           {(Object.keys(COL_LABEL) as ColKey[]).map((k) => (
             <label key={k} className="mb-1 flex items-center gap-2 text-sm"><input type="checkbox" disabled={disabled} checked={a5c[k]} onChange={(e) => upd(`printing.a5.columns.${k}`, e.target.checked)} />{COL_LABEL[k]}</label>
           ))}
@@ -156,11 +156,11 @@ export function sampleDoc(): PrintDoc {
     party: { label: "Customer", name: "Ali Traders", phone: "03001234567", address: "Shop 12, Main Market, Lahore" },
     lines: [
       { name: "Acetanilide", sku: "ACT-01", barcode: "100001", unit: "kg", qty: 2, rate: 920, total: 1840 },
-      { name: "Citric Acid Monohydrate (food grade, bara naam wrap test)", sku: "CIT-02", unit: "100gram", qty: 5, rate: 85, discount: 25, total: 400 },
+      { name: "Citric Acid Monohydrate (food grade, long name wrap test)", sku: "CIT-02", unit: "100gram", qty: 5, rate: 85, discount: 25, total: 400 },
       { name: "Glycerine", unit: "ltr", qty: 1.5, rate: 640, taxPct: 18, total: 1132.8 },
     ],
     totals: [{ label: "Subtotal", value: 3200 }, { label: "Tax", value: 172.8 }, { label: "Grand Total", value: 3372.8, bold: true }],
-    payments: [{ method: "Cash", amount: 3000 }], paid: 3000, balance: 372.8, notes: "Sample print — koi record nahi bana",
+    payments: [{ method: "Cash", amount: 3000 }], paid: 3000, balance: 372.8, notes: "Sample print — no record created",
   };
 }
 
@@ -175,19 +175,19 @@ export function PrintersManager() {
   const [sys, setSys] = useState<BridgePrinter[] | null>(null);
   const bridge = printBridge();
   useEffect(() => { setList(cfg.printers); setDefs(cfg.printerDefaults); }, [cfg.printers, cfg.printerDefaults]);
-  const refresh = async () => { if (!bridge) return; try { setSys(await bridge.getPrinters()); } catch { toast.error("Printers list nahi mili"); } };
+  const refresh = async () => { if (!bridge) return; try { setSys(await bridge.getPrinters()); } catch { toast.error("Could not fetch printers list"); } };
   useEffect(() => { void refresh(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 
   const save = async (l = list, d = defs) => {
     try {
       const clean = Object.fromEntries(Object.entries(d).filter(([, v]) => v && l.some((p) => p.id === v))) as Record<string, string>;
       await savePrinters({ data: { printers: l, defaults: clean } });
-      toast.success("Printer settings save");
+      toast.success("Printer settings saved");
       qc.invalidateQueries({ queryKey: ["pos-access"] });
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Save nahi hua"); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not save"); }
   };
   const add = (p?: Partial<PrinterCfg>) => {
-    const np: PrinterCfg = { id: `p${Date.now().toString(36)}`, name: p?.name ?? "Naya printer", type: p?.type ?? "thermal", paper: p?.paper ?? "t80", deviceName: p?.deviceName, copies: 1 };
+    const np: PrinterCfg = { id: `p${Date.now().toString(36)}`, name: p?.name ?? "New printer", type: p?.type ?? "thermal", paper: p?.paper ?? "t80", deviceName: p?.deviceName, copies: 1 };
     setList([...list, np]);
   };
   const upd = (id: string, patch: Partial<PrinterCfg>) => setList(list.map((p) => (p.id === id ? { ...p, ...patch } : p)));
@@ -197,9 +197,9 @@ export function PrintersManager() {
     <div className="space-y-3">
       <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
         {bridge ? (
-          <p><b className="text-foreground">Desktop app:</b> Windows ke installed printers neeche dikh rahe hain. Printer config me Windows printer chunein to print seedha (bina dialog) wahan jayega.</p>
+          <p><b className="text-foreground">Desktop app:</b> Windows's installed printers are shown below. Choose a Windows printer in printer config to print directly there (without a dialog).</p>
         ) : (
-          <p><b className="text-foreground">Browser:</b> security ki wajah se website Windows printers ki list nahi dekh sakti aur khud printer nahi chun sakti. Yahan apne printers ke naam, paper aur role save karein — print par sahi paper size ke saath print window khulegi; wahan ek dafa printer chunein, Chrome usay yaad rakhta hai. Seedha (silent) print ke liye Windows desktop app istemal karein.</p>
+          <p><b className="text-foreground">Browser:</b> for security reasons the website cannot see the list of Windows printers or choose one automatically. Save your printer names, paper and role here — a print window will open with the correct paper size; choose the printer there once and Chrome will remember it. Use the Windows desktop app for direct (silent) printing.</p>
         )}
       </div>
 
@@ -209,20 +209,20 @@ export function PrintersManager() {
           {sys?.length ? sys.map((s) => (
             <div key={s.name} className="flex flex-wrap items-center justify-between gap-2 border-t border-border py-1.5 text-sm">
               <span>{s.displayName || s.name}{s.isDefault ? <span className="ml-1 text-xs text-primary">(Windows default)</span> : null} <span className="text-xs text-muted-foreground">· {statusText(s.status)}</span></span>
-              <Button size="sm" variant="outline" disabled={!allowed} onClick={() => add({ name: s.displayName || s.name, deviceName: s.name, type: /80|58|pos|thermal|receipt/i.test(s.name) ? "thermal" : "a4", paper: /58/.test(s.name) ? "t58" : /80|pos|thermal|receipt/i.test(s.name) ? "t80" : "a4" })}><Plus /> Config banayein</Button>
+              <Button size="sm" variant="outline" disabled={!allowed} onClick={() => add({ name: s.displayName || s.name, deviceName: s.name, type: /80|58|pos|thermal|receipt/i.test(s.name) ? "thermal" : "a4", paper: /58/.test(s.name) ? "t58" : /80|pos|thermal|receipt/i.test(s.name) ? "t80" : "a4" })}><Plus /> Create config</Button>
             </div>
-          )) : <p className="text-xs text-muted-foreground">Koi printer nahi mila.</p>}
+          )) : <p className="text-xs text-muted-foreground">No printer found.</p>}
         </div>
       ) : null}
 
       <div className="space-y-2">
-        {list.length === 0 ? <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">Abhi koi printer config nahi. "Printer add" dabayein.</p> : null}
+        {list.length === 0 ? <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">No printer configured yet. Press "Printer add".</p> : null}
         {list.map((p) => {
           const roles = (Object.keys(ROLE_LABEL) as PrinterRole[]).filter((r) => defs[r] === p.id);
           return (
             <div key={p.id} className="space-y-2 rounded-lg border border-border p-3">
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-                <label className="text-xs text-muted-foreground">Naam<input className={inp} value={p.name} disabled={!allowed} maxLength={60} onChange={(e) => upd(p.id, { name: e.target.value })} /></label>
+                <label className="text-xs text-muted-foreground">Name<input className={inp} value={p.name} disabled={!allowed} maxLength={60} onChange={(e) => upd(p.id, { name: e.target.value })} /></label>
                 <label className="text-xs text-muted-foreground">Type<select className={inp} value={p.type} disabled={!allowed} onChange={(e) => upd(p.id, { type: e.target.value as PrinterCfg["type"] })}><option value="thermal">Thermal</option><option value="a4">A4 laser/inkjet</option><option value="a5">A5</option><option value="label">Label</option><option value="other">Other</option></select></label>
                 <label className="text-xs text-muted-foreground">Paper<select className={inp} value={p.paper} disabled={!allowed} onChange={(e) => upd(p.id, { paper: e.target.value as PaperFormat })}>{(Object.keys(FORMAT_LABEL) as PaperFormat[]).map((f) => <option key={f} value={f}>{FORMAT_LABEL[f]}</option>)}</select></label>
                 <label className="text-xs text-muted-foreground">Copies<input className={inp} inputMode="numeric" value={p.copies ?? 1} disabled={!allowed} onChange={(e) => upd(p.id, { copies: Math.min(10, Math.max(1, Number(e.target.value) || 1)) })} /></label>
@@ -230,7 +230,7 @@ export function PrintersManager() {
                   {bridge ? (
                     <select className={inp} value={p.deviceName ?? ""} disabled={!allowed} onChange={(e) => upd(p.id, { deviceName: e.target.value || undefined })}><option value="">— print window —</option>{(sys ?? []).map((s) => <option key={s.name} value={s.name}>{s.displayName || s.name}</option>)}</select>
                   ) : (
-                    <input className={inp} value={p.deviceName ?? ""} disabled={!allowed} placeholder="Desktop app me chunein" onChange={(e) => upd(p.id, { deviceName: e.target.value || undefined })} />
+                    <input className={inp} value={p.deviceName ?? ""} disabled={!allowed} placeholder="Choose in desktop app" onChange={(e) => upd(p.id, { deviceName: e.target.value || undefined })} />
                   )}
                 </label>
               </div>
@@ -242,19 +242,19 @@ export function PrintersManager() {
                   </label>
                 ))}
                 <span className="ml-auto" />
-                <span className="text-muted-foreground">{roles.length ? "Default" : "Secondary"}{p.deviceName && bridge ? ` · ${sys?.find((s) => s.name === p.deviceName) ? statusText(sys.find((s) => s.name === p.deviceName)!.status) : "Windows par nahi mila"}` : ""}</span>
+                <span className="text-muted-foreground">{roles.length ? "Default" : "Secondary"}{p.deviceName && bridge ? ` · ${sys?.find((s) => s.name === p.deviceName) ? statusText(sys.find((s) => s.name === p.deviceName)!.status) : "Not found on Windows"}` : ""}</span>
                 <Button size="sm" variant="outline" onClick={() => pc.print({ ...sampleDoc(), kind: p.paper.startsWith("t") ? "pos" : "sale" }, { format: p.paper, copies: 1 })}><Printer /> Test print</Button>
-                <Button size="sm" variant="ghost" disabled={!allowed} aria-label="Printer config hatayein" onClick={() => { setList(list.filter((x) => x.id !== p.id)); setDefs(Object.fromEntries(Object.entries(defs).filter(([, v]) => v !== p.id))); }}><Trash2 className="size-4" /></Button>
+                <Button size="sm" variant="ghost" disabled={!allowed} aria-label="Remove printer config" onClick={() => { setList(list.filter((x) => x.id !== p.id)); setDefs(Object.fromEntries(Object.entries(defs).filter(([, v]) => v !== p.id))); }}><Trash2 className="size-4" /></Button>
               </div>
             </div>
           );
         })}
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" disabled={!allowed || list.length >= 30} onClick={() => add()}><Plus /> Printer add</Button>
-        <Button disabled={!allowed} onClick={() => save()}>Printers save</Button>
+        <Button variant="outline" disabled={!allowed || list.length >= 30} onClick={() => add()}><Plus /> Add printer</Button>
+        <Button disabled={!allowed} onClick={() => save()}>Save printers</Button>
       </div>
-      <p className="text-xs text-muted-foreground">Test print ek sample invoice chhapta hai — koi sale/record nahi banta. Note: test print abhi-saved printer defaults use karta hai; naye badlao pehle save karein.</p>
+      <p className="text-xs text-muted-foreground">Test print prints a sample invoice — no sale/record is created. Note: test print uses the currently-saved printer defaults; save new changes first.</p>
       {pc.node}
     </div>
   );
@@ -282,12 +282,12 @@ export function UsersSection() {
   const { data: mem } = useQuery({ queryKey: ["pos-members"], queryFn: () => listPosMembers(), enabled: can("manage_users") });
   const [pin, setPin] = useState("");
   const savePin = async (v: string) => {
-    try { await savePosSettings({ data: { config: (access?.config ?? {}) as Record<string, unknown>, pin: v } }); toast.success(v ? "PIN set ho gaya" : "PIN hata diya"); setPin(""); qc.invalidateQueries({ queryKey: ["pos-access"] }); }
-    catch (e) { toast.error(e instanceof Error ? e.message : "Nahi hua"); }
+    try { await savePosSettings({ data: { config: (access?.config ?? {}) as Record<string, unknown>, pin: v } }); toast.success(v ? "PIN set" : "PIN removed"); setPin(""); qc.invalidateQueries({ queryKey: ["pos-access"] }); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
   };
   return (
     <div className="space-y-3">
-      <p className="text-sm">Aap ka role: <b>{ROLE_NAME[access?.role ?? "staff"]}</b></p>
+      <p className="text-sm">Your role: <b>{ROLE_NAME[access?.role ?? "staff"]}</b></p>
       {can("manage_users") ? (
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
@@ -297,7 +297,7 @@ export function UsersSection() {
                 <td className="p-2">{m.name}{!m.active ? <span className="ml-1 text-xs text-destructive">(inactive)</span> : null}</td>
                 <td className="p-2">{m.role === "admin" ? <b>Admin (owner)</b> : (
                   <select className={inp} value={m.role} aria-label={`${m.name} role`} onChange={async (e) => {
-                    try { await setPosMemberRole({ data: { userId: m.id, role: e.target.value as (typeof POS_ROLES)[number] } }); toast.success("Role save"); qc.invalidateQueries({ queryKey: ["pos-members"] }); } catch (er) { toast.error(er instanceof Error ? er.message : "Nahi hua"); }
+                    try { await setPosMemberRole({ data: { userId: m.id, role: e.target.value as (typeof POS_ROLES)[number] } }); toast.success("Role saved"); qc.invalidateQueries({ queryKey: ["pos-members"] }); } catch (er) { toast.error(er instanceof Error ? er.message : "Failed"); }
                   }}>{POS_ROLES.map((r) => <option key={r} value={r}>{ROLE_NAME[r]}</option>)}</select>
                 )}</td>
                 <td className="p-2 text-xs text-muted-foreground">{(ROLE_PERMS[m.role] ?? []).map((p) => PERM_LABEL[p]).join(", ")}</td>
@@ -305,19 +305,19 @@ export function UsersSection() {
             ))}</tbody>
           </table>
         </div>
-      ) : <p className="text-xs text-muted-foreground">Roles sirf Admin badal sakta hai.</p>}
+      ) : <p className="text-xs text-muted-foreground">Only Admin can change roles.</p>}
       {can("settings") ? (
         <div className="space-y-2 rounded-lg border border-border p-3">
-          <p className="text-sm font-semibold">Manager PIN {access?.hasPin ? <span className="text-xs text-primary">(set hai)</span> : <span className="text-xs text-destructive">(set nahi)</span>}</p>
-          <p className="text-xs text-muted-foreground">Jin ke paas ijazat nahi (rate badalna, discount, cancel) unke liye PIN approval. Har istemal audit log me.</p>
+          <p className="text-sm font-semibold">Manager PIN {access?.hasPin ? <span className="text-xs text-primary">(set)</span> : <span className="text-xs text-destructive">(not set)</span>}</p>
+          <p className="text-xs text-muted-foreground">PIN approval for those without permission (changing rate, discount, cancel). Every use is in the audit log.</p>
           <div className="flex flex-wrap gap-2">
-            <input className={`${inp} w-40`} type="password" inputMode="numeric" maxLength={8} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))} placeholder="Naya PIN (4-8)" aria-label="Naya PIN" />
+            <input className={`${inp} w-40`} type="password" inputMode="numeric" maxLength={8} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))} placeholder="New PIN (4-8)" aria-label="New PIN" />
             <Button disabled={pin.length < 4} onClick={() => savePin(pin)}>PIN set</Button>
-            {access?.hasPin ? <Button variant="ghost" onClick={() => savePin("")}>PIN hatayein</Button> : null}
+            {access?.hasPin ? <Button variant="ghost" onClick={() => savePin("")}>Remove PIN</Button> : null}
           </div>
         </div>
       ) : null}
-      <p className="text-xs text-muted-foreground">Sab permissions server par bhi check hoti hain (sale, discount, return, cancel, stock, purchases, settings, printers).</p>
+      <p className="text-xs text-muted-foreground">All permissions are also checked on the server (sale, discount, return, cancel, stock, purchases, settings, printers).</p>
     </div>
   );
 }
@@ -346,7 +346,7 @@ export function BackupSection() {
   const run = async (what: (typeof EXPORT_ITEMS)[number][0], kind: "csv" | "xlsx") => {
     setBusy(what + kind);
     try { const r = await exportData({ data: { what } }); if (kind === "csv") csvDownload(what, r.columns, r.rows); else await xlsxDownload(what, r.columns, r.rows); toast.success(`${r.rows.length} rows export`); }
-    catch (e) { toast.error(e instanceof Error ? e.message : "Export nahi hua"); } finally { setBusy(null); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Export failed"); } finally { setBusy(null); }
   };
   const backup = async () => {
     setBusy("backup");
@@ -354,12 +354,12 @@ export function BackupSection() {
       const { json } = await exportPosBackup();
       const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([json], { type: "application/json" })); a.download = `pos-backup-${new Date().toISOString().slice(0, 10)}.json`; a.click();
       qc.invalidateQueries({ queryKey: ["sync-overview"] });
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Nahi hua"); } finally { setBusy(null); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); } finally { setBusy(null); }
   };
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border p-3">
-        <div><p className="text-sm font-semibold">Full backup (JSON)</p><p className="text-xs text-muted-foreground">Last backup: {data?.lastBackup ? new Date(data.lastBackup).toLocaleString("en-PK") : "kabhi nahi"} · Koi password/secret key shamil nahi.</p></div>
+        <div><p className="text-sm font-semibold">Full backup (JSON)</p><p className="text-xs text-muted-foreground">Last backup: {data?.lastBackup ? new Date(data.lastBackup).toLocaleString("en-PK") : "never"} · No password/secret key included.</p></div>
         <Button variant="outline" disabled={!can("settings") || busy === "backup"} onClick={backup}><Download /> Backup download</Button>
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
@@ -370,7 +370,7 @@ export function BackupSection() {
           </div>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">Import: products/rates <Link to="/sync" className="text-primary underline">Vyapar Sync</Link> page se (Excel/CSV, validation ke saath) aur inventory page se. Sales/payments ka import jaan boojh kar band hai taake hisaab kharab na ho.</p>
+      <p className="text-xs text-muted-foreground">Import: products/rates from the <Link to="/sync" className="text-primary underline">Vyapar Sync</Link> page (Excel/CSV, with validation) and from the inventory page. Importing sales/payments is deliberately disabled to keep the books accurate.</p>
     </div>
   );
 }
@@ -391,13 +391,13 @@ export function VyaparSection() {
         <Button asChild><Link to="/sync">Manual sync / file upload</Link></Button>
         <Button variant="outline" onClick={() => refetch()} disabled={isFetching}><RefreshCw /> Refresh status</Button>
       </div>
-      <p className="text-xs text-muted-foreground">Automatic sync: Sync page se Windows auto-sync file (PowerShell) set karein — wo Vyapar export ko khud upload karti hai. Failed rows ko dobara chalane ke liye file theek karke dobara sync karein (sirf ghalat rows skip hoti hain; baqi update ho jati hain). POS hamesha isi ek central product list ko use karta hai.</p>
+      <p className="text-xs text-muted-foreground">Automatic sync: set up the Windows auto-sync file (PowerShell) from the Sync page — it uploads the Vyapar export automatically. To retry failed rows, fix the file and sync again (only incorrect rows are skipped; the rest are updated). POS always uses this one central product list.</p>
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-xs">
           <thead><tr className="bg-muted/50 text-left text-muted-foreground"><th className="p-2">Time</th><th className="p-2">Status</th><th className="p-2 text-right">Total</th><th className="p-2 text-right">Updated</th><th className="p-2 text-right">New</th><th className="p-2 text-right">Skipped</th><th className="p-2 text-right">Errors</th></tr></thead>
           <tbody>{(data?.logs ?? []).map((l) => (
             <tr key={l.id} className="border-t border-border"><td className="p-2">{new Date(l.at).toLocaleString("en-PK")}</td><td className="p-2">{l.status}</td><td className="p-2 text-right">{l.total}</td><td className="p-2 text-right">{l.updated}</td><td className="p-2 text-right">{l.inserted}</td><td className="p-2 text-right">{l.skipped}</td><td className={`p-2 text-right ${l.errors ? "text-destructive" : ""}`}>{l.errors}</td></tr>
-          ))}{!data?.logs.length ? <tr><td colSpan={7} className="p-3 text-center text-muted-foreground">Abhi koi sync history nahi</td></tr> : null}</tbody>
+          ))}{!data?.logs.length ? <tr><td colSpan={7} className="p-3 text-center text-muted-foreground">No sync history yet</td></tr> : null}</tbody>
         </table>
       </div>
     </div>
@@ -412,9 +412,9 @@ export function AuditSection() {
   const { data, isFetching, refetch } = useQuery({ queryKey: ["audit", action, entity], queryFn: () => listAuditLog({ data: { action: action || undefined, entity: entity || undefined, limit: 300 } }) });
   return (
     <div className="space-y-3">
-      <p className="text-xs text-muted-foreground">Audit logging hamesha on hai aur band nahi ho sakti (records sirf parhne ke liye — edit/delete nahi). Track hota hai: sales, returns, cancellations, discounts, payments, stock adjustments, product/price changes, settings, printer changes, role changes, PIN approvals, reprints, backups.</p>
+      <p className="text-xs text-muted-foreground">Audit logging is always on and cannot be turned off (records are read-only — no edit/delete). Tracked: sales, returns, cancellations, discounts, payments, stock adjustments, product/price changes, settings, printer changes, role changes, PIN approvals, reprints, backups.</p>
       <div className="flex flex-wrap gap-2">
-        <select className={`${inp} max-w-48`} value={action} onChange={(e) => setAction(e.target.value)} aria-label="Action filter">{AUDIT_ACTIONS.map((a) => <option key={a} value={a}>{a || "Sab actions"}</option>)}</select>
+        <select className={`${inp} max-w-48`} value={action} onChange={(e) => setAction(e.target.value)} aria-label="Action filter">{AUDIT_ACTIONS.map((a) => <option key={a} value={a}>{a || "All actions"}</option>)}</select>
         <input className={`${inp} max-w-48`} value={entity} onChange={(e) => setEntity(e.target.value)} placeholder="Entity (sale, stock...)" aria-label="Entity filter" />
         <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}><RefreshCw /> Refresh</Button>
       </div>
@@ -423,7 +423,7 @@ export function AuditSection() {
           <thead className="sticky top-0 bg-card"><tr className="text-left text-muted-foreground"><th className="p-2">Time</th><th className="p-2">User</th><th className="p-2">Action</th><th className="p-2">Entity</th><th className="p-2">Details</th></tr></thead>
           <tbody>{(data?.rows ?? []).map((r) => (
             <tr key={r.id} className="border-t border-border align-top"><td className="whitespace-nowrap p-2">{new Date(r.at).toLocaleString("en-PK")}</td><td className="p-2">{r.user}</td><td className="p-2 font-medium">{r.action}</td><td className="p-2">{r.entity}</td><td className="max-w-md break-all p-2 text-muted-foreground">{r.details === "{}" ? "" : r.details}</td></tr>
-          ))}{data && !data.rows.length ? <tr><td colSpan={5} className="p-3 text-center text-muted-foreground">Koi entry nahi</td></tr> : null}</tbody>
+          ))}{data && !data.rows.length ? <tr><td colSpan={5} className="p-3 text-center text-muted-foreground">No entries</td></tr> : null}</tbody>
         </table>
       </div>
     </div>
@@ -434,9 +434,9 @@ export function AuditSection() {
 export function SuppliersInfo() {
   return (
     <div className="space-y-2 text-sm">
-      <p>Supplier payable = opening balance + purchases − payments − purchase returns (ledger me running balance).</p>
-      <p className="text-xs text-muted-foreground">Suppliers aur purchases ka kaam "Manage purchases" / "Manage suppliers" ijazat se hota hai (Users & Permissions). Purchase numbering Purchases section me.</p>
-      <Button asChild variant="outline" size="sm"><Link to="/suppliers">Suppliers kholein</Link></Button>
+      <p>Supplier payable = opening balance + purchases − payments − purchase returns (running balance in ledger).</p>
+      <p className="text-xs text-muted-foreground">Suppliers and purchases are managed via "Manage purchases" / "Manage suppliers" permission (Users & Permissions). Purchase numbering is in the Purchases section.</p>
+      <Button asChild variant="outline" size="sm"><Link to="/suppliers">Open Suppliers</Link></Button>
     </div>
   );
 }
@@ -447,13 +447,13 @@ export function AdvancedStatus() {
     <div className="space-y-2 rounded-lg border border-border p-3 text-sm">
       <p className="font-semibold">System status</p>
       <ul className="space-y-1 text-xs text-muted-foreground">
-        <li>Backend: connected (records aur settings server par, har device par ek jaise)</li>
-        <li>Printing: {bridge ? "Desktop bridge active — silent print available" : "Browser print window (silent print sirf desktop app me)"}</li>
-        <li>Transaction safety: har bill/payment ek database transaction me, duplicate-submit protection on</li>
-        <li>Numbering: automatic, server par sequence — duplicate number mumkin nahi; reset ki ijazat nahi (hisaab ki hifazat)</li>
-        <li>Cache: settings 1 minute cache — "Refresh workspace" se foran reload</li>
-        <li>Session timeout / ek-waqt-ek-login: is app se control nahi hota (login system ki setting) — is liye yahan switch nahi diya</li>
-        <li>API keys / secrets: kabhi browser me nahi dikhaye jate</li>
+        <li>Backend: connected (records and settings on the server, consistent across every device)</li>
+        <li>Printing: {bridge ? "Desktop bridge active — silent print available" : "Browser print window (silent print only in desktop app)"}</li>
+        <li>Transaction safety: every bill/payment happens in one database transaction, duplicate-submit protection on</li>
+        <li>Numbering: automatic, sequence on the server — duplicate numbers not possible; reset not allowed (to protect the books)</li>
+        <li>Cache: settings cached for 1 minute — "Refresh workspace" reloads instantly</li>
+        <li>Session timeout / single sign-in: not controlled from this app (a login-system setting) — so no switch is given here</li>
+        <li>API keys / secrets: never shown in the browser</li>
       </ul>
     </div>
   );

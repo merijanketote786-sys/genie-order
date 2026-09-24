@@ -115,10 +115,10 @@ export function parseVyaparSheet(bytes: Uint8Array): ParseResult {
     const wb = read(bytes, { type: "array" });
     sheetName = wb.SheetNames[0] ?? "";
     const sheet = sheetName ? wb.Sheets[sheetName] : undefined;
-    if (!sheet) return { ok: false, error: "File me koi sheet nahi mili." };
+    if (!sheet) return { ok: false, error: "No sheet found in the file." };
     matrix = utils.sheet_to_json<unknown[]>(sheet, { header: 1, blankrows: false, defval: "" });
   } catch {
-    return { ok: false, error: "File parh nahi saka. Vyapar se Excel (.xlsx) ya CSV export karein." };
+    return { ok: false, error: "Could not read file. Export Excel (.xlsx) or CSV from Vyapar." };
   }
 
   return parseMatrix(matrix, sheetName);
@@ -134,7 +134,7 @@ export function parseDelimitedText(text: string): ParseResult {
   if (lines.length < 2) {
     return {
       ok: false,
-      error: "Paste kiya hua data bohat kam hai. Pehli line column names ki honi chahiye (Item Name, Sale Price).",
+      error: "The pasted data is too short. The first line should be column names (Item Name, Sale Price).",
     };
   }
 
@@ -153,7 +153,7 @@ export function parseDelimitedText(text: string): ParseResult {
   if (!best || best.score === 0) {
     return {
       ok: false,
-      error: "Columns alag nahi ho sake. Excel se rows copy karein ya comma se alag karein.",
+      error: "Could not separate columns. Copy rows from Excel or separate them with commas.",
     };
   }
 
@@ -188,15 +188,15 @@ function parseMatrix(matrix: unknown[][], sheetName: string): ParseResult {
     return {
       ok: false,
       error: hasName
-        ? "Sheet me 'Sale Price' (rate) wala column nahi mila."
-        : "Sheet me 'Item Name' aur 'Sale Price' columns nahi mile.",
+        ? "No 'Sale Price' (rate) column found in the sheet."
+        : "No 'Item Name' and 'Sale Price' columns found in the sheet.",
     };
   }
 
   if (priceCol === nameCol) {
     return {
       ok: false,
-      error: "Sheet me rate ka alag column nahi mila. Vyapar se 'Item Details' export karein jis me Sale Price column ho.",
+      error: "No separate rate column found in the sheet. Export 'Item Details' from Vyapar with a Sale Price column.",
     };
   }
 
@@ -240,18 +240,18 @@ function parseMatrix(matrix: unknown[][], sheetName: string): ParseResult {
     return {
       ok: false,
       error: noPrice
-        ? `Har row ka rate 0 ya khali hai (${noPrice} rows) — kuch bhi update nahi kiya gaya.`
-        : "Sheet me koi product row nahi mili.",
+        ? `Every row's rate is 0 or empty (${noPrice} rows) — nothing was updated.`
+        : "No product rows found in the sheet.",
     };
   }
   if (rows.length > 5000) {
-    return { ok: false, error: "5000 se zyada rows hain. File chhoti karein." };
+    return { ok: false, error: "More than 5000 rows. Please shrink the file." };
   }
 
   const notes: string[] = [];
   if (noPrice) {
     notes.push(
-      `${noPrice} rows ka rate 0 ya khali tha — chhoR di gayin (purane rate mehfooz hain): ${noPriceNames
+      `${noPrice} rows had a rate of 0 or empty — skipped (old rates preserved): ${noPriceNames
         .slice(0, 5)
         .join(", ")}`,
     );

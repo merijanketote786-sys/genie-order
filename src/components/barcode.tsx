@@ -1,4 +1,4 @@
-/** Barcode SVG — jsbarcode sirf browser me dynamically load hota hai (CODE128, EAN, UPC, ITF14…). */
+/** Barcode SVG — jsbarcode is dynamically loaded only in the browser (CODE128, EAN, UPC, ITF14…). */
 import { useEffect, useRef, useState } from "react";
 
 export function Barcode({
@@ -54,7 +54,7 @@ export function Barcode({
         if (cancelled) return;
         if (failed) {
           if (ref.current) ref.current.innerHTML = "";
-          setError(`${format} ke liye code valid nahi`);
+          setError(`Invalid code for ${format}`);
         } else {
           setError("");
           ref.current?.setAttribute("preserveAspectRatio", "none");
@@ -63,7 +63,7 @@ export function Barcode({
         }
       } catch {
         if (ref.current) ref.current.innerHTML = "";
-        setError("Barcode render nahi hua");
+        setError("Barcode failed to render");
       }
     })();
     return () => {

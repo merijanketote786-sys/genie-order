@@ -1,6 +1,6 @@
 /**
- * Compact courier rate calculator — Order/Invoice pages ke andar inline.
- * Poora calculator /calculator par hai; yahan sirf zaroori fields hain.
+ * Compact courier rate calculator — used inline on the Order/Invoice pages.
+ * The full calculator is on /calculator; only the essential fields are here.
  */
 import { CitySelect } from "@/components/city-select";
 import { CITIES, detectZone, type City } from "@/lib/postex-cities";
@@ -21,7 +21,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 type Props = {
-  /** Calculated delivery charge ko composer me daalne ke liye. */
+  /** Used to insert the calculated delivery charge into the composer. */
   onUse?: (amount: number) => void;
   useLabel?: string;
 };
@@ -43,7 +43,7 @@ export function RateMiniCalculator({ onUse, useLabel = "Use" }: Props) {
         <Calculator className="size-4 shrink-0 text-primary" />
         <span className="text-sm font-semibold text-foreground">Courier rate calculator</span>
         <span className="hidden truncate text-xs text-muted-foreground sm:inline">
-          · weight + city se delivery charges
+          · delivery charges by weight + city
         </span>
         <ChevronDown
           className={`ml-auto size-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
@@ -94,7 +94,7 @@ export function RateMiniCalculatorBody({ onUse, useLabel }: Props & { useLabel: 
     weightInput.trim() === ""
       ? null
       : Number.isNaN(weight) || weight <= 0
-        ? "Weight 0 se zyada hona chahiye."
+        ? "Weight must be greater than 0."
         : weight > MAX_WEIGHT_KG
           ? `Max ${MAX_WEIGHT_KG} kg.`
           : null;
@@ -132,7 +132,7 @@ export function RateMiniCalculatorBody({ onUse, useLabel }: Props & { useLabel: 
     <div className="border-t border-border px-3 py-3 sm:px-4">
       {!builtin && couriers.length === 0 ? (
         <p className="text-xs text-muted-foreground">
-          Pehle Calculator page par apni courier rate sheet upload karein.
+          Upload your courier rate sheet on the Calculator page first.
         </p>
       ) : (
         <>
@@ -209,7 +209,7 @@ export function RateMiniCalculatorBody({ onUse, useLabel }: Props & { useLabel: 
                 {result ? formatPKR(result.total) : "—"}
               </p>
               <p className="truncate text-[11px] text-muted-foreground">
-                {result ? result.label : "Weight aur city daalein"}
+                {result ? result.label : "Enter weight and city"}
               </p>
             </div>
             <div className="ml-auto flex shrink-0 gap-2">
@@ -218,7 +218,7 @@ export function RateMiniCalculatorBody({ onUse, useLabel }: Props & { useLabel: 
                 disabled={!result}
                 onClick={() => {
                   void navigator.clipboard.writeText(String(rounded));
-                  toast.success("Copy ho gaya");
+                  toast.success("Copied");
                 }}
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-input px-3 text-xs font-semibold text-foreground transition hover:bg-muted disabled:opacity-50"
               >

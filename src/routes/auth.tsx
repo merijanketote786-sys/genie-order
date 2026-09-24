@@ -32,7 +32,7 @@ export const Route = createFileRoute("/auth")({
       {
         name: "description",
         content:
-          "HB Chemicals OrderBot staff sign in — orders, invoices, extraction aur live rates ka access.",
+          "HB Chemicals OrderBot staff sign in — access to orders, invoices, extraction and live rates.",
       },
       { property: "og:title", content: "Sign In — OrderBot | HB Chemicals Pakistan" },
       { property: "og:description", content: "Staff sign in for OrderBot workspace." },
@@ -92,19 +92,19 @@ function AuthPage() {
         });
         if (error) throw error;
         if (!data.session) {
-          setSent("Account ban gaya — apni email par confirmation link check karein.");
-          toast.success("Confirmation email bhej di gayi");
+          setSent("Account created — check your email for the confirmation link.");
+          toast.success("Confirmation email sent");
         }
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/reset-password`,
         });
         if (error) throw error;
-        setSent("Password reset link aap ki email par bhej di gayi hai.");
-        toast.success("Reset link bhej di gayi");
+        setSent("A password reset link has been sent to your email.");
+        toast.success("Reset link sent");
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Kuch masla ho gaya");
+      toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setBusy(false);
     }
@@ -127,8 +127,8 @@ function AuthPage() {
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === "forgot"
-              ? "Apni email likhein — reset link wahin bhej di jayegi."
-              : "Apne account se workspace access karein."}
+              ? "Enter your email — a reset link will be sent there."
+              : "Access your workspace with your account."}
           </p>
 
           <form onSubmit={submit} className="mt-5 grid gap-4">
@@ -139,7 +139,7 @@ function AuthPage() {
                   id="name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Aap ka naam"
+                  placeholder="Your name"
                   autoComplete="name"
                   className="h-11"
                 />
@@ -203,7 +203,7 @@ function AuthPage() {
             <>
               <div className="my-4 flex items-center gap-3">
                 <span className="h-px flex-1 bg-border" />
-                <span className="text-xs text-muted-foreground">ya</span>
+                <span className="text-xs text-muted-foreground">or</span>
                 <span className="h-px flex-1 bg-border" />
               </div>
               <GoogleButton disabled={busy} next={next} />
@@ -221,7 +221,7 @@ function AuthPage() {
                   Forgot password?
                 </button>
                 <p className="text-muted-foreground">
-                  Account nahi hai?{" "}
+                  Don't have an account?{" "}
                   <button type="button" onClick={() => { setMode("signup"); setSent(null); }} className="text-primary underline-offset-4 hover:underline">
                     Sign up
                   </button>
@@ -229,7 +229,7 @@ function AuthPage() {
               </>
             ) : (
               <p className="text-muted-foreground">
-                Pehle se account hai?{" "}
+                Already have an account?{" "}
                 <button type="button" onClick={() => { setMode("signin"); setSent(null); }} className="text-primary underline-offset-4 hover:underline">
                   Sign in
                 </button>

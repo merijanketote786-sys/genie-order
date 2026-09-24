@@ -1,7 +1,7 @@
 /**
- * Payment status selector — COD ya CC (advance/card payment).
- * On/Off toggle ke saath: off hone pe sab disable rehta hai aur chat box me
- * payment ki line nahi likhi jati. COD ke case me amount bhi likhi ja sakti hai.
+ * Payment status selector — COD or CC (advance/card payment).
+ * With an On/Off toggle: when off, everything stays disabled and the chat box
+ * does not write a payment line. For COD, an amount can also be entered.
  */
 import { Banknote, CreditCard } from "lucide-react";
 
@@ -26,7 +26,7 @@ export function paymentLine(method: PaymentMethod, codAmount: string): string {
   return "Payment Status: CC";
 }
 
-/** Composer text se purani Payment Status / COD Amount lines hata deta hai. */
+/** Removes old Payment Status / COD Amount lines from the composer text. */
 export function stripPaymentLines(text: string): string {
   return text
     .split("\n")
@@ -36,7 +36,7 @@ export function stripPaymentLines(text: string): string {
     .trimEnd();
 }
 
-/** Purani payment lines erase kar ke sirf nayi line likhta hai. */
+/** Erases old payment lines and writes only the new line. */
 export function upsertPaymentLine(text: string, line: string): string {
   const base = stripPaymentLines(text);
   return `${base}${base.trim() ? "\n" : ""}${line}\n`;
@@ -105,10 +105,10 @@ export function PaymentModeField({
             />
           </label>
         ) : (
-          <span className="text-xs text-muted-foreground">Payment pehle ho chuki hai</span>
+          <span className="text-xs text-muted-foreground">Payment already made</span>
         )
       ) : (
-        <span className="text-xs text-muted-foreground">Off — payment status add nahi hoga</span>
+        <span className="text-xs text-muted-foreground">Off — payment status will not be added</span>
       )}
     </div>
   );

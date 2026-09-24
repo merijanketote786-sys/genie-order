@@ -35,7 +35,7 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
   errorComponent: ({ error }) => (
     <main className="grid min-h-dvh place-items-center bg-background px-4 text-center">
       <p className="text-sm text-muted-foreground">
-        Is authorization request ko load nahi kar sake: {String((error as Error)?.message ?? error)}
+        Could not load this authorization request: {String((error as Error)?.message ?? error)}
       </p>
     </main>
   ),
@@ -62,7 +62,7 @@ function Consent() {
     const target = data?.redirect_url ?? data?.redirect_to;
     if (!target) {
       setBusy(false);
-      setError("Authorization server ne koi redirect nahi diya.");
+      setError("Authorization server did not return a redirect.");
       return;
     }
     window.location.href = target;
@@ -74,11 +74,11 @@ function Consent() {
         <div className="mb-5 flex flex-col items-center gap-3 text-center">
           <img src={logo} alt="HB Chemicals Pakistan" width={48} height={48} className="h-12 w-auto" />
           <h1 className="font-display text-lg font-bold text-foreground">
-            {clientName} ko access dein?
+            Give {clientName} access?
           </h1>
           <p className="text-sm text-muted-foreground">
-            {clientName} aap ke account ke tor par OrderBot ke rates, orders, invoices aur customers
-            access kar sakega.
+            {clientName} will be able to access OrderBot's rates, orders, invoices and customers
+            on your behalf.
           </p>
         </div>
 

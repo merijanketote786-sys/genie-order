@@ -39,7 +39,7 @@ export const updateProductDetails = createServerFn({ method: "POST" })
       sku: data.sku, barcode: data.barcode, category: data.category, brand: data.brand, purchase_price: s(data.purchasePrice),
       wholesale_price: s(data.wholesalePrice), min_sale_price: s(data.minSalePrice), min_stock: s(data.minStock), tax_percent: s(data.taxPercent), ...(data.salePrice != null ? { sale_price: String(data.salePrice) } : {}),
     } });
-    if (error) throw new Error("Product save nahi hua");
+    if (error) throw new Error("Failed to save product");
     return { ok: true };
   });
 
@@ -48,7 +48,7 @@ export const bulkUpdateProducts = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ rows: z.array(z.record(z.string(), z.union([z.string().max(200), z.boolean()])).refine((r) => typeof r.id === "string")).min(1).max(2000) }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: res, error } = await (context.supabase as Sb).rpc("pos_bulk_update_products", { _rows: data.rows });
-    if (error) throw new Error(error.message || "Bulk update nahi hua");
+    if (error) throw new Error(error.message || "Bulk update failed");
     return res as { updated: number };
   });
 
@@ -57,7 +57,7 @@ export const adjustStock = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), qty: z.number().positive().max(1e7), kind: z.enum(["adjust_in", "adjust_out", "damage", "opening"]), note: z.string().max(300) }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await (context.supabase as Sb).rpc("pos_adjust_stock", { _id: data.id, _qty: data.qty, _kind: data.kind, _note: data.note });
-    if (error) throw new Error("Stock adjust nahi hua");
+    if (error) throw new Error("Failed to adjust stock");
     return { ok: true };
   });
 
@@ -84,7 +84,7 @@ export const getReport = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const sb = context.supabase as Sb;
     const { data: allowed } = await sb.rpc("pos_can", { _perm: "view_reports" });
-    if (!allowed) throw new Error("Reports ki ijazat nahi");
+    if (!allowed) throw new Error("Not permitted to view reports");
     const start = new Date(Date.parse(`${data.from}T00:00:00Z`) + data.tzOffsetMin * 60000).toISOString();
     const end = new Date(Date.parse(`${data.to}T00:00:00Z`) + data.tzOffsetMin * 60000 + 86400000).toISOString();
     const [{ data: sales }, { data: purs }, { data: pays }, { data: exps }, { data: prods }, { data: profs }] = await Promise.all([
@@ -169,7 +169,7 @@ export const createPosProduct = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ name: z.string().trim().min(1).max(200), unit: txt, sku: txt, barcode: txt, category: txt, brand: txt, sale_price: txt, purchase_price: txt, wholesale_price: txt, stock: txt, min_stock: txt, tax_percent: txt }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: id, error } = await (context.supabase as Sb).rpc("pos_create_product", { _p: data });
-    if (error) throw new Error(error.message || "Product add nahi hua");
+    if (error) throw new Error(error.message || "Failed to add product");
     return { id: id as string };
   });
 
@@ -178,6 +178,6 @@ export const deletePosProducts = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ ids: z.array(z.string().uuid()).min(1).max(2000) }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: n, error } = await (context.supabase as Sb).rpc("pos_delete_products", { _ids: data.ids });
-    if (error) throw new Error(error.message || "Delete nahi hua");
+    if (error) throw new Error(error.message || "Failed to delete");
     return { deleted: Number(n) };
   });

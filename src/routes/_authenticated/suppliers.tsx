@@ -44,7 +44,7 @@ function SuppliersPage() {
       toast.success("Supplier save");
       setForm(null);
       qc.invalidateQueries({ queryKey: ["suppliers"] });
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Nahi hua"); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
   };
   const lockRef = useRef(false);
   const opRef = useRef(newRef());
@@ -60,7 +60,7 @@ function SuppliersPage() {
       setPay({ amount: "", method: "Cash", note: "" });
       qc.invalidateQueries({ queryKey: ["suppliers"] });
       qc.invalidateQueries({ queryKey: ["sup-ledger"] });
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Payment save nahi hui. Dobara try karein."); } finally { lockRef.current = false; }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Payment could not be saved. Please try again."); } finally { lockRef.current = false; }
   };
 
   return (
@@ -72,14 +72,14 @@ function SuppliersPage() {
           <section className="space-y-2 rounded-xl border border-border bg-card p-3">
             <div className="flex items-center justify-between">
               <p className="text-sm font-bold text-foreground">Suppliers ({sups.length}) · Payable {rs(sups.reduce((s, x) => s + Math.max(0, x.balance), 0))}</p>
-              <Button size="sm" onClick={() => setForm({ name: "", phone: "", address: "", opening: "" })}><Plus /> Naya</Button>
+              <Button size="sm" onClick={() => setForm({ name: "", phone: "", address: "", opening: "" })}><Plus /> New</Button>
             </div>
             {form ? (
               <div className="grid gap-2 rounded-lg border border-primary p-2 sm:grid-cols-2">
-                <input className={posInput} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Supplier naam *" />
+                <input className={posInput} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Supplier name *" />
                 <input className={posInput} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Phone" />
                 <input className={posInput} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Address" />
-                <input className={posInput} value={form.opening} inputMode="decimal" onChange={(e) => setForm({ ...form, opening: e.target.value })} placeholder="Opening balance (hum ne dena)" />
+                <input className={posInput} value={form.opening} inputMode="decimal" onChange={(e) => setForm({ ...form, opening: e.target.value })} placeholder="Opening balance (we owe)" />
                 <div className="flex gap-2 sm:col-span-2"><Button onClick={save}>Save</Button><Button variant="ghost" onClick={() => setForm(null)}>Cancel</Button></div>
               </div>
             ) : null}
@@ -92,12 +92,12 @@ function SuppliersPage() {
                   </button>
                 </li>
               ))}
-              {!sups.length ? <p className="py-4 text-center text-xs text-muted-foreground">Abhi koi supplier nahi — "Naya" dabayein.</p> : null}
+              {!sups.length ? <p className="py-4 text-center text-xs text-muted-foreground">No suppliers yet — press "New".</p> : null}
             </ul>
           </section>
 
           <section className="space-y-3 rounded-xl border border-border bg-card p-3" id="sup-statement">
-            {!current ? <p className="py-10 text-center text-sm text-muted-foreground">Supplier chunein — ledger aur payment yahan.</p> : (
+            {!current ? <p className="py-10 text-center text-sm text-muted-foreground">Select a supplier — ledger and payment will appear here.</p> : (
               <>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div><p className="font-bold text-foreground">{current.name}</p><p className="text-xs text-muted-foreground">{current.phone} {current.address}</p></div>
@@ -112,14 +112,14 @@ function SuppliersPage() {
                   </div>
                 </div>
                 <div className="grid gap-2 rounded-lg border border-border p-2 sm:grid-cols-[1fr_auto_1fr_auto]">
-                  <input className={posInput} value={pay.amount} inputMode="decimal" onChange={(e) => setPay({ ...pay, amount: e.target.value })} placeholder={`Amount (baqaya ${rs(current.balance)})`} />
+                  <input className={posInput} value={pay.amount} inputMode="decimal" onChange={(e) => setPay({ ...pay, amount: e.target.value })} placeholder={`Amount (outstanding ${rs(current.balance)})`} />
                   <select className={posInput} value={pay.method} onChange={(e) => setPay({ ...pay, method: e.target.value })} aria-label="Method">{cfg.payMethods.filter((m) => m !== "Credit").map((m) => <option key={m}>{m}</option>)}</select>
                   <input className={posInput} value={pay.note} onChange={(e) => setPay({ ...pay, note: e.target.value })} placeholder="Note" />
                   <Button onClick={paySupplier}><Wallet /> Pay Supplier</Button>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead><tr className="text-left text-xs text-muted-foreground"><th>Date</th><th>Detail</th><th>Ref</th><th className="text-right">Diya (Dr)</th><th className="text-right">Lena (Cr)</th><th className="text-right">Balance</th></tr></thead>
+                    <thead><tr className="text-left text-xs text-muted-foreground"><th>Date</th><th>Detail</th><th>Ref</th><th className="text-right">Paid (Dr)</th><th className="text-right">Owed (Cr)</th><th className="text-right">Balance</th></tr></thead>
                     <tbody>
                       <tr className="border-t border-border"><td colSpan={5} className="py-1.5">Opening balance</td><td className="text-right">{rs(ledger?.opening ?? 0)}</td></tr>
                       {(ledger?.rows ?? []).map((r, i) => (
