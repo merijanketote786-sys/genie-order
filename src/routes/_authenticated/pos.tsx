@@ -2,6 +2,7 @@ import { PosCustomerSearch } from "@/components/pos-customer-search";
 import { PosSubnav } from "@/components/pos-subnav";
 import { usePinPrompt, usePosAccess } from "@/components/pos-access";
 import { AppShell } from "@/components/app-shell";
+import { UnitSelect } from "@/components/unit-select";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { Button } from "@/components/ui/button";
 import { getProducts, type DbProduct } from "@/lib/products.functions";
@@ -120,7 +121,8 @@ function PosPage() {
   };
   const products = prodData?.products ?? [];
 
-  const [rate, setRate] = useState<RateType>("sale");
+  const rate: RateType = "sale";
+  const [focusKey, setFocusKey] = useState<string | null>(null);
   const [term, setTerm] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [billDiscount, setBillDiscount] = useState("");
@@ -179,7 +181,6 @@ function PosPage() {
   useEffect(() => {
     if (cfgApplied.current || !posCfg || !Object.keys(posCfg).length) return;
     cfgApplied.current = true;
-    setRate(cfg.sales.defaultRateType);
     setPays([{ method: cfg.defaultPay as PayMethod, amount: "" }]);
     try { if (localStorage.getItem(GRID_KEY) == null) setShowGrid(cfg.pos.showGrid); } catch { /* ignore */ }
   }, [posCfg, cfg]);
@@ -211,6 +212,7 @@ function PosPage() {
       toast.error(`${p.name} has no ${RATE_TYPES.find((x) => x.id === r)?.label} rate`);
       return;
     }
+    setFocusKey(`${p.name}|${useRate}`);
     setCart((prev) => {
       const key = `${p.name}|${useRate}`;
       const ex = prev.find((l) => l.key === key);
@@ -522,7 +524,7 @@ function PosPage() {
   };
 
   return (
-    <AppShell title="POS Billing" subtitle="Counter + phone sales" active="/pos">
+    <AppShell title="POS Billing" subtitle="Counter + phone sales" active="/pos" wide>
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <WorkspaceHeader
           icon={ShoppingCart}
@@ -537,7 +539,7 @@ function PosPage() {
         {pc.node}
         <PosAlerts cfg={cfg} products={products} credit={balance?.found && balance.creditLimit != null && balance.balance + Math.max(0, total - paidNum) > balance.creditLimit ? { limit: balance.creditLimit, after: balance.balance + Math.max(0, total - paidNum) } : null} />
 
-        <div className="grid gap-3 lg:grid-cols-[1.1fr_1fr]">
+        <div className="grid gap-3 xl:grid-cols-[1fr_1.6fr]">
           {/* Products */}
           <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
             <div className="mb-3 grid grid-cols-[1fr_1fr_auto] gap-2">
@@ -562,13 +564,6 @@ function PosPage() {
                 </div>
               </div>
             ) : null}
-            <div className="flex flex-wrap gap-1.5">
-              {RATE_TYPES.map((r) => (
-                <Button key={r.id} size="sm" variant={rate === r.id ? "default" : "outline"} onClick={() => setRate(r.id)}>
-                  {r.label}
-                </Button>
-              ))}
-            </div>
             <div className="relative mt-3">
             <label className="flex h-11 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
               <ScanBarcode className="size-4 text-primary" />
@@ -672,7 +667,7 @@ function PosPage() {
 
             <div className="space-y-2">
               {cart.map((l) => (
-                <CartRow key={l.key} line={l} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} taxRates={cfg.tax.enabled ? cfg.tax.rates : []} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
+                <CartRow key={l.key} line={l} focus={focusKey === l.key} onFocused={() => setFocusKey(null)} onDone={() => scanRef.current?.focus()} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} taxRates={cfg.tax.enabled ? cfg.tax.rates : []} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
               ))}
               {!cart.length ? <p className="rounded-xl border border-dashed border-border py-8 text-center text-sm text-muted-foreground">Cart is empty — tap or scan a product.</p> : null}
             </div>
@@ -764,10 +759,14 @@ function PosPage() {
 }
 
 /** Cart ki ek line — qty, rate, discount, tax, unit, note aur total sab manually likhe ja sakte hain. */
-function CartRow({ line, onPatch, onRemove, lockPrice = false, lockDisc = false, onUnlock, taxRates = [] }: { line: CartLine; onPatch: (key: string, v: Partial<CartLine>) => void; onRemove: () => void; lockPrice?: boolean; lockDisc?: boolean; onUnlock?: () => void; taxRates?: { name: string; pct: number }[] }) {
+function CartRow({ line, focus, onFocused, onDone, onPatch, onRemove, lockPrice = false, lockDisc = false, onUnlock, taxRates = [] }: { line: CartLine; focus?: boolean; onFocused?: () => void; onDone?: () => void; onPatch: (key: string, v: Partial<CartLine>) => void; onRemove: () => void; lockPrice?: boolean; lockDisc?: boolean; onUnlock?: () => void; taxRates?: { name: string; pct: number }[] }) {
   const [totalText, setTotalText] = useState<string | null>(null);
   const [qtyText, setQtyText] = useState<string | null>(null);
   const [showNote, setShowNote] = useState(!!line.note);
+  const qtyRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (focus && qtyRef.current) { qtyRef.current.focus(); qtyRef.current.select(); onFocused?.(); }
+  }, [focus, onFocused]);
   const total = lineTotal(line);
   const setTotal = (raw: string) => {
     setTotalText(raw);
@@ -791,11 +790,11 @@ function CartRow({ line, onPatch, onRemove, lockPrice = false, lockDisc = false,
       <div className="mt-2 flex flex-wrap items-end gap-2">
         <div className="flex items-center gap-1">
           <Button size="icon-sm" variant="outline" onClick={() => onPatch(line.key, { qty: Math.max(0.001, +(line.qty - 1).toFixed(3)) || 1 })} aria-label="Decrease"><Minus /></Button>
-          <input className={`${small} w-16 text-center`} value={qtyText ?? String(line.qty)} inputMode="decimal" onChange={(e) => { setQtyText(e.target.value); onPatch(line.key, { qty: n(e.target.value) }); }} onBlur={() => setQtyText(null)} aria-label="Qty" title="Quantity (0.5, 1.25 kg too)" />
+          <input ref={qtyRef} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setQtyText(null); onDone?.(); } }} className={`${small} w-20 text-center`} value={qtyText ?? String(line.qty)} inputMode="decimal" onChange={(e) => { setQtyText(e.target.value); onPatch(line.key, { qty: n(e.target.value) }); }} onBlur={() => setQtyText(null)} aria-label="Qty" title="Quantity (0.5, 1.25 kg too)" />
           <Button size="icon-sm" variant="outline" onClick={() => onPatch(line.key, { qty: +(line.qty + 1).toFixed(3) })} aria-label="Increase"><Plus /></Button>
         </div>
         <label className="text-[10px] text-muted-foreground">Rate<input className={`${small} block w-20`} value={String(line.price)} readOnly={lockPrice} onFocus={() => { if (lockPrice) onUnlock?.(); }} inputMode="decimal" onChange={(e) => onPatch(line.key, { price: n(e.target.value) })} aria-label="Rate" /></label>
-        <label className="text-[10px] text-muted-foreground">Unit<input className={`${small} block w-16`} value={line.unitOverride ?? ""} placeholder={packLabel(line)} onChange={(e) => onPatch(line.key, { unitOverride: e.target.value })} aria-label="Unit" /></label>
+        <label className="text-[10px] text-muted-foreground">Unit<UnitSelect className={`${small} block w-28 px-1`} value={line.unitOverride?.trim() || line.unit || ""} onChange={(v) => onPatch(line.key, { unitOverride: v === line.unit ? undefined : v })} /></label>
         <label className="text-[10px] text-muted-foreground">Disc<input className={`${small} block w-16`} value={line.discount ? String(line.discount) : ""} placeholder="0" readOnly={lockDisc} onFocus={() => { if (lockDisc) onUnlock?.(); }} inputMode="decimal" onChange={(e) => onPatch(line.key, { discount: n(e.target.value) })} aria-label="Discount" /></label>
         {taxRates.length ? <label className="text-[10px] text-muted-foreground">Tax<select className={`${small} block w-20 px-1`} value={line.taxPercent ?? 0} onChange={(e) => onPatch(line.key, { taxPercent: Number(e.target.value) })} aria-label="Tax">{[...taxRates, ...(taxRates.some((t) => t.pct === (line.taxPercent ?? 0)) ? [] : [{ name: `${line.taxPercent}%`, pct: line.taxPercent ?? 0 }])].map((t) => <option key={t.name + t.pct} value={t.pct}>{t.name}</option>)}</select></label> : null}
         <label className="ml-auto text-[10px] text-muted-foreground">Total<input className={`${small} block w-24 text-right font-semibold text-foreground`} value={totalText ?? String(total)} readOnly={lockPrice} onFocus={() => { if (lockPrice) onUnlock?.(); }} inputMode="decimal" onChange={(e) => setTotal(e.target.value)} onBlur={() => setTotalText(null)} aria-label="Total" /></label>
