@@ -132,6 +132,7 @@ function PosPage() {
   const [notes, setNotes] = useState("");
   const [editing, setEditing] = useState<{ id: string; number: string } | null>(null);
   const [docsOpen, setDocsOpen] = useState<"held" | "quotation" | null>(null);
+  const [estimate, setEstimate] = useState(false);
   const payRef = useRef<HTMLDivElement>(null);
   const pickCustomer = (c: { name: string | null; phone: string }) => {
     setCustomerName(c.name ?? "");
