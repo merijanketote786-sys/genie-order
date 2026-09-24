@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { getProducts, type DbProduct } from "@/lib/products.functions";
 import { getMySettings } from "@/lib/settings.functions";
 import { closePosDoc, getCustomerBalance, listPosDocs, savePosDoc } from "@/lib/pos.functions";
+import { saveParty } from "@/lib/records.functions";
 import { newRef } from "@/lib/pos-errors";
 import { usePrintCenter } from "@/components/print-center";
 import { getSyncOverview } from "@/lib/print-admin.functions";
@@ -31,7 +32,7 @@ import {
 } from "@/lib/pos";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Minus, Plus, Printer, ScanBarcode, ShoppingCart, Trash2, MessageCircle, LayoutGrid, ReceiptText, Save, StickyNote, Pause, FileText, FolderOpen, RotateCcw, Download, Share2, X } from "lucide-react";
+import { Minus, Plus, Printer, ScanBarcode, ShoppingCart, Trash2, MessageCircle, LayoutGrid, ReceiptText, Save, StickyNote, Pause, FileText, FolderOpen, RotateCcw, Download, Share2, X, UserPlus } from "lucide-react";
 
 type PosDocRow = { id: string; doc_number: string; customer_name: string | null; customer_phone: string | null; grand_total: number; created_at: string; payload: string | null; status: string };
 
@@ -136,6 +137,30 @@ function PosPage() {
   };
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [partyOpen, setPartyOpen] = useState(false);
+  const [party, setParty] = useState({ name: "", phone: "", city: "", address: "" });
+  const [partySaving, setPartySaving] = useState(false);
+
+  const addParty = async () => {
+    if (!party.name.trim() || !party.phone.trim()) {
+      toast.error("Party ka naam aur phone zaroori hain");
+      return;
+    }
+    setPartySaving(true);
+    try {
+      const r = await saveParty({ data: { name: party.name.trim(), phone: party.phone.trim(), city: party.city.trim() || undefined, address: party.address.trim() || undefined } });
+      setCustomerName(r.customer.name ?? "");
+      setCustomerPhone(r.customer.phone ?? "");
+      setPartyOpen(false);
+      setParty({ name: "", phone: "", city: "", address: "" });
+      qc.invalidateQueries({ queryKey: ["pos-customers"] });
+      toast.success("Party save ho gayi");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Party save nahi hui");
+    } finally {
+      setPartySaving(false);
+    }
+  };
   const [saving, setSaving] = useState(false);
   const [last, setLast] = useState<ReceiptInput | null>(null);
   const scanRef = useRef<HTMLInputElement>(null);
@@ -515,10 +540,28 @@ function PosPage() {
         <div className="grid gap-3 lg:grid-cols-[1.1fr_1fr]">
           {/* Products */}
           <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
-            <div className="mb-3 grid grid-cols-2 gap-2">
+            <div className="mb-3 grid grid-cols-[1fr_1fr_auto] gap-2">
               <PosCustomerSearch field="name" className={inputCls} value={customerName} onChange={setCustomerName} onPick={pickCustomer} placeholder="Customer name (Walk-in)" />
               <PosCustomerSearch field="phone" className={inputCls} value={customerPhone} onChange={setCustomerPhone} onPick={pickCustomer} placeholder="Phone (optional)" />
+              <Button type="button" variant="outline" className="h-11 gap-1.5" onClick={() => setPartyOpen((o) => !o)} title="Add new party">
+                <UserPlus className="size-4" /> Party
+              </Button>
             </div>
+            {partyOpen ? (
+              <div className="mb-3 rounded-xl border border-primary/40 bg-accent/30 p-3">
+                <p className="mb-2 text-sm font-bold text-foreground">Add new party</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <input className={inputCls} placeholder="Name *" value={party.name} onChange={(e) => setParty((p) => ({ ...p, name: e.target.value }))} />
+                  <input className={inputCls} placeholder="Phone *" inputMode="tel" value={party.phone} onChange={(e) => setParty((p) => ({ ...p, phone: e.target.value.replace(/[^\d+\s-]/g, "") }))} />
+                  <input className={inputCls} placeholder="City" value={party.city} onChange={(e) => setParty((p) => ({ ...p, city: e.target.value }))} />
+                  <input className={inputCls} placeholder="Address" value={party.address} onChange={(e) => setParty((p) => ({ ...p, address: e.target.value }))} />
+                </div>
+                <div className="mt-2 flex justify-end gap-2">
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setPartyOpen(false)}>Cancel</Button>
+                  <Button type="button" size="sm" disabled={partySaving} onClick={addParty}>{partySaving ? "Saving…" : "Save party"}</Button>
+                </div>
+              </div>
+            ) : null}
             <div className="flex flex-wrap gap-1.5">
               {RATE_TYPES.map((r) => (
                 <Button key={r.id} size="sm" variant={rate === r.id ? "default" : "outline"} onClick={() => setRate(r.id)}>
