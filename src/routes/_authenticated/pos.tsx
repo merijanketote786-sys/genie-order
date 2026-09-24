@@ -415,7 +415,7 @@ function PosPage() {
     submitLock.current = true;
     setSaving(true);
     try {
-      const title = kind === "quotation" ? "Quotation" : "Invoice";
+      const title = kind === "quotation" ? (estimate ? "Estimate" : "Quotation") : "Invoice";
       const r = receipt("{{INVOICE}}", title);
       const res = await savePosDoc({
         data: {
