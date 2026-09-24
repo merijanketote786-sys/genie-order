@@ -39,6 +39,7 @@ function InvoicesPage() {
   const [search, setSearch] = useState("");
   const [term, setTerm] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [shareInv, setShareInv] = useState<InvoiceRow | null>(null);
   const qc = useQueryClient();
 
   const invoices = useQuery({
