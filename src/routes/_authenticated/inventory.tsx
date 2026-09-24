@@ -49,7 +49,7 @@ function InventoryPage() {
   const value = all.reduce((s, p) => s + Math.max(0, p.stock) * (p.purchasePrice ?? 0), 0);
   const noCost = all.filter((p) => p.purchasePrice == null).length;
 
-  const refresh = () => ["inventory", "stock-ledger", "products", "products-lite"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+  const refresh = () => ["inventory", "stock-ledger", "products", "pos-products", "products-lite"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   const saveEdit = async () => {
     if (!cur || !edit) return;
     try {

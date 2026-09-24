@@ -104,7 +104,7 @@ const n = (v: string) => {
 
 function PosPage() {
   const qc = useQueryClient();
-  const { data: prodData } = useQuery({ queryKey: ["products"], queryFn: () => getProducts() });
+  const { data: prodData } = useQuery({ queryKey: ["pos-products"], queryFn: () => getProducts({ data: { scope: "pos" } }) });
   const { data: me } = useQuery({ queryKey: ["my-settings"], queryFn: () => getMySettings() });
   const { can, config: posCfg, cfg } = usePosAccess();
   const pc = usePrintCenter();
@@ -452,7 +452,7 @@ function PosPage() {
         }
         toast.success(`${kind === "quotation" ? "Quotation" : "Sale"} save: ${res.invoiceNumber}${res.duplicate ? " (pehle se saved tha)" : ""}${res.change > 0 ? ` — wapas dein Rs ${money(res.change)}` : ""}`);
       }
-      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["products"] }); qc.invalidateQueries({ queryKey: ["pos-products"] });
       qc.invalidateQueries({ queryKey: ["pos-docs"] });
       qc.invalidateQueries({ queryKey: ["pos-balance"] });
       reset();
@@ -646,7 +646,7 @@ function PosPage() {
                     </button>
                   );
                 })}
-                {!results.length ? <p className="col-span-full py-6 text-center text-sm text-muted-foreground">Koi product nahi mila. Rates section me products add karein.</p> : null}
+                {!results.length ? <p className="col-span-full py-6 text-center text-sm text-muted-foreground">Koi product nahi mila. Inventory me products ke rates aur stock set karein.</p> : null}
               </div>
             ) : null}
           </section>

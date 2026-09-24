@@ -118,7 +118,7 @@ export const getDashboard = createServerFn({ method: "GET" })
           .order("created_at", { ascending: false })
           .limit(5000),
         supabase.from("customers").select("id, name, created_at").limit(5000),
-        supabase.from("products").select("id, is_active, stock, sale_price").limit(5000),
+        supabase.from("products").select("id, is_active, stock, sale_price").eq("scope", "pos").limit(5000),
         supabase.from("profiles").select("id, full_name").limit(500),
         supabase
           .from("sync_logs")

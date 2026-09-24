@@ -51,7 +51,7 @@ export const savePosDoc = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
     const names = [...new Set(data.items.map((s) => s.name))];
-    const { data: prods } = names.length ? await supabase.from("products").select("id, name").in("name", names) : { data: [] };
+    const { data: prods } = names.length ? await supabase.from("products").select("id, name").eq("scope", "pos").in("name", names) : { data: [] };
     const idOf = new Map<string, string>((prods ?? []).map((p: { id: string; name: string }) => [p.name, p.id]));
 
     const { data: res, error } = await supabase.rpc("pos_save_sale", {

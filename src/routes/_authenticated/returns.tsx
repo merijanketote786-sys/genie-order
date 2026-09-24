@@ -81,7 +81,7 @@ function ReturnsPage() {
       setQty({}); setReason("");
       qc.invalidateQueries({ queryKey: ["ret-sale"] });
       qc.invalidateQueries({ queryKey: ["ret-list"] });
-      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["products"] }); qc.invalidateQueries({ queryKey: ["pos-products"] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Return save nahi hua");
     } finally { lockRef.current = false; setSaving(false); }
