@@ -110,7 +110,7 @@ export const listPosDocs = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(50);
     const { data: rows, error } = data.docType === "sale" ? await q : await q.in("status", ["draft", "completed"]);
-    if (error) throw new Error("List load nahi hui");
+    if (error) throw new Error("Failed to load the list");
     type Row = { id: string; doc_number: string; customer_name: string | null; customer_phone: string | null; grand_total: number; created_at: string; payload: unknown; status: string };
     return { docs: ((rows ?? []) as Row[]).map((r) => ({ ...r, grand_total: Number(r.grand_total), payload: r.payload == null ? null : JSON.stringify(r.payload) })) };
   });
@@ -121,7 +121,7 @@ export const closePosDoc = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await (context.supabase as any).rpc("pos_close_doc", { _id: data.id });
-    if (error) throw new Error(friendlyDbError(error, "Update nahi hua."));
+    if (error) throw new Error(friendlyDbError(error, "Failed to update."));
     return { ok: true };
   });
 

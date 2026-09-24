@@ -48,7 +48,7 @@ export const saveSupplier = createServerFn({ method: "POST" })
     const row = { name: data.name, phone: data.phone || null, address: data.address || null, opening_balance: data.openingBalance ?? 0 };
     const q = data.id ? sb.from("suppliers").update(row).eq("id", data.id) : sb.from("suppliers").insert(row);
     const { error } = await q;
-    if (error) throw new Error("Supplier save nahi hua");
+    if (error) throw new Error("Failed to save supplier");
     return { ok: true };
   });
 
@@ -59,7 +59,7 @@ export const partyPayment = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { error } = await (context.supabase as Sb).rpc("pos_party_payment", { _kind: data.kind, _party: data.partyId, _amount: data.amount, _method: data.method, _note: data.note ?? "", _ref: data.clientRef ?? null });
-    if (error) throw new Error(friendlyDbError(error, "Payment save nahi hui."));
+    if (error) throw new Error(friendlyDbError(error, "Failed to save payment."));
     return { ok: true };
   });
 
@@ -132,7 +132,7 @@ export const savePurchase = createServerFn({ method: "POST" })
     const { data: res, error } = await (context.supabase as Sb).rpc("pos_save_purchase", {
       _p: { client_ref: data.clientRef ?? "", doc_type: data.docType, supplier_id: data.supplierId ?? "", supplier_name: data.supplierName ?? "", subtotal, discount_total: data.discount, tax_total: tax, grand_total: total, paid: data.paid, method: data.method, notes: data.notes ?? "", ref_purchase_id: data.refPurchaseId ?? "", items },
     });
-    if (error || !res) { console.error(error); throw new Error(friendlyDbError(error, "Purchase save nahi hui.")); }
+    if (error || !res) { console.error(error); throw new Error(friendlyDbError(error, "Failed to save purchase.")); }
     return { ...(res as { id: string; number: string }), total };
   });
 
@@ -193,7 +193,7 @@ export const getSaleForReturn = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const r = await returnable(context.supabase as Sb, data.id);
-    if (!r.sale) throw new Error("Bill nahi mila");
+    if (!r.sale) throw new Error("Bill not found");
     return { sale: { id: r.sale.id as string, number: r.sale.doc_number as string, customerName: (r.sale.customer_name ?? "") as string, customerPhone: (r.sale.customer_phone ?? "") as string, hasCustomer: !!r.sale.customer_id, total: Number(r.sale.grand_total) }, items: r.items };
   });
 
@@ -205,11 +205,11 @@ export const saveSalesReturn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const sb = context.supabase as Sb;
     const r = await returnable(sb, data.saleId);
-    if (!r.sale) throw new Error("Bill nahi mila");
-    if (data.mode === "credit" && !r.sale.customer_id) throw new Error("Walk-in bill ka credit nahi ho sakta — refund chunein");
+    if (!r.sale) throw new Error("Bill not found");
+    if (data.mode === "credit" && !r.sale.customer_id) throw new Error("A walk-in bill cannot be credit — choose refund instead");
     const items = data.lines.map((l) => {
       const it = r.items.find((x: { id: string }) => x.id === l.itemId);
-      if (!it) throw new Error("Item bill me nahi");
+      if (!it) throw new Error("Item not in the bill");
       if (l.qty > it.qty - it.returned + 1e-9) throw new Error(`${it.name}: zyada se zyada ${r2(it.qty - it.returned)} wapas ho sakta hai`);
       return { product_id: it.productId ?? "", name: it.name, unit: it.unit, rate_type: it.rateType, qty: l.qty, stock_qty: r2(it.stockPerUnit * l.qty * 1000) / 1000, rate: it.unitRefund, line_total: r2(it.unitRefund * l.qty) };
     });
@@ -230,7 +230,7 @@ export const saveSalesReturn = createServerFn({ method: "POST" })
         items,
       },
     });
-    if (error || !res) { console.error(error); throw new Error(friendlyDbError(error, "Return save nahi hua.")); }
+    if (error || !res) { console.error(error); throw new Error(friendlyDbError(error, "Failed to save return.")); }
     return { ...(res as { id: string; number: string }), total };
   });
 
@@ -246,6 +246,6 @@ export const cancelDoc = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), reason: z.string().max(300) }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await (context.supabase as Sb).rpc("pos_cancel_sale", { _id: data.id, _reason: data.reason });
-    if (error) throw new Error(friendlyDbError(error, "Cancel nahi hua."));
+    if (error) throw new Error(friendlyDbError(error, "Failed to cancel."));
     return { ok: true };
   });

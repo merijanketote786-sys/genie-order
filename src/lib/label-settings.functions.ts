@@ -36,5 +36,5 @@ export const saveMyLabelSettings = createServerFn({ method: "POST" })
         { onConflict: "user_id" },
       );
     if (error) return { ok: false as const, message: error.message };
-    return { ok: true as const, message: "Label setup save ho gaya" };
+    return { ok: true as const, message: "Label setup saved successfully" };
   });

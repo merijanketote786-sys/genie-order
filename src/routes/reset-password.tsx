@@ -12,7 +12,7 @@ export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
       { title: "Reset Password — OrderBot | HB Chemicals Pakistan" },
-      { name: "description", content: "Apna OrderBot account ka naya password set karein." },
+      { name: "description", content: "Set a new password for your OrderBot account." },
       { property: "og:title", content: "Reset Password — OrderBot" },
       { property: "og:description", content: "Set a new password for your OrderBot account." },
       { property: "og:type", content: "website" },
@@ -46,10 +46,10 @@ function ResetPasswordPage() {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      toast.success("Password update ho gaya");
+      toast.success("Password updated");
       navigate({ to: "/", replace: true });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Password update nahi hua");
+      toast.error(err instanceof Error ? err.message : "Password update failed");
     } finally {
       setBusy(false);
     }
@@ -61,11 +61,11 @@ function ResetPasswordPage() {
         <span className="grid size-10 place-items-center rounded-lg bg-accent text-accent-foreground">
           <KeyRound className="size-5" />
         </span>
-        <h1 className="mt-3 font-display text-lg font-bold text-foreground">Naya password set karein</h1>
+        <h1 className="mt-3 font-display text-lg font-bold text-foreground">Set a new password</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {ready
-            ? "Naya password likhein aur save karein."
-            : "Reset link verify ho raha hai... agar link expire ho gaya ho to dobara reset link mangwayein."}
+            ? "Enter your new password and save it."
+            : "Verifying reset link... if the link has expired, request a new one."}
         </p>
 
         <form onSubmit={submit} className="mt-5 grid gap-4">

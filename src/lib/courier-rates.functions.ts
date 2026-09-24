@@ -90,7 +90,7 @@ export const importCourierDocument = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     if (await blocked(context)) {
-      return { ok: false as const, message: "Aapka access band hai. Admin se rabta karein." };
+      return { ok: false as const, message: "Your access is blocked. Contact the admin." };
     }
 
     const ext = (data.fileName.split(".").pop() ?? "").toLowerCase();
@@ -98,7 +98,7 @@ export const importCourierDocument = createServerFn({ method: "POST" })
     if (!allowed.includes(ext)) {
       return {
         ok: false as const,
-        message: `".${ext}" file support nahi hoti. PDF, Word (.docx), Excel (.xlsx/.xls), CSV ya tasveer upload karein.`,
+        message: `".${ext}" files are not supported. Upload PDF, Word (.docx), Excel (.xlsx/.xls), CSV, or an image.`,
       };
     }
 
@@ -109,7 +109,7 @@ export const importCourierDocument = createServerFn({ method: "POST" })
       bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
     } catch {
-      return { ok: false as const, message: "File parh nahi saka. Dobara upload karein." };
+      return { ok: false as const, message: "Could not read the file. Please upload it again." };
     }
     if (bytes.length > 10 * 1024 * 1024) {
       return { ok: false as const, message: "File 10MB se bari hai." };
@@ -129,15 +129,15 @@ export const importCourierDocument = createServerFn({ method: "POST" })
     } catch {
       return {
         ok: false as const,
-        message: "File ka data parh nahi saka — file kharab ya password-protected ho sakti hai.",
+        message: "Could not read the file's data — it may be corrupted or password-protected.",
       };
     }
     if (["xlsx", "xls", "csv", "docx", "txt"].includes(ext) && extracted.trim().length < 10) {
-      return { ok: false as const, message: "File khali lagi — koi rate table nahi mila." };
+      return { ok: false as const, message: "The file appears empty — no rate table found." };
     }
 
     const key = process.env["LOVABLE_API_KEY"];
-    if (!key) return { ok: false as const, message: "AI service configure nahi hai." };
+    if (!key) return { ok: false as const, message: "AI service is not configured." };
 
     const content: unknown[] = [
       { type: "text", text: "Is courier rate sheet ko JSON me convert karein." },
@@ -163,21 +163,21 @@ export const importCourierDocument = createServerFn({ method: "POST" })
       if (res.status === 429)
         return {
           ok: false as const,
-          message: "Abhi requests zyada hain — thori dair baad koshish karein.",
+          message: "Too many requests right now — please try again shortly.",
         };
       if (res.status === 402)
-        return { ok: false as const, message: "AI credits khatam ho gaye hain. Credits add karein." };
+        return { ok: false as const, message: "AI credits have run out. Please add credits." };
       if (!res.ok)
-        return { ok: false as const, message: "File parhne me masla hua. Dobara koshish karein." };
+        return { ok: false as const, message: "There was a problem reading the file. Please try again." };
       const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
       text = json.choices?.[0]?.message?.content ?? "";
     } catch {
-      return { ok: false as const, message: "File parhne me masla hua. Dobara koshish karein." };
+      return { ok: false as const, message: "There was a problem reading the file. Please try again." };
     }
 
     const cleaned = text.replace(/```[a-z]*/gi, "").replace(/```/g, "").trim();
     if (!cleaned || /NO_TABLE/i.test(cleaned)) {
-      return { ok: false as const, message: "File me courier rate table nahi mila." };
+      return { ok: false as const, message: "No courier rate table was found in the file." };
     }
     const start = cleaned.indexOf("{");
     const end = cleaned.lastIndexOf("}");
@@ -185,14 +185,14 @@ export const importCourierDocument = createServerFn({ method: "POST" })
     try {
       parsed = JSON.parse(cleaned.slice(start, end + 1));
     } catch {
-      return { ok: false as const, message: "Rate sheet samajh nahi aayi. Saaf file upload karein." };
+      return { ok: false as const, message: "Could not understand the rate sheet. Please upload a clearer file." };
     }
 
     const config = normalizeConfig(parsed);
     if (!config) {
       return {
         ok: false as const,
-        message: "Rate sheet me weight slabs ya rates poore nahi mile — file check kar ke dobara upload karein.",
+        message: "The rate sheet is missing weight slabs or rates — please check the file and re-upload.",
       };
     }
     return { ok: true as const, config, fileName: data.fileName };
@@ -235,7 +235,7 @@ export const saveCourier = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     if (await blocked(context)) {
-      return { ok: false as const, message: "Aapka access band hai. Admin se rabta karein." };
+      return { ok: false as const, message: "Your access is blocked. Contact the admin." };
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const workspaceId = await workspaceOf(context.userId);
@@ -262,8 +262,8 @@ export const saveCourier = createServerFn({ method: "POST" })
           .eq("id", existing.id)
       : await supabaseAdmin.from("courier_profiles").insert(row);
 
-    if (error) return { ok: false as const, message: "Courier save nahi ho saka." };
-    return { ok: true as const, message: `${data.name} save ho gaya` };
+    if (error) return { ok: false as const, message: "Failed to save the courier." };
+    return { ok: true as const, message: `${data.name} saved successfully` };
   });
 
 export const deleteCourier = createServerFn({ method: "POST" })
@@ -279,6 +279,6 @@ export const deleteCourier = createServerFn({ method: "POST" })
       .delete()
       .eq("id", data.id)
       .eq("workspace_id", await workspaceOf(context.userId));
-    if (error) return { ok: false as const, message: "Delete nahi ho saka." };
+    if (error) return { ok: false as const, message: "Failed to delete." };
     return { ok: true as const, message: "Courier hata diya" };
   });

@@ -111,10 +111,10 @@ export const updateUserAccess = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     if (!(await isAdminUser(context.supabase, context.userId))) {
-      return { ok: false as const, message: "Sirf admin ye change kar sakta hai." };
+      return { ok: false as const, message: "Only an admin can make this change." };
     }
     if (data.userId === context.userId && (data.role === "staff" || data.isActive === false)) {
-      return { ok: false as const, message: "Apna hi admin access nahi hata sakte." };
+      return { ok: false as const, message: "You cannot remove your own admin access." };
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -127,7 +127,7 @@ export const updateUserAccess = createServerFn({ method: "POST" })
         .maybeSingle();
       const targetWs = targetProfile?.workspace_id;
       if (!targetWs) {
-        return { ok: false as const, message: "User ka workspace nahi mila." };
+        return { ok: false as const, message: "Could not find the user's workspace." };
       }
       if (data.role === "admin") {
         await supabaseAdmin
@@ -166,7 +166,7 @@ export const updateUserAccess = createServerFn({ method: "POST" })
       if (error) return { ok: false as const, message: error.message };
     }
 
-    return { ok: true as const, message: "Update ho gaya" };
+    return { ok: true as const, message: "Updated successfully" };
   });
 
 /** Admin sets a new password for a user. Existing passwords are hashed and can never be read back. */
@@ -182,14 +182,14 @@ export const setUserPassword = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     if (!(await isAdminUser(context.supabase, context.userId))) {
-      return { ok: false as const, message: "Sirf admin ye change kar sakta hai." };
+      return { ok: false as const, message: "Only an admin can make this change." };
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
       password: data.password,
     });
     if (error) return { ok: false as const, message: error.message };
-    return { ok: true as const, message: "Naya password set ho gaya" };
+    return { ok: true as const, message: "New password set successfully" };
   });
 
 /** Sends the user an email with a password reset link. */
@@ -222,7 +222,7 @@ export const getAutoSyncSetup = createServerFn({ method: "POST" })
     }
     const apiKey = process.env["PRODUCT_SYNC_API_KEY"];
     if (!apiKey) {
-      return { ok: false as const, message: "Sync key server par set nahi hai." };
+      return { ok: false as const, message: "Sync key is not set on the server." };
     }
     const folder = (data.folder ?? "C:\\VyaparExport").replace(/["']/g, "");
     const { buildSetupCmd } = await import("@/lib/autosync-script.server");
@@ -243,10 +243,10 @@ export const getSyncConnectInfo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     if (!(await isAdminUser(context.supabase, context.userId))) {
-      return { ok: false as const, message: "Sirf admin ye maloomat dekh sakta hai." };
+      return { ok: false as const, message: "Only an admin can view this information." };
     }
     const apiKey = process.env["PRODUCT_SYNC_API_KEY"];
-    if (!apiKey) return { ok: false as const, message: "Sync key server par set nahi hai." };
+    if (!apiKey) return { ok: false as const, message: "Sync key is not set on the server." };
     return {
       ok: true as const,
       endpoint: "https://orderbot.hbchemicalspakistan.com/api/public/sync/products",
@@ -370,7 +370,7 @@ export const createAppUser = createServerFn({ method: "POST" })
       return { ok: false as const, message: "Sirf admin naya user bana sakta hai." };
     }
     if (!data.invite && !data.password) {
-      return { ok: false as const, message: "Password likhein ya invite email bhejein." };
+      return { ok: false as const, message: "Enter a password or send an invite email." };
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -395,7 +395,7 @@ export const createAppUser = createServerFn({ method: "POST" })
       userId = res.user?.id ?? null;
     }
 
-    if (!userId) return { ok: false as const, message: "User ban to gaya, magar id nahi mili." };
+    if (!userId) return { ok: false as const, message: "User was created, but the id was not found." };
 
     await supabaseAdmin
       .from("profiles")
@@ -433,13 +433,13 @@ export const deleteAppUser = createServerFn({ method: "POST" })
       return { ok: false as const, message: "Sirf admin user delete kar sakta hai." };
     }
     if (data.userId === context.userId) {
-      return { ok: false as const, message: "Apna hi account delete nahi kar sakte." };
+      return { ok: false as const, message: "You cannot delete your own account." };
     }
     const email = (context.claims as Record<string, unknown>)["email"];
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: target } = await supabaseAdmin.auth.admin.getUserById(data.userId);
     if (target.user?.email?.toLowerCase() === OWNER_EMAIL) {
-      return { ok: false as const, message: "Owner account delete nahi ho sakta." };
+      return { ok: false as const, message: "The owner account cannot be deleted." };
     }
     if (typeof email === "string" && email.toLowerCase() !== OWNER_EMAIL) {
       return { ok: false as const, message: "User delete sirf owner account kar sakta hai." };
@@ -447,7 +447,7 @@ export const deleteAppUser = createServerFn({ method: "POST" })
 
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
     if (error) return { ok: false as const, message: error.message };
-    return { ok: true as const, message: "User delete ho gaya" };
+    return { ok: true as const, message: "User deleted successfully" };
   });
 
 /* ------------------------------ CSV export ------------------------------ */

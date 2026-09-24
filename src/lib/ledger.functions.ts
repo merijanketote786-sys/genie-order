@@ -68,7 +68,7 @@ export const saveCustomerAccount = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), openingBalance: z.number().min(-1e9).max(1e9), creditLimit: z.number().min(0).max(1e9).nullable() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await (context.supabase as Sb).from("customers").update({ opening_balance: data.openingBalance, credit_limit: data.creditLimit }).eq("id", data.id);
-    if (error) throw new Error("Save nahi hua");
+    if (error) throw new Error("Failed to save");
     return { ok: true };
   });
 
@@ -91,7 +91,7 @@ export const saveExpense = createServerFn({ method: "POST" })
     const sb = context.supabase as Sb;
     const { data: row, error } = await sb.from("expenses").insert({ category: data.category, amount: data.amount, expense_date: data.date, method: data.method, description: data.description || null, client_ref: data.clientRef ?? null }).select("id").single();
     if (error?.code === "23505") return { ok: true, duplicate: true };
-    if (error) throw new Error(friendlyDbError(error, "Expense save nahi hua."));
+    if (error) throw new Error(friendlyDbError(error, "Failed to save expense."));
     await sb.from("audit_log").insert({ action: "create", entity: "expense", entity_id: row.id, details: { amount: data.amount, category: data.category } }).then(() => null, () => null);
     return { ok: true };
   });
@@ -101,7 +101,7 @@ export const cancelExpense = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await (context.supabase as Sb).from("expenses").update({ status: "cancelled" }).eq("id", data.id);
-    if (error) throw new Error("Cancel nahi hua");
+    if (error) throw new Error("Failed to cancel");
     return { ok: true };
   });
 
