@@ -102,39 +102,6 @@ export const FIELDS: Field[] = [
   { s: "invoices", path: "receiptFooter", label: "Footer line", type: "text", placeholder: "Thank you! Please visit again." },
   { s: "invoices", path: "printing.signatureLabel", label: "Signature label", type: "text", placeholder: "Authorized signature" },
 
-  // Printing — layout
-  { s: "printing", path: "printing.layout.marginTop", label: "Top margin (mm) — A4/custom", type: "number", min: 0, max: 40, def: 12 },
-  { s: "printing", path: "printing.layout.marginBottom", label: "Bottom margin (mm)", type: "number", min: 0, max: 40, def: 12 },
-  { s: "printing", path: "printing.layout.marginLeft", label: "Left margin (mm)", type: "number", min: 0, max: 40, def: 12 },
-  { s: "printing", path: "printing.layout.marginRight", label: "Right margin (mm)", type: "number", min: 0, max: 40, def: 12 },
-  { s: "printing", path: "printing.layout.fontPt", label: "Font size (pt)", type: "number", min: 6, max: 16, step: 0.5, def: 10 },
-  { s: "printing", path: "printing.layout.tableFontPt", label: "Table font size (pt)", type: "number", min: 6, max: 16, step: 0.5, def: 9.5 },
-  { s: "printing", path: "printing.layout.headerPt", label: "Header size (pt)", type: "number", min: 10, max: 36, def: 18 },
-  { s: "printing", path: "printing.layout.footerPt", label: "Footer size (pt)", type: "number", min: 6, max: 14, step: 0.5, def: 8.5 },
-  { s: "printing", path: "printing.layout.logoMm", label: "Logo size (mm)", type: "number", min: 6, max: 60, def: 18 },
-  { s: "printing", path: "printing.layout.logoAlign", label: "Logo / header alignment", type: "select", options: [{ v: "left", l: "Left" }, { v: "center", l: "Center" }, { v: "right", l: "Right" }], def: "left" },
-  { s: "printing", path: "printing.layout.lineHeight", label: "Line spacing", type: "number", min: 1, max: 2, step: 0.05, def: 1.35 },
-  { s: "printing", path: "printing.layout.copies", label: "Default copies", type: "select", options: [{ v: "1", l: "1 copy" }, { v: "2", l: "2 copies" }, { v: "3", l: "3 copies" }, { v: "4", l: "4 copies" }], def: "1" },
-  // A5
-  { s: "printing", path: "printing.a5.orientation", label: "A5 orientation", type: "select", options: [{ v: "portrait", l: "Portrait" }, { v: "landscape", l: "Landscape" }], def: "portrait" },
-  { s: "printing", path: "printing.a5.marginMm", label: "A5 margin (mm)", type: "number", min: 0, max: 25, def: 7 },
-  { s: "printing", path: "printing.a5.fontPt", label: "A5 font size (pt)", type: "number", min: 6, max: 12, step: 0.5, def: 8.5 },
-  { s: "printing", path: "printing.a5.logoMm", label: "A5 logo size (mm)", type: "number", min: 5, max: 40, def: 12 },
-  { s: "printing", path: "printing.a5.footer", label: "A5 footer (empty = main footer)", type: "text" },
-  { s: "printing", path: "printing.a5.signature", label: "Signature line on A5", type: "bool", def: false },
-  // Thermal
-  { s: "printing", path: "printing.thermal.fontPt", label: "Thermal font size (pt)", type: "number", min: 6, max: 12, step: 0.5, def: 8.5 },
-  { s: "printing", path: "printing.thermal.marginMm", label: "Thermal margin (mm)", type: "number", min: 0, max: 8, step: 0.5, def: 2 },
-  { s: "printing", path: "printing.thermal.showQtyRate", label: "Thermal: qty × rate line", type: "bool", def: true },
-  { s: "printing", path: "printing.thermal.boldTotal", label: "Thermal: bold grand total", type: "bool", def: true },
-  { s: "printing", path: "printing.thermal.showCustomer", label: "Thermal: customer info", type: "bool", def: true },
-  { s: "printing", path: "printing.thermal.showBarcode", label: "Thermal: invoice barcode", type: "bool", def: false },
-  { s: "printing", path: "printing.thermal.showQr", label: "Thermal: QR code", type: "bool", def: false },
-  { s: "printing", path: "printing.thermal.footer", label: "Thermal footer (empty = main footer)", type: "text" },
-  { s: "printing", path: "printing.thermal.feedLines", label: "Blank lines after receipt", type: "number", min: 0, max: 15, def: 3 },
-  // Custom paper
-  { s: "printing", path: "printing.custom.widthMm", label: "Custom paper width (mm)", type: "number", min: 40, max: 330, def: 100 },
-  { s: "printing", path: "printing.custom.heightMm", label: "Custom paper height (mm, empty = roll)", type: "number", min: 30, max: 600, nullable: true },
 
   // Notifications
   { s: "notifications", path: "notify.lowStock", label: "Low stock alert (in POS)", type: "bool", def: true },
@@ -150,13 +117,3 @@ export const FIELDS: Field[] = [
   { s: "advanced", path: "business.timezone", label: "Timezone", type: "select", options: ["Asia/Karachi", "Asia/Dubai", "Asia/Riyadh", "Europe/London", "UTC"].map((z) => ({ v: z, l: z })), def: "Asia/Karachi" },
 ];
 
-// Printing defaults per document + template per paper + behavior
-for (const k of Object.keys(DOC_LABEL) as DocKind[]) {
-  FIELDS.push({ s: "printing", path: `printing.defaults.${k}`, label: `Default paper — ${DOC_LABEL[k]}`, type: "select", options: fmtOpts });
-}
-for (const f of Object.keys(FORMAT_LABEL) as PaperFormat[]) {
-  FIELDS.push({ s: "printing", path: `printing.templates.${f}`, label: `Design — ${FORMAT_LABEL[f]}`, type: "select", options: tplOpts });
-}
-for (const [k, l] of [["pos", "POS sale"], ["sale", "Sales invoice"], ["quotation", "Quotation"], ["return", "Sales return"], ["purchase", "Purchase"], ["receipt", "Payment receipt"]] as const) {
-  FIELDS.push({ s: "printing", path: `printing.behavior.${k}`, label: `After saving — ${l}`, type: "select", options: behOpts });
-}
