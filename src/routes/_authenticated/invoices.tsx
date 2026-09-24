@@ -3,10 +3,11 @@ import { WorkspaceHeader } from "@/components/workspace-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ResultCard } from "@/components/result-card";
+import { ShareDialog } from "@/components/share-dialog";
 import { type InvoiceRow, deleteInvoice, listInvoices, setInvoiceStatus } from "@/lib/records.functions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { FileCheck2, Search, Trash2 } from "lucide-react";
+import { FileCheck2, Search, Share2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
