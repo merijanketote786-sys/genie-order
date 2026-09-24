@@ -137,6 +137,30 @@ function PosPage() {
   };
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [partyOpen, setPartyOpen] = useState(false);
+  const [party, setParty] = useState({ name: "", phone: "", city: "", address: "" });
+  const [partySaving, setPartySaving] = useState(false);
+
+  const addParty = async () => {
+    if (!party.name.trim() || !party.phone.trim()) {
+      toast.error("Party ka naam aur phone zaroori hain");
+      return;
+    }
+    setPartySaving(true);
+    try {
+      const r = await saveParty({ data: { name: party.name.trim(), phone: party.phone.trim(), city: party.city.trim() || undefined, address: party.address.trim() || undefined } });
+      setCustomerName(r.customer.name ?? "");
+      setCustomerPhone(r.customer.phone ?? "");
+      setPartyOpen(false);
+      setParty({ name: "", phone: "", city: "", address: "" });
+      qc.invalidateQueries({ queryKey: ["pos-customers"] });
+      toast.success("Party save ho gayi");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Party save nahi hui");
+    } finally {
+      setPartySaving(false);
+    }
+  };
   const [saving, setSaving] = useState(false);
   const [last, setLast] = useState<ReceiptInput | null>(null);
   const scanRef = useRef<HTMLInputElement>(null);
