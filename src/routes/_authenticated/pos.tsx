@@ -173,7 +173,7 @@ function PosPage() {
 
   useEffect(() => {
     try {
-      if (localStorage.getItem(POS_VIEW_KEY) === "settings") setView("settings");
+      localStorage.removeItem(POS_VIEW_KEY);
     } catch {
       /* ignore */
     }
@@ -533,8 +533,8 @@ function PosPage() {
           <Button variant={view === "billing" ? "default" : "ghost"} onClick={() => changeView("billing")}>
             <ReceiptText /> Billing
           </Button>
-          <Button variant={view === "settings" ? "default" : "ghost"} onClick={() => changeView("settings")}>
-            <Settings2 /> POS Settings
+          <Button variant="ghost" asChild>
+            <Link to="/pos-settings"><Settings2 /> POS Settings</Link>
           </Button>
         </div>
 
