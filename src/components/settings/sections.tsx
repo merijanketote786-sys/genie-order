@@ -165,6 +165,14 @@ export function sampleDoc(): PrintDoc {
 }
 
 /* -------------------------------- Printers -------------------------------- */
+const PRINTER_TYPES: { v: PrinterCfg["type"]; l: string; paper: PaperFormat; hint: string }[] = [
+  { v: "thermal", l: "Thermal receipt printer", paper: "t80", hint: "58mm / 80mm roll — POS receipts" },
+  { v: "a4", l: "A4 laser / inkjet", paper: "a4", hint: "Full-page invoices & reports" },
+  { v: "a5", l: "A5 printer", paper: "a5", hint: "Half-page invoices" },
+  { v: "label", l: "Label / barcode printer", paper: "custom", hint: "TSC 244 Pro etc." },
+  { v: "other", l: "Other printer", paper: "a4", hint: "Any other printer" },
+];
+
 export function PrintersManager() {
   const qc = useQueryClient();
   const { cfg, can } = usePosAccess();
@@ -173,88 +181,149 @@ export function PrintersManager() {
   const [list, setList] = useState<PrinterCfg[]>(cfg.printers);
   const [defs, setDefs] = useState<Partial<Record<PrinterRole, string>>>(cfg.printerDefaults);
   const [sys, setSys] = useState<BridgePrinter[] | null>(null);
+  const [newType, setNewType] = useState<PrinterCfg["type"]>("thermal");
+  const [newPaper, setNewPaper] = useState<PaperFormat>("t80");
+  const [saving, setSaving] = useState(false);
   const bridge = printBridge();
   useEffect(() => { setList(cfg.printers); setDefs(cfg.printerDefaults); }, [cfg.printers, cfg.printerDefaults]);
   const refresh = async () => { if (!bridge) return; try { setSys(await bridge.getPrinters()); } catch { toast.error("Could not fetch printers list"); } };
   useEffect(() => { void refresh(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 
-  const save = async (l = list, d = defs) => {
+  const dirty = JSON.stringify([list, defs]) !== JSON.stringify([cfg.printers, cfg.printerDefaults]);
+
+  const save = async () => {
+    setSaving(true);
     try {
-      const clean = Object.fromEntries(Object.entries(d).filter(([, v]) => v && l.some((p) => p.id === v))) as Record<string, string>;
-      await savePrinters({ data: { printers: l, defaults: clean } });
+      const clean = Object.fromEntries(Object.entries(defs).filter(([, v]) => v && list.some((p) => p.id === v))) as Record<string, string>;
+      await savePrinters({ data: { printers: list, defaults: clean } });
       toast.success("Printer settings saved");
       qc.invalidateQueries({ queryKey: ["pos-access"] });
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not save"); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not save"); } finally { setSaving(false); }
   };
   const add = (p?: Partial<PrinterCfg>) => {
     const np: PrinterCfg = { id: `p${Date.now().toString(36)}`, name: p?.name ?? "New printer", type: p?.type ?? "thermal", paper: p?.paper ?? "t80", deviceName: p?.deviceName, copies: 1 };
     setList([...list, np]);
   };
   const upd = (id: string, patch: Partial<PrinterCfg>) => setList(list.map((p) => (p.id === id ? { ...p, ...patch } : p)));
-  const statusText = (s: number) => (s === 0 ? "Ready (Windows)" : `Windows status code ${s}`);
+  const remove = (id: string) => { setList(list.filter((x) => x.id !== id)); setDefs(Object.fromEntries(Object.entries(defs).filter(([, v]) => v !== id))); };
+  const statusText = (s: number) => (s === 0 ? "Ready" : `Status code ${s}`);
+  const guessPaper = (name: string): PaperFormat => (/58/.test(name) ? "t58" : /80|pos|thermal|receipt/i.test(name) ? "t80" : "a4");
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* How it works */}
       <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
         {bridge ? (
-          <p><b className="text-foreground">Desktop app:</b> Windows's installed printers are shown below. Choose a Windows printer in printer config to print directly there (without a dialog).</p>
+          <p><b className="text-foreground">Desktop app:</b> your Windows printers are listed below — pick one in a printer card to print directly (no dialog).</p>
         ) : (
-          <p><b className="text-foreground">Browser:</b> for security reasons the website cannot see the list of Windows printers or choose one automatically. Save your printer names, paper and role here — a print window will open with the correct paper size; choose the printer there once and Chrome will remember it. Use the Windows desktop app for direct (silent) printing.</p>
+          <p><b className="text-foreground">Browser:</b> for security, a website cannot see or auto-pick Windows printers. Add each printer here with its paper size — a print window opens with the correct size; pick the printer there once and Chrome remembers it. The Windows desktop app prints directly.</p>
         )}
       </div>
 
+      {/* Step 1 — add a printer */}
+      {allowed ? (
+        <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-3">
+          <p className="text-sm font-semibold text-foreground">Step 1 — Add a printer</p>
+          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+            <label className="text-xs text-muted-foreground">Printer type
+              <select className={inp} value={newType} onChange={(e) => { const t = e.target.value as PrinterCfg["type"]; setNewType(t); setNewPaper(PRINTER_TYPES.find((x) => x.v === t)!.paper); }}>
+                {PRINTER_TYPES.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}
+              </select>
+            </label>
+            <label className="text-xs text-muted-foreground">Paper size
+              <select className={inp} value={newPaper} onChange={(e) => setNewPaper(e.target.value as PaperFormat)}>
+                {(Object.keys(FORMAT_LABEL) as PaperFormat[]).map((f) => <option key={f} value={f}>{FORMAT_LABEL[f]}</option>)}
+              </select>
+            </label>
+            <div className="flex items-end"><Button disabled={list.length >= 30} onClick={() => add({ type: newType, paper: newPaper, name: PRINTER_TYPES.find((t) => t.v === newType)!.l })}><Plus /> Add printer</Button></div>
+          </div>
+          <p className="text-[11px] text-muted-foreground">{PRINTER_TYPES.find((t) => t.v === newType)!.hint}</p>
+        </div>
+      ) : null}
+
+      {/* Windows printers (desktop app) */}
       {bridge ? (
         <div className="rounded-lg border border-border p-3">
-          <div className="mb-2 flex items-center justify-between"><p className="text-sm font-semibold text-foreground">Windows printers</p><Button size="sm" variant="ghost" onClick={refresh}><RefreshCw /> Refresh</Button></div>
+          <div className="mb-2 flex items-center justify-between"><p className="text-sm font-semibold text-foreground">Printers installed on this computer</p><Button size="sm" variant="ghost" onClick={refresh}><RefreshCw /> Refresh</Button></div>
           {sys?.length ? sys.map((s) => (
             <div key={s.name} className="flex flex-wrap items-center justify-between gap-2 border-t border-border py-1.5 text-sm">
               <span>{s.displayName || s.name}{s.isDefault ? <span className="ml-1 text-xs text-primary">(Windows default)</span> : null} <span className="text-xs text-muted-foreground">· {statusText(s.status)}</span></span>
-              <Button size="sm" variant="outline" disabled={!allowed} onClick={() => add({ name: s.displayName || s.name, deviceName: s.name, type: /80|58|pos|thermal|receipt/i.test(s.name) ? "thermal" : "a4", paper: /58/.test(s.name) ? "t58" : /80|pos|thermal|receipt/i.test(s.name) ? "t80" : "a4" })}><Plus /> Create config</Button>
+              <Button size="sm" variant="outline" disabled={!allowed} onClick={() => add({ name: s.displayName || s.name, deviceName: s.name, type: /80|58|pos|thermal|receipt/i.test(s.name) ? "thermal" : "a4", paper: guessPaper(s.name) })}><Plus /> Add</Button>
             </div>
           )) : <p className="text-xs text-muted-foreground">No printer found.</p>}
         </div>
       ) : null}
 
-      <div className="space-y-2">
-        {list.length === 0 ? <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">No printer configured yet. Press "Printer add".</p> : null}
-        {list.map((p) => {
+      {/* Step 2 — one card per printer */}
+      <div className="space-y-3">
+        <p className="text-sm font-semibold text-foreground">Step 2 — Your printers <span className="text-xs font-normal text-muted-foreground">({list.length} configured)</span></p>
+        {list.length === 0 ? <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">No printer yet — use Step 1 above to add one.</p> : null}
+        {list.map((p, idx) => {
           const roles = (Object.keys(ROLE_LABEL) as PrinterRole[]).filter((r) => defs[r] === p.id);
+          const win = p.deviceName && bridge ? sys?.find((s) => s.name === p.deviceName) : undefined;
           return (
-            <div key={p.id} className="space-y-2 rounded-lg border border-border p-3">
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-                <label className="text-xs text-muted-foreground">Name<input className={inp} value={p.name} disabled={!allowed} maxLength={60} onChange={(e) => upd(p.id, { name: e.target.value })} /></label>
-                <label className="text-xs text-muted-foreground">Type<select className={inp} value={p.type} disabled={!allowed} onChange={(e) => upd(p.id, { type: e.target.value as PrinterCfg["type"] })}><option value="thermal">Thermal</option><option value="a4">A4 laser/inkjet</option><option value="a5">A5</option><option value="label">Label</option><option value="other">Other</option></select></label>
-                <label className="text-xs text-muted-foreground">Paper<select className={inp} value={p.paper} disabled={!allowed} onChange={(e) => upd(p.id, { paper: e.target.value as PaperFormat })}>{(Object.keys(FORMAT_LABEL) as PaperFormat[]).map((f) => <option key={f} value={f}>{FORMAT_LABEL[f]}</option>)}</select></label>
-                <label className="text-xs text-muted-foreground">Copies<input className={inp} inputMode="numeric" value={p.copies ?? 1} disabled={!allowed} onChange={(e) => upd(p.id, { copies: Math.min(10, Math.max(1, Number(e.target.value) || 1)) })} /></label>
-                <label className="text-xs text-muted-foreground">Windows printer {bridge ? "" : "(desktop app)"}
-                  {bridge ? (
-                    <select className={inp} value={p.deviceName ?? ""} disabled={!allowed} onChange={(e) => upd(p.id, { deviceName: e.target.value || undefined })}><option value="">— print window —</option>{(sys ?? []).map((s) => <option key={s.name} value={s.name}>{s.displayName || s.name}</option>)}</select>
-                  ) : (
-                    <input className={inp} value={p.deviceName ?? ""} disabled={!allowed} placeholder="Choose in desktop app" onChange={(e) => upd(p.id, { deviceName: e.target.value || undefined })} />
-                  )}
-                </label>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                <span className="text-muted-foreground">Default for:</span>
-                {(Object.keys(ROLE_LABEL) as PrinterRole[]).map((r) => (
-                  <label key={r} className={`flex items-center gap-1 rounded-full border px-2 py-0.5 ${defs[r] === p.id ? "border-primary text-primary" : "border-border text-muted-foreground"}`}>
-                    <input type="checkbox" className="size-3" disabled={!allowed} checked={defs[r] === p.id} onChange={(e) => setDefs({ ...defs, [r]: e.target.checked ? p.id : undefined })} />{ROLE_LABEL[r]}
-                  </label>
-                ))}
+            <div key={p.id} className="overflow-hidden rounded-xl border border-border">
+              {/* Card header */}
+              <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/40 px-3 py-2">
+                <Printer className="size-4 text-muted-foreground" />
+                <span className="text-sm font-bold text-foreground">{p.name || `Printer ${idx + 1}`}</span>
+                <span className="rounded-full bg-background px-2 py-0.5 text-[11px] text-muted-foreground">{FORMAT_LABEL[p.paper]}</span>
+                {roles.length ? <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">Default: {roles.map((r) => ROLE_LABEL[r]).join(", ")}</span> : null}
+                {p.deviceName && bridge ? <span className={`rounded-full px-2 py-0.5 text-[11px] ${win ? "text-primary" : "text-destructive"}`}>{win ? statusText(win.status) : "Not found on this computer"}</span> : null}
                 <span className="ml-auto" />
-                <span className="text-muted-foreground">{roles.length ? "Default" : "Secondary"}{p.deviceName && bridge ? ` · ${sys?.find((s) => s.name === p.deviceName) ? statusText(sys.find((s) => s.name === p.deviceName)!.status) : "Not found on Windows"}` : ""}</span>
                 <Button size="sm" variant="outline" onClick={() => pc.print({ ...sampleDoc(), kind: p.paper.startsWith("t") ? "pos" : "sale" }, { format: p.paper, copies: 1 })}><Printer /> Test print</Button>
-                <Button size="sm" variant="ghost" disabled={!allowed} aria-label="Remove printer config" onClick={() => { setList(list.filter((x) => x.id !== p.id)); setDefs(Object.fromEntries(Object.entries(defs).filter(([, v]) => v !== p.id))); }}><Trash2 className="size-4" /></Button>
+                <Button size="sm" variant="ghost" disabled={!allowed} aria-label="Remove printer" onClick={() => remove(p.id)}><Trash2 className="size-4" /></Button>
+              </div>
+              {/* Card body */}
+              <div className="space-y-3 p-3">
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  <label className="text-xs text-muted-foreground">Printer name (your choice)
+                    <input className={inp} value={p.name} disabled={!allowed} maxLength={60} placeholder="e.g. Counter thermal" onChange={(e) => upd(p.id, { name: e.target.value })} />
+                  </label>
+                  <label className="text-xs text-muted-foreground">Printer type
+                    <select className={inp} value={p.type} disabled={!allowed} onChange={(e) => upd(p.id, { type: e.target.value as PrinterCfg["type"] })}>
+                      {PRINTER_TYPES.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}
+                    </select>
+                  </label>
+                  <label className="text-xs text-muted-foreground">Paper size
+                    <select className={inp} value={p.paper} disabled={!allowed} onChange={(e) => upd(p.id, { paper: e.target.value as PaperFormat })}>
+                      {(Object.keys(FORMAT_LABEL) as PaperFormat[]).map((f) => <option key={f} value={f}>{FORMAT_LABEL[f]}</option>)}
+                    </select>
+                  </label>
+                  <label className="text-xs text-muted-foreground">Copies per print
+                    <input className={inp} inputMode="numeric" value={p.copies ?? 1} disabled={!allowed} onChange={(e) => upd(p.id, { copies: Math.min(10, Math.max(1, Number(e.target.value) || 1)) })} />
+                  </label>
+                  <label className="text-xs text-muted-foreground sm:col-span-2">Windows printer {bridge ? "" : "(choose in the desktop app)"}
+                    {bridge ? (
+                      <select className={inp} value={p.deviceName ?? ""} disabled={!allowed} onChange={(e) => upd(p.id, { deviceName: e.target.value || undefined })}>
+                        <option value="">— open print window instead —</option>
+                        {(sys ?? []).map((s) => <option key={s.name} value={s.name}>{s.displayName || s.name}</option>)}
+                      </select>
+                    ) : (
+                      <input className={inp} value={p.deviceName ?? ""} disabled={!allowed} placeholder="Choose in desktop app" onChange={(e) => upd(p.id, { deviceName: e.target.value || undefined })} />
+                    )}
+                  </label>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="font-medium text-muted-foreground">Use this printer for:</span>
+                  {(Object.keys(ROLE_LABEL) as PrinterRole[]).map((r) => (
+                    <label key={r} className={`flex items-center gap-1 rounded-full border px-2 py-0.5 ${defs[r] === p.id ? "border-primary text-primary" : "border-border text-muted-foreground"}`}>
+                      <input type="checkbox" className="size-3" disabled={!allowed} checked={defs[r] === p.id} onChange={(e) => setDefs({ ...defs, [r]: e.target.checked ? p.id : undefined })} />{ROLE_LABEL[r]}
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
           );
         })}
       </div>
-      <div className="flex flex-wrap gap-2">
-        <Button variant="outline" disabled={!allowed || list.length >= 30} onClick={() => add()}><Plus /> Add printer</Button>
-        <Button disabled={!allowed} onClick={() => save()}>Save printers</Button>
+
+      {/* Step 3 — save */}
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 p-3">
+        <Button disabled={!allowed || !dirty || saving} onClick={save}>{saving ? "Saving…" : "Save printers"}</Button>
+        {dirty ? <span className="text-xs text-destructive">Unsaved changes — press Save printers</span> : <span className="text-xs text-muted-foreground">All changes saved</span>}
       </div>
-      <p className="text-xs text-muted-foreground">Test print prints a sample invoice — no sale/record is created. Note: test print uses the currently-saved printer defaults; save new changes first.</p>
+      <p className="text-xs text-muted-foreground">Test print prints a sample invoice — no sale/record is created. Test print uses the currently-saved settings; save new changes first.</p>
       {pc.node}
     </div>
   );
