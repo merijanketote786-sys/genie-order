@@ -206,6 +206,15 @@ function InvoicesPage() {
           })
         )}
       </div>
+
+      {shareInv ? (
+        <ShareDialog
+          title={shareInv.invoiceNumber}
+          text={shareInv.invoiceText}
+          phone={shareInv.phone}
+          onClose={() => setShareInv(null)}
+        />
+      ) : null}
     </AppShell>
   );
 }
