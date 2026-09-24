@@ -7,20 +7,20 @@ import { toast } from "sonner";
 
 type Col = { k: string; label: string; w: string; num?: boolean };
 const COLS: Col[] = [
-  { k: "name", label: "Product name", w: "w-52" },
-  { k: "sku", label: "Item code", w: "w-24" },
-  { k: "barcode", label: "Barcode", w: "w-28" },
-  { k: "category", label: "Category", w: "w-28" },
-  { k: "brand", label: "Brand", w: "w-24" },
-  { k: "unit", label: "Unit", w: "w-16" },
-  { k: "purchase_price", label: "Purchase price", w: "w-24", num: true },
-  { k: "sale_price", label: "Sale price", w: "w-24", num: true },
-  { k: "wholesale_price", label: "Wholesale price", w: "w-24", num: true },
-  { k: "min_sale_price", label: "Min sale price", w: "w-24", num: true },
-  { k: "stock", label: "Stock qty", w: "w-20", num: true },
-  { k: "stock_value", label: "Stock value", w: "w-24", num: true },
-  { k: "min_stock", label: "Min stock", w: "w-20", num: true },
-  { k: "tax_percent", label: "Tax %", w: "w-16", num: true },
+  { k: "name", label: "Product name", w: "w-64" },
+  { k: "sku", label: "Item code", w: "w-28" },
+  { k: "barcode", label: "Barcode", w: "w-32" },
+  { k: "category", label: "Category", w: "w-32" },
+  { k: "brand", label: "Brand", w: "w-28" },
+  { k: "unit", label: "Unit", w: "w-20" },
+  { k: "purchase_price", label: "Purchase price", w: "w-32", num: true },
+  { k: "sale_price", label: "Sale price", w: "w-32", num: true },
+  { k: "wholesale_price", label: "Wholesale price", w: "w-32", num: true },
+  { k: "min_sale_price", label: "Min sale price", w: "w-32", num: true },
+  { k: "stock", label: "Stock qty", w: "w-24", num: true },
+  { k: "stock_value", label: "Stock value", w: "w-32", num: true },
+  { k: "min_stock", label: "Min stock", w: "w-24", num: true },
+  { k: "tax_percent", label: "Tax %", w: "w-20", num: true },
 ];
 type Row = Record<string, string>;
 const base = (p: InvProduct): Row => ({
