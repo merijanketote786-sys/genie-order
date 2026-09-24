@@ -47,10 +47,10 @@ function DocsList({ kind, onClose, onOpen }: { kind: "held" | "quotation"; onClo
     <div className="rounded-xl border border-primary p-2.5">
       <div className="mb-2 flex items-center justify-between">
         <p className="text-sm font-bold text-foreground">{kind === "held" ? "Held bills" : "Quotations"}</p>
-        <Button size="icon-sm" variant="ghost" onClick={onClose} aria-label="Band"><X /></Button>
+        <Button size="icon-sm" variant="ghost" onClick={onClose} aria-label="Close"><X /></Button>
       </div>
-      {isLoading ? <p className="text-xs text-muted-foreground">Load ho raha hai…</p> : null}
-      {!isLoading && !docs.length ? <p className="text-xs text-muted-foreground">Koi {kind === "held" ? "held bill" : "quotation"} nahi.</p> : null}
+      {isLoading ? <p className="text-xs text-muted-foreground">Loading…</p> : null}
+      {!isLoading && !docs.length ? <p className="text-xs text-muted-foreground">No {kind === "held" ? "held bills" : "quotations"}.</p> : null}
       <ul className="max-h-64 space-y-1 overflow-y-auto">
         {docs.map((d) => (
           <li key={d.id} className="flex items-center gap-2 rounded-lg border border-border p-2 text-xs">
@@ -58,8 +58,8 @@ function DocsList({ kind, onClose, onOpen }: { kind: "held" | "quotation"; onClo
               <p className="truncate font-semibold text-foreground">{d.doc_number} · {d.customer_name || "Walk-in"}</p>
               <p className="text-muted-foreground">Rs {money(d.grand_total)} · {new Date(d.created_at).toLocaleString("en-PK")}</p>
             </div>
-            <Button size="sm" onClick={() => onOpen(d, true)}>{kind === "held" ? "Kholein" : "Invoice banayein"}</Button>
-            <Button size="icon-sm" variant="ghost" onClick={() => close(d.id)} aria-label="Band karein"><Trash2 /></Button>
+            <Button size="sm" onClick={() => onOpen(d, true)}>{kind === "held" ? "Open" : "Create invoice"}</Button>
+            <Button size="icon-sm" variant="ghost" onClick={() => close(d.id)} aria-label="Close"><Trash2 /></Button>
           </li>
         ))}
       </ul>
@@ -73,9 +73,9 @@ export const Route = createFileRoute("/_authenticated/pos")({
   head: () => ({
     meta: [
       { title: "POS Billing — HB Chemicals Pakistan Workspace" },
-      { name: "description", content: "Counter aur phone sales ke liye tez POS invoicing, stock aur receipt printing." },
+      { name: "description", content: "Fast POS invoicing for counter and phone sales, stock and receipt printing." },
       { property: "og:title", content: "POS Billing — HB Chemicals Pakistan Workspace" },
-      { property: "og:description", content: "Product scan karein, bill banayein, receipt print karein." },
+      { property: "og:description", content: "Scan products, create a bill, print receipt." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -115,8 +115,8 @@ function PosPage() {
   const lockDisc = !can("apply_discount") && !unlocked;
   const unlock = async () => {
     if (unlocked) return;
-    const pin = await askPin("Rate/discount badalne ke liye manager PIN likhein (sirf is bill ke liye).");
-    if (pin) { setUnlocked(true); toast.success("Is bill ke liye unlock"); }
+    const pin = await askPin("Enter manager PIN to change rate/discount (for this bill only).");
+    if (pin) { setUnlocked(true); toast.success("Unlocked for this bill"); }
   };
   const products = prodData?.products ?? [];
 
@@ -200,7 +200,7 @@ function PosPage() {
     const price = priceFor(p, r) ?? (rateOverride ? priceFor(p, rate) : null);
     const useRate = priceFor(p, r) != null ? r : rate;
     if (price == null) {
-      toast.error(`${p.name} ka ${RATE_TYPES.find((x) => x.id === r)?.label} rate nahi hai`);
+      toast.error(`${p.name} has no ${RATE_TYPES.find((x) => x.id === r)?.label} rate`);
       return;
     }
     setCart((prev) => {
@@ -210,8 +210,8 @@ function PosPage() {
       return [...prev, { key, name: p.name, unit: p.unit, rateType: useRate, price, qty: 1, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode }];
     });
     if (cfg.inventory.trackStock && cfg.inventory.warnOutOfStock && p.stock != null && p.stock <= 0) {
-      toast.warning(`${p.name}: stock khatam hai (${p.stock})${cfg.inventory.allowNegativeStock ? "" : " — bill save nahi hoga"}`);
-    } else toast.success(`${p.name} cart me add`, { duration: 1200 });
+      toast.warning(`${p.name}: out of stock (${p.stock})${cfg.inventory.allowNegativeStock ? "" : " — bill will not save"}`);
+    } else toast.success(`${p.name} added to cart`, { duration: 1200 });
   };
 
   // Barcode ↔ product links (company ke apne barcodes ke liye), is device pe saved
@@ -284,7 +284,7 @@ function PosPage() {
     }
     setPendingCode(t.toUpperCase());
     setTerm("");
-    toast.error("Ye barcode kisi product se juda nahi — neeche product chun kar link karein");
+    toast.error("This barcode is not linked to any product — choose a product below to link it");
   };
 
   // Scanner input page pe kahin bhi aaye (box focus na ho tab bhi) pakar lein
@@ -309,7 +309,7 @@ function PosPage() {
           if (!scanAutoRef.current) { setTerm(code); scanRef.current?.focus(); return; }
           if (!handleCodeRef.current(code)) {
             setPendingCode(code.toUpperCase());
-            toast.error("Ye barcode kisi product se juda nahi — product chun kar link karein");
+            toast.error("This barcode is not linked to any product — choose a product to link it");
           }
         }
         return;
@@ -388,18 +388,18 @@ function PosPage() {
   const checkout = async (kind: "sale" | "held" | "quotation", print: boolean) => {
     if (!cart.length || saving || submitLock.current) return;
     if (kind === "sale" && paidNum < total && !customerName.trim() && !customerPhone.trim()) {
-      toast.error("Udhaar / baqaya ke liye customer ka naam ya phone likhein");
+      toast.error("Enter customer name or phone for credit / outstanding balance");
       return;
     }
     if (kind === "sale" && cart.some((l) => !(l.qty > 0))) {
-      toast.error("Har item ki quantity 0 se zyada honi chahiye");
+      toast.error("Every item's quantity must be greater than 0");
       return;
     }
     if (kind === "sale" && !cfg.inventory.allowFractional && cart.some((l) => !Number.isInteger(l.qty))) {
-      toast.error("Decimal quantity allowed nahi (Settings > Inventory)");
+      toast.error("Decimal quantity not allowed (Settings > Inventory)");
       return;
     }
-    if (kind === "sale" && cfg.sales.confirmBeforeSave && !window.confirm(`Bill save karein? Total Rs ${money(total)}`)) return;
+    if (kind === "sale" && cfg.sales.confirmBeforeSave && !window.confirm(`Save bill? Total Rs ${money(total)}`)) return;
     submitLock.current = true;
     setSaving(true);
     try {
@@ -440,7 +440,7 @@ function PosPage() {
       docRef.current = newRef();
       const final = { ...r, invoiceNumber: res.invoiceNumber };
       if (kind === "held") {
-        toast.success(`Bill hold: ${res.invoiceNumber}`);
+        toast.success(`Bill held: ${res.invoiceNumber}`);
       } else {
         setLast(final);
         const doc = receiptToDoc(final, { kind: kind === "quotation" ? "quotation" : "pos", id: res.id, date: new Date() });
@@ -450,7 +450,7 @@ function PosPage() {
           else pc.afterSave(doc, kind === "quotation" ? "quotation" : "pos");
           if (kind === "sale" && cfg.sales.autoPdf) void pc.pdf(doc);
         }
-        toast.success(`${kind === "quotation" ? "Quotation" : "Sale"} save: ${res.invoiceNumber}${res.duplicate ? " (pehle se saved tha)" : ""}${res.change > 0 ? ` — wapas dein Rs ${money(res.change)}` : ""}`);
+        toast.success(`${kind === "quotation" ? "Quotation" : "Sale"} saved: ${res.invoiceNumber}${res.duplicate ? " (already saved)" : ""}${res.change > 0 ? ` — return change Rs ${money(res.change)}` : ""}`);
       }
       qc.invalidateQueries({ queryKey: ["products"] }); qc.invalidateQueries({ queryKey: ["pos-products"] });
       qc.invalidateQueries({ queryKey: ["pos-docs"] });
@@ -477,9 +477,9 @@ function PosPage() {
       setPays([{ method: "Cash", amount: "" }]);
       setEditing(asInvoice ? { id: d.id, number: d.doc_number } : null);
       setDocsOpen(null);
-      toast.success(`${d.doc_number} khul gaya — ab Save karein`);
+      toast.success(`${d.doc_number} opened — now Save`);
     } catch {
-      toast.error("Bill khul nahi saka");
+      toast.error("Could not open bill");
     }
   };
 
@@ -509,7 +509,7 @@ function PosPage() {
     const text = receiptText(r);
     try {
       if (navigator.share) await navigator.share({ title: r.invoiceNumber, text });
-      else { await navigator.clipboard.writeText(text); toast.success("Bill copy ho gaya"); }
+      else { await navigator.clipboard.writeText(text); toast.success("Bill copied"); }
     } catch { /* user ne cancel kiya */ }
   };
 
@@ -520,8 +520,8 @@ function PosPage() {
           icon={ShoppingCart}
           eyebrow="Point of sale"
           title="POS Invoicing"
-          description="Product scan ya search karein, cart banayein, payment lein aur receipt print karein. Stock khud kam hota hai."
-          meta={["Barcode scan", "Discount", "Cash/Card/Udhaar"]}
+          description="Scan or search a product, build the cart, take payment and print the receipt. Stock updates automatically."
+          meta={["Barcode scan", "Discount", "Cash/Card/Credit"]}
         />
 
         <PosSubnav />
@@ -543,7 +543,7 @@ function PosPage() {
           {/* Products */}
           <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
             <div className="mb-3 grid grid-cols-2 gap-2">
-              <PosCustomerSearch field="name" className={inputCls} value={customerName} onChange={setCustomerName} onPick={pickCustomer} placeholder="Customer naam (Walk-in)" />
+              <PosCustomerSearch field="name" className={inputCls} value={customerName} onChange={setCustomerName} onPick={pickCustomer} placeholder="Customer name (Walk-in)" />
               <PosCustomerSearch field="phone" className={inputCls} value={customerPhone} onChange={setCustomerPhone} onPick={pickCustomer} placeholder="Phone (optional)" />
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -583,7 +583,7 @@ function PosPage() {
                     } else if (!list.length) onScan();
                   }
                 }}
-                placeholder="Barcode scan karein ya product naam likhein (↓ ↑ + Enter)"
+                placeholder="Scan barcode or type product name (↓ ↑ + Enter)"
                 className="min-w-0 flex-1 bg-transparent text-sm outline-none"
               />
             </label>
@@ -601,7 +601,7 @@ function PosPage() {
                       className={`flex cursor-pointer items-center justify-between gap-2 rounded-md px-3 py-2 text-sm ${i === hi ? "bg-accent text-accent-foreground" : ""}`}
                     >
                       <span className="truncate font-medium">{p.name}</span>
-                      <span className="shrink-0 text-xs text-muted-foreground">{price != null ? `Rs ${money(price)}` : "Rate nahi"} · {p.stock ?? "-"}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground">{price != null ? `Rs ${money(price)}` : "No rate"} · {p.stock ?? "-"}</span>
                     </li>
                   );
                 })}
@@ -610,7 +610,7 @@ function PosPage() {
             </div>
             {pendingCode ? (
               <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-primary bg-accent p-2.5 text-xs text-accent-foreground">
-                <span>Barcode <b>{pendingCode}</b> naya hai — neeche product search kar ke <b>Link</b> dabayein, agli dafa scan se seedha add hoga.</span>
+                <span>Barcode <b>{pendingCode}</b> is new — search for a product below and press <b>Link</b>, next time scanning will add it directly.</span>
                 <Button size="sm" variant="ghost" onClick={() => { setPendingCode(null); setTerm(""); }}>Cancel</Button>
               </div>
             ) : null}
@@ -622,9 +622,9 @@ function PosPage() {
                 className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs text-muted-foreground transition hover:border-primary hover:text-foreground"
               >
                 <LayoutGrid className="size-3.5" />
-                {showGrid ? "Shortcuts chhupayein" : "Product shortcuts dikhayein"}
+                {showGrid ? "Hide shortcuts" : "Show product shortcuts"}
               </button>
-              {pendingCode ? <span className="text-xs text-muted-foreground">Link ke liye list khuli hai</span> : null}
+              {pendingCode ? <span className="text-xs text-muted-foreground">List is open for linking</span> : null}
             </div>
             {gridVisible ? (
               <div className="mt-2 grid max-h-[26rem] grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
@@ -640,13 +640,13 @@ function PosPage() {
                     >
                       <p className="line-clamp-2 text-sm font-semibold text-foreground">{p.name}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {price != null ? `Rs ${money(price)}` : "Rate nahi"} · stock {p.stock ?? "-"}
+                        {price != null ? `Rs ${money(price)}` : "No rate"} · stock {p.stock ?? "-"}
                       </p>
-                      {pendingCode ? <p className="mt-1 text-xs font-bold text-primary">Link karein</p> : null}
+                      {pendingCode ? <p className="mt-1 text-xs font-bold text-primary">Link</p> : null}
                     </button>
                   );
                 })}
-                {!results.length ? <p className="col-span-full py-6 text-center text-sm text-muted-foreground">Koi product nahi mila. Inventory me products ke rates aur stock set karein.</p> : null}
+                {!results.length ? <p className="col-span-full py-6 text-center text-sm text-muted-foreground">No products found. Set product rates and stock in Inventory.</p> : null}
               </div>
             ) : null}
           </section>
@@ -658,7 +658,7 @@ function PosPage() {
               {cart.map((l) => (
                 <CartRow key={l.key} line={l} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} taxRates={cfg.tax.enabled ? cfg.tax.rates : []} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
               ))}
-              {!cart.length ? <p className="rounded-xl border border-dashed border-border py-8 text-center text-sm text-muted-foreground">Cart khali hai — product pe tap ya scan karein.</p> : null}
+              {!cart.length ? <p className="rounded-xl border border-dashed border-border py-8 text-center text-sm text-muted-foreground">Cart is empty — tap or scan a product.</p> : null}
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -680,25 +680,25 @@ function PosPage() {
               {pays.map((p, i) => (
                 <div key={i} className="flex gap-1.5">
                   <select className="h-10 rounded-lg border border-border bg-background px-2 text-sm" value={p.method} onChange={(e) => setPays((all) => all.map((x, j) => (j === i ? { ...x, method: e.target.value as PayMethod } : x)))} aria-label="Payment method">
-                    {cfg.payMethods.map((m) => <option key={m} value={m}>{m === "Credit" ? "Credit / Udhaar" : m}</option>)}
+                    {cfg.payMethods.map((m) => <option key={m} value={m}>{m === "Credit" ? "Credit" : m}</option>)}
                   </select>
-                  <input className={inputCls} value={p.amount} inputMode="decimal" placeholder={i === 0 && pays.length === 1 ? `${money(total)} (poora)` : "0"} onChange={(e) => setPays((all) => all.map((x, j) => (j === i ? { ...x, amount: e.target.value } : x)))} aria-label="Amount" />
-                  {pays.length > 1 ? <Button size="icon" variant="ghost" onClick={() => setPays((all) => all.filter((_, j) => j !== i))} aria-label="Hatayein"><Trash2 /></Button> : null}
+                  <input className={inputCls} value={p.amount} inputMode="decimal" placeholder={i === 0 && pays.length === 1 ? `${money(total)} (full)` : "0"} onChange={(e) => setPays((all) => all.map((x, j) => (j === i ? { ...x, amount: e.target.value } : x)))} aria-label="Amount" />
+                  {pays.length > 1 ? <Button size="icon" variant="ghost" onClick={() => setPays((all) => all.filter((_, j) => j !== i))} aria-label="Remove"><Trash2 /></Button> : null}
                 </div>
               ))}
               <div className="flex flex-wrap gap-1.5">
                 <Button size="sm" variant="outline" onClick={() => setPays((all) => [...all, { method: all.some((x) => x.method === "Cash") ? "Bank" : "Cash", amount: "" }])}><Plus /> Split payment</Button>
-                <Button size="sm" variant="outline" onClick={() => setPays([{ method: "Credit", amount: "" }])}>Poora udhaar</Button>
+                <Button size="sm" variant="outline" onClick={() => setPays([{ method: "Credit", amount: "" }])}>Full credit</Button>
               </div>
             </div>
 
             {balance?.found ? (
               <div className={`rounded-lg border p-2 text-xs ${balance.balance > 0 ? "border-destructive text-destructive" : "border-border text-muted-foreground"}`}>
-                Purana baqaya: <b>Rs {money(balance.balance)}</b>{balance.creditLimit ? ` · Credit limit Rs ${money(balance.creditLimit)}` : ""}
+                Previous balance: <b>Rs {money(balance.balance)}</b>{balance.creditLimit ? ` · Credit limit Rs ${money(balance.creditLimit)}` : ""}
               </div>
             ) : null}
 
-            <label className="block text-xs text-muted-foreground">Invoice note<input className={inputCls} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional — bill pe chhapega" /></label>
+            <label className="block text-xs text-muted-foreground">Invoice note<input className={inputCls} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional — will print on bill" /></label>
 
             <div className="space-y-1 rounded-xl bg-surface-2 p-3 text-sm">
               <Row a="Subtotal" b={`Rs ${money(subtotal)}`} />
@@ -708,11 +708,11 @@ function PosPage() {
               {n(delivery) ? <Row a="Delivery" b={`Rs ${money(n(delivery))}`} /> : null}
               <Row a="Grand Total" b={`Rs ${money(total)}`} bold />
               <Row a="Paid" b={`Rs ${money(Math.min(paidNum, total))}`} />
-              {paidNum > total ? <Row a="Change wapas" b={`Rs ${money(paidNum - total)}`} /> : null}
-              {paidNum < total ? <Row a="Baqaya (udhaar)" b={`Rs ${money(total - paidNum)}`} /> : null}
+              {paidNum > total ? <Row a="Change due" b={`Rs ${money(paidNum - total)}`} /> : null}
+              {paidNum < total ? <Row a="Outstanding (credit)" b={`Rs ${money(total - paidNum)}`} /> : null}
             </div>
 
-            {editing ? <p className="rounded-lg bg-accent p-2 text-xs text-accent-foreground">Khula hua: <b>{editing.number}</b> — save karne par ye band ho jayega. <button className="underline" onClick={() => setEditing(null)}>Alag karein</button></p> : null}
+            {editing ? <p className="rounded-lg bg-accent p-2 text-xs text-accent-foreground">Open: <b>{editing.number}</b> — this will close when saved. <button className="underline" onClick={() => setEditing(null)}>Detach</button></p> : null}
 
             <Button size="lg" className="h-14 w-full text-base" disabled={!cart.length || saving} onClick={() => checkout("sale", true)}><Printer /> Save + Print (F9) — Rs {money(total)}</Button>
             <div className="grid grid-cols-3 gap-2">
@@ -723,12 +723,12 @@ function PosPage() {
             <div className="grid grid-cols-3 gap-2">
               <Button variant="ghost" size="sm" onClick={() => setDocsOpen("held")}><FolderOpen /> Held bills</Button>
               <Button variant="ghost" size="sm" onClick={() => setDocsOpen("quotation")}><FolderOpen /> Quotations</Button>
-              <Button variant="ghost" size="sm" onClick={() => reset()}><RotateCcw /> Naya (F2)</Button>
+              <Button variant="ghost" size="sm" onClick={() => reset()}><RotateCcw /> New (F2)</Button>
             </div>
 
             {last ? (
               <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border p-2.5 text-sm">
-                <span className="font-semibold">Aakhri: {last.invoiceNumber}</span>
+                <span className="font-semibold">Last: {last.invoiceNumber}</span>
                 <Button size="sm" variant="outline" onClick={() => lastDoc && pc.print(lastDoc, { reprint: true })}><Printer /> Reprint</Button>
                 <Button size="sm" variant="outline" onClick={() => lastDoc && pc.preview(lastDoc, true)}><ReceiptText /> Preview</Button>
                 <Button size="sm" variant="outline" onClick={() => lastDoc && pc.pdf(lastDoc)}><Download /> PDF</Button>
@@ -744,10 +744,10 @@ function PosPage() {
         </div>
         ) : (
           <section className="space-y-2 rounded-lg border border-border bg-card p-4">
-            <p className="flex items-center gap-2 font-bold text-foreground"><Settings2 className="size-4 text-primary" /> POS, printing aur printers</p>
-            <p className="text-sm text-muted-foreground">Paper (A4/A5/58mm/80mm/custom), design, auto-print, printers, tax, payment methods aur baqi sab settings ab ek jagah hain — har device par ek jaisi.</p>
+            <p className="flex items-center gap-2 font-bold text-foreground"><Settings2 className="size-4 text-primary" /> POS, printing and printers</p>
+            <p className="text-sm text-muted-foreground">Paper (A4/A5/58mm/80mm/custom), design, auto-print, printers, tax, payment methods and all other settings are now in one place — the same on every device.</p>
             <div className="flex flex-wrap gap-2">
-              <Button asChild><Link to="/pos-settings">Settings kholein</Link></Button>
+              <Button asChild><Link to="/pos-settings">Open Settings</Link></Button>
               <Button variant="outline" onClick={() => pc.preview({ kind: "pos", title: "Test Receipt", number: "TEST-0001", date: new Date(), lines: [{ name: "Test item", unit: "kg", qty: 1, rate: 100, total: 100 }], totals: [{ label: "Grand Total", value: 100, bold: true }] })}><Printer /> Test print</Button>
             </div>
           </section>
@@ -784,9 +784,9 @@ function CartRow({ line, onPatch, onRemove, lockPrice = false, lockDisc = false,
       </div>
       <div className="mt-2 flex flex-wrap items-end gap-2">
         <div className="flex items-center gap-1">
-          <Button size="icon-sm" variant="outline" onClick={() => onPatch(line.key, { qty: Math.max(0.001, +(line.qty - 1).toFixed(3)) || 1 })} aria-label="Kam"><Minus /></Button>
-          <input className={`${small} w-16 text-center`} value={qtyText ?? String(line.qty)} inputMode="decimal" onChange={(e) => { setQtyText(e.target.value); onPatch(line.key, { qty: n(e.target.value) }); }} onBlur={() => setQtyText(null)} aria-label="Qty" title="Quantity (0.5, 1.25 kg bhi)" />
-          <Button size="icon-sm" variant="outline" onClick={() => onPatch(line.key, { qty: +(line.qty + 1).toFixed(3) })} aria-label="Zyada"><Plus /></Button>
+          <Button size="icon-sm" variant="outline" onClick={() => onPatch(line.key, { qty: Math.max(0.001, +(line.qty - 1).toFixed(3)) || 1 })} aria-label="Decrease"><Minus /></Button>
+          <input className={`${small} w-16 text-center`} value={qtyText ?? String(line.qty)} inputMode="decimal" onChange={(e) => { setQtyText(e.target.value); onPatch(line.key, { qty: n(e.target.value) }); }} onBlur={() => setQtyText(null)} aria-label="Qty" title="Quantity (0.5, 1.25 kg too)" />
+          <Button size="icon-sm" variant="outline" onClick={() => onPatch(line.key, { qty: +(line.qty + 1).toFixed(3) })} aria-label="Increase"><Plus /></Button>
         </div>
         <label className="text-[10px] text-muted-foreground">Rate<input className={`${small} block w-20`} value={String(line.price)} readOnly={lockPrice} onFocus={() => { if (lockPrice) onUnlock?.(); }} inputMode="decimal" onChange={(e) => onPatch(line.key, { price: n(e.target.value) })} aria-label="Rate" /></label>
         <label className="text-[10px] text-muted-foreground">Unit<input className={`${small} block w-16`} value={line.unitOverride ?? ""} placeholder={packLabel(line)} onChange={(e) => onPatch(line.key, { unitOverride: e.target.value })} aria-label="Unit" /></label>
@@ -794,7 +794,7 @@ function CartRow({ line, onPatch, onRemove, lockPrice = false, lockDisc = false,
         {taxRates.length ? <label className="text-[10px] text-muted-foreground">Tax<select className={`${small} block w-20 px-1`} value={line.taxPercent ?? 0} onChange={(e) => onPatch(line.key, { taxPercent: Number(e.target.value) })} aria-label="Tax">{[...taxRates, ...(taxRates.some((t) => t.pct === (line.taxPercent ?? 0)) ? [] : [{ name: `${line.taxPercent}%`, pct: line.taxPercent ?? 0 }])].map((t) => <option key={t.name + t.pct} value={t.pct}>{t.name}</option>)}</select></label> : null}
         <label className="ml-auto text-[10px] text-muted-foreground">Total<input className={`${small} block w-24 text-right font-semibold text-foreground`} value={totalText ?? String(total)} readOnly={lockPrice} onFocus={() => { if (lockPrice) onUnlock?.(); }} inputMode="decimal" onChange={(e) => setTotal(e.target.value)} onBlur={() => setTotalText(null)} aria-label="Total" /></label>
       </div>
-      {showNote ? <input className={`${small} mt-2 w-full`} value={line.note ?? ""} placeholder="Item note (receipt pe chhapega)" onChange={(e) => onPatch(line.key, { note: e.target.value })} aria-label="Item note" /> : null}
+      {showNote ? <input className={`${small} mt-2 w-full`} value={line.note ?? ""} placeholder="Item note (will print on receipt)" onChange={(e) => onPatch(line.key, { note: e.target.value })} aria-label="Item note" /> : null}
     </div>
   );
 }
@@ -816,9 +816,9 @@ function PosAlerts({ cfg, products, credit }: { cfg: ReturnType<typeof usePosAcc
   if (!low && !credit && !syncBad) return null;
   return (
     <div className="flex flex-wrap gap-2 text-xs">
-      {credit && cfg.notify.creditLimit ? <span className="rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1 text-destructive">Credit limit {money(credit.limit)} — is bill ke baad baqaya {money(credit.after)}{cfg.sales.enforceCreditLimit ? " (save nahi hoga)" : ""}</span> : null}
+      {credit && cfg.notify.creditLimit ? <span className="rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1 text-destructive">Credit limit {money(credit.limit)} — outstanding after this bill {money(credit.after)}{cfg.sales.enforceCreditLimit ? " (will not save)" : ""}</span> : null}
       {low ? <Link to="/inventory" className="rounded-full border border-border bg-muted px-3 py-1 text-foreground">{low} products low stock (≤ {cfg.inventory.lowStockThreshold})</Link> : null}
-      {syncBad ? <Link to="/sync" className="rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1 text-destructive">Vyapar sync masla: {lastSync!.status} · {lastSync!.errors} errors</Link> : null}
+      {syncBad ? <Link to="/sync" className="rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1 text-destructive">Vyapar sync issue: {lastSync!.status} · {lastSync!.errors} errors</Link> : null}
     </div>
   );
 }
