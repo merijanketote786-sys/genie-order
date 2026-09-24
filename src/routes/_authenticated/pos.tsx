@@ -396,7 +396,8 @@ function PosPage() {
 
   const submitLock = useRef(false);
   const docRef = useRef<string>(newRef());
-  const checkout = async (kind: "sale" | "held" | "quotation", print: boolean) => {
+  const checkout = async (rawKind: "sale" | "held" | "quotation", print: boolean) => {
+    const kind = estimate && rawKind === "sale" ? "quotation" : rawKind;
     if (!cart.length || saving || submitLock.current) return;
     if (kind === "sale" && paidNum < total && !customerName.trim() && !customerPhone.trim()) {
       toast.error("Enter customer name or phone for credit / outstanding balance");
