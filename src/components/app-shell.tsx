@@ -31,32 +31,32 @@ import { isSectionAllowed } from "@/lib/settings";
 import type { ReactNode } from "react";
 
 const TABS = [
-  { to: "/dashboard", label: "Dashboard", description: "Poori progress ek nazar", icon: LayoutDashboard },
+  { to: "/dashboard", label: "Dashboard", description: "Full progress at a glance", icon: LayoutDashboard },
   { to: "/", label: "Order", description: "Format customer orders", icon: ClipboardList },
   { to: "/invoice", label: "Invoice", description: "Create item invoices", icon: ReceiptText },
-  { to: "/pos", label: "POS", description: "Counter billing aur receipt", icon: ShoppingCart },
-  { to: "/confirmation", label: "Confirm", description: "Order performa aur WhatsApp", icon: FileSignature },
+  { to: "/pos", label: "POS", description: "Counter billing and receipt", icon: ShoppingCart },
+  { to: "/confirmation", label: "Confirm", description: "Order proforma and WhatsApp", icon: FileSignature },
   { to: "/extract", label: "Extract", description: "Read images and PDFs", icon: FileScan },
   { to: "/rates", label: "Rates", description: "Search staff prices", icon: Tag },
   { to: "/calculator", label: "Calculator", description: "Courier charges calculate", icon: Calculator },
   { to: "/history", label: "History", description: "Saved orders record", icon: History },
-  { to: "/invoices", label: "Invoices", description: "Invoice record aur status", icon: FileCheck2 },
+  { to: "/invoices", label: "Invoices", description: "Invoice records and status", icon: FileCheck2 },
   { to: "/customers", label: "Customers", description: "Customer record", icon: Users },
   { to: "/labels", label: "Labels", description: "Barcode labels print", icon: QrCode },
-  { to: "/sync", label: "Sync", description: "Vyapar rates update", icon: RefreshCw },
+  { to: "/sync", label: "Sync", description: "Update trade rates", icon: RefreshCw },
 ] as const;
 
 const ADMIN_TAB = {
   to: "/admin",
   label: "Admin",
-  description: "Users aur access",
+  description: "Users and access",
   icon: Shield,
 } as const;
 
 const SETTINGS_TAB = {
   to: "/settings",
   label: "Settings",
-  description: "Meri apni settings",
+  description: "My personal settings",
   icon: Settings2,
 } as const;
 
@@ -194,7 +194,7 @@ export function AppShell({
                 size="icon"
                 onClick={() => window.location.reload()}
                   className="size-10 shrink-0 border-border bg-card max-[380px]:hidden"
-                title="Workspace refresh karein (data mehfooz rahega)"
+                title="Refresh workspace (your data stays safe)"
                 aria-label="Refresh workspace"
               >
                 <RefreshCw className="h-4 w-4" />
@@ -225,9 +225,9 @@ export function AppShell({
         <main className="mx-auto flex min-h-0 w-full max-w-[1180px] flex-1 flex-col overflow-y-auto px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:px-5 xl:px-8 xl:pb-0">
           {access.data && access.data.isActive === false ? (
             <div className="glass-panel my-6 rounded-3xl px-4 py-10 text-center">
-              <h2 className="font-display text-base font-bold text-foreground">Access band hai</h2>
+              <h2 className="font-display text-base font-bold text-foreground">Access blocked</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Aapka account admin ne block kar diya hai. Rabta karein: hhtraders008@gmail.com
+                Your account has been blocked by the admin. Contact: hhtraders008@gmail.com
               </p>
             </div>
           ) : (
