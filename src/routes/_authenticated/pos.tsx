@@ -132,6 +132,7 @@ function PosPage() {
   const [notes, setNotes] = useState("");
   const [editing, setEditing] = useState<{ id: string; number: string } | null>(null);
   const [docsOpen, setDocsOpen] = useState<"held" | "quotation" | null>(null);
+  const [estimate, setEstimate] = useState(false);
   const payRef = useRef<HTMLDivElement>(null);
   const pickCustomer = (c: { name: string | null; phone: string }) => {
     setCustomerName(c.name ?? "");
@@ -395,7 +396,8 @@ function PosPage() {
 
   const submitLock = useRef(false);
   const docRef = useRef<string>(newRef());
-  const checkout = async (kind: "sale" | "held" | "quotation", print: boolean) => {
+  const checkout = async (rawKind: "sale" | "held" | "quotation", print: boolean) => {
+    const kind = estimate && rawKind === "sale" ? "quotation" : rawKind;
     if (!cart.length || saving || submitLock.current) return;
     if (kind === "sale" && paidNum < total && !customerName.trim() && !customerPhone.trim()) {
       toast.error("Enter customer name or phone for credit / outstanding balance");
@@ -413,7 +415,7 @@ function PosPage() {
     submitLock.current = true;
     setSaving(true);
     try {
-      const title = kind === "quotation" ? "Quotation" : "Invoice";
+      const title = kind === "quotation" ? (estimate ? "Estimate" : "Quotation") : "Invoice";
       const r = receipt("{{INVOICE}}", title);
       const res = await savePosDoc({
         data: {
@@ -460,7 +462,8 @@ function PosPage() {
           else pc.afterSave(doc, kind === "quotation" ? "quotation" : "pos");
           if (kind === "sale" && cfg.sales.autoPdf) void pc.pdf(doc);
         }
-        toast.success(`${kind === "quotation" ? "Quotation" : "Sale"} saved: ${res.invoiceNumber}${res.duplicate ? " (already saved)" : ""}${res.change > 0 ? ` — return change Rs ${money(res.change)}` : ""}`);
+        toast.success(`${kind === "quotation" ? (estimate ? "Estimate" : "Quotation") : "Sale"} saved: ${res.invoiceNumber}${res.duplicate ? " (already saved)" : ""}${res.change > 0 ? ` — return change Rs ${money(res.change)}` : ""}`);
+        setEstimate(false);
       }
       qc.invalidateQueries({ queryKey: ["products"] }); qc.invalidateQueries({ queryKey: ["pos-products"] });
       qc.invalidateQueries({ queryKey: ["pos-docs"] });
@@ -725,7 +728,12 @@ function PosPage() {
 
             {editing ? <p className="rounded-lg bg-accent p-2 text-xs text-accent-foreground">Open: <b>{editing.number}</b> — this will close when saved. <button className="underline" onClick={() => setEditing(null)}>Detach</button></p> : null}
 
-            <Button size="lg" className="h-14 w-full text-base" disabled={!cart.length || saving} onClick={() => checkout("sale", true)}><Printer /> Save + Print (F9) — Rs {money(total)}</Button>
+            <div className="grid grid-cols-2 gap-1 rounded-xl border border-border bg-surface-2 p-1 text-sm font-semibold">
+              <button type="button" onClick={() => setEstimate(false)} className={`rounded-lg py-2 transition-colors ${!estimate ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}>Invoice</button>
+              <button type="button" onClick={() => setEstimate(true)} className={`rounded-lg py-2 transition-colors ${estimate ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}>Estimate</button>
+            </div>
+
+            <Button size="lg" className="h-14 w-full text-base" disabled={!cart.length || saving} onClick={() => checkout("sale", true)}><Printer /> {estimate ? "Save Estimate" : "Save + Print (F9)"} — Rs {money(total)}</Button>
             <div className="grid grid-cols-3 gap-2">
               <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("sale", false)}><Save /> Save</Button>
               <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("held", false)}><Pause /> Hold (F10)</Button>
