@@ -112,6 +112,7 @@ async function buildRateContext(messages: unknown[], workspaceId: string): Promi
         "name, unit, sale_price, p100_staff_price, p250_staff_price, p500_staff_price, custom_sale_price, custom_p100_price, custom_p250_price, custom_p500_price, stock",
       )
       .eq("is_active", true)
+      .eq("scope", "rates")
       .eq("workspace_id", workspaceId)
       .limit(5000);
     if (!data || data.length === 0) return "";

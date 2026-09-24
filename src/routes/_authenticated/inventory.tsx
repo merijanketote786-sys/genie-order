@@ -23,8 +23,8 @@ export const Route = createFileRoute("/_authenticated/inventory")({
 });
 
 const KIND: Record<string, string> = { opening: "Opening", sale: "Sale", sale_return: "Sale return", purchase: "Purchase", purchase_return: "Purchase return", adjust_in: "Stock in", adjust_out: "Stock out", damage: "Damage" };
-type Edit = Record<"sku" | "barcode" | "category" | "brand" | "purchasePrice" | "wholesalePrice" | "minSalePrice" | "minStock" | "taxPercent", string>;
-const toEdit = (p: InvProduct): Edit => ({ sku: p.sku, barcode: p.barcode, category: p.category, brand: p.brand, purchasePrice: p.purchasePrice?.toString() ?? "", wholesalePrice: p.wholesalePrice?.toString() ?? "", minSalePrice: p.minSalePrice?.toString() ?? "", minStock: p.minStock?.toString() ?? "", taxPercent: p.taxPercent?.toString() ?? "" });
+type Edit = Record<"salePrice" | "sku" | "barcode" | "category" | "brand" | "purchasePrice" | "wholesalePrice" | "minSalePrice" | "minStock" | "taxPercent", string>;
+const toEdit = (p: InvProduct): Edit => ({ salePrice: String(p.salePrice ?? 0), sku: p.sku, barcode: p.barcode, category: p.category, brand: p.brand, purchasePrice: p.purchasePrice?.toString() ?? "", wholesalePrice: p.wholesalePrice?.toString() ?? "", minSalePrice: p.minSalePrice?.toString() ?? "", minStock: p.minStock?.toString() ?? "", taxPercent: p.taxPercent?.toString() ?? "" });
 const n = (s: string) => (s.trim() === "" ? null : Number(s) || 0);
 
 function InventoryPage() {
@@ -49,11 +49,11 @@ function InventoryPage() {
   const value = all.reduce((s, p) => s + Math.max(0, p.stock) * (p.purchasePrice ?? 0), 0);
   const noCost = all.filter((p) => p.purchasePrice == null).length;
 
-  const refresh = () => ["inventory", "stock-ledger", "products", "products-lite"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+  const refresh = () => ["inventory", "stock-ledger", "products", "pos-products", "products-lite"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   const saveEdit = async () => {
     if (!cur || !edit) return;
     try {
-      await updateProductDetails({ data: { id: cur.id, sku: edit.sku, barcode: edit.barcode, category: edit.category, brand: edit.brand, purchasePrice: n(edit.purchasePrice), wholesalePrice: n(edit.wholesalePrice), minSalePrice: n(edit.minSalePrice), minStock: n(edit.minStock), taxPercent: n(edit.taxPercent) } });
+      await updateProductDetails({ data: { id: cur.id, salePrice: n(edit.salePrice), sku: edit.sku, barcode: edit.barcode, category: edit.category, brand: edit.brand, purchasePrice: n(edit.purchasePrice), wholesalePrice: n(edit.wholesalePrice), minSalePrice: n(edit.minSalePrice), minStock: n(edit.minStock), taxPercent: n(edit.taxPercent) } });
       toast.success("Product save"); refresh();
     } catch (e) { toast.error(e instanceof Error ? e.message : "Nahi hua"); }
   };
@@ -118,10 +118,10 @@ function InventoryPage() {
           <section className="space-y-3 rounded-xl border border-border bg-card p-3">
             {!cur || !edit ? <p className="py-10 text-center text-sm text-muted-foreground">Product chunein — details, stock adjust aur stock ledger yahan.</p> : (
               <>
-                <div><p className="font-bold text-foreground">{cur.name}</p><p className="text-xs text-muted-foreground">Stock {cur.stock} {cur.unit} · Sale price {rs(cur.salePrice)} (Vyapar/rate list se)</p></div>
+                <div><p className="font-bold text-foreground">{cur.name}</p><p className="text-xs text-muted-foreground">Stock {cur.stock} {cur.unit} · Sale price {rs(cur.salePrice)}</p></div>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   <F k="sku" label="SKU" /><F k="barcode" label="Barcode" /><F k="category" label="Category" /><F k="brand" label="Brand" />
-                  <F k="purchasePrice" label="Purchase price" dec /><F k="wholesalePrice" label="Wholesale price" dec /><F k="minSalePrice" label="Min sale price" dec />
+                  <F k="salePrice" label="Sale price (POS rate)" dec /><F k="purchasePrice" label="Purchase price" dec /><F k="wholesalePrice" label="Wholesale price" dec /><F k="minSalePrice" label="Min sale price" dec />
                   <F k="minStock" label="Min stock (alert)" dec /><F k="taxPercent" label="Tax %" dec />
                 </div>
                 <Button onClick={saveEdit}>Details save</Button>

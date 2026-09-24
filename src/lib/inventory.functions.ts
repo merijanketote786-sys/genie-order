@@ -17,7 +17,7 @@ export const listInventory = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data } = await (context.supabase as Sb).from("products")
       .select("id, name, unit, stock, sale_price, custom_sale_price, purchase_price, wholesale_price, min_sale_price, min_stock, tax_percent, sku, barcode, category, brand")
-      .eq("is_active", true).order("name").limit(5000);
+      .eq("is_active", true).eq("scope", "pos").order("name").limit(5000);
     const products: InvProduct[] = ((data ?? []) as any[]).map((p) => ({
       id: p.id, name: p.name, unit: p.unit, stock: Number(p.stock ?? 0), salePrice: Number(p.custom_sale_price ?? p.sale_price ?? 0),
       purchasePrice: p.purchase_price == null ? null : Number(p.purchase_price), wholesalePrice: p.wholesale_price == null ? null : Number(p.wholesale_price),
@@ -31,13 +31,13 @@ export const updateProductDetails = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({
     id: z.string().uuid(), sku: z.string().max(60), barcode: z.string().max(60), category: z.string().max(60), brand: z.string().max(60),
-    purchasePrice: optNum, wholesalePrice: optNum, minSalePrice: optNum, minStock: optNum, taxPercent: z.number().min(0).max(100).nullable(),
+    salePrice: optNum.optional(), purchasePrice: optNum, wholesalePrice: optNum, minSalePrice: optNum, minStock: optNum, taxPercent: z.number().min(0).max(100).nullable(),
   }).parse(d))
   .handler(async ({ data, context }) => {
     const s = (n: number | null) => (n == null ? "" : String(n));
     const { error } = await (context.supabase as Sb).rpc("pos_update_product", { _id: data.id, _p: {
       sku: data.sku, barcode: data.barcode, category: data.category, brand: data.brand, purchase_price: s(data.purchasePrice),
-      wholesale_price: s(data.wholesalePrice), min_sale_price: s(data.minSalePrice), min_stock: s(data.minStock), tax_percent: s(data.taxPercent),
+      wholesale_price: s(data.wholesalePrice), min_sale_price: s(data.minSalePrice), min_stock: s(data.minStock), tax_percent: s(data.taxPercent), ...(data.salePrice != null ? { sale_price: String(data.salePrice) } : {}),
     } });
     if (error) throw new Error("Product save nahi hua");
     return { ok: true };
@@ -83,7 +83,7 @@ export const getReport = createServerFn({ method: "GET" })
       sb.from("purchases").select("doc_type, grand_total, paid_total").neq("status", "cancelled").gte("created_at", start).lt("created_at", end).limit(20000),
       sb.from("pos_payments").select("direction, method, amount, kind").eq("status", "completed").gte("created_at", start).lt("created_at", end).limit(50000),
       sb.from("expenses").select("category, amount").eq("status", "completed").gte("expense_date", data.from).lte("expense_date", data.to).limit(20000),
-      sb.from("products").select("id, name, category, purchase_price, stock, min_stock, sale_price").eq("is_active", true).limit(5000),
+      sb.from("products").select("id, name, category, purchase_price, stock, min_stock, sale_price").eq("is_active", true).eq("scope", "pos").limit(5000),
       sb.from("profiles").select("id, full_name"),
     ]);
     const saleRows = (sales ?? []) as any[];

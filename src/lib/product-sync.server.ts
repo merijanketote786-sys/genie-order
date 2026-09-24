@@ -99,6 +99,7 @@ export async function syncProductRows(
       .from("products")
       .select("normalized_name")
       .eq("workspace_id", workspaceId)
+      .eq("scope", "rates")
       .in(
         "normalized_name",
         rows.map((r) => r.normalized_name),
@@ -115,8 +116,8 @@ export async function syncProductRows(
       const { error } = await supabaseAdmin
         .from("products")
         .upsert(
-          chunk.map((r) => ({ ...r, is_active: true, workspace_id: workspaceId })),
-          { onConflict: "workspace_id,normalized_name" },
+          chunk.map((r) => ({ ...r, is_active: true, workspace_id: workspaceId, scope: "rates" })),
+          { onConflict: "workspace_id,normalized_name,scope" },
         );
       if (error) {
         errors.push({ index: i, reason: error.message });
