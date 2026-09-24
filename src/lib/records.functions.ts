@@ -56,6 +56,33 @@ async function upsertCustomer(
   return existing.id as string;
 }
 
+/** Add or update a party (customer) from POS billing; phone is the unique key */
+export const saveParty = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        name: z.string().trim().min(1).max(200),
+        phone: z.string().trim().min(7).max(20),
+        city: z.string().trim().max(120).optional(),
+        address: z.string().trim().max(500).optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    if (await blocked(context)) throw new Error("Access is blocked");
+    const supabase = context.supabase as any;
+    const id = await upsertCustomer(supabase, context.userId, {
+      phone: data.phone,
+      name: data.name,
+      city: data.city,
+      address: data.address,
+    });
+    if (!id) throw new Error("Phone number sahi nahi hai");
+    const phone = normalizePhone(data.phone) ?? data.phone;
+    return { ok: true, customer: { id, name: data.name, phone, city: data.city ?? null } };
+  });
+
 /* ------------------------------- orders -------------------------------- */
 
 export const saveOrder = createServerFn({ method: "POST" })
