@@ -30,12 +30,12 @@ export const Route = createFileRoute("/_authenticated/rates")({
       {
         name: "description",
         content:
-          "Item ka naam likhein aur foran sale rate, 100 gram rate aur available quantity dekhein.",
+          "Type the item name and instantly see the sale rate, 100 gram rate and available quantity.",
       },
       { property: "og:title", content: "Staff Rate List — HB Chemicals" },
       {
         property: "og:description",
-        content: "Item search karein aur rates with quantities foran dekhein.",
+        content: "Search an item and see rates with quantities instantly.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -115,17 +115,17 @@ function RatesPage() {
     try {
       await navigator.clipboard.writeText(lines.join("\n"));
       setCopied(item.name);
-      toast.success("Copy ho gaya");
+      toast.success("Copied");
       setTimeout(() => setCopied(null), 1500);
     } catch {
-      toast.error("Copy nahi ho saka");
+      toast.error("Copy failed");
     }
   };
 
   return (
     <AppShell
       title="Staff Rate List"
-      subtitle="Item ka naam likho → rate + quantity"
+      subtitle="Type the item name → rate + quantity"
       active="/rates"
     >
       <WorkspaceHeader
@@ -169,7 +169,7 @@ function RatesPage() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Item ka naam likhein... (e.g. glycerine)"
+            placeholder="Type the item name... (e.g. glycerine)"
             className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             autoComplete="off"
           />
@@ -195,9 +195,9 @@ function RatesPage() {
         {admin === "1" ? <SyncStatusPanel /> : null}
         {ITEMS.length === 0 ? (
           <div className="glass-panel mx-auto mt-6 w-full max-w-xl rounded-2xl p-6 text-center">
-            <h2 className="font-display text-lg font-bold">Abhi koi product nahi</h2>
+            <h2 className="font-display text-lg font-bold">No products yet</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Sync page se apni rate list add karein — Excel upload, paste ya document import.
+              Add your rate list from the Sync page — Excel upload, paste, or document import.
             </p>
           </div>
         ) : mode === "bulk" ? (
@@ -206,9 +206,9 @@ function RatesPage() {
           <EmptyState total={ITEMS.length} onPick={setQuery} />
         ) : results.length === 0 ? (
           <div className="glass-panel mx-auto mt-6 w-full max-w-xl rounded-2xl p-6 text-center">
-            <h2 className="font-display text-lg font-bold">Koi item nahi mila</h2>
+            <h2 className="font-display text-lg font-bold">No item found</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Spelling check karein ya thoda chhota naam likhein (e.g. "glycer").
+              Check the spelling or type a shorter name (e.g. "glycer").
             </p>
           </div>
         ) : mode === "edit" ? (
@@ -308,8 +308,8 @@ function EmptyState({ total, onPick }: { total: number; onPick: (q: string) => v
         {total} items ki rate list
       </h2>
       <p className="mt-1.5 text-[13px] leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-relaxed">
-        Item ka naam likhein — sale rate, 100 gram rate aur available quantity foran samne aa
-        jayegi.
+        Type the item name — the sale rate, 100 gram rate and available quantity will
+        appear instantly.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
         {quick.map((q) => (
@@ -340,13 +340,13 @@ function EditItemCard({ item }: { item: Item }) {
       }),
     onSuccess: (res) => {
       if (res?.ok) {
-        toast.success("Price save ho gayi");
+        toast.success("Price saved");
         void queryClient.invalidateQueries({ queryKey: ["products"] });
       } else {
-        toast.error(res?.message || "Save nahi ho saka");
+        toast.error(res?.message || "Save failed");
       }
     },
-    onError: () => toast.error("Save nahi ho saka"),
+    onError: () => toast.error("Save failed"),
   });
 
   const save = () => mutation.mutate({ sale, p100, p250, p500 });
@@ -427,7 +427,7 @@ function EditItemCard({ item }: { item: Item }) {
         </Button>
       </div>
       <p className="mt-2 text-[11px] text-muted-foreground">
-        Khali chhorain to automatic rate chalega. Vyapar sync in prices ko overwrite nahi karega.
+        Leave blank to use the automatic rate. Vyapar sync will not overwrite these prices.
       </p>
     </li>
   );
@@ -500,12 +500,12 @@ function BulkEditor({ items, searching }: { items: Item[]; searching: boolean })
         },
       }),
     onSuccess: (res) => {
-      if (res?.ok) toast.success(res.message || "Save ho gaya");
-      else toast.error(res?.message || "Kuch items save nahi ho sake");
+      if (res?.ok) toast.success(res.message || "Saved");
+      else toast.error(res?.message || "Some items could not be saved");
       setDrafts({});
       void queryClient.invalidateQueries({ queryKey: ["products"] });
     },
-    onError: () => toast.error("Save nahi ho saka"),
+    onError: () => toast.error("Save failed"),
   });
 
   const [savingOne, setSavingOne] = useState<string | null>(null);
@@ -513,8 +513,8 @@ function BulkEditor({ items, searching }: { items: Item[]; searching: boolean })
     mutationFn: (payload: { name: string; draft: Draft }) =>
       saveProductPrices({ data: { name: payload.name, ...payload.draft } }),
     onSuccess: (res, payload) => {
-      if (res?.ok) toast.success("Price save ho gayi");
-      else toast.error(res?.message || "Save nahi ho saka");
+      if (res?.ok) toast.success("Price saved");
+      else toast.error(res?.message || "Save failed");
       setDrafts((prev) => {
         const next = { ...prev };
         delete next[payload.name];
@@ -524,7 +524,7 @@ function BulkEditor({ items, searching }: { items: Item[]; searching: boolean })
       void queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: () => {
-      toast.error("Save nahi ho saka");
+      toast.error("Save failed");
       setSavingOne(null);
     },
   });
@@ -539,7 +539,7 @@ function BulkEditor({ items, searching }: { items: Item[]; searching: boolean })
   const applyPercent = () => {
     const p = Number(pct);
     if (!Number.isFinite(p) || p === 0) {
-      toast.error("Percent likhein (e.g. 10 ya -5)");
+      toast.error("Enter a percent (e.g. 10 or -5)");
       return;
     }
     const factor = 1 + p / 100;
@@ -561,7 +561,7 @@ function BulkEditor({ items, searching }: { items: Item[]; searching: boolean })
       }
       return next;
     });
-    toast.success(`${shown.length} items par ${p > 0 ? "+" : ""}${p}% laga diya`);
+    toast.success(`Applied ${p > 0 ? "+" : ""}${p}% to ${shown.length} items`);
   };
 
   return (
@@ -569,8 +569,8 @@ function BulkEditor({ items, searching }: { items: Item[]; searching: boolean })
       <div className="glass-panel mb-3 rounded-2xl px-3 py-3 sm:px-4">
         <p className="font-display text-sm font-bold text-foreground">Bulk price editing</p>
         <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
-          {searching ? "Search ke mutabiq items" : "Saare products"} — jitne chahein rates edit
-          karein, phir "Save all" dabayen. Khali field ka matlab automatic rate.
+          {searching ? "Items matching search" : "All products"} — edit as many rates as
+          you like, then press "Save all". A blank field means automatic rate.
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <label className="flex min-h-11 flex-1 items-center gap-2 rounded-lg border border-border bg-surface-2/60 px-3 sm:max-w-56">
@@ -579,7 +579,7 @@ function BulkEditor({ items, searching }: { items: Item[]; searching: boolean })
               inputMode="decimal"
               value={pct}
               onChange={(e) => setPct(e.target.value.replace(/[^0-9.-]/g, ""))}
-              placeholder="% (e.g. 10 ya -5)"
+              placeholder="% (e.g. 10 or -5)"
               className="w-full bg-transparent text-base outline-none placeholder:text-muted-foreground sm:text-sm"
             />
           </label>
@@ -590,8 +590,8 @@ function BulkEditor({ items, searching }: { items: Item[]; searching: boolean })
         <div className="mt-3 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-2">
           <p className="min-w-0 flex-1 px-1 text-[12px] font-semibold text-foreground">
             {dirty.length > 0
-              ? `${dirty.length} item${dirty.length === 1 ? "" : "s"} change hue`
-              : "Koi change nahi — rates edit karein"}
+              ? `${dirty.length} item${dirty.length === 1 ? "" : "s"} changed`
+              : "No changes — edit rates above"}
           </p>
           <Button
             variant="outline"
@@ -694,7 +694,7 @@ function BulkEditor({ items, searching }: { items: Item[]; searching: boolean })
             onClick={() => setVisible((v) => v + 50)}
             className="border-border bg-card"
           >
-            Aur {Math.min(50, items.length - visible)} items dikhayen
+            Show {Math.min(50, items.length - visible)} more items
           </Button>
         </div>
       ) : null}

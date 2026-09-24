@@ -96,7 +96,7 @@ export function SyncStatusPanel() {
               </p>
             </>
           ) : (
-            <p>Abhi tak koi sync nahi hua.</p>
+            <p>No sync has happened yet.</p>
           )}
         </div>
       )}
@@ -124,13 +124,13 @@ function SyncResultReport({ result }: { result: SyncResult }) {
       role={result.ok ? undefined : "alert"}
     >
       <p className={`font-semibold ${result.ok ? "" : "text-destructive"}`}>
-        {result.ok ? result.message : `Kuch add nahi hua — ${result.message}`}
+        {result.ok ? result.message : `Nothing was added — ${result.message}`}
       </p>
       {result.ok ? (
         <p className="mt-1 text-muted-foreground">
-          {result.total_rows} rows • {result.inserted_count} naye • {result.updated_count} update
-          {result.skipped_count ? ` • ${result.skipped_count} chhori gayin` : ""}
-          {result.error_count ? ` • ${result.error_count} rows me masla` : ""}
+          {result.total_rows} rows • {result.inserted_count} new • {result.updated_count} updated
+          {result.skipped_count ? ` • ${result.skipped_count} skipped` : ""}
+          {result.error_count ? ` • ${result.error_count} rows had an issue` : ""}
         </p>
       ) : null}
       {result.errors?.length ? (
@@ -164,17 +164,17 @@ export function VyaparUploadCard() {
     if (!isSheetFile(f)) {
       setResult({
         ok: false,
-        message: `".${extOf(f.name)}" file support nahi hoti.`,
+        message: `".${extOf(f.name)}" files are not supported.`,
         errors: [
-          "Yahan sirf Excel (.xlsx, .xls) ya CSV chalti hai.",
-          "PDF ya tasveer ke liye neeche 'PDF / tasveer se rate list' card use karein.",
+          "Only Excel (.xlsx, .xls) or CSV works here.",
+          "For PDF or image, use the 'PDF / image to rate list' card below.",
         ],
       });
       setFile(null);
       return;
     }
     if (f.size > 10 * 1024 * 1024) {
-      setResult({ ok: false, message: "File 10MB se bari hai." });
+      setResult({ ok: false, message: "File is larger than 10MB." });
       setFile(null);
       return;
     }
@@ -187,7 +187,7 @@ export function VyaparUploadCard() {
     onSuccess: (res) => {
       setResult(res as SyncResult);
       if (res.ok) {
-        toast.success("Rates update ho gaye");
+        toast.success("Rates updated");
         invalidate();
         setFile(null);
       } else {
@@ -195,8 +195,8 @@ export function VyaparUploadCard() {
       }
     },
     onError: () => {
-      setResult({ ok: false, message: "Upload nahi ho saka. Dobara koshish karein." });
-      toast.error("Upload nahi ho saka");
+      setResult({ ok: false, message: "Upload failed. Please try again." });
+      toast.error("Upload failed");
     },
   });
 
@@ -218,8 +218,8 @@ export function VyaparUploadCard() {
         <div className="min-w-0">
           <h2 className="font-display text-[15px] font-bold leading-tight">Excel / CSV upload</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            File yahan drag karein, Ctrl+V se paste karein, ya choose karein — rates foran update ho
-            jayenge.
+            Drag a file here, paste with Ctrl+V, or choose one — rates will update
+            instantly.
           </p>
         </div>
       </div>
@@ -244,7 +244,7 @@ export function VyaparUploadCard() {
         >
           <FileSpreadsheet className="h-4 w-4 shrink-0 text-primary" />
           <span className="truncate">
-            {file ? file.name : "Excel / CSV file drop karein ya choose karein"}
+            {file ? file.name : "Drop or choose an Excel / CSV file"}
           </span>
           <input
             type="file"
@@ -263,7 +263,7 @@ export function VyaparUploadCard() {
           ) : (
             <Upload className="h-4 w-4" />
           )}
-          {upload.isPending ? "Update ho raha hai..." : "Rates update karein"}
+          {upload.isPending ? "Updating..." : "Update rates"}
         </Button>
       </div>
 
@@ -282,7 +282,7 @@ export function PasteRatesCard() {
     onSuccess: (res) => {
       setResult(res as SyncResult);
       if (res.ok) {
-        toast.success("Rates update ho gaye");
+        toast.success("Rates updated");
         invalidate();
         setText("");
       } else {
@@ -290,8 +290,8 @@ export function PasteRatesCard() {
       }
     },
     onError: () => {
-      setResult({ ok: false, message: "Data process nahi ho saka. Dobara koshish karein." });
-      toast.error("Data process nahi ho saka");
+      setResult({ ok: false, message: "Data could not be processed. Please try again." });
+      toast.error("Data could not be processed");
     },
   });
 
@@ -303,11 +303,11 @@ export function PasteRatesCard() {
         </span>
         <div className="min-w-0">
           <h2 className="font-display text-[15px] font-bold leading-tight">
-            Rate list paste karein
+            Paste rate list
           </h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Kisi bhi software (Vyapar, Excel, Google Sheets) se rows copy kar ke yahan paste karein.
-            Pehli line columns ke naam ho: Item Name, Sale Price, Unit, Stock.
+            Copy rows from any software (Vyapar, Excel, Google Sheets) and paste them here.
+            The first line should be column names: Item Name, Sale Price, Unit, Stock.
           </p>
         </div>
       </div>
@@ -319,7 +319,7 @@ export function PasteRatesCard() {
           setResult(null);
         }}
         spellCheck={false}
-        aria-label="Rate list paste karein"
+        aria-label="Paste rate list"
         placeholder={"Item Name\tSale Price\tUnit\tStock\nGlycerine Soap Base\t1450\tkg\t20"}
         className="mt-3 min-h-32 w-full rounded-xl border border-border bg-surface-2/60 px-3 py-2.5 font-mono text-xs leading-5 outline-none focus-visible:ring-2 focus-visible:ring-ring"
       />
@@ -335,7 +335,7 @@ export function PasteRatesCard() {
           ) : (
             <ClipboardPaste className="h-4 w-4" />
           )}
-          {run.isPending ? "Check ho raha hai..." : "Check karke update karein"}
+          {run.isPending ? "Checking..." : "Check and update"}
         </Button>
       </div>
 
@@ -361,14 +361,14 @@ export function DocumentImportCard() {
     if (!isDocFile(f)) {
       setResult({
         ok: false,
-        message: `".${extOf(f.name)}" file support nahi hoti.`,
-        errors: ["Yahan sirf PDF ya tasveer (JPG/PNG) chalti hai."],
+        message: `".${extOf(f.name)}" files are not supported.`,
+        errors: ["Only PDF or image (JPG/PNG) works here."],
       });
       setFile(null);
       return;
     }
     if (f.size > 10 * 1024 * 1024) {
-      setResult({ ok: false, message: "File 10MB se bari hai." });
+      setResult({ ok: false, message: "File is larger than 10MB." });
       setFile(null);
       return;
     }
@@ -387,11 +387,11 @@ export function DocumentImportCard() {
         return;
       }
       setRows(res.rows as PreviewRow[]);
-      toast.success(`${res.rows.length} items mile — check kar ke confirm karein`);
+      toast.success(`${res.rows.length} items found — review and confirm`);
     },
     onError: () => {
-      setResult({ ok: false, message: "File parhi nahi ja saki. Dobara koshish karein." });
-      toast.error("File parhi nahi ja saki");
+      setResult({ ok: false, message: "File could not be read. Please try again." });
+      toast.error("File could not be read");
     },
   });
 
@@ -400,7 +400,7 @@ export function DocumentImportCard() {
     onSuccess: (res) => {
       setResult(res as SyncResult);
       if (res.ok) {
-        toast.success("Rates update ho gaye");
+        toast.success("Rates updated");
         invalidate();
         setRows(null);
         setFile(null);
@@ -409,8 +409,8 @@ export function DocumentImportCard() {
       }
     },
     onError: () => {
-      setResult({ ok: false, message: "Save nahi ho saka. Dobara koshish karein." });
-      toast.error("Save nahi ho saka");
+      setResult({ ok: false, message: "Save failed. Please try again." });
+      toast.error("Save failed");
     },
   });
 
@@ -431,11 +431,11 @@ export function DocumentImportCard() {
         </span>
         <div className="min-w-0">
           <h2 className="font-display text-[15px] font-bold leading-tight">
-            PDF / tasveer se rate list
+            PDF / image to rate list
           </h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            PDF ya screenshot upload karein — app rate list padh kar dikhayega, confirm karne par hi
-            save hoga.
+            Upload a PDF or screenshot — the app will read and show the rate list, and it will
+            only save once you confirm.
           </p>
         </div>
       </div>
@@ -459,7 +459,7 @@ export function DocumentImportCard() {
           }`}
         >
           <FileScan className="h-4 w-4 shrink-0 text-primary" />
-          <span className="truncate">{file ? file.name : "PDF ya tasveer drop / choose karein"}</span>
+          <span className="truncate">{file ? file.name : "Drop or choose a PDF or image"}</span>
           <input
             ref={inputRef}
             type="file"
@@ -479,14 +479,14 @@ export function DocumentImportCard() {
           ) : (
             <FileScan className="h-4 w-4" />
           )}
-          {preview.isPending ? "Parha ja raha hai..." : "Rate list nikalein"}
+          {preview.isPending ? "Reading..." : "Extract rate list"}
         </Button>
       </div>
 
       {rows?.length ? (
         <div className="mt-3 rounded-xl border border-border bg-surface-2/40 p-2">
           <p className="px-1 pb-2 text-xs font-semibold">
-            {rows.length} items mile — confirm karne par hi save honge
+            {rows.length} items found — will only save once confirmed
           </p>
           <div className="max-h-64 overflow-auto rounded-lg border border-border bg-card">
             <table className="w-full text-left text-xs">
@@ -524,7 +524,7 @@ export function DocumentImportCard() {
               ) : (
                 <Check className="h-4 w-4" />
               )}
-              Confirm karke update karein
+              Confirm and update
             </Button>
           </div>
         </div>
@@ -553,9 +553,9 @@ export function ConnectApiCard() {
   const copy = async (value: string, label: string) => {
     try {
       await navigator.clipboard.writeText(value);
-      toast.success(`${label} copy ho gaya`);
+      toast.success(`${label} copied`);
     } catch {
-      toast.error("Copy nahi ho saka");
+      toast.error("Copy failed");
     }
   };
 
@@ -580,11 +580,11 @@ export function ConnectApiCard() {
         </span>
         <div className="min-w-0">
           <h2 className="font-display text-[15px] font-bold leading-tight">
-            Kisi bhi software se connect karein
+            Connect from any software
           </h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Koi bhi software ya script seedha rates bhej sakta hai. Ye maloomat sirf aap (admin) ko
-            dikhti hain.
+            Any software or script can send rates directly. This information is only visible
+            to you (admin).
           </p>
         </div>
       </div>
@@ -623,8 +623,8 @@ Content-Type: application/json
 ] }`}
           </pre>
           <p className="text-[11px] text-muted-foreground">
-            Unit sirf ye ho sakti hai: kg, litre, grammes, pcs, piece, bottles, bundles. Rate 0 ya
-            khali ho to woh row add nahi hoti.
+            Unit can only be: kg, litre, grammes, pcs, piece, bottles, bundles. If the rate is 0
+            or blank, that row is not added.
           </p>
           <Button size="sm" variant="outline" className="gap-2" onClick={downloadTemplate}>
             <Download className="h-3.5 w-3.5" /> Rate list template (CSV)
@@ -632,7 +632,7 @@ Content-Type: application/json
         </div>
       ) : (
         <p className="mt-3 text-xs text-destructive">
-          {info.data?.message ?? "Maloomat load nahi ho sakin."}
+          {info.data?.message ?? "Could not load information."}
         </p>
       )}
     </section>
@@ -659,9 +659,9 @@ export function AutoSyncCard() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      toast.success("Setup file download ho gayi");
+      toast.success("Setup file downloaded");
     },
-    onError: () => toast.error("File ban nahi saki"),
+    onError: () => toast.error("Could not create file"),
   });
 
   if (!access?.isAdmin) return null;
@@ -677,8 +677,8 @@ export function AutoSyncCard() {
             Auto sync (single click)
           </h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Aik dafa ye file computer par chalayein. Uske baad sirf Vyapar se export karein is
-            folder me — rates khud ba khud yahan update ho jayenge.
+            Run this file once on your computer. After that, just export from Vyapar into
+            this folder — rates will update here automatically.
           </p>
         </div>
       </div>
@@ -706,16 +706,16 @@ export function AutoSyncCard() {
       </div>
 
       <ol className="mt-3 list-decimal space-y-1 pl-5 text-xs text-muted-foreground">
-        <li>File download karein aur computer par double-click karein (aik hi baar).</li>
+        <li>Download the file and double-click it on your computer (only once).</li>
         <li>
           Vyapar → Reports → Item / Stock Summary → Export to Excel, aur file{" "}
-          <span className="text-foreground">{folder}</span> me save karein.
+          in the <span className="text-foreground">{folder}</span> folder.
         </li>
-        <li>Bas — rates 10 second ke andar khud update ho jate hain, har baar.</li>
+        <li>That's it — rates update automatically within 10 seconds, every time.</li>
       </ol>
       <p className="mt-2 text-[11px] text-muted-foreground">
-        Ye file aapki private sync key rakhti hai — kisi ko na bhejein. Windows par Excel install
-        hona zaroori hai.
+        This file contains your private sync key — do not send it to anyone. Excel must be
+        installed on Windows.
       </p>
     </section>
   );

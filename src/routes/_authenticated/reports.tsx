@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_authenticated/reports")({
   head: () => ({
     meta: [
       { title: "Reports — HB Chemicals Pakistan Workspace" },
-      { name: "description", content: "Sales, profit & loss, purchases, expenses, stock aur best-selling reports — asli data se." },
+      { name: "description", content: "Sales, profit & loss, purchases, expenses, stock and best-selling reports — from real data." },
       { property: "og:title", content: "Reports — HB Chemicals Pakistan Workspace" },
       { property: "og:description", content: "Business reports aur P&L." },
       { property: "og:type", content: "website" },
@@ -30,7 +30,7 @@ function range(k: string): [string, string] {
   if (k === "lastmonth") return [ld(new Date(t.getFullYear(), t.getMonth() - 1, 1)), ld(new Date(t.getFullYear(), t.getMonth(), 0))];
   return [ld(t), ld(t)];
 }
-const PRESETS = [["today", "Aaj"], ["yesterday", "Kal"], ["week", "Is hafte"], ["month", "Is mahine"], ["lastmonth", "Pichla mahina"]] as const;
+const PRESETS = [["today", "Today"], ["yesterday", "Yesterday"], ["week", "This week"], ["month", "This month"], ["lastmonth", "Last month"]] as const;
 
 function ReportsPage() {
   const [[from, to], setRange] = useState<[string, string]>(range("month"));
@@ -66,7 +66,7 @@ function ReportsPage() {
     <section className="rounded-xl border border-border bg-card p-3 text-sm">
       <p className="mb-2 font-bold text-foreground">{title}</p>
       {rows.map((r) => <p key={r.name} className="flex justify-between gap-2 border-t border-border py-1.5"><span className="truncate">{r.name}</span><b>{rs(r.amount)}</b></p>)}
-      {!rows.length ? <p className="text-xs text-muted-foreground">Koi data nahi.</p> : null}
+      {!rows.length ? <p className="text-xs text-muted-foreground">No data.</p> : null}
     </section>
   );
   const maxDay = Math.max(1, ...(data?.daily ?? []).map((d) => Math.abs(d.sales)));
@@ -85,21 +85,21 @@ function ReportsPage() {
             <Button size="sm" variant="outline" onClick={() => window.print()}><Printer /> Print / PDF</Button>
           </div>
         </div>
-        {!s ? <p className="py-10 text-center text-sm text-muted-foreground">{isFetching ? "Report ban rahi hai…" : "Koi data nahi"}</p> : (
+        {!s ? <p className="py-10 text-center text-sm text-muted-foreground">{isFetching ? "Building report…" : "No data"}</p> : (
           <>
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
               <Card l={`Net sales (${s.bills} bills)`} v={s.netSales} /><Card l="Gross profit" v={s.grossProfit} tone="good" /><Card l="Expenses" v={s.expenses} tone="bad" /><Card l="Net profit" v={s.netProfit} tone={s.netProfit < 0 ? "bad" : "good"} />
-              <Card l="Purchases" v={s.purchases} /><Card l="Udhaar sales (baqaya)" v={s.creditSales} /><Card l="Stock value (cost)" v={s.stockValue} /><Card l="Stock value (sale)" v={s.stockSaleValue} />
+              <Card l="Purchases" v={s.purchases} /><Card l="Credit sales (outstanding)" v={s.creditSales} /><Card l="Stock value (cost)" v={s.stockValue} /><Card l="Stock value (sale)" v={s.stockSaleValue} />
             </div>
             <section className="rounded-xl border border-border bg-card p-3 text-sm">
               <p className="mb-2 font-bold text-foreground">Profit &amp; Loss</p>
               {[["Gross sales", s.grossSales], ["− Sale returns", -s.returns], ["= Net sales", s.netSales], ["− Cost of goods", -s.cost], ["= Gross profit", s.grossProfit], ["− Expenses", -s.expenses], ["= Net profit", s.netProfit]].map(([l, v]) => (
                 <p key={l as string} className={`flex justify-between border-t border-border py-1.5 ${(l as string).startsWith("=") ? "font-bold text-foreground" : ""}`}><span>{l}</span><span>{rs(v as number)}</span></p>
               ))}
-              <p className="mt-1 text-xs text-muted-foreground">Discount {rs(s.discount)} · Tax {rs(s.tax)} · Purchase returns {rs(s.purchaseReturns)} · Out of stock {s.outOfStock}. Cost un products ke purchase price se hai jin ka price mojood hai.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Discount {rs(s.discount)} · Tax {rs(s.tax)} · Purchase returns {rs(s.purchaseReturns)} · Out of stock {s.outOfStock}. Cost is based on the purchase price of products where a price is available.</p>
             </section>
             <section className="rounded-xl border border-border bg-card p-3">
-              <p className="mb-2 text-sm font-bold text-foreground">Rozana net sales</p>
+              <p className="mb-2 text-sm font-bold text-foreground">Daily net sales</p>
               <div className="flex h-36 items-end gap-1 overflow-x-auto">
                 {data.daily.map((d) => (
                   <div key={d.date} className="flex min-w-6 flex-1 flex-col items-center justify-end" title={`${d.date}: ${rs(d.sales)}`}>
@@ -107,7 +107,7 @@ function ReportsPage() {
                     <span className="mt-1 text-[10px] text-muted-foreground">{d.date.slice(8)}</span>
                   </div>
                 ))}
-                {!data.daily.length ? <p className="m-auto text-xs text-muted-foreground">Is muddat me koi sale nahi.</p> : null}
+                {!data.daily.length ? <p className="m-auto text-xs text-muted-foreground">No sales in this period.</p> : null}
               </div>
             </section>
             <section className="rounded-xl border border-border bg-card p-3">
@@ -117,7 +117,7 @@ function ReportsPage() {
                   <thead><tr className="text-left text-xs text-muted-foreground"><th>Item</th><th className="text-right">Qty</th><th className="text-right">Sale</th><th className="text-right">Profit</th></tr></thead>
                   <tbody>{data.items.map((i) => <tr key={i.name} className="border-t border-border"><td className="py-1.5">{i.name}</td><td className="text-right">{i.qty}</td><td className="text-right">{rs(i.amount)}</td><td className="text-right">{rs(i.profit)}</td></tr>)}</tbody>
                 </table>
-                {!data.items.length ? <p className="py-3 text-center text-xs text-muted-foreground">Koi item nahi.</p> : null}
+                {!data.items.length ? <p className="py-3 text-center text-xs text-muted-foreground">No items.</p> : null}
               </div>
             </section>
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -126,14 +126,14 @@ function ReportsPage() {
               <List title="Staff wise sale" rows={data.byStaff} />
               <List title="Expenses category wise" rows={data.expenses} />
               <section className="rounded-xl border border-border bg-card p-3 text-sm">
-                <p className="mb-2 font-bold text-foreground">Payment method (aaya / gaya)</p>
+                <p className="mb-2 font-bold text-foreground">Payment method (in / out)</p>
                 {data.byMethod.map((m) => <p key={m.method} className="flex justify-between border-t border-border py-1.5"><span>{m.method}</span><span>{rs(m.in)} / {rs(m.out)}</span></p>)}
-                {!data.byMethod.length ? <p className="text-xs text-muted-foreground">Koi data nahi.</p> : null}
+                {!data.byMethod.length ? <p className="text-xs text-muted-foreground">No data.</p> : null}
               </section>
               <section className="rounded-xl border border-border bg-card p-3 text-sm">
                 <p className="mb-2 font-bold text-foreground">Low stock ({data.lowStock.length})</p>
                 {data.lowStock.slice(0, 30).map((x) => <p key={x.name} className="flex justify-between border-t border-border py-1.5"><span className="truncate">{x.name}</span><b className="text-destructive">{x.stock} / {x.min}</b></p>)}
-                {!data.lowStock.length ? <p className="text-xs text-muted-foreground">Min stock set karein (Inventory me) to alerts yahan aayenge.</p> : null}
+                {!data.lowStock.length ? <p className="text-xs text-muted-foreground">Set min stock (in Inventory) to see alerts here.</p> : null}
               </section>
             </div>
           </>
