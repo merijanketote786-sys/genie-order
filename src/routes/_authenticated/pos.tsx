@@ -462,7 +462,8 @@ function PosPage() {
           else pc.afterSave(doc, kind === "quotation" ? "quotation" : "pos");
           if (kind === "sale" && cfg.sales.autoPdf) void pc.pdf(doc);
         }
-        toast.success(`${kind === "quotation" ? "Quotation" : "Sale"} saved: ${res.invoiceNumber}${res.duplicate ? " (already saved)" : ""}${res.change > 0 ? ` — return change Rs ${money(res.change)}` : ""}`);
+        toast.success(`${kind === "quotation" ? (estimate ? "Estimate" : "Quotation") : "Sale"} saved: ${res.invoiceNumber}${res.duplicate ? " (already saved)" : ""}${res.change > 0 ? ` — return change Rs ${money(res.change)}` : ""}`);
+        setEstimate(false);
       }
       qc.invalidateQueries({ queryKey: ["products"] }); qc.invalidateQueries({ queryKey: ["pos-products"] });
       qc.invalidateQueries({ queryKey: ["pos-docs"] });
