@@ -266,10 +266,13 @@ export const PERM_LABEL: Record<string, string> = {
   cancel_invoice: "Cancel sale", view_reports: "View reports", view_profit: "View profit", edit_stock: "Edit stock", edit_products: "Edit products", view_balances: "Customer balances",
   manage_customers: "Manage customers", manage_suppliers: "Manage suppliers", manage_expenses: "Manage expenses", manage_purchases: "Manage purchases", manage_printers: "Manage printers",
   manage_users: "Manage users", settings: "Manage settings",
+  view_accounting: "View accounting", create_journal: "Create journal", post_journal: "Post journal", view_ledger: "View general ledger",
+  view_trial_balance: "View trial balance", view_pnl: "View P&L", view_balance_sheet: "View balance sheet", view_ar_ap: "View AR/AP",
+  manage_accounts: "Manage chart of accounts", close_period: "Close accounting period",
 };
 const ROLE_PERMS: Record<string, string[]> = {
   admin: Object.keys(PERM_LABEL),
-  manager: Object.keys(PERM_LABEL).filter((p) => p !== "manage_users" && p !== "settings"),
+  manager: Object.keys(PERM_LABEL).filter((p) => !["manage_users", "settings", "post_journal", "manage_accounts", "close_period"].includes(p)),
   salesman: ["view_pos", "create_sale", "return_sale", "apply_discount", "view_balances", "manage_customers"],
   cashier: ["view_pos", "create_sale", "return_sale", "view_balances", "manage_expenses", "manage_customers"],
   staff: ["view_pos", "create_sale"],
