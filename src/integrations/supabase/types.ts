@@ -693,6 +693,7 @@ export type Database = {
           p500_staff_price: number | null
           purchase_price: number | null
           sale_price: number
+          scope: string
           sku: string | null
           stock: number
           tax_percent: number | null
@@ -721,6 +722,7 @@ export type Database = {
           p500_staff_price?: number | null
           purchase_price?: number | null
           sale_price?: number
+          scope?: string
           sku?: string | null
           stock?: number
           tax_percent?: number | null
@@ -749,6 +751,7 @@ export type Database = {
           p500_staff_price?: number | null
           purchase_price?: number | null
           sale_price?: number
+          scope?: string
           sku?: string | null
           stock?: number
           tax_percent?: number | null

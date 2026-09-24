@@ -169,6 +169,13 @@
       "when": 1790194862984,
       "tag": "0023_pos_settings_printing_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790240430385,
+      "tag": "0024_products_pos_scope",
+      "breakpoints": true
     }
   ]
 }
