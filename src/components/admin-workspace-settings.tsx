@@ -66,7 +66,7 @@ export function AdminWorkspaceSettings() {
         void qc.invalidateQueries({ queryKey: ["workspace-settings"] });
       } else toast.error(res.message);
     },
-    onError: () => toast.error("Save nahi hua, dobara koshish karein."),
+    onError: () => toast.error("Save failed, please try again."),
   });
 
   const saveSections = useMutation({
@@ -95,16 +95,16 @@ export function AdminWorkspaceSettings() {
       <div className="glass-panel space-y-4 rounded-2xl p-4">
         <div className="flex items-center gap-2">
           <Building2 className="size-4 text-primary" />
-          <h3 className="font-display text-sm font-bold">Business aur workspace defaults</h3>
+          <h3 className="font-display text-sm font-bold">Business and workspace defaults</h3>
         </div>
 
         {ws.isLoading ? (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" /> Load ho raha hai…
+            <Loader2 className="size-4 animate-spin" /> Loading…
           </p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Business ka naam">
+            <Field label="Business name">
               <Input
                 value={form.businessName}
                 onChange={(e) => setForm((f) => ({ ...f, businessName: e.target.value }))}
@@ -139,7 +139,7 @@ export function AdminWorkspaceSettings() {
                 placeholder="INV-"
               />
             </Field>
-            <Field label="Order number yahan se shuru">
+            <Field label="Order number starts from">
               <Input
                 inputMode="numeric"
                 value={form.orderNumberStart}
@@ -174,23 +174,23 @@ export function AdminWorkspaceSettings() {
 
         <Button onClick={() => save.mutate()} disabled={save.isPending} className="w-full gap-2 sm:w-auto">
           {save.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-          Workspace settings save karein
+          Save workspace settings
         </Button>
       </div>
 
       <div className="glass-panel space-y-3 rounded-2xl p-4">
         <div className="flex items-center gap-2">
           <SlidersHorizontal className="size-4 text-primary" />
-          <h3 className="font-display text-sm font-bold">Har user ko kaunse sections dikhein</h3>
+          <h3 className="font-display text-sm font-bold">Which sections each user can see</h3>
         </div>
         <p className="text-xs text-muted-foreground">
-          Sab buttons on hon to user ko poora app dikhta hai. Jo section off karein ge wo us user se chhup
-          jayega.
+          When all buttons are on, the user sees the whole app. Any section you turn off
+          will be hidden from that user.
         </p>
 
         {users.isLoading ? (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" /> Users load ho rahe hain…
+            <Loader2 className="size-4 animate-spin" /> Loading users…
           </p>
         ) : (
           <div className="space-y-3">

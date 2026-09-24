@@ -1,6 +1,6 @@
 // HB Chemicals Pakistan Workspace — offline desktop app.
-// Static build (dist-offline) ko ek local server se serve karta hai taake router aur
-// printing browser jaisi hi chalein. Koi internet ki zaroorat nahi.
+// Serves the static build (dist-offline) via a local server so that routing and
+// printing behave just like in a browser. No internet connection required.
 const { app, BrowserWindow, Menu, shell, ipcMain } = require("electron");
 const http = require("node:http");
 const fs = require("node:fs");
@@ -66,7 +66,7 @@ async function createWindow() {
           { role: "reload", label: "Refresh workspace" },
           { role: "toggleDevTools" },
           { type: "separator" },
-          { role: "quit", label: "Band karein" },
+          { role: "quit", label: "Close" },
         ],
       },
       {
@@ -92,7 +92,7 @@ async function createWindow() {
     ]),
   );
 
-  // WhatsApp jaise bahar ke links default browser me khulen.
+  // External links like WhatsApp should open in the default browser.
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (!url.startsWith(base)) {
       shell.openExternal(url);
