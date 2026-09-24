@@ -567,6 +567,10 @@ function PosPage() {
                 </div>
               </div>
             ) : null}
+            <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl border border-border bg-surface-2 p-1 text-sm font-semibold">
+              <button type="button" onClick={() => setEstimate(false)} className={`rounded-lg py-2 transition-colors ${!estimate ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}>Invoice</button>
+              <button type="button" onClick={() => setEstimate(true)} className={`rounded-lg py-2 transition-colors ${estimate ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}>Estimate</button>
+            </div>
             <div className="relative mt-3">
             <label className="flex h-11 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
               <ScanBarcode className="size-4 text-primary" />
@@ -727,11 +731,6 @@ function PosPage() {
             </div>
 
             {editing ? <p className="rounded-lg bg-accent p-2 text-xs text-accent-foreground">Open: <b>{editing.number}</b> — this will close when saved. <button className="underline" onClick={() => setEditing(null)}>Detach</button></p> : null}
-
-            <div className="grid grid-cols-2 gap-1 rounded-xl border border-border bg-surface-2 p-1 text-sm font-semibold">
-              <button type="button" onClick={() => setEstimate(false)} className={`rounded-lg py-2 transition-colors ${!estimate ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}>Invoice</button>
-              <button type="button" onClick={() => setEstimate(true)} className={`rounded-lg py-2 transition-colors ${estimate ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}>Estimate</button>
-            </div>
 
             <Button size="lg" className="h-14 w-full text-base" disabled={!cart.length || saving} onClick={() => checkout("sale", true)}><Printer /> {estimate ? "Save Estimate" : "Save + Print (F9)"} — Rs {money(total)}</Button>
             <div className="grid grid-cols-3 gap-2">
