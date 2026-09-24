@@ -540,10 +540,28 @@ function PosPage() {
         <div className="grid gap-3 lg:grid-cols-[1.1fr_1fr]">
           {/* Products */}
           <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
-            <div className="mb-3 grid grid-cols-2 gap-2">
+            <div className="mb-3 grid grid-cols-[1fr_1fr_auto] gap-2">
               <PosCustomerSearch field="name" className={inputCls} value={customerName} onChange={setCustomerName} onPick={pickCustomer} placeholder="Customer name (Walk-in)" />
               <PosCustomerSearch field="phone" className={inputCls} value={customerPhone} onChange={setCustomerPhone} onPick={pickCustomer} placeholder="Phone (optional)" />
+              <Button type="button" variant="outline" className="h-11 gap-1.5" onClick={() => setPartyOpen((o) => !o)} title="Add new party">
+                <UserPlus className="size-4" /> Party
+              </Button>
             </div>
+            {partyOpen ? (
+              <div className="mb-3 rounded-xl border border-primary/40 bg-accent/30 p-3">
+                <p className="mb-2 text-sm font-bold text-foreground">Add new party</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <input className={inputCls} placeholder="Name *" value={party.name} onChange={(e) => setParty((p) => ({ ...p, name: e.target.value }))} />
+                  <input className={inputCls} placeholder="Phone *" inputMode="tel" value={party.phone} onChange={(e) => setParty((p) => ({ ...p, phone: e.target.value.replace(/[^\d+\s-]/g, "") }))} />
+                  <input className={inputCls} placeholder="City" value={party.city} onChange={(e) => setParty((p) => ({ ...p, city: e.target.value }))} />
+                  <input className={inputCls} placeholder="Address" value={party.address} onChange={(e) => setParty((p) => ({ ...p, address: e.target.value }))} />
+                </div>
+                <div className="mt-2 flex justify-end gap-2">
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setPartyOpen(false)}>Cancel</Button>
+                  <Button type="button" size="sm" disabled={partySaving} onClick={addParty}>{partySaving ? "Saving…" : "Save party"}</Button>
+                </div>
+              </div>
+            ) : null}
             <div className="flex flex-wrap gap-1.5">
               {RATE_TYPES.map((r) => (
                 <Button key={r.id} size="sm" variant={rate === r.id ? "default" : "outline"} onClick={() => setRate(r.id)}>
