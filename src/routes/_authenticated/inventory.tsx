@@ -14,9 +14,9 @@ export const Route = createFileRoute("/_authenticated/inventory")({
   head: () => ({
     meta: [
       { title: "Inventory — HB Chemicals Pakistan Workspace" },
-      { name: "description", content: "Stock, low-stock alerts, stock valuation, adjustments, stock ledger aur product details." },
+      { name: "description", content: "Stock, low-stock alerts, stock valuation, adjustments, stock ledger and product details." },
       { property: "og:title", content: "Inventory — HB Chemicals Pakistan Workspace" },
-      { property: "og:description", content: "Stock aur product management." },
+      { property: "og:description", content: "Stock and product management." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -58,16 +58,16 @@ function InventoryPage() {
     if (!cur || !edit) return;
     try {
       await updateProductDetails({ data: { id: cur.id, salePrice: n(edit.salePrice), sku: edit.sku, barcode: edit.barcode, category: edit.category, brand: edit.brand, purchasePrice: n(edit.purchasePrice), wholesalePrice: n(edit.wholesalePrice), minSalePrice: n(edit.minSalePrice), minStock: n(edit.minStock), taxPercent: n(edit.taxPercent) } });
-      toast.success("Product save"); refresh();
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Nahi hua"); }
+      toast.success("Product saved"); refresh();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not complete"); }
   };
   const doAdjust = async () => {
     const qty = Number(adj.qty);
-    if (!cur || !(qty > 0)) return toast.error("Qty likhein");
+    if (!cur || !(qty > 0)) return toast.error("Enter a quantity");
     try {
       await adjustStock({ data: { id: cur.id, qty, kind: adj.kind as "adjust_in", note: adj.note } });
-      toast.success("Stock update"); setAdj({ qty: "", kind: adj.kind, note: "" }); refresh();
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Nahi hua"); }
+      toast.success("Stock updated"); setAdj({ qty: "", kind: adj.kind, note: "" }); refresh();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not complete"); }
   };
   const exportCsv = () => {
     const head = ["Name", "SKU", "Barcode", "Category", "Unit", "Stock", "Min stock", "Purchase price", "Sale price", "Stock value"];
@@ -81,7 +81,7 @@ function InventoryPage() {
   );
 
   return (
-    <AppShell title="Inventory" subtitle="Stock aur products" active="/pos">
+    <AppShell title="Inventory" subtitle="Stock and products" active="/pos">
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
@@ -89,18 +89,18 @@ function InventoryPage() {
             <div key={l} className="rounded-lg border border-border bg-card p-3"><p className="text-xs text-muted-foreground">{l}</p><p className="text-lg font-bold text-foreground">{v}</p></div>
           ))}
         </div>
-        {noCost ? <p className="text-xs text-muted-foreground">{noCost} products ka purchase price khali hai — stock value aur profit sahi dikhane ke liye product chun kar purchase price likhein (ya purchase karne par khud lag jata hai).</p> : null}
-        <div className="flex justify-end gap-2"><Button variant={adding ? "secondary" : "outline"} onClick={() => setAdding((b) => !b)}><Plus /> Naya item</Button><Button variant={bulk ? "secondary" : "default"} onClick={() => setBulk((b) => !b)}><Table2 /> {bulk ? "Bulk update band karein" : "Bulk update items"}</Button></div>
+        {noCost ? <p className="text-xs text-muted-foreground">{noCost} products have no purchase price set — select a product and enter the purchase price to show accurate stock value and profit (or it fills in automatically on purchase).</p> : null}
+        <div className="flex justify-end gap-2"><Button variant={adding ? "secondary" : "outline"} onClick={() => setAdding((b) => !b)}><Plus /> New item</Button><Button variant={bulk ? "secondary" : "default"} onClick={() => setBulk((b) => !b)}><Table2 /> {bulk ? "Close bulk update" : "Bulk update items"}</Button></div>
         {adding ? <NewPosProduct onClose={() => setAdding(false)} onSaved={() => { setAdding(false); refresh(); }} /> : null}
         {bulk ? <BulkUpdateProducts products={all} onClose={() => setBulk(false)} onSaved={refresh} /> : null}
         <div className={`grid gap-3 lg:grid-cols-[1.2fr_1fr] ${bulk ? "hidden" : ""}`}>
           <section className="space-y-2 rounded-xl border border-border bg-card p-3">
             <div className="flex flex-wrap gap-2">
               <label className="flex h-10 min-w-48 flex-1 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
-                <Search className="size-4 text-primary" /><input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Naam, SKU, barcode, category" />
+                <Search className="size-4 text-primary" /><input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name, SKU, barcode, category" />
               </label>
-              <select className={`${posInput} w-36`} value={filter} onChange={(e) => setFilter(e.target.value as "all")} aria-label="Filter"><option value="all">Sab</option><option value="low">Low stock</option><option value="out">Out of stock</option></select>
-              <select className={`${posInput} w-40`} value={cat} onChange={(e) => setCat(e.target.value)} aria-label="Category"><option value="">Har category</option>{cats.map((c) => <option key={c}>{c}</option>)}</select>
+              <select className={`${posInput} w-36`} value={filter} onChange={(e) => setFilter(e.target.value as "all")} aria-label="Filter"><option value="all">All</option><option value="low">Low stock</option><option value="out">Out of stock</option></select>
+              <select className={`${posInput} w-40`} value={cat} onChange={(e) => setCat(e.target.value)} aria-label="Category"><option value="">Every category</option>{cats.map((c) => <option key={c}>{c}</option>)}</select>
               <Button variant="outline" onClick={exportCsv}><Download /> CSV</Button>
             </div>
             <div className="max-h-[32rem] overflow-auto">
@@ -118,12 +118,12 @@ function InventoryPage() {
                   ))}
                 </tbody>
               </table>
-              {data && !list.length ? <p className="py-4 text-center text-xs text-muted-foreground">Koi product nahi mila.</p> : null}
+              {data && !list.length ? <p className="py-4 text-center text-xs text-muted-foreground">No products found.</p> : null}
             </div>
           </section>
 
           <section className="space-y-3 rounded-xl border border-border bg-card p-3">
-            {!cur || !edit ? <p className="py-10 text-center text-sm text-muted-foreground">Product chunein — details, stock adjust aur stock ledger yahan.</p> : (
+            {!cur || !edit ? <p className="py-10 text-center text-sm text-muted-foreground">Select a product — details, stock adjustment and stock ledger here.</p> : (
               <>
                 <div><p className="font-bold text-foreground">{cur.name}</p><p className="text-xs text-muted-foreground">Stock {cur.stock} {cur.unit} · Sale price {rs(cur.salePrice)}</p></div>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -135,7 +135,7 @@ function InventoryPage() {
                 <div className="grid gap-2 rounded-lg border border-border p-2 sm:grid-cols-[auto_1fr_1fr_auto]">
                   <select className={posInput} value={adj.kind} onChange={(e) => setAdj({ ...adj, kind: e.target.value })} aria-label="Adjustment type"><option value="adjust_in">Stock in (+)</option><option value="adjust_out">Stock out (−)</option><option value="damage">Damage (−)</option><option value="opening">Opening (+)</option></select>
                   <input className={posInput} value={adj.qty} inputMode="decimal" onChange={(e) => setAdj({ ...adj, qty: e.target.value })} placeholder={`Qty (${cur.unit})`} aria-label="Adjust qty" />
-                  <input className={posInput} value={adj.note} onChange={(e) => setAdj({ ...adj, note: e.target.value })} placeholder="Wajah" />
+                  <input className={posInput} value={adj.note} onChange={(e) => setAdj({ ...adj, note: e.target.value })} placeholder="Reason" />
                   <Button onClick={doAdjust}>Update</Button>
                 </div>
                 <p className="text-sm font-bold text-foreground">Stock ledger</p>
@@ -148,7 +148,7 @@ function InventoryPage() {
                       ))}
                     </tbody>
                   </table>
-                  {led && !led.rows.length ? <p className="py-3 text-center text-xs text-muted-foreground">Abhi koi movement nahi.</p> : null}
+                  {led && !led.rows.length ? <p className="py-3 text-center text-xs text-muted-foreground">No movement yet.</p> : null}
                 </div>
               </>
             )}

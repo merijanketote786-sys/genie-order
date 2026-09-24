@@ -34,13 +34,13 @@ export const Route = createFileRoute("/_authenticated/")({
       {
         name: "description",
         content:
-          "Kisi bhi format mein order likho aur foran clean, WhatsApp-ready order format hasil karo.",
+          "Write an order in any format and instantly get a clean, WhatsApp-ready order format.",
       },
       { property: "og:title", content: "Order Format Bot — Instant Order Formatter" },
       {
         property: "og:description",
         content:
-          "Kisi bhi format mein order likho aur foran clean, WhatsApp-ready order format hasil karo.",
+          "Write an order in any format and instantly get a clean, WhatsApp-ready order format.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -91,7 +91,7 @@ function OrderChat() {
   );
   const { messages, sendMessage, status, setMessages, error } = useChat({
     transport,
-    onError: (err) => toast.error(err.message || "Kuch masla ho gaya"),
+    onError: (err) => toast.error(err.message || "Something went wrong"),
   });
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -105,8 +105,8 @@ function OrderChat() {
     if (saved) setMessages(saved);
     const incoming = takeHandoff("order");
     if (incoming) {
-      setComposerText(`${incoming.trim()}\n\nIs invoice ka order format banayein.\n`);
-      toast.success("Invoice order section me aa gayi");
+      setComposerText(`${incoming.trim()}\n\nCreate an order format for this invoice.\n`);
+      toast.success("Invoice added to the order section");
     }
   }, [setMessages]);
 
@@ -169,7 +169,7 @@ function OrderChat() {
   return (
     <AppShell
       title="Order Format Bot"
-      subtitle="Kisi bhi format ka order → clean format"
+      subtitle="Order in any format → clean format"
       active="/"
       onClear={handleClear}
       showClear={messages.length > 0}
@@ -182,26 +182,26 @@ function OrderChat() {
         meta={["Urdu", "Roman Urdu", "English"]}
       />
       <WorkspaceToolDock>
-        <WorkspaceTool icon={Users} label="Customer" title="Customer search" description="Naam, city ya phone se saved customer dhoondein.">
-          <CustomerPickerBody useLabel="Order me daalein" onUse={(block) => {
+        <WorkspaceTool icon={Users} label="Customer" title="Customer search" description="Search for a saved customer by name, city or phone.">
+          <CustomerPickerBody useLabel="Add to order" onUse={(block) => {
             appendToComposer(block);
             textareaRef.current?.focus();
-            toast.success("Customer detail order me daal diya");
+            toast.success("Customer details added to the order");
           }} />
         </WorkspaceTool>
-        <WorkspaceTool icon={Package} label="Product" title="Product select" description="Rate list se product, pack aur qty choose karein.">
-          <ProductPickerBody useLabel="Order me daalein" onUse={(line) => {
+        <WorkspaceTool icon={Package} label="Product" title="Product select" description="Choose product, pack and quantity from the rate list.">
+          <ProductPickerBody useLabel="Add to order" onUse={(line) => {
             appendToComposer(line);
             textareaRef.current?.focus();
-            toast.success("Product order me daal diya");
+            toast.success("Product added to the order");
           }} />
         </WorkspaceTool>
-        <WorkspaceTool icon={Calculator} label="Courier" title="Courier rate" description="Weight aur city se delivery charge calculate karein.">
+        <WorkspaceTool icon={Calculator} label="Courier" title="Courier rate" description="Calculate delivery charge from weight and city.">
 
-          <RateMiniCalculatorBody useLabel="Order me daalein" onUse={(amount) => {
+          <RateMiniCalculatorBody useLabel="Add to order" onUse={(amount) => {
             appendToComposer(`Delivery: ${amount}`);
             textareaRef.current?.focus();
-            toast.success(`Delivery Rs ${amount} order me daal diya`);
+            toast.success(`Delivery Rs ${amount} added to the order`);
           }} />
         </WorkspaceTool>
         <WorkspaceTool icon={CreditCard} label="Payment" title="Payment status" active={paymentEnabled}>
@@ -244,7 +244,7 @@ function OrderChat() {
                       text={text}
                       label="Formatted order"
                       forward={{
-                        label: "Invoice me bhejein",
+                        label: "Send to invoice",
                         onClick: (value) => {
                           setHandoff("invoice", value);
                           navigate({ to: "/invoice" });
@@ -254,7 +254,7 @@ function OrderChat() {
 
                   ) : (
                     <ChatMessageContent>
-                      <Shimmer>Format ho raha hai...</Shimmer>
+                      <Shimmer>Formatting...</Shimmer>
                     </ChatMessageContent>
                   )
                 ) : (
@@ -269,7 +269,7 @@ function OrderChat() {
           {status === "submitted" ? (
             <ChatMessage from="assistant">
               <ChatMessageContent>
-                <Shimmer>Format ho raha hai...</Shimmer>
+                <Shimmer>Formatting...</Shimmer>
               </ChatMessageContent>
             </ChatMessage>
           ) : null}
@@ -295,12 +295,12 @@ function OrderChat() {
             disabled={isBusy}
             value={composerText}
             onValueChange={setComposerText}
-            placeholder="Order details paste karein... (name, phone, city, address, product, total)"
+            placeholder="Paste order details... (name, phone, city, address, product, total)"
             textareaClassName="min-h-20 px-3 py-2.5 text-sm leading-6 sm:min-h-32 sm:px-4 sm:py-3"
           />
         </div>
         <p className="mt-2 hidden text-center text-xs text-muted-foreground sm:block">
-          "WhatsApp par bhejo" dabao → WhatsApp khulega → apna group choose karo.
+          Press "Send on WhatsApp" → WhatsApp will open → choose your group.
         </p>
       </div>
     </AppShell>
