@@ -529,16 +529,7 @@ function PosPage() {
         {pc.node}
         <PosAlerts cfg={cfg} products={products} credit={balance?.found && balance.creditLimit != null && balance.balance + Math.max(0, total - paidNum) > balance.creditLimit ? { limit: balance.creditLimit, after: balance.balance + Math.max(0, total - paidNum) } : null} />
 
-        <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-card p-1 sm:w-fit sm:min-w-80">
-          <Button variant={view === "billing" ? "default" : "ghost"} onClick={() => changeView("billing")}>
-            <ReceiptText /> Billing
-          </Button>
-          <Button variant="ghost" asChild>
-            <Link to="/pos-settings"><Settings2 /> POS Settings</Link>
-          </Button>
-        </div>
-
-        {view === "billing" ? (
+        {(
         <div className="grid gap-3 lg:grid-cols-[1.1fr_1fr]">
           {/* Products */}
           <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
@@ -742,15 +733,6 @@ function PosPage() {
             ) : null}
           </section>
         </div>
-        ) : (
-          <section className="space-y-2 rounded-lg border border-border bg-card p-4">
-            <p className="flex items-center gap-2 font-bold text-foreground"><Settings2 className="size-4 text-primary" /> POS, printing and printers</p>
-            <p className="text-sm text-muted-foreground">Paper (A4/A5/58mm/80mm/custom), design, auto-print, printers, tax, payment methods and all other settings are now in one place — the same on every device.</p>
-            <div className="flex flex-wrap gap-2">
-              <Button asChild><Link to="/pos-settings">Open Settings</Link></Button>
-              <Button variant="outline" onClick={() => pc.preview({ kind: "pos", title: "Test Receipt", number: "TEST-0001", date: new Date(), lines: [{ name: "Test item", unit: "kg", qty: 1, rate: 100, total: 100 }], totals: [{ label: "Grand Total", value: 100, bold: true }] })}><Printer /> Test print</Button>
-            </div>
-          </section>
         )}
       </div>
     </AppShell>
