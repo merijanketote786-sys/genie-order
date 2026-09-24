@@ -176,6 +176,13 @@
       "when": 1790240430385,
       "tag": "0024_products_pos_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790240559751,
+      "tag": "0025_pos_update_product_sale_price",
+      "breakpoints": true
     }
   ]
 }
