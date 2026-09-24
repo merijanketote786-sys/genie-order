@@ -26,6 +26,7 @@ type WorkspacePath =
   | "/customers"
   | "/labels"
   | "/sync"
+  | "/accounting"
   | "/settings"
   | "/admin";
 

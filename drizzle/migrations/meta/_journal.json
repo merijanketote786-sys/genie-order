@@ -197,6 +197,13 @@
       "when": 1790241941175,
       "tag": "0027_pos_create_delete_products",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1790243817941,
+      "tag": "0028_accounting_module",
+      "breakpoints": true
     }
   ]
 }

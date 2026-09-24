@@ -14,6 +14,209 @@ export type Database = {
   }
   public: {
     Tables: {
+      acc_accounts: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          is_system: boolean
+          name: string
+          opening_balance: number
+          parent_id: string | null
+          system_key: string | null
+          type: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          name: string
+          opening_balance?: number
+          parent_id?: string | null
+          system_key?: string | null
+          type: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          name?: string
+          opening_balance?: number
+          parent_id?: string | null
+          system_key?: string | null
+          type?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acc_accounts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "acc_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      acc_journal_lines: {
+        Row: {
+          account_id: string
+          credit: number
+          debit: number
+          id: string
+          journal_id: string
+          line_no: number
+          memo: string | null
+          workspace_id: string
+        }
+        Insert: {
+          account_id: string
+          credit?: number
+          debit?: number
+          id?: string
+          journal_id: string
+          line_no?: number
+          memo?: string | null
+          workspace_id: string
+        }
+        Update: {
+          account_id?: string
+          credit?: number
+          debit?: number
+          id?: string
+          journal_id?: string
+          line_no?: number
+          memo?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acc_journal_lines_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "acc_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acc_journal_lines_journal_id_fkey"
+            columns: ["journal_id"]
+            isOneToOne: false
+            referencedRelation: "acc_journals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      acc_journals: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          entry_date: string
+          id: string
+          posted_at: string | null
+          posted_by: string | null
+          reference: string | null
+          reversal_of: string | null
+          reversed_by: string | null
+          source_id: string | null
+          source_type: string
+          status: string
+          total: number
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          entry_date: string
+          id?: string
+          posted_at?: string | null
+          posted_by?: string | null
+          reference?: string | null
+          reversal_of?: string | null
+          reversed_by?: string | null
+          source_id?: string | null
+          source_type?: string
+          status?: string
+          total?: number
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          entry_date?: string
+          id?: string
+          posted_at?: string | null
+          posted_by?: string | null
+          reference?: string | null
+          reversal_of?: string | null
+          reversed_by?: string | null
+          source_id?: string | null
+          source_type?: string
+          status?: string
+          total?: number
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acc_journals_reversal_of_fkey"
+            columns: ["reversal_of"]
+            isOneToOne: false
+            referencedRelation: "acc_journals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acc_journals_reversed_by_fkey"
+            columns: ["reversed_by"]
+            isOneToOne: false
+            referencedRelation: "acc_journals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      acc_settings: {
+        Row: {
+          credit_days: number
+          fy_end: string | null
+          fy_start: string | null
+          lock_date: string | null
+          updated_at: string
+          updated_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          credit_days?: number
+          fy_end?: string | null
+          fy_start?: string | null
+          lock_date?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          credit_days?: number
+          fy_end?: string | null
+          fy_start?: string | null
+          lock_date?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           action: string
@@ -1186,6 +1389,54 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      acc_balances: {
+        Args: { _from: string; _to: string }
+        Returns: {
+          account_id: string
+          before_cr: number
+          before_dr: number
+          cr: number
+          dr: number
+        }[]
+      }
+      acc_cancel_draft: { Args: { _id: string }; Returns: undefined }
+      acc_delete_account: { Args: { _id: string }; Returns: undefined }
+      acc_ensure_accounts: { Args: { _ws: string }; Returns: undefined }
+      acc_expense_account: {
+        Args: { _cat: string; _ws: string }
+        Returns: string
+      }
+      acc_make_journal: {
+        Args: {
+          _date: string
+          _desc: string
+          _lines: Json
+          _ref: string
+          _reversal_of?: string
+          _sid: string
+          _stype: string
+          _ws: string
+        }
+        Returns: string
+      }
+      acc_post_journal: { Args: { _id: string }; Returns: undefined }
+      acc_post_source: {
+        Args: { _id: string; _type: string }
+        Returns: undefined
+      }
+      acc_reverse_core: {
+        Args: { _date: string; _jid: string; _why: string }
+        Returns: string
+      }
+      acc_reverse_journal: {
+        Args: { _date: string; _id: string; _reason: string }
+        Returns: string
+      }
+      acc_save_account: { Args: { _p: Json }; Returns: string }
+      acc_save_journal: { Args: { _p: Json }; Returns: string }
+      acc_save_settings: { Args: { _p: Json }; Returns: undefined }
+      acc_sync_all: { Args: never; Returns: number }
+      acc_sys: { Args: { _key: string; _ws: string }; Returns: string }
       current_workspace: { Args: never; Returns: string }
       has_role: {
         Args: {
