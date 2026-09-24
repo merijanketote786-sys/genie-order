@@ -529,7 +529,6 @@ function PosPage() {
         {pc.node}
         <PosAlerts cfg={cfg} products={products} credit={balance?.found && balance.creditLimit != null && balance.balance + Math.max(0, total - paidNum) > balance.creditLimit ? { limit: balance.creditLimit, after: balance.balance + Math.max(0, total - paidNum) } : null} />
 
-        {(
         <div className="grid gap-3 lg:grid-cols-[1.1fr_1fr]">
           {/* Products */}
           <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
@@ -733,7 +732,6 @@ function PosPage() {
             ) : null}
           </section>
         </div>
-        )}
       </div>
     </AppShell>
   );
