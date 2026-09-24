@@ -31,7 +31,7 @@ import {
 } from "@/lib/pos";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Minus, Plus, Printer, ScanBarcode, ShoppingCart, Trash2, MessageCircle, LayoutGrid, Settings2, ReceiptText, Save, StickyNote, Pause, FileText, FolderOpen, RotateCcw, Download, Share2, X } from "lucide-react";
+import { Minus, Plus, Printer, ScanBarcode, ShoppingCart, Trash2, MessageCircle, LayoutGrid, ReceiptText, Save, StickyNote, Pause, FileText, FolderOpen, RotateCcw, Download, Share2, X } from "lucide-react";
 
 type PosDocRow = { id: string; doc_number: string; customer_name: string | null; customer_phone: string | null; grand_total: number; created_at: string; payload: string | null; status: string };
 
@@ -85,7 +85,6 @@ export const Route = createFileRoute("/_authenticated/pos")({
 
 const LINKS_KEY = "pos-barcode-links:v1";
 const GRID_KEY = "pos-show-grid:v1";
-const POS_VIEW_KEY = "pos-active-view:v1";
 /** Labels section ke auto code jaisa base (naam ke pehle 10 harf). */
 function labelBase(name: string) {
   return name
