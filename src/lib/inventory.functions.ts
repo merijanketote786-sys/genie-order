@@ -31,13 +31,13 @@ export const updateProductDetails = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({
     id: z.string().uuid(), sku: z.string().max(60), barcode: z.string().max(60), category: z.string().max(60), brand: z.string().max(60),
-    purchasePrice: optNum, wholesalePrice: optNum, minSalePrice: optNum, minStock: optNum, taxPercent: z.number().min(0).max(100).nullable(),
+    salePrice: optNum.optional(), purchasePrice: optNum, wholesalePrice: optNum, minSalePrice: optNum, minStock: optNum, taxPercent: z.number().min(0).max(100).nullable(),
   }).parse(d))
   .handler(async ({ data, context }) => {
     const s = (n: number | null) => (n == null ? "" : String(n));
     const { error } = await (context.supabase as Sb).rpc("pos_update_product", { _id: data.id, _p: {
       sku: data.sku, barcode: data.barcode, category: data.category, brand: data.brand, purchase_price: s(data.purchasePrice),
-      wholesale_price: s(data.wholesalePrice), min_sale_price: s(data.minSalePrice), min_stock: s(data.minStock), tax_percent: s(data.taxPercent),
+      wholesale_price: s(data.wholesalePrice), min_sale_price: s(data.minSalePrice), min_stock: s(data.minStock), tax_percent: s(data.taxPercent), ...(data.salePrice != null ? { sale_price: String(data.salePrice) } : {}),
     } });
     if (error) throw new Error("Product save nahi hua");
     return { ok: true };
