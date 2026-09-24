@@ -52,7 +52,7 @@ function saleToDoc(s: SaleRow): PrintDoc {
   return {
     kind: "pos",
     id: s.id,
-    title: isReturn ? "Sale Return" : "Invoice",
+    title: isReturn ? "Sale Return" : s.doc_type === "quotation" ? "Estimate" : "Invoice",
     number: s.doc_number,
     date: s.created_at,
     party: { label: "Customer", name: s.customer_name ?? undefined, phone: s.customer_phone ?? undefined },
@@ -67,7 +67,7 @@ function saleToDoc(s: SaleRow): PrintDoc {
 
 function shareText(s: SaleRow): string {
   const lines = [
-    `*${s.doc_type === "return" ? "Sale Return" : "Invoice"} ${s.doc_number}*`,
+    `*${s.doc_type === "return" ? "Sale Return" : s.doc_type === "quotation" ? "Estimate" : "Invoice"} ${s.doc_number}*`,
     new Date(s.created_at).toLocaleString("en-PK"),
     s.customer_name ? `Customer: ${s.customer_name}` : "",
     "",
@@ -85,7 +85,8 @@ function PosInvoicesPage() {
   const pc = usePrintCenter();
   const [search, setSearch] = useState("");
   const [share, setShare] = useState<SaleRow | null>(null);
-  const q = useQuery({ queryKey: ["pos-sales", search], queryFn: () => listPosSales({ data: { search } }) });
+  const [estimates, setEstimates] = useState(false);
+  const q = useQuery({ queryKey: ["pos-sales", search, estimates], queryFn: () => listPosSales({ data: { search, estimates } }) });
   const sales = (q.data?.sales ?? []) as SaleRow[];
 
   return (
