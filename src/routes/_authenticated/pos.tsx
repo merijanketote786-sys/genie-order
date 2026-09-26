@@ -32,7 +32,7 @@ import {
 } from "@/lib/pos";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Minus, Plus, Printer, ScanBarcode, Trash2, MessageCircle, LayoutGrid, ReceiptText, Save, StickyNote, Pause, FileText, FolderOpen, RotateCcw, Download, Share2, X, UserPlus } from "lucide-react";
+import { Minus, Plus, Printer, ScanBarcode, Trash2, MessageCircle, LayoutGrid, ReceiptText, Save, StickyNote, Pause, FileText, FolderOpen, RotateCcw, Download, Share2, X, UserPlus, Keyboard } from "lucide-react";
 
 type PosDocRow = { id: string; doc_number: string; customer_name: string | null; customer_phone: string | null; grand_total: number; created_at: string; payload: string | null; status: string };
 
@@ -495,22 +495,46 @@ function PosPage() {
     }
   };
 
-  // Keyboard shortcuts: F2 naya, F4 search, F8 payment, F9 save+print, F10 hold
+  // Keyboard shortcuts (mouse-free POS). Full list in SHORTCUTS / guide dialog.
   const shortcutsRef = useRef(true);
   shortcutsRef.current = cfg.pos.shortcuts;
-  const keysRef = useRef({ checkout, reset });
-  keysRef.current = { checkout, reset };
+  const custRef = useRef<HTMLDivElement>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const keysRef = useRef({ checkout, reset, setEstimate, setPartyOpen, setDocsOpen, setGuideOpen, setCart });
+  keysRef.current = { checkout, reset, setEstimate, setPartyOpen, setDocsOpen, setGuideOpen, setCart };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const k = keysRef.current;
+      const key = e.key.toLowerCase();
+      const act = (fn: () => void) => { e.preventDefault(); e.stopPropagation(); fn(); };
+      if (e.key === "F1" || (e.ctrlKey && key === "/")) return act(() => k.setGuideOpen((o) => !o));
+      if (e.key === "Escape") { k.setGuideOpen(false); return; }
       if (!shortcutsRef.current) return;
-      if (e.key === "F2") { e.preventDefault(); keysRef.current.reset(); }
-      else if (e.key === "F4") { e.preventDefault(); scanRef.current?.focus(); }
-      else if (e.key === "F8") { e.preventDefault(); payRef.current?.querySelector("input")?.focus(); }
-      else if (e.key === "F9") { e.preventDefault(); void keysRef.current.checkout("sale", true); }
-      else if (e.key === "F10") { e.preventDefault(); void keysRef.current.checkout("held", false); }
+      const focusPay = () => payRef.current?.querySelector<HTMLElement>("input,select")?.focus();
+      const focusCust = () => custRef.current?.querySelector<HTMLElement>("input")?.focus();
+      if (e.key === "F2") act(() => k.reset());
+      else if (e.key === "F4") act(() => scanRef.current?.focus());
+      else if (e.key === "F8") act(focusPay);
+      else if (e.key === "F9") act(() => void k.checkout("sale", true));
+      else if (e.key === "F10") act(() => void k.checkout("held", false));
+      else if (e.ctrlKey && !e.altKey && key === "s") act(() => void k.checkout("sale", true));
+      else if (e.ctrlKey && e.key === "Enter") act(() => void k.checkout("sale", false));
+      else if (e.ctrlKey && e.shiftKey && key === "h") act(() => void k.checkout("held", false));
+      else if (e.ctrlKey && e.shiftKey && e.key === "Backspace") act(() => k.setCart((p) => p.slice(0, -1)));
+      else if (e.altKey && !e.ctrlKey) {
+        if (key === "c") act(focusCust);
+        else if (key === "s" || key === "i") act(() => scanRef.current?.focus());
+        else if (key === "m") act(focusPay);
+        else if (key === "p") act(() => k.setPartyOpen((o) => !o));
+        else if (key === "e") act(() => k.setEstimate((v) => !v));
+        else if (key === "h") act(() => k.setDocsOpen("held"));
+        else if (key === "q") act(() => k.setDocsOpen("quotation"));
+        else if (key === "n") act(() => k.reset());
+        else if (key === "k") act(() => k.setGuideOpen((o) => !o));
+      }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, []);
 
   const whatsapp = (r: ReceiptInput) => {
@@ -529,6 +553,7 @@ function PosPage() {
     <AppShell title="POS Billing" subtitle="Counter + phone sales" active="/pos" wide>
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />
+        {guideOpen ? <ShortcutGuide onClose={() => setGuideOpen(false)} /> : null}
         {pinNode}
         {pc.node}
         <PosAlerts cfg={cfg} products={products} credit={balance?.found && balance.creditLimit != null && balance.balance + Math.max(0, total - paidNum) > balance.creditLimit ? { limit: balance.creditLimit, after: balance.balance + Math.max(0, total - paidNum) } : null} />
@@ -539,10 +564,11 @@ function PosPage() {
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span>{editing ? `Invoice ${editing.number}` : "New invoice"}</span>
               <span className="border-l border-border pl-3">{new Date().toLocaleDateString("en-PK")}</span>
+              <Button type="button" size="sm" variant="outline" onClick={() => setGuideOpen(true)} title="Keyboard shortcuts (F1)"><Keyboard /> Shortcuts (F1)</Button>
             </div>
           </div>
           <section className="px-4 pb-5 pt-6 sm:min-h-48 sm:px-6 sm:pb-8">
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:max-w-2xl sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+            <div ref={custRef} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:max-w-2xl sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
               <PosCustomerSearch field="name" className={inputCls} value={customerName} onChange={setCustomerName} onPick={pickCustomer} placeholder="Customer name (Walk-in)" />
               <div className="col-start-1 row-start-2 sm:col-start-2 sm:row-start-1"><PosCustomerSearch field="phone" className={inputCls} value={customerPhone} onChange={setCustomerPhone} onPick={pickCustomer} placeholder="Phone (optional)" /></div>
               <Button type="button" variant="outline" className="col-start-2 row-start-1 h-10 gap-1.5 sm:col-start-3" onClick={() => setPartyOpen((o) => !o)} title="Add new party">
@@ -833,6 +859,43 @@ function PosAlerts({ cfg, products, credit }: { cfg: ReturnType<typeof usePosAcc
       {credit && cfg.notify.creditLimit ? <span className="rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1 text-destructive">Credit limit {money(credit.limit)} — outstanding after this bill {money(credit.after)}{cfg.sales.enforceCreditLimit ? " (will not save)" : ""}</span> : null}
       {low ? <Link to="/inventory" className="rounded-full border border-border bg-muted px-3 py-1 text-foreground">{low} products low stock (≤ {cfg.inventory.lowStockThreshold})</Link> : null}
       {syncBad ? <Link to="/sync" className="rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1 text-destructive">Vyapar sync issue: {lastSync!.status} · {lastSync!.errors} errors</Link> : null}
+    </div>
+  );
+}
+
+const SHORTCUTS: { group: string; items: [string, string][] }[] = [
+  { group: "Navigation", items: [["Tab / Shift+Tab", "Move to next / previous field or button"], ["Enter / Space", "Press the focused button"], ["Alt+C", "Customer name"], ["Alt+S or F4", "Item search"], ["Alt+M or F8", "Payment"], ["Esc", "Close popup / search list"]] },
+  { group: "Items", items: [["↑ / ↓", "Move in search results"], ["Enter", "Add item, then jump to quantity"], ["Enter (in qty)", "Back to search"], ["Ctrl+Shift+Backspace", "Remove last item"]] },
+  { group: "Bill", items: [["Alt+E", "Switch Invoice / Estimate"], ["Alt+P", "Add new party"], ["Ctrl+S or F9", "Save + Print"], ["Ctrl+Enter", "Save without print"], ["Ctrl+Shift+H or F10", "Hold bill"], ["Alt+N or F2", "New bill"]] },
+  { group: "Lists & help", items: [["Alt+H", "Held bills"], ["Alt+Q", "Quotations / estimates"], ["F1, Alt+K or Ctrl+/", "Open / close this guide"]] },
+];
+
+function ShortcutGuide({ onClose }: { onClose: () => void }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  useEffect(() => { ref.current?.focus(); }, []);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" onClick={onClose}>
+      <div className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-border bg-card p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-foreground">Keyboard shortcuts</h2>
+          <Button ref={ref} size="sm" variant="outline" onClick={onClose}>Close (Esc)</Button>
+        </div>
+        <div className="grid gap-5 sm:grid-cols-2">
+          {SHORTCUTS.map((g) => (
+            <div key={g.group}>
+              <p className="mb-2 text-xs font-bold uppercase text-primary">{g.group}</p>
+              <ul className="space-y-1.5">
+                {g.items.map(([k, d]) => (
+                  <li key={k} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="text-muted-foreground">{d}</span>
+                    <kbd className="whitespace-nowrap rounded border border-border bg-surface px-2 py-0.5 font-mono text-xs text-foreground">{k}</kbd>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
