@@ -3,7 +3,6 @@ import { PosSubnav } from "@/components/pos-subnav";
 import { usePinPrompt, usePosAccess } from "@/components/pos-access";
 import { AppShell } from "@/components/app-shell";
 import { UnitSelect } from "@/components/unit-select";
-import { WorkspaceHeader } from "@/components/workspace-header";
 import { Button } from "@/components/ui/button";
 import { getProducts, type DbProduct } from "@/lib/products.functions";
 import { getMySettings } from "@/lib/settings.functions";
@@ -33,7 +32,7 @@ import {
 } from "@/lib/pos";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Minus, Plus, Printer, ScanBarcode, ShoppingCart, Trash2, MessageCircle, LayoutGrid, ReceiptText, Save, StickyNote, Pause, FileText, FolderOpen, RotateCcw, Download, Share2, X, UserPlus } from "lucide-react";
+import { Minus, Plus, Printer, ScanBarcode, Trash2, MessageCircle, LayoutGrid, ReceiptText, Save, StickyNote, Pause, FileText, FolderOpen, RotateCcw, Download, Share2, X, UserPlus } from "lucide-react";
 
 type PosDocRow = { id: string; doc_number: string; customer_name: string | null; customer_phone: string | null; grand_total: number; created_at: string; payload: string | null; status: string };
 
@@ -529,26 +528,24 @@ function PosPage() {
   return (
     <AppShell title="POS Billing" subtitle="Counter + phone sales" active="/pos" wide>
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
-        <WorkspaceHeader
-          icon={ShoppingCart}
-          eyebrow="Point of sale"
-          title="POS Invoicing"
-          description="Scan or search a product, build the cart, take payment and print the receipt. Stock updates automatically."
-          meta={["Barcode scan", "Discount", "Cash/Card/Credit"]}
-        />
-
         <PosSubnav />
         {pinNode}
         {pc.node}
         <PosAlerts cfg={cfg} products={products} credit={balance?.found && balance.creditLimit != null && balance.balance + Math.max(0, total - paidNum) > balance.creditLimit ? { limit: balance.creditLimit, after: balance.balance + Math.max(0, total - paidNum) } : null} />
 
-        <div className="grid gap-3 xl:grid-cols-[1fr_1.6fr]">
-          {/* Products */}
-          <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
-            <div className="mb-3 grid grid-cols-[1fr_1fr_auto] gap-2">
+        <div className="border border-border bg-card">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-6">
+            <h1 className="text-lg font-bold text-foreground">{estimate ? "Estimate" : "Sale"}</h1>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span>{editing ? `Invoice ${editing.number}` : "New invoice"}</span>
+              <span className="border-l border-border pl-3">{new Date().toLocaleDateString("en-PK")}</span>
+            </div>
+          </div>
+          <section className="px-4 pb-5 pt-6 sm:min-h-48 sm:px-6 sm:pb-8">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:max-w-2xl sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
               <PosCustomerSearch field="name" className={inputCls} value={customerName} onChange={setCustomerName} onPick={pickCustomer} placeholder="Customer name (Walk-in)" />
-              <PosCustomerSearch field="phone" className={inputCls} value={customerPhone} onChange={setCustomerPhone} onPick={pickCustomer} placeholder="Phone (optional)" />
-              <Button type="button" variant="outline" className="h-11 gap-1.5" onClick={() => setPartyOpen((o) => !o)} title="Add new party">
+              <div className="col-start-1 row-start-2 sm:col-start-2 sm:row-start-1"><PosCustomerSearch field="phone" className={inputCls} value={customerPhone} onChange={setCustomerPhone} onPick={pickCustomer} placeholder="Phone (optional)" /></div>
+              <Button type="button" variant="outline" className="col-start-2 row-start-1 h-10 gap-1.5 sm:col-start-3" onClick={() => setPartyOpen((o) => !o)} title="Add new party">
                 <UserPlus className="size-4" /> Party
               </Button>
             </div>
@@ -567,11 +564,11 @@ function PosPage() {
                 </div>
               </div>
             ) : null}
-            <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl border border-border bg-surface-2 p-1 text-sm font-semibold">
-              <button type="button" onClick={() => setEstimate(false)} className={`rounded-lg py-2 transition-colors ${!estimate ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}>Invoice</button>
-              <button type="button" onClick={() => setEstimate(true)} className={`rounded-lg py-2 transition-colors ${estimate ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}>Estimate</button>
+            <div className="mt-8 flex w-fit max-w-full gap-1 border-b border-border text-sm font-semibold">
+              <Button type="button" size="sm" variant="ghost" aria-pressed={!estimate} onClick={() => setEstimate(false)} className={`rounded-none border-b-2 ${!estimate ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>Invoice</Button>
+              <Button type="button" size="sm" variant="ghost" aria-pressed={estimate} onClick={() => setEstimate(true)} className={`rounded-none border-b-2 ${estimate ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>Estimate</Button>
             </div>
-            <div className="relative mt-3">
+            <div className="relative mt-3 max-w-2xl">
             <label className="flex h-11 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
               <ScanBarcode className="size-4 text-primary" />
               <input
@@ -601,7 +598,7 @@ function PosPage() {
                     } else if (!list.length) onScan();
                   }
                 }}
-                placeholder="Scan barcode or type product name (↓ ↑ + Enter)"
+                placeholder="Search or scan item"
                 className="min-w-0 flex-1 bg-transparent text-sm outline-none"
               />
             </label>
@@ -633,15 +630,17 @@ function PosPage() {
               </div>
             ) : null}
             <div className="mt-3 flex items-center justify-between gap-2">
-              <button
+              <Button
                 type="button"
+                size="sm"
+                variant="outline"
                 onClick={toggleGrid}
                 aria-expanded={showGrid}
-                className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs text-muted-foreground transition hover:border-primary hover:text-foreground"
+                className="h-8 text-xs"
               >
                 <LayoutGrid className="size-3.5" />
                 {showGrid ? "Hide shortcuts" : "Show product shortcuts"}
-              </button>
+              </Button>
               {pendingCode ? <span className="text-xs text-muted-foreground">List is open for linking</span> : null}
             </div>
             {gridVisible ? (
@@ -649,19 +648,20 @@ function PosPage() {
                 {results.map((p) => {
                   const price = priceFor(p, rate);
                   return (
-                    <button
+                    <Button
                       key={p.name}
                       type="button"
+                      variant="outline"
                       onClick={() => (pendingCode ? saveLink(pendingCode, p) : add(p))}
                       disabled={price == null}
-                      className="rounded-xl border border-border bg-background p-2.5 text-left transition hover:border-primary disabled:opacity-40"
+                      className="h-auto min-h-16 flex-col items-start whitespace-normal p-2.5 text-left"
                     >
                       <p className="line-clamp-2 text-sm font-semibold text-foreground">{p.name}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {price != null ? `Rs ${money(price)}` : "No rate"} · stock {p.stock ?? "-"}
                       </p>
                       {pendingCode ? <p className="mt-1 text-xs font-bold text-primary">Link</p> : null}
-                    </button>
+                    </Button>
                   );
                 })}
                 {!results.length ? <p className="col-span-full py-6 text-center text-sm text-muted-foreground">No products found. Set product rates and stock in Inventory.</p> : null}
@@ -669,22 +669,51 @@ function PosPage() {
             ) : null}
           </section>
 
-          {/* Cart */}
-          <section className="space-y-3 rounded-2xl border border-border bg-card p-3 sm:p-4">
-
-            <div className="space-y-2">
+          {/* Sale invoice grid */}
+          <section className="border-y border-border">
+            <div className="overflow-x-auto">
+            <div className="min-w-[850px]">
+              <div className="grid grid-cols-[minmax(210px,3fr)_minmax(112px,1.2fr)_minmax(150px,1.5fr)_minmax(108px,1fr)_minmax(105px,1fr)_42px] border-b border-border bg-surface-2 text-[11px] font-bold uppercase text-muted-foreground">
+                <span className="px-4 py-3">Item</span><span className="px-2 py-3">Qty</span><span className="px-2 py-3">Unit</span><span className="px-2 py-3">Price / unit</span><span className="px-2 py-3 text-right">Amount</span><span />
+              </div>
               {cart.map((l) => (
                 <CartRow key={l.key} line={l} focus={focusKey === l.key} onFocused={() => setFocusKey(null)} onDone={() => scanRef.current?.focus()} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} taxRates={cfg.tax.enabled ? cfg.tax.rates : []} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
               ))}
-              {!cart.length ? <p className="rounded-xl border border-dashed border-border py-8 text-center text-sm text-muted-foreground">Cart is empty — tap or scan a product.</p> : null}
+              {!cart.length ? <div className="min-h-36 px-4 py-10 text-left text-sm text-muted-foreground">Search an item above to start the invoice.</div> : null}
+              <div className="flex items-center justify-between border-t border-border bg-surface px-4 py-3 text-xs font-semibold text-foreground"><span>{cart.length} {cart.length === 1 ? "item" : "items"}</span><span>Total · Rs {money(total)}</span></div>
             </div>
+            </div>
+          </section>
 
-            <div className="grid grid-cols-2 gap-2">
+          <section className="grid gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] lg:gap-12">
+            <div className="space-y-4">
+              <label className="block text-xs text-muted-foreground">Invoice note<input className={inputCls} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional — will print on bill" /></label>
+              <div ref={payRef} className="space-y-2 border-t border-border pt-4">
+                <p className="text-xs font-bold text-foreground">Payment {pays.length > 1 ? "(split)" : ""} <span className="font-normal text-muted-foreground">— F8</span></p>
+                {pays.map((p, i) => (
+                  <div key={i} className="flex gap-1.5">
+                    <select className="h-10 rounded-lg border border-border bg-background px-2 text-sm" value={p.method} onChange={(e) => setPays((all) => all.map((x, j) => (j === i ? { ...x, method: e.target.value as PayMethod } : x)))} aria-label="Payment method">
+                      {cfg.payMethods.map((m) => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                    <input className={inputCls} value={p.amount} inputMode="decimal" placeholder={i === 0 && pays.length === 1 ? `${money(total)} (full)` : "0"} onChange={(e) => setPays((all) => all.map((x, j) => (j === i ? { ...x, amount: e.target.value } : x)))} aria-label="Amount" />
+                    {pays.length > 1 ? <Button size="icon" variant="ghost" onClick={() => setPays((all) => all.filter((_, j) => j !== i))} aria-label="Remove"><Trash2 /></Button> : null}
+                  </div>
+                ))}
+                <div className="flex flex-wrap gap-1.5">
+                  <Button size="sm" variant="outline" onClick={() => setPays((all) => [...all, { method: all.some((x) => x.method === "Cash") ? "Bank" : "Cash", amount: "" }])}><Plus /> Split payment</Button>
+                  <Button size="sm" variant="outline" onClick={() => setPays([{ method: "Credit", amount: "" }])}>Full credit</Button>
+                </div>
+              </div>
+              {balance?.found ? <div className={`border-t border-border pt-3 text-xs ${balance.balance > 0 ? "text-destructive" : "text-muted-foreground"}`}>Previous balance: <b>Rs {money(balance.balance)}</b>{balance.creditLimit ? ` · Credit limit Rs ${money(balance.creditLimit)}` : ""}</div> : null}
+            </div>
+            <div className="space-y-4">
+
+            <div className="grid grid-cols-2 gap-3">
               <label className="text-xs text-muted-foreground">
                 <span className="flex items-center justify-between">Bill discount
                   <span className="flex gap-0.5">
                     {(["amt", "pct"] as const).map((k) => (
-                      <button key={k} type="button" onClick={() => setDiscType(k)} className={`rounded px-1.5 text-[10px] font-bold ${discType === k ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{k === "amt" ? "Rs" : "%"}</button>
+                      <Button key={k} type="button" size="sm" variant={discType === k ? "default" : "ghost"} onClick={() => setDiscType(k)} className="h-6 px-2 text-[10px]">{k === "amt" ? "Rs" : "%"}</Button>
                     ))}
                   </span>
                 </span>
@@ -693,32 +722,7 @@ function PosPage() {
               <label className="text-xs text-muted-foreground">Delivery<input className={inputCls} value={delivery} onChange={(e) => setDelivery(e.target.value)} inputMode="decimal" placeholder="0" /></label>
             </div>
 
-            <div ref={payRef} className="space-y-2 rounded-xl border border-border p-2.5">
-              <p className="text-xs font-bold text-foreground">Payment {pays.length > 1 ? "(split)" : ""} <span className="font-normal text-muted-foreground">— F8</span></p>
-              {pays.map((p, i) => (
-                <div key={i} className="flex gap-1.5">
-                  <select className="h-10 rounded-lg border border-border bg-background px-2 text-sm" value={p.method} onChange={(e) => setPays((all) => all.map((x, j) => (j === i ? { ...x, method: e.target.value as PayMethod } : x)))} aria-label="Payment method">
-                    {cfg.payMethods.map((m) => <option key={m} value={m}>{m === "Credit" ? "Credit" : m}</option>)}
-                  </select>
-                  <input className={inputCls} value={p.amount} inputMode="decimal" placeholder={i === 0 && pays.length === 1 ? `${money(total)} (full)` : "0"} onChange={(e) => setPays((all) => all.map((x, j) => (j === i ? { ...x, amount: e.target.value } : x)))} aria-label="Amount" />
-                  {pays.length > 1 ? <Button size="icon" variant="ghost" onClick={() => setPays((all) => all.filter((_, j) => j !== i))} aria-label="Remove"><Trash2 /></Button> : null}
-                </div>
-              ))}
-              <div className="flex flex-wrap gap-1.5">
-                <Button size="sm" variant="outline" onClick={() => setPays((all) => [...all, { method: all.some((x) => x.method === "Cash") ? "Bank" : "Cash", amount: "" }])}><Plus /> Split payment</Button>
-                <Button size="sm" variant="outline" onClick={() => setPays([{ method: "Credit", amount: "" }])}>Full credit</Button>
-              </div>
-            </div>
-
-            {balance?.found ? (
-              <div className={`rounded-lg border p-2 text-xs ${balance.balance > 0 ? "border-destructive text-destructive" : "border-border text-muted-foreground"}`}>
-                Previous balance: <b>Rs {money(balance.balance)}</b>{balance.creditLimit ? ` · Credit limit Rs ${money(balance.creditLimit)}` : ""}
-              </div>
-            ) : null}
-
-            <label className="block text-xs text-muted-foreground">Invoice note<input className={inputCls} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional — will print on bill" /></label>
-
-            <div className="space-y-1 rounded-xl bg-surface-2 p-3 text-sm">
+            <div className="space-y-2 border-t border-border pt-4 text-sm">
               <Row a="Subtotal" b={`Rs ${money(subtotal)}`} />
               {itemDiscount ? <Row a="Item discounts" b={`- Rs ${money(itemDiscount)}`} /> : null}
               {taxTotal ? <Row a="Tax" b={`Rs ${money(taxTotal)}`} /> : null}
@@ -732,7 +736,7 @@ function PosPage() {
 
             {editing ? <p className="rounded-lg bg-accent p-2 text-xs text-accent-foreground">Open: <b>{editing.number}</b> — this will close when saved. <button className="underline" onClick={() => setEditing(null)}>Detach</button></p> : null}
 
-            <Button size="lg" className="h-14 w-full text-base" disabled={!cart.length || saving} onClick={() => checkout("sale", true)}><Printer /> {estimate ? "Save Estimate" : "Save + Print (F9)"} — Rs {money(total)}</Button>
+            <Button size="lg" className="h-12 w-full text-base" disabled={!cart.length || saving} onClick={() => checkout("sale", true)}><Printer /> {estimate ? "Save Estimate" : "Save + Print (F9)"} — Rs {money(total)}</Button>
             <div className="grid grid-cols-3 gap-2">
               <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("sale", false)}><Save /> Save</Button>
               <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("held", false)}><Pause /> Hold (F10)</Button>
@@ -745,7 +749,7 @@ function PosPage() {
             </div>
 
             {last ? (
-              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border p-2.5 text-sm">
+              <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3 text-sm">
                 <span className="font-semibold">Last: {last.invoiceNumber}</span>
                 <Button size="sm" variant="outline" onClick={() => lastDoc && pc.print(lastDoc, { reprint: true })}><Printer /> Reprint</Button>
                 <Button size="sm" variant="outline" onClick={() => lastDoc && pc.preview(lastDoc, true)}><ReceiptText /> Preview</Button>
@@ -758,6 +762,7 @@ function PosPage() {
             {docsOpen ? (
               <DocsList kind={docsOpen} onClose={() => setDocsOpen(null)} onOpen={openDoc} />
             ) : null}
+            </div>
           </section>
         </div>
       </div>
@@ -781,32 +786,29 @@ function CartRow({ line, focus, onFocused, onDone, onPatch, onRemove, lockPrice 
     const q = line.qty || 1;
     onPatch(line.key, { price: Math.round(((t + (line.discount || 0)) / q) * 100) / 100 });
   };
-  const small = "h-8 rounded-md border border-border bg-background px-2 text-sm";
+  const small = "h-9 min-w-0 rounded-md border border-border bg-background px-2 text-sm outline-none focus:border-primary";
   return (
-    <div className="rounded-xl border border-border p-2.5">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground">{line.name}</p>
-          <p className="text-xs text-muted-foreground">{packLabel(line)} · Rs {money(line.price)}{line.taxPercent ? ` · tax ${line.taxPercent}%` : ""}</p>
+    <div className="border-b border-border even:bg-surface/60">
+      <div className="grid grid-cols-[minmax(210px,3fr)_minmax(112px,1.2fr)_minmax(150px,1.5fr)_minmax(108px,1fr)_minmax(105px,1fr)_42px] items-center text-sm">
+        <div className="min-w-0 px-4 py-2">
+          <p className="truncate font-semibold text-foreground" title={line.name}>{line.name}</p>
+          <Button size="sm" variant="ghost" className="h-6 px-0 text-xs text-muted-foreground" onClick={() => setShowNote((v) => !v)}><StickyNote className="size-3" /> {line.note ? "Edit note" : "Add note"}</Button>
         </div>
-        <div className="flex shrink-0 gap-1">
-          <Button size="icon-sm" variant="ghost" onClick={() => setShowNote((v) => !v)} aria-label="Note"><StickyNote /></Button>
-          <Button size="icon-sm" variant="ghost" onClick={onRemove} aria-label="Remove"><Trash2 /></Button>
+        <div className="flex items-center gap-0.5 px-1">
+          <Button size="icon-sm" variant="ghost" className="h-7 w-6" onClick={() => onPatch(line.key, { qty: Math.max(0.001, +(line.qty - 1).toFixed(3)) || 1 })} aria-label="Decrease"><Minus /></Button>
+          <input ref={qtyRef} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setQtyText(null); onDone?.(); } }} className={`${small} w-full text-center`} value={qtyText ?? String(line.qty)} inputMode="decimal" onChange={(e) => { setQtyText(e.target.value); onPatch(line.key, { qty: n(e.target.value) }); }} onBlur={() => setQtyText(null)} aria-label="Qty" title="Quantity (0.5, 1.25 kg too)" />
+          <Button size="icon-sm" variant="ghost" className="h-7 w-6" onClick={() => onPatch(line.key, { qty: +(line.qty + 1).toFixed(3) })} aria-label="Increase"><Plus /></Button>
         </div>
+        <div className="px-2"><UnitSelect className={`${small} w-full`} value={line.unitOverride?.trim() || line.unit || ""} onChange={(v) => onPatch(line.key, { unitOverride: v === line.unit ? undefined : v })} /></div>
+        <div className="px-2"><input className={`${small} w-full text-right`} value={String(line.price)} readOnly={lockPrice} onFocus={() => { if (lockPrice) onUnlock?.(); }} inputMode="decimal" onChange={(e) => onPatch(line.key, { price: n(e.target.value) })} aria-label="Rate" /></div>
+        <div className="px-2"><input className={`${small} w-full text-right font-semibold text-foreground`} value={totalText ?? String(total)} readOnly={lockPrice} onFocus={() => { if (lockPrice) onUnlock?.(); }} inputMode="decimal" onChange={(e) => setTotal(e.target.value)} onBlur={() => setTotalText(null)} aria-label="Total" /></div>
+        <Button size="icon-sm" variant="ghost" className="h-9 w-9" onClick={onRemove} aria-label="Remove"><Trash2 /></Button>
       </div>
-      <div className="mt-2 flex flex-wrap items-end gap-2">
-        <div className="flex items-center gap-1">
-          <Button size="icon-sm" variant="outline" onClick={() => onPatch(line.key, { qty: Math.max(0.001, +(line.qty - 1).toFixed(3)) || 1 })} aria-label="Decrease"><Minus /></Button>
-          <input ref={qtyRef} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setQtyText(null); onDone?.(); } }} className={`${small} w-20 text-center`} value={qtyText ?? String(line.qty)} inputMode="decimal" onChange={(e) => { setQtyText(e.target.value); onPatch(line.key, { qty: n(e.target.value) }); }} onBlur={() => setQtyText(null)} aria-label="Qty" title="Quantity (0.5, 1.25 kg too)" />
-          <Button size="icon-sm" variant="outline" onClick={() => onPatch(line.key, { qty: +(line.qty + 1).toFixed(3) })} aria-label="Increase"><Plus /></Button>
-        </div>
-        <label className="text-[10px] text-muted-foreground">Rate<input className={`${small} block w-20`} value={String(line.price)} readOnly={lockPrice} onFocus={() => { if (lockPrice) onUnlock?.(); }} inputMode="decimal" onChange={(e) => onPatch(line.key, { price: n(e.target.value) })} aria-label="Rate" /></label>
-        <label className="text-[10px] text-muted-foreground">Unit<UnitSelect className={`${small} block w-28 px-1`} value={line.unitOverride?.trim() || line.unit || ""} onChange={(v) => onPatch(line.key, { unitOverride: v === line.unit ? undefined : v })} /></label>
-        <label className="text-[10px] text-muted-foreground">Disc<input className={`${small} block w-16`} value={line.discount ? String(line.discount) : ""} placeholder="0" readOnly={lockDisc} onFocus={() => { if (lockDisc) onUnlock?.(); }} inputMode="decimal" onChange={(e) => onPatch(line.key, { discount: n(e.target.value) })} aria-label="Discount" /></label>
-        {taxRates.length ? <label className="text-[10px] text-muted-foreground">Tax<select className={`${small} block w-20 px-1`} value={line.taxPercent ?? 0} onChange={(e) => onPatch(line.key, { taxPercent: Number(e.target.value) })} aria-label="Tax">{[...taxRates, ...(taxRates.some((t) => t.pct === (line.taxPercent ?? 0)) ? [] : [{ name: `${line.taxPercent}%`, pct: line.taxPercent ?? 0 }])].map((t) => <option key={t.name + t.pct} value={t.pct}>{t.name}</option>)}</select></label> : null}
-        <label className="ml-auto text-[10px] text-muted-foreground">Total<input className={`${small} block w-24 text-right font-semibold text-foreground`} value={totalText ?? String(total)} readOnly={lockPrice} onFocus={() => { if (lockPrice) onUnlock?.(); }} inputMode="decimal" onChange={(e) => setTotal(e.target.value)} onBlur={() => setTotalText(null)} aria-label="Total" /></label>
-      </div>
-      {showNote ? <input className={`${small} mt-2 w-full`} value={line.note ?? ""} placeholder="Item note (will print on receipt)" onChange={(e) => onPatch(line.key, { note: e.target.value })} aria-label="Item note" /> : null}
+      {(showNote || taxRates.length > 0 || line.discount > 0) ? <div className="flex flex-wrap items-end gap-3 px-4 pb-2">
+        {showNote ? <input className={`${small} min-w-44 flex-1`} value={line.note ?? ""} placeholder="Item note (will print on receipt)" onChange={(e) => onPatch(line.key, { note: e.target.value })} aria-label="Item note" /> : null}
+        <label className="text-[11px] text-muted-foreground">Discount<input className={`${small} block w-20`} value={line.discount ? String(line.discount) : ""} placeholder="0" readOnly={lockDisc} onFocus={() => { if (lockDisc) onUnlock?.(); }} inputMode="decimal" onChange={(e) => onPatch(line.key, { discount: n(e.target.value) })} aria-label="Discount" /></label>
+        {taxRates.length ? <label className="text-[11px] text-muted-foreground">Tax<select className={`${small} block w-24`} value={line.taxPercent ?? 0} onChange={(e) => onPatch(line.key, { taxPercent: Number(e.target.value) })} aria-label="Tax">{[...taxRates, ...(taxRates.some((t) => t.pct === (line.taxPercent ?? 0)) ? [] : [{ name: `${line.taxPercent}%`, pct: line.taxPercent ?? 0 }])].map((t) => <option key={t.name + t.pct} value={t.pct}>{t.name}</option>)}</select></label> : null}
+      </div> : <div className="px-4 pb-2"><Button size="sm" variant="ghost" className="h-6 px-0 text-xs text-muted-foreground" onClick={() => setShowNote(true)}>Discount / details</Button></div>}
     </div>
   );
 }
