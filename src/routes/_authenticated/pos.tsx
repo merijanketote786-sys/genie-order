@@ -495,22 +495,46 @@ function PosPage() {
     }
   };
 
-  // Keyboard shortcuts: F2 naya, F4 search, F8 payment, F9 save+print, F10 hold
+  // Keyboard shortcuts (mouse-free POS). Full list in SHORTCUTS / guide dialog.
   const shortcutsRef = useRef(true);
   shortcutsRef.current = cfg.pos.shortcuts;
-  const keysRef = useRef({ checkout, reset });
-  keysRef.current = { checkout, reset };
+  const custRef = useRef<HTMLDivElement>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const keysRef = useRef({ checkout, reset, setEstimate, setPartyOpen, setDocsOpen, setGuideOpen, setCart });
+  keysRef.current = { checkout, reset, setEstimate, setPartyOpen, setDocsOpen, setGuideOpen, setCart };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const k = keysRef.current;
+      const key = e.key.toLowerCase();
+      const act = (fn: () => void) => { e.preventDefault(); e.stopPropagation(); fn(); };
+      if (e.key === "F1" || (e.ctrlKey && key === "/")) return act(() => k.setGuideOpen((o) => !o));
+      if (e.key === "Escape") { k.setGuideOpen(false); return; }
       if (!shortcutsRef.current) return;
-      if (e.key === "F2") { e.preventDefault(); keysRef.current.reset(); }
-      else if (e.key === "F4") { e.preventDefault(); scanRef.current?.focus(); }
-      else if (e.key === "F8") { e.preventDefault(); payRef.current?.querySelector("input")?.focus(); }
-      else if (e.key === "F9") { e.preventDefault(); void keysRef.current.checkout("sale", true); }
-      else if (e.key === "F10") { e.preventDefault(); void keysRef.current.checkout("held", false); }
+      const focusPay = () => payRef.current?.querySelector<HTMLElement>("input,select")?.focus();
+      const focusCust = () => custRef.current?.querySelector<HTMLElement>("input")?.focus();
+      if (e.key === "F2") act(() => k.reset());
+      else if (e.key === "F4") act(() => scanRef.current?.focus());
+      else if (e.key === "F8") act(focusPay);
+      else if (e.key === "F9") act(() => void k.checkout("sale", true));
+      else if (e.key === "F10") act(() => void k.checkout("held", false));
+      else if (e.ctrlKey && !e.altKey && key === "s") act(() => void k.checkout("sale", true));
+      else if (e.ctrlKey && e.key === "Enter") act(() => void k.checkout("sale", false));
+      else if (e.ctrlKey && e.shiftKey && key === "h") act(() => void k.checkout("held", false));
+      else if (e.ctrlKey && e.shiftKey && e.key === "Backspace") act(() => k.setCart((p) => p.slice(0, -1)));
+      else if (e.altKey && !e.ctrlKey) {
+        if (key === "c") act(focusCust);
+        else if (key === "s" || key === "i") act(() => scanRef.current?.focus());
+        else if (key === "m") act(focusPay);
+        else if (key === "p") act(() => k.setPartyOpen((o) => !o));
+        else if (key === "e") act(() => k.setEstimate((v) => !v));
+        else if (key === "h") act(() => k.setDocsOpen("held"));
+        else if (key === "q") act(() => k.setDocsOpen("quotation"));
+        else if (key === "n") act(() => k.reset());
+        else if (key === "k") act(() => k.setGuideOpen((o) => !o));
+      }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, []);
 
   const whatsapp = (r: ReceiptInput) => {
