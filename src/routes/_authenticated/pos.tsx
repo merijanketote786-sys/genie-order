@@ -529,26 +529,24 @@ function PosPage() {
   return (
     <AppShell title="POS Billing" subtitle="Counter + phone sales" active="/pos" wide>
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
-        <WorkspaceHeader
-          icon={ShoppingCart}
-          eyebrow="Point of sale"
-          title="POS Invoicing"
-          description="Scan or search a product, build the cart, take payment and print the receipt. Stock updates automatically."
-          meta={["Barcode scan", "Discount", "Cash/Card/Credit"]}
-        />
-
         <PosSubnav />
         {pinNode}
         {pc.node}
         <PosAlerts cfg={cfg} products={products} credit={balance?.found && balance.creditLimit != null && balance.balance + Math.max(0, total - paidNum) > balance.creditLimit ? { limit: balance.creditLimit, after: balance.balance + Math.max(0, total - paidNum) } : null} />
 
-        <div className="grid gap-3 xl:grid-cols-[1fr_1.6fr]">
-          {/* Products */}
-          <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
-            <div className="mb-3 grid grid-cols-[1fr_1fr_auto] gap-2">
+        <div className="border border-border bg-card">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-6">
+            <h1 className="text-lg font-bold text-foreground">{estimate ? "Estimate" : "Sale"}</h1>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span>{editing ? `Invoice ${editing.number}` : "New invoice"}</span>
+              <span className="border-l border-border pl-3">{new Date().toLocaleDateString("en-PK")}</span>
+            </div>
+          </div>
+          <section className="px-4 pb-5 pt-6 sm:px-6 sm:pb-8">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:max-w-2xl sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
               <PosCustomerSearch field="name" className={inputCls} value={customerName} onChange={setCustomerName} onPick={pickCustomer} placeholder="Customer name (Walk-in)" />
-              <PosCustomerSearch field="phone" className={inputCls} value={customerPhone} onChange={setCustomerPhone} onPick={pickCustomer} placeholder="Phone (optional)" />
-              <Button type="button" variant="outline" className="h-11 gap-1.5" onClick={() => setPartyOpen((o) => !o)} title="Add new party">
+              <div className="col-start-1 row-start-2 sm:col-start-2 sm:row-start-1"><PosCustomerSearch field="phone" className={inputCls} value={customerPhone} onChange={setCustomerPhone} onPick={pickCustomer} placeholder="Phone (optional)" /></div>
+              <Button type="button" variant="outline" className="col-start-2 row-start-1 h-10 gap-1.5 sm:col-start-3" onClick={() => setPartyOpen((o) => !o)} title="Add new party">
                 <UserPlus className="size-4" /> Party
               </Button>
             </div>
@@ -567,11 +565,11 @@ function PosPage() {
                 </div>
               </div>
             ) : null}
-            <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl border border-border bg-surface-2 p-1 text-sm font-semibold">
-              <button type="button" onClick={() => setEstimate(false)} className={`rounded-lg py-2 transition-colors ${!estimate ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}>Invoice</button>
-              <button type="button" onClick={() => setEstimate(true)} className={`rounded-lg py-2 transition-colors ${estimate ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}>Estimate</button>
+            <div className="mt-8 flex w-fit max-w-full gap-1 border-b border-border text-sm font-semibold">
+              <Button type="button" size="sm" variant="ghost" aria-pressed={!estimate} onClick={() => setEstimate(false)} className={`rounded-none border-b-2 ${!estimate ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>Invoice</Button>
+              <Button type="button" size="sm" variant="ghost" aria-pressed={estimate} onClick={() => setEstimate(true)} className={`rounded-none border-b-2 ${estimate ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>Estimate</Button>
             </div>
-            <div className="relative mt-3">
+            <div className="relative mt-3 max-w-2xl">
             <label className="flex h-11 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
               <ScanBarcode className="size-4 text-primary" />
               <input
@@ -601,7 +599,7 @@ function PosPage() {
                     } else if (!list.length) onScan();
                   }
                 }}
-                placeholder="Scan barcode or type product name (↓ ↑ + Enter)"
+                placeholder="Search or scan item"
                 className="min-w-0 flex-1 bg-transparent text-sm outline-none"
               />
             </label>
@@ -633,15 +631,17 @@ function PosPage() {
               </div>
             ) : null}
             <div className="mt-3 flex items-center justify-between gap-2">
-              <button
+              <Button
                 type="button"
+                size="sm"
+                variant="outline"
                 onClick={toggleGrid}
                 aria-expanded={showGrid}
-                className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs text-muted-foreground transition hover:border-primary hover:text-foreground"
+                className="h-8 text-xs"
               >
                 <LayoutGrid className="size-3.5" />
                 {showGrid ? "Hide shortcuts" : "Show product shortcuts"}
-              </button>
+              </Button>
               {pendingCode ? <span className="text-xs text-muted-foreground">List is open for linking</span> : null}
             </div>
             {gridVisible ? (
@@ -649,19 +649,20 @@ function PosPage() {
                 {results.map((p) => {
                   const price = priceFor(p, rate);
                   return (
-                    <button
+                    <Button
                       key={p.name}
                       type="button"
+                      variant="outline"
                       onClick={() => (pendingCode ? saveLink(pendingCode, p) : add(p))}
                       disabled={price == null}
-                      className="rounded-xl border border-border bg-background p-2.5 text-left transition hover:border-primary disabled:opacity-40"
+                      className="h-auto min-h-16 flex-col items-start whitespace-normal p-2.5 text-left"
                     >
                       <p className="line-clamp-2 text-sm font-semibold text-foreground">{p.name}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {price != null ? `Rs ${money(price)}` : "No rate"} · stock {p.stock ?? "-"}
                       </p>
                       {pendingCode ? <p className="mt-1 text-xs font-bold text-primary">Link</p> : null}
-                    </button>
+                    </Button>
                   );
                 })}
                 {!results.length ? <p className="col-span-full py-6 text-center text-sm text-muted-foreground">No products found. Set product rates and stock in Inventory.</p> : null}
@@ -669,15 +670,44 @@ function PosPage() {
             ) : null}
           </section>
 
-          {/* Cart */}
-          <section className="space-y-3 rounded-2xl border border-border bg-card p-3 sm:p-4">
-
-            <div className="space-y-2">
+          {/* Sale invoice grid */}
+          <section className="border-y border-border">
+            <div className="overflow-x-auto">
+            <div className="min-w-[850px]">
+              <div className="grid grid-cols-[minmax(210px,3fr)_minmax(112px,1.2fr)_minmax(150px,1.5fr)_minmax(108px,1fr)_minmax(105px,1fr)_42px] border-b border-border bg-surface-2 text-[11px] font-bold uppercase text-muted-foreground">
+                <span className="px-4 py-3">Item</span><span className="px-2 py-3">Qty</span><span className="px-2 py-3">Unit</span><span className="px-2 py-3">Price / unit</span><span className="px-2 py-3 text-right">Amount</span><span />
+              </div>
               {cart.map((l) => (
                 <CartRow key={l.key} line={l} focus={focusKey === l.key} onFocused={() => setFocusKey(null)} onDone={() => scanRef.current?.focus()} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} taxRates={cfg.tax.enabled ? cfg.tax.rates : []} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
               ))}
-              {!cart.length ? <p className="rounded-xl border border-dashed border-border py-8 text-center text-sm text-muted-foreground">Cart is empty — tap or scan a product.</p> : null}
+              {!cart.length ? <div className="min-h-36 px-4 py-10 text-center text-sm text-muted-foreground">Search an item above to start the invoice.</div> : null}
+              <div className="flex items-center justify-between border-t border-border bg-surface px-4 py-3 text-xs font-semibold text-foreground"><span>{cart.length} {cart.length === 1 ? "item" : "items"}</span><span>Total · Rs {money(total)}</span></div>
             </div>
+            </div>
+          </section>
+
+          <section className="grid gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] lg:gap-12">
+            <div className="space-y-4">
+              <label className="block text-xs text-muted-foreground">Invoice note<input className={inputCls} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional — will print on bill" /></label>
+              <div ref={payRef} className="space-y-2 border-t border-border pt-4">
+                <p className="text-xs font-bold text-foreground">Payment {pays.length > 1 ? "(split)" : ""} <span className="font-normal text-muted-foreground">— F8</span></p>
+                {pays.map((p, i) => (
+                  <div key={i} className="flex gap-1.5">
+                    <select className="h-10 rounded-lg border border-border bg-background px-2 text-sm" value={p.method} onChange={(e) => setPays((all) => all.map((x, j) => (j === i ? { ...x, method: e.target.value as PayMethod } : x)))} aria-label="Payment method">
+                      {cfg.payMethods.map((m) => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                    <input className={inputCls} value={p.amount} inputMode="decimal" placeholder={i === 0 && pays.length === 1 ? `${money(total)} (full)` : "0"} onChange={(e) => setPays((all) => all.map((x, j) => (j === i ? { ...x, amount: e.target.value } : x)))} aria-label="Amount" />
+                    {pays.length > 1 ? <Button size="icon" variant="ghost" onClick={() => setPays((all) => all.filter((_, j) => j !== i))} aria-label="Remove"><Trash2 /></Button> : null}
+                  </div>
+                ))}
+                <div className="flex flex-wrap gap-1.5">
+                  <Button size="sm" variant="outline" onClick={() => setPays((all) => [...all, { method: all.some((x) => x.method === "Cash") ? "Bank" : "Cash", amount: "" }])}><Plus /> Split payment</Button>
+                  <Button size="sm" variant="outline" onClick={() => setPays([{ method: "Credit", amount: "" }])}>Full credit</Button>
+                </div>
+              </div>
+              {balance?.found ? <div className={`border-t border-border pt-3 text-xs ${balance.balance > 0 ? "text-destructive" : "text-muted-foreground"}`}>Previous balance: <b>Rs {money(balance.balance)}</b>{balance.creditLimit ? ` · Credit limit Rs ${money(balance.creditLimit)}` : ""}</div> : null}
+            </div>
+            <div className="space-y-4">
 
             <div className="grid grid-cols-2 gap-2">
               <label className="text-xs text-muted-foreground">
