@@ -26,7 +26,6 @@ import {
   FUEL_SURCHARGE_RATE,
   MATERIALS,
   MAX_WEIGHT_KG,
-  OVERLAND_ADDITIONAL_KG_RATE,
   SERVICES,
   TAX_RATE,
   ZONES,
@@ -232,8 +231,7 @@ function BuiltinCalculator() {
                 <p className="mt-2 text-sm font-medium text-destructive">{weightError}</p>
               ) : (
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Every started extra kg is charged Rs{" "}
-                  {service === "overland" ? OVERLAND_ADDITIONAL_KG_RATE : ADDITIONAL_KG_RATE} (after{" "}
+                  Every started extra kg is charged Rs {ADDITIONAL_KG_RATE} (after{" "}
                   {service === "overland" ? "5 kg" : "1 kg"}).
                 </p>
               )}
@@ -461,8 +459,7 @@ function BuiltinCalculator() {
                   {result.additionalKg > 0 && (
                     <div className="flex items-center justify-between gap-4">
                       <dt className="text-muted-foreground">
-                        Additional weight ({result.additionalKg} kg × Rs{" "}
-                        {service === "overland" ? OVERLAND_ADDITIONAL_KG_RATE : ADDITIONAL_KG_RATE})
+                        Additional weight ({result.additionalKg} kg × Rs {ADDITIONAL_KG_RATE})
                       </dt>
                       <dd className="font-semibold tabular-nums text-foreground">
                         {formatPKR(result.additionalCharge)}
