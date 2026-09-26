@@ -442,7 +442,7 @@ function PosPage() {
             taxPercent: l.taxPercent || 0,
             taxAmount: lineTax(l),
             lineTotal: lineTotal(l),
-            note: l.note || undefined,
+            note: [l.note, l.weight?.trim() ? `Wt: ${l.weight.trim()}` : "", l.size?.trim() ? `Size: ${l.size.trim()}` : ""].filter(Boolean).join(" · ") || undefined,
           })),
           ui: { cart, billDiscount, discType, delivery, notes, customerName, customerPhone },
           clientRef: docRef.current,
