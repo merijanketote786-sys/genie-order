@@ -335,6 +335,7 @@ function PosPage() {
   const pre = totals(cart, 0, 0);
   const discAmt = discType === "pct" ? Math.round(((pre.subtotal + pre.taxTotal) * Math.min(100, n(billDiscount))) / 100 * 100) / 100 : n(billDiscount);
   const { subtotal, taxTotal, itemDiscount, total } = totals(cart, discAmt, n(delivery));
+  const qtyTotal = Math.round(cart.reduce((s, l) => s + (l.qty || 0), 0) * 1000) / 1000;
 
   // Payments: sirf ek line aur amount khali = poora us method se
   const payParts: PaymentPart[] = (() => {
