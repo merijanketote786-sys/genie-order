@@ -709,12 +709,12 @@ function PosPage() {
             </div>
             <div className="space-y-4">
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               <label className="text-xs text-muted-foreground">
                 <span className="flex items-center justify-between">Bill discount
                   <span className="flex gap-0.5">
                     {(["amt", "pct"] as const).map((k) => (
-                      <button key={k} type="button" onClick={() => setDiscType(k)} className={`rounded px-1.5 text-[10px] font-bold ${discType === k ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{k === "amt" ? "Rs" : "%"}</button>
+                      <Button key={k} type="button" size="sm" variant={discType === k ? "default" : "ghost"} onClick={() => setDiscType(k)} className="h-6 px-2 text-[10px]">{k === "amt" ? "Rs" : "%"}</Button>
                     ))}
                   </span>
                 </span>
@@ -723,32 +723,7 @@ function PosPage() {
               <label className="text-xs text-muted-foreground">Delivery<input className={inputCls} value={delivery} onChange={(e) => setDelivery(e.target.value)} inputMode="decimal" placeholder="0" /></label>
             </div>
 
-            <div ref={payRef} className="space-y-2 rounded-xl border border-border p-2.5">
-              <p className="text-xs font-bold text-foreground">Payment {pays.length > 1 ? "(split)" : ""} <span className="font-normal text-muted-foreground">— F8</span></p>
-              {pays.map((p, i) => (
-                <div key={i} className="flex gap-1.5">
-                  <select className="h-10 rounded-lg border border-border bg-background px-2 text-sm" value={p.method} onChange={(e) => setPays((all) => all.map((x, j) => (j === i ? { ...x, method: e.target.value as PayMethod } : x)))} aria-label="Payment method">
-                    {cfg.payMethods.map((m) => <option key={m} value={m}>{m === "Credit" ? "Credit" : m}</option>)}
-                  </select>
-                  <input className={inputCls} value={p.amount} inputMode="decimal" placeholder={i === 0 && pays.length === 1 ? `${money(total)} (full)` : "0"} onChange={(e) => setPays((all) => all.map((x, j) => (j === i ? { ...x, amount: e.target.value } : x)))} aria-label="Amount" />
-                  {pays.length > 1 ? <Button size="icon" variant="ghost" onClick={() => setPays((all) => all.filter((_, j) => j !== i))} aria-label="Remove"><Trash2 /></Button> : null}
-                </div>
-              ))}
-              <div className="flex flex-wrap gap-1.5">
-                <Button size="sm" variant="outline" onClick={() => setPays((all) => [...all, { method: all.some((x) => x.method === "Cash") ? "Bank" : "Cash", amount: "" }])}><Plus /> Split payment</Button>
-                <Button size="sm" variant="outline" onClick={() => setPays([{ method: "Credit", amount: "" }])}>Full credit</Button>
-              </div>
-            </div>
-
-            {balance?.found ? (
-              <div className={`rounded-lg border p-2 text-xs ${balance.balance > 0 ? "border-destructive text-destructive" : "border-border text-muted-foreground"}`}>
-                Previous balance: <b>Rs {money(balance.balance)}</b>{balance.creditLimit ? ` · Credit limit Rs ${money(balance.creditLimit)}` : ""}
-              </div>
-            ) : null}
-
-            <label className="block text-xs text-muted-foreground">Invoice note<input className={inputCls} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional — will print on bill" /></label>
-
-            <div className="space-y-1 rounded-xl bg-surface-2 p-3 text-sm">
+            <div className="space-y-2 border-t border-border pt-4 text-sm">
               <Row a="Subtotal" b={`Rs ${money(subtotal)}`} />
               {itemDiscount ? <Row a="Item discounts" b={`- Rs ${money(itemDiscount)}`} /> : null}
               {taxTotal ? <Row a="Tax" b={`Rs ${money(taxTotal)}`} /> : null}
@@ -762,7 +737,7 @@ function PosPage() {
 
             {editing ? <p className="rounded-lg bg-accent p-2 text-xs text-accent-foreground">Open: <b>{editing.number}</b> — this will close when saved. <button className="underline" onClick={() => setEditing(null)}>Detach</button></p> : null}
 
-            <Button size="lg" className="h-14 w-full text-base" disabled={!cart.length || saving} onClick={() => checkout("sale", true)}><Printer /> {estimate ? "Save Estimate" : "Save + Print (F9)"} — Rs {money(total)}</Button>
+            <Button size="lg" className="h-12 w-full text-base" disabled={!cart.length || saving} onClick={() => checkout("sale", true)}><Printer /> {estimate ? "Save Estimate" : "Save + Print (F9)"} — Rs {money(total)}</Button>
             <div className="grid grid-cols-3 gap-2">
               <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("sale", false)}><Save /> Save</Button>
               <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("held", false)}><Pause /> Hold (F10)</Button>
@@ -775,7 +750,7 @@ function PosPage() {
             </div>
 
             {last ? (
-              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border p-2.5 text-sm">
+              <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3 text-sm">
                 <span className="font-semibold">Last: {last.invoiceNumber}</span>
                 <Button size="sm" variant="outline" onClick={() => lastDoc && pc.print(lastDoc, { reprint: true })}><Printer /> Reprint</Button>
                 <Button size="sm" variant="outline" onClick={() => lastDoc && pc.preview(lastDoc, true)}><ReceiptText /> Preview</Button>
@@ -788,6 +763,7 @@ function PosPage() {
             {docsOpen ? (
               <DocsList kind={docsOpen} onClose={() => setDocsOpen(null)} onOpen={openDoc} />
             ) : null}
+            </div>
           </section>
         </div>
       </div>
