@@ -20,7 +20,7 @@ export const ZONES: Zone[] = [
 ];
 
 export const SERVICES: Service[] = [
-  { id: "standard", label: "Standard Delivery", description: "Slabs up to 1 kg, then Rs 50 per extra kg" },
+  { id: "standard", label: "Standard Delivery", description: "Slabs up to 1 kg, then Rs 65 per extra kg" },
   { id: "overland", label: "Overland Service", description: "Flat up to 5 kg, then Rs 65 per extra kg" },
 ];
 
@@ -38,9 +38,10 @@ export const OVERLAND_RATES: Record<ZoneId, number> = {
   cross_province: 250,
 };
 
-export const ADDITIONAL_KG_RATE = 50;
-/** Overland service charges a higher rate per extra kg after the 5 kg flat slab. */
-export const OVERLAND_ADDITIONAL_KG_RATE = 65;
+/** Extra kg charged after the base slab (Standard after 1 kg, Overland after 5 kg). */
+export const ADDITIONAL_KG_RATE = 65;
+/** Overland uses the same extra-kg rate as Standard. */
+export const OVERLAND_ADDITIONAL_KG_RATE = ADDITIONAL_KG_RATE;
 export const MAX_WEIGHT_KG = 100;
 export const FUEL_SURCHARGE_RATE = 0.15;
 export const TAX_RATE = 0.18;
