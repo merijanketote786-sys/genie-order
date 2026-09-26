@@ -212,12 +212,11 @@ function PosPage() {
       toast.error(`${p.name} has no ${RATE_TYPES.find((x) => x.id === r)?.label} rate`);
       return;
     }
-    setFocusKey(`${p.name}|${useRate}`);
     setCart((prev) => {
       const key = `${p.name}|${useRate}`;
       const ex = prev.find((l) => l.key === key);
       if (ex) return prev.map((l) => (l.key === key ? { ...l, qty: l.qty + 1 } : l));
-      return [{ key, name: p.name, unit: p.unit, rateType: useRate, price, qty: 1, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode }, ...prev];
+      return [...prev, { key, name: p.name, unit: p.unit, rateType: useRate, price, qty: 1, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode }];
     });
     if (cfg.inventory.trackStock && cfg.inventory.warnOutOfStock && p.stock != null && p.stock <= 0) {
       toast.warning(`${p.name}: out of stock (${p.stock})${cfg.inventory.allowNegativeStock ? "" : " — bill will not save"}`);
@@ -651,7 +650,7 @@ function PosPage() {
               </ul>
             ) : null}
             </div>
-            <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+S</K> / <K>F4</K> search · <K>Enter</K> add item, then quantity · <K>↑</K> <K>↓</K> browse list</p>
+            <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+S</K> / <K>F4</K> search · <K>Enter</K> add item (cursor stays in search) · <K>↑</K> <K>↓</K> browse list</p>
             {pendingCode ? (
               <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-primary bg-accent p-2.5 text-xs text-accent-foreground">
                 <span>Barcode <b>{pendingCode}</b> is new — search for a product below and press <b>Link</b>, next time scanning will add it directly.</span>
