@@ -217,7 +217,7 @@ function PosPage() {
       const key = `${p.name}|${useRate}`;
       const ex = prev.find((l) => l.key === key);
       if (ex) return prev.map((l) => (l.key === key ? { ...l, qty: l.qty + 1 } : l));
-      return [...prev, { key, name: p.name, unit: p.unit, rateType: useRate, price, qty: 1, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode }];
+      return [{ key, name: p.name, unit: p.unit, rateType: useRate, price, qty: 1, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode }, ...prev];
     });
     if (cfg.inventory.trackStock && cfg.inventory.warnOutOfStock && p.stock != null && p.stock <= 0) {
       toast.warning(`${p.name}: out of stock (${p.stock})${cfg.inventory.allowNegativeStock ? "" : " — bill will not save"}`);
