@@ -21,7 +21,7 @@ export const ZONES: Zone[] = [
 
 export const SERVICES: Service[] = [
   { id: "standard", label: "Standard Delivery", description: "Slabs up to 1 kg, then Rs 50 per extra kg" },
-  { id: "overland", label: "Overland Service", description: "Flat up to 5 kg, then Rs 50 per extra kg" },
+  { id: "overland", label: "Overland Service", description: "Flat up to 5 kg, then Rs 65 per extra kg" },
 ];
 
 /** Standard: 0–0.5 kg and 0.5–1 kg base rates per zone. */
@@ -39,6 +39,8 @@ export const OVERLAND_RATES: Record<ZoneId, number> = {
 };
 
 export const ADDITIONAL_KG_RATE = 50;
+/** Overland service charges a higher rate per extra kg after the 5 kg flat slab. */
+export const OVERLAND_ADDITIONAL_KG_RATE = 65;
 export const MAX_WEIGHT_KG = 100;
 export const FUEL_SURCHARGE_RATE = 0.15;
 export const TAX_RATE = 0.18;
@@ -84,7 +86,7 @@ export function computeFreight(
   if (serviceId === "overland") {
     const base = OVERLAND_RATES[zoneId];
     const additionalKg = weightKg > 5 ? Math.ceil(weightKg - 5) : 0;
-    const additionalCharge = additionalKg * ADDITIONAL_KG_RATE;
+    const additionalCharge = additionalKg * OVERLAND_ADDITIONAL_KG_RATE;
     return {
       base,
       baseLabel: "Up to 5 kg",
