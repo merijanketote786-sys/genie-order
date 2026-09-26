@@ -335,6 +335,7 @@ function PosPage() {
   const pre = totals(cart, 0, 0);
   const discAmt = discType === "pct" ? Math.round(((pre.subtotal + pre.taxTotal) * Math.min(100, n(billDiscount))) / 100 * 100) / 100 : n(billDiscount);
   const { subtotal, taxTotal, itemDiscount, total } = totals(cart, discAmt, n(delivery));
+  const qtyTotal = Math.round(cart.reduce((s, l) => s + (l.qty || 0), 0) * 1000) / 1000;
 
   // Payments: sirf ek line aur amount khali = poora us method se
   const payParts: PaymentPart[] = (() => {
@@ -441,7 +442,7 @@ function PosPage() {
             taxPercent: l.taxPercent || 0,
             taxAmount: lineTax(l),
             lineTotal: lineTotal(l),
-            note: l.note || undefined,
+            note: [l.note, l.weight?.trim() ? `Wt: ${l.weight.trim()}` : "", l.size?.trim() ? `Size: ${l.size.trim()}` : ""].filter(Boolean).join(" · ") || undefined,
           })),
           ui: { cart, billDiscount, discType, delivery, notes, customerName, customerPhone },
           clientRef: docRef.current,
@@ -697,18 +698,38 @@ function PosPage() {
             ) : null}
           </section>
 
-          {/* Sale invoice grid */}
+          {/* Sale invoice grid — Vyapar jaisi table: # | ITEM | WEIGHT | SIZE | QTY | UNIT | PRICE/UNIT | AMOUNT */}
           <section className="border-y border-border">
             <div className="overflow-x-auto">
-            <div className="min-w-[850px]">
-              <div className="grid grid-cols-[minmax(210px,3fr)_minmax(112px,1.2fr)_minmax(150px,1.5fr)_minmax(108px,1fr)_minmax(105px,1fr)_42px] border-b border-border bg-surface-2 text-[11px] font-bold uppercase text-muted-foreground">
-                <span className="px-4 py-3">Item</span><span className="px-2 py-3">Qty</span><span className="px-2 py-3">Unit</span><span className="px-2 py-3">Price / unit</span><span className="px-2 py-3 text-right">Amount</span><span />
+            <div className="min-w-[1050px]">
+              <div className="grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] border-b border-border bg-surface-2 text-[11px] font-bold uppercase text-muted-foreground">
+                <span className="px-2 py-3" />
+                <span className="px-2 py-3">Item</span>
+                <span className="px-2 py-3">Weight</span>
+                <span className="px-2 py-3">Size</span>
+                <span className="px-2 py-3 text-center">Qty</span>
+                <span className="px-2 py-3">Unit</span>
+                <span className="px-2 py-3">Price / unit</span>
+                <span className="px-2 py-3 text-right">Amount</span>
+                <span />
               </div>
-              {cart.map((l) => (
-                <CartRow key={l.key} line={l} focus={focusKey === l.key} onFocused={() => setFocusKey(null)} onDone={() => scanRef.current?.focus()} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} taxRates={cfg.tax.enabled ? cfg.tax.rates : []} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
+              {cart.map((l, i) => (
+                <CartRow key={l.key} index={i + 1} line={l} focus={focusKey === l.key} onFocused={() => setFocusKey(null)} onDone={() => scanRef.current?.focus()} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} taxRates={cfg.tax.enabled ? cfg.tax.rates : []} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
               ))}
               {!cart.length ? <div className="min-h-36 px-4 py-10 text-left text-sm text-muted-foreground">Search an item above to start the invoice.</div> : null}
-              <div className="flex items-center justify-between gap-2 border-t border-border bg-surface px-4 py-3 text-xs font-semibold text-foreground"><span>{cart.length} {cart.length === 1 ? "item" : "items"}</span><span className="hidden font-normal text-muted-foreground sm:inline"><K>Ctrl+Shift+Backspace</K> remove last item</span><span>Total · Rs {money(total)}</span></div>
+              <div className="flex items-center justify-between gap-2 border-t border-border bg-surface px-3 py-2 text-xs text-muted-foreground">
+                <Button type="button" size="sm" variant="outline" className="h-7 text-xs uppercase" onClick={() => scanRef.current?.focus()}><Plus /> Add row</Button>
+                <span className="hidden sm:inline"><K>Ctrl+Shift+Backspace</K> remove last item</span>
+                <span>{cart.length} {cart.length === 1 ? "item" : "items"}</span>
+              </div>
+              <div className="grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] border-t border-border bg-surface-2 text-sm font-semibold text-foreground">
+                <span className="col-span-4 px-2 py-2.5 pr-4 text-right text-[11px] font-bold uppercase text-muted-foreground">Total</span>
+                <span className="px-2 py-2.5 text-center">{qtyTotal ? money(qtyTotal) : ""}</span>
+                <span className="px-2 py-2.5" />
+                <span className="px-2 py-2.5" />
+                <span className="px-2 py-2.5 text-right">{money(total)}</span>
+                <span />
+              </div>
             </div>
             </div>
           </section>
@@ -800,8 +821,8 @@ function PosPage() {
   );
 }
 
-/** Cart ki ek line — qty, rate, discount, tax, unit, note aur total sab manually likhe ja sakte hain. */
-function CartRow({ line, focus, onFocused, onDone, onPatch, onRemove, lockPrice = false, lockDisc = false, onUnlock, taxRates = [] }: { line: CartLine; focus?: boolean; onFocused?: () => void; onDone?: () => void; onPatch: (key: string, v: Partial<CartLine>) => void; onRemove: () => void; lockPrice?: boolean; lockDisc?: boolean; onUnlock?: () => void; taxRates?: { name: string; pct: number }[] }) {
+/** Cart ki ek line — #, item, weight, size, qty, unit, rate, discount, tax, note aur total sab manually likhe ja sakte hain. */
+function CartRow({ index, line, focus, onFocused, onDone, onPatch, onRemove, lockPrice = false, lockDisc = false, onUnlock, taxRates = [] }: { index: number; line: CartLine; focus?: boolean; onFocused?: () => void; onDone?: () => void; onPatch: (key: string, v: Partial<CartLine>) => void; onRemove: () => void; lockPrice?: boolean; lockDisc?: boolean; onUnlock?: () => void; taxRates?: { name: string; pct: number }[] }) {
   const [totalText, setTotalText] = useState<string | null>(null);
   const [qtyText, setQtyText] = useState<string | null>(null);
   const [showNote, setShowNote] = useState(!!line.note);
@@ -819,11 +840,14 @@ function CartRow({ line, focus, onFocused, onDone, onPatch, onRemove, lockPrice 
   const small = "h-9 min-w-0 rounded-md border border-border bg-background px-2 text-sm outline-none focus:border-primary";
   return (
     <div className="border-b border-border even:bg-surface/60">
-      <div className="grid grid-cols-[minmax(210px,3fr)_minmax(112px,1.2fr)_minmax(150px,1.5fr)_minmax(108px,1fr)_minmax(105px,1fr)_42px] items-center text-sm">
-        <div className="min-w-0 px-4 py-2">
+      <div className="grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] items-center text-sm">
+        <div className="px-1 text-center text-xs font-semibold text-muted-foreground">{index}</div>
+        <div className="min-w-0 px-2 py-2">
           <p className="truncate font-semibold text-foreground" title={line.name}>{line.name}</p>
           <Button size="sm" variant="ghost" className="h-6 px-0 text-xs text-muted-foreground" onClick={() => setShowNote((v) => !v)}><StickyNote className="size-3" /> {line.note ? "Edit note" : "Add note"}</Button>
         </div>
+        <div className="px-2"><input className={`${small} w-full`} value={line.weight ?? ""} placeholder="—" onChange={(e) => onPatch(line.key, { weight: e.target.value })} aria-label="Weight" /></div>
+        <div className="px-2"><input className={`${small} w-full`} value={line.size ?? ""} placeholder="—" onChange={(e) => onPatch(line.key, { size: e.target.value })} aria-label="Size" /></div>
         <div className="flex items-center gap-0.5 px-1">
           <Button size="icon-sm" variant="ghost" className="h-7 w-6" onClick={() => onPatch(line.key, { qty: Math.max(0.001, +(line.qty - 1).toFixed(3)) || 1 })} aria-label="Decrease"><Minus /></Button>
           <input ref={qtyRef} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setQtyText(null); onDone?.(); } }} className={`${small} w-full text-center`} value={qtyText ?? String(line.qty)} inputMode="decimal" onChange={(e) => { setQtyText(e.target.value); onPatch(line.key, { qty: n(e.target.value) }); }} onBlur={() => setQtyText(null)} aria-label="Qty" title="Quantity (0.5, 1.25 kg too)" />
@@ -834,11 +858,11 @@ function CartRow({ line, focus, onFocused, onDone, onPatch, onRemove, lockPrice 
         <div className="px-2"><input className={`${small} w-full text-right font-semibold text-foreground`} value={totalText ?? String(total)} readOnly={lockPrice} onFocus={() => { if (lockPrice) onUnlock?.(); }} inputMode="decimal" onChange={(e) => setTotal(e.target.value)} onBlur={() => setTotalText(null)} aria-label="Total" /></div>
         <Button size="icon-sm" variant="ghost" className="h-9 w-9" onClick={onRemove} aria-label="Remove"><Trash2 /></Button>
       </div>
-      {(showNote || taxRates.length > 0 || line.discount > 0) ? <div className="flex flex-wrap items-end gap-3 px-4 pb-2">
+      {(showNote || taxRates.length > 0 || line.discount > 0) ? <div className="flex flex-wrap items-end gap-3 px-10 pb-2">
         {showNote ? <input className={`${small} min-w-44 flex-1`} value={line.note ?? ""} placeholder="Item note (will print on receipt)" onChange={(e) => onPatch(line.key, { note: e.target.value })} aria-label="Item note" /> : null}
         <label className="text-[11px] text-muted-foreground">Discount<input className={`${small} block w-20`} value={line.discount ? String(line.discount) : ""} placeholder="0" readOnly={lockDisc} onFocus={() => { if (lockDisc) onUnlock?.(); }} inputMode="decimal" onChange={(e) => onPatch(line.key, { discount: n(e.target.value) })} aria-label="Discount" /></label>
         {taxRates.length ? <label className="text-[11px] text-muted-foreground">Tax<select className={`${small} block w-24`} value={line.taxPercent ?? 0} onChange={(e) => onPatch(line.key, { taxPercent: Number(e.target.value) })} aria-label="Tax">{[...taxRates, ...(taxRates.some((t) => t.pct === (line.taxPercent ?? 0)) ? [] : [{ name: `${line.taxPercent}%`, pct: line.taxPercent ?? 0 }])].map((t) => <option key={t.name + t.pct} value={t.pct}>{t.name}</option>)}</select></label> : null}
-      </div> : <div className="px-4 pb-2"><Button size="sm" variant="ghost" className="h-6 px-0 text-xs text-muted-foreground" onClick={() => setShowNote(true)}>Discount / details</Button></div>}
+      </div> : <div className="px-10 pb-2"><Button size="sm" variant="ghost" className="h-6 px-0 text-xs text-muted-foreground" onClick={() => setShowNote(true)}>Discount / details</Button></div>}
     </div>
   );
 }

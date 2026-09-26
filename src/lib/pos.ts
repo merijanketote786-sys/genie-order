@@ -32,6 +32,8 @@ export type CartLine = {
   sku?: string;
   barcode?: string;
   note?: string;
+  weight?: string; // sirf maloomat ke liye — Vyapar jaisi table ka WEIGHT column
+  size?: string; // sirf maloomat ke liye — Vyapar jaisi table ka SIZE column
 };
 
 export function priceFor(p: DbProduct, rate: RateType): number | null {
