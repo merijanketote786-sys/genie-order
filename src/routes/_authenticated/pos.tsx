@@ -697,18 +697,38 @@ function PosPage() {
             ) : null}
           </section>
 
-          {/* Sale invoice grid */}
+          {/* Sale invoice grid — Vyapar jaisi table: # | ITEM | WEIGHT | SIZE | QTY | UNIT | PRICE/UNIT | AMOUNT */}
           <section className="border-y border-border">
             <div className="overflow-x-auto">
-            <div className="min-w-[850px]">
-              <div className="grid grid-cols-[minmax(210px,3fr)_minmax(112px,1.2fr)_minmax(150px,1.5fr)_minmax(108px,1fr)_minmax(105px,1fr)_42px] border-b border-border bg-surface-2 text-[11px] font-bold uppercase text-muted-foreground">
-                <span className="px-4 py-3">Item</span><span className="px-2 py-3">Qty</span><span className="px-2 py-3">Unit</span><span className="px-2 py-3">Price / unit</span><span className="px-2 py-3 text-right">Amount</span><span />
+            <div className="min-w-[1050px]">
+              <div className="grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] border-b border-border bg-surface-2 text-[11px] font-bold uppercase text-muted-foreground">
+                <span className="px-2 py-3" />
+                <span className="px-2 py-3">Item</span>
+                <span className="px-2 py-3">Weight</span>
+                <span className="px-2 py-3">Size</span>
+                <span className="px-2 py-3 text-center">Qty</span>
+                <span className="px-2 py-3">Unit</span>
+                <span className="px-2 py-3">Price / unit</span>
+                <span className="px-2 py-3 text-right">Amount</span>
+                <span />
               </div>
-              {cart.map((l) => (
-                <CartRow key={l.key} line={l} focus={focusKey === l.key} onFocused={() => setFocusKey(null)} onDone={() => scanRef.current?.focus()} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} taxRates={cfg.tax.enabled ? cfg.tax.rates : []} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
+              {cart.map((l, i) => (
+                <CartRow key={l.key} index={i + 1} line={l} focus={focusKey === l.key} onFocused={() => setFocusKey(null)} onDone={() => scanRef.current?.focus()} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} taxRates={cfg.tax.enabled ? cfg.tax.rates : []} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
               ))}
               {!cart.length ? <div className="min-h-36 px-4 py-10 text-left text-sm text-muted-foreground">Search an item above to start the invoice.</div> : null}
-              <div className="flex items-center justify-between gap-2 border-t border-border bg-surface px-4 py-3 text-xs font-semibold text-foreground"><span>{cart.length} {cart.length === 1 ? "item" : "items"}</span><span className="hidden font-normal text-muted-foreground sm:inline"><K>Ctrl+Shift+Backspace</K> remove last item</span><span>Total · Rs {money(total)}</span></div>
+              <div className="flex items-center justify-between gap-2 border-t border-border bg-surface px-3 py-2 text-xs text-muted-foreground">
+                <Button type="button" size="sm" variant="outline" className="h-7 text-xs uppercase" onClick={() => scanRef.current?.focus()}><Plus /> Add row</Button>
+                <span className="hidden sm:inline"><K>Ctrl+Shift+Backspace</K> remove last item</span>
+                <span>{cart.length} {cart.length === 1 ? "item" : "items"}</span>
+              </div>
+              <div className="grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] border-t border-border bg-surface-2 text-sm font-semibold text-foreground">
+                <span className="col-span-4 px-2 py-2.5 pr-4 text-right text-[11px] font-bold uppercase text-muted-foreground">Total</span>
+                <span className="px-2 py-2.5 text-center">{qtyTotal ? money(qtyTotal) : ""}</span>
+                <span className="px-2 py-2.5" />
+                <span className="px-2 py-2.5" />
+                <span className="px-2 py-2.5 text-right">{money(total)}</span>
+                <span />
+              </div>
             </div>
             </div>
           </section>
