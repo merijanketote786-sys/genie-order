@@ -541,7 +541,7 @@ function PosPage() {
               <span className="border-l border-border pl-3">{new Date().toLocaleDateString("en-PK")}</span>
             </div>
           </div>
-          <section className="px-4 pb-5 pt-6 sm:px-6 sm:pb-8">
+          <section className="px-4 pb-5 pt-6 sm:min-h-48 sm:px-6 sm:pb-8">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:max-w-2xl sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
               <PosCustomerSearch field="name" className={inputCls} value={customerName} onChange={setCustomerName} onPick={pickCustomer} placeholder="Customer name (Walk-in)" />
               <div className="col-start-1 row-start-2 sm:col-start-2 sm:row-start-1"><PosCustomerSearch field="phone" className={inputCls} value={customerPhone} onChange={setCustomerPhone} onPick={pickCustomer} placeholder="Phone (optional)" /></div>
@@ -679,7 +679,7 @@ function PosPage() {
               {cart.map((l) => (
                 <CartRow key={l.key} line={l} focus={focusKey === l.key} onFocused={() => setFocusKey(null)} onDone={() => scanRef.current?.focus()} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} taxRates={cfg.tax.enabled ? cfg.tax.rates : []} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
               ))}
-              {!cart.length ? <div className="min-h-36 px-4 py-10 text-center text-sm text-muted-foreground">Search an item above to start the invoice.</div> : null}
+              {!cart.length ? <div className="min-h-36 px-4 py-10 text-left text-sm text-muted-foreground">Search an item above to start the invoice.</div> : null}
               <div className="flex items-center justify-between border-t border-border bg-surface px-4 py-3 text-xs font-semibold text-foreground"><span>{cart.length} {cart.length === 1 ? "item" : "items"}</span><span>Total · Rs {money(total)}</span></div>
             </div>
             </div>
