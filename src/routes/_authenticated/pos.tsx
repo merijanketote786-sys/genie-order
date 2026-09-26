@@ -217,7 +217,7 @@ function PosPage() {
       const key = `${p.name}|${useRate}`;
       const ex = prev.find((l) => l.key === key);
       if (ex) return prev.map((l) => (l.key === key ? { ...l, qty: l.qty + 1 } : l));
-      return [...prev, { key, name: p.name, unit: p.unit, rateType: useRate, price, qty: 1, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode }];
+      return [{ key, name: p.name, unit: p.unit, rateType: useRate, price, qty: 1, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode }, ...prev];
     });
     if (cfg.inventory.trackStock && cfg.inventory.warnOutOfStock && p.stock != null && p.stock <= 0) {
       toast.warning(`${p.name}: out of stock (${p.stock})${cfg.inventory.allowNegativeStock ? "" : " — bill will not save"}`);
@@ -575,6 +575,7 @@ function PosPage() {
                 <UserPlus className="size-4" /> Party
               </Button>
             </div>
+            <p className="mt-1.5 text-[11px] text-muted-foreground"><K>Alt+C</K> customer name · <K>Alt+P</K> add new party</p>
             {partyOpen ? (
               <div className="mb-3 rounded-xl border border-primary/40 bg-accent/30 p-3">
                 <p className="mb-2 text-sm font-bold text-foreground">Add new party</p>
@@ -594,6 +595,7 @@ function PosPage() {
               <Button type="button" size="sm" variant="ghost" aria-pressed={!estimate} onClick={() => setEstimate(false)} className={`rounded-none border-b-2 ${!estimate ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>Invoice</Button>
               <Button type="button" size="sm" variant="ghost" aria-pressed={estimate} onClick={() => setEstimate(true)} className={`rounded-none border-b-2 ${estimate ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>Estimate</Button>
             </div>
+            <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+E</K> switch Invoice / Estimate</p>
             <div className="relative mt-3 max-w-2xl">
             <label className="flex h-11 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
               <ScanBarcode className="size-4 text-primary" />
@@ -649,6 +651,7 @@ function PosPage() {
               </ul>
             ) : null}
             </div>
+            <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+S</K> / <K>F4</K> search · <K>Enter</K> add item, then quantity · <K>↑</K> <K>↓</K> browse list</p>
             {pendingCode ? (
               <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-primary bg-accent p-2.5 text-xs text-accent-foreground">
                 <span>Barcode <b>{pendingCode}</b> is new — search for a product below and press <b>Link</b>, next time scanning will add it directly.</span>
@@ -706,7 +709,7 @@ function PosPage() {
                 <CartRow key={l.key} line={l} focus={focusKey === l.key} onFocused={() => setFocusKey(null)} onDone={() => scanRef.current?.focus()} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} taxRates={cfg.tax.enabled ? cfg.tax.rates : []} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
               ))}
               {!cart.length ? <div className="min-h-36 px-4 py-10 text-left text-sm text-muted-foreground">Search an item above to start the invoice.</div> : null}
-              <div className="flex items-center justify-between border-t border-border bg-surface px-4 py-3 text-xs font-semibold text-foreground"><span>{cart.length} {cart.length === 1 ? "item" : "items"}</span><span>Total · Rs {money(total)}</span></div>
+              <div className="flex items-center justify-between gap-2 border-t border-border bg-surface px-4 py-3 text-xs font-semibold text-foreground"><span>{cart.length} {cart.length === 1 ? "item" : "items"}</span><span className="hidden font-normal text-muted-foreground sm:inline"><K>Ctrl+Shift+Backspace</K> remove last item</span><span>Total · Rs {money(total)}</span></div>
             </div>
             </div>
           </section>
@@ -715,7 +718,7 @@ function PosPage() {
             <div className="space-y-4">
               <label className="block text-xs text-muted-foreground">Invoice note<input className={inputCls} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional — will print on bill" /></label>
               <div ref={payRef} className="space-y-2 border-t border-border pt-4">
-                <p className="text-xs font-bold text-foreground">Payment {pays.length > 1 ? "(split)" : ""} <span className="font-normal text-muted-foreground">— F8</span></p>
+                <p className="text-xs font-bold text-foreground">Payment {pays.length > 1 ? "(split)" : ""} <span className="font-normal text-muted-foreground">— F8 / Alt+M</span></p>
                 {pays.map((p, i) => (
                   <div key={i} className="flex gap-1.5">
                     <select className="h-10 rounded-lg border border-border bg-background px-2 text-sm" value={p.method} onChange={(e) => setPays((all) => all.map((x, j) => (j === i ? { ...x, method: e.target.value as PayMethod } : x)))} aria-label="Payment method">
@@ -768,11 +771,13 @@ function PosPage() {
               <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("held", false)}><Pause /> Hold (F10)</Button>
               <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("quotation", false)}><FileText /> Quotation</Button>
             </div>
+            <p className="text-[11px] text-muted-foreground"><K>Ctrl+S</K> / <K>F9</K> save + print · <K>Ctrl+Enter</K> save without print · <K>Ctrl+Shift+H</K> hold · <K>Alt+N</K> new bill</p>
             <div className="grid grid-cols-3 gap-2">
               <Button variant="ghost" size="sm" onClick={() => setDocsOpen("held")}><FolderOpen /> Held bills</Button>
               <Button variant="ghost" size="sm" onClick={() => setDocsOpen("quotation")}><FolderOpen /> Quotations</Button>
               <Button variant="ghost" size="sm" onClick={() => reset()}><RotateCcw /> New (F2)</Button>
             </div>
+            <p className="text-[11px] text-muted-foreground"><K>Alt+H</K> held bills · <K>Alt+Q</K> quotations · <K>F1</K> full shortcut guide</p>
 
             {last ? (
               <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3 text-sm">
@@ -861,6 +866,11 @@ function PosAlerts({ cfg, products, credit }: { cfg: ReturnType<typeof usePosAcc
       {syncBad ? <Link to="/sync" className="rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1 text-destructive">Vyapar sync issue: {lastSync!.status} · {lastSync!.errors} errors</Link> : null}
     </div>
   );
+}
+
+/** Chhota kbd chip — section-wise shortcut hints ke liye. */
+function K({ children }: { children: string }) {
+  return <kbd className="whitespace-nowrap rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-[10px] text-foreground">{children}</kbd>;
 }
 
 const SHORTCUTS: { group: string; items: [string, string][] }[] = [
