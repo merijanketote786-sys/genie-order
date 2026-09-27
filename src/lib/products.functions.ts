@@ -9,6 +9,7 @@ export type DbProduct = {
   p250: number | null;
   p500: number | null;
   sale: number | null;
+  purchase?: number | null;
   stock: number | null;
   /** manual overrides (null = auto) */
   customSale: number | null;
@@ -50,7 +51,7 @@ export const getProducts = createServerFn({ method: "GET" })
   const { data, error } = await supabase
     .from("products")
     .select(
-      "name, unit, sale_price, p100_staff_price, p250_staff_price, p500_staff_price, stock, custom_sale_price, custom_p100_price, custom_p250_price, custom_p500_price, sku, barcode, category, wholesale_price, wholesale_min_qty",
+      "name, unit, sale_price, purchase_price, p100_staff_price, p250_staff_price, p500_staff_price, stock, custom_sale_price, custom_p100_price, custom_p250_price, custom_p500_price, sku, barcode, category, wholesale_price, wholesale_min_qty",
     )
     .eq("is_active", true)
     .eq("scope", input?.scope ?? "rates")
@@ -74,6 +75,7 @@ export const getProducts = createServerFn({ method: "GET" })
         p250: customP250 ?? num(r["p250_staff_price"]),
         p500: customP500 ?? num(r["p500_staff_price"]),
         sale: customSale ?? num(r["sale_price"]),
+        purchase: num(r["purchase_price"]),
         stock: num(r["stock"]),
         customSale,
         customP100,

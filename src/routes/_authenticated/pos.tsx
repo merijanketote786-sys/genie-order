@@ -913,9 +913,16 @@ function PosPage() {
                   </div>
                 </div>
                 {dropOpen && !staged && !pendingNew && term.trim() && results.length ? (
-                  <ul role="listbox" className="relative z-30 ml-9 max-h-72 w-[min(450px,90vw)] overflow-y-auto rounded-sm border border-border bg-popover p-1 text-popover-foreground shadow-lg">
+                  <ul role="listbox" className="relative z-30 ml-9 max-h-80 w-[min(760px,calc(100vw-4rem))] overflow-y-auto rounded-sm border border-border bg-popover p-1 text-popover-foreground shadow-lg">
                 {results.slice(0, 10).map((p, i) => {
-                  const price = priceFor(p, rate);
+                  const detail = [
+                    ["Sale price", p.sale == null ? "—" : `Rs ${money(p.sale)}`],
+                    ["Purchase price", p.purchase == null ? "—" : `Rs ${money(p.purchase)}`],
+                    ["Wholesale price", p.wholesale == null ? "—" : `Rs ${money(p.wholesale)}`],
+                    ["Min wholesale qty", p.wholesaleMinQty == null ? "—" : money(p.wholesaleMinQty)],
+                    ["Stock qty", p.stock == null ? "—" : money(p.stock)],
+                    ["Unit", p.unit || "—"],
+                  ];
                   return (
                     <li
                       key={p.name}
@@ -923,10 +930,12 @@ function PosPage() {
                       aria-selected={i === hi}
                       onMouseDown={(e) => { e.preventDefault(); if (pendingCode) saveLink(pendingCode, p); else stage(p); }}
                       onMouseEnter={() => setHi(i)}
-                      className={`flex cursor-pointer items-center justify-between gap-2 rounded-md px-3 py-2 text-sm ${i === hi ? "bg-accent text-accent-foreground" : ""}`}
+                      className={`cursor-pointer rounded-sm border-b border-border px-3 py-2 text-sm last:border-b-0 ${i === hi ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"}`}
                     >
-                      <span className="truncate font-medium">{p.name}</span>
-                      <span className="shrink-0 text-xs text-muted-foreground">{price != null ? `Rs ${money(price)}` : "No rate"} · {p.stock ?? "-"}</span>
+                      <span className="block font-semibold text-foreground">{p.name}</span>
+                      <span className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 sm:grid-cols-3 lg:grid-cols-6">
+                        {detail.map(([label, value]) => <span key={label} className="min-w-0 text-xs"><span className="block text-[10px] text-muted-foreground">{label}</span><span className="block break-words font-medium tabular-nums text-foreground">{value}</span></span>)}
+                      </span>
                     </li>
                   );
                 })}
