@@ -139,6 +139,14 @@ export function ProductPickerBody({
         ) : null}
       </div>
 
+      {pendingNew && !exactMatch ? (
+        <p className="rounded-lg border border-dashed border-primary/50 bg-accent/30 px-3 py-2 text-xs text-foreground">
+          "<span className="font-semibold">{pendingNew}</span>" is not in the rate list — press{" "}
+          <kbd className="rounded border border-border bg-background px-1 font-semibold">Enter</kbd> again to save it
+          to inventory by name (rates and stock can be added later).
+        </p>
+      ) : null}
+
       {results.length === 0 ? (
         <p className="py-3 text-center text-xs text-muted-foreground">
           {isFetching ? "Loading rate list…" : "No product found."}
