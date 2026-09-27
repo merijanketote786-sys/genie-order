@@ -108,7 +108,7 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
         <Search className="size-4 text-primary" /><input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search product" />
       </label>
       <div className="max-h-[60vh] overflow-auto rounded-lg border border-border">
-        <table className="w-full min-w-[1900px] table-fixed border-collapse text-sm">
+        <table className="w-full min-w-[2050px] table-fixed border-collapse text-sm">
           <colgroup>
             <col className="w-12" />
             {COLS.map((c) => <col key={c.k} className={c.w} />)}
