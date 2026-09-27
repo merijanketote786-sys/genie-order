@@ -15,6 +15,7 @@ import { PurchasesPage } from "./purchases";
 import { listProductsLite } from "@/lib/business.functions";
 import { UnitSelect } from "@/components/unit-select";
 import { PosCustomerSearch } from "@/components/pos-customer-search";
+import { createPosProduct } from "@/lib/inventory.functions";
 
 export const Route = createFileRoute("/_authenticated/returns")({
   head: () => ({
@@ -54,6 +55,8 @@ function ReturnsPage() {
   const [qty, setQty] = useState<Record<string, string>>({});
   const [itemSearch, setItemSearch] = useState("");
   const [stagedId, setStagedId] = useState<string | null>(null);
+  const [pendingNew, setPendingNew] = useState(false);
+  const [savingNew, setSavingNew] = useState(false);
   const [entryQty, setEntryQty] = useState("1");
   const [entryRate, setEntryRate] = useState("");
   const [entryUnit, setEntryUnit] = useState("Piece");
@@ -80,17 +83,33 @@ function ReturnsPage() {
   const stagedItem = items.find((i) => i.id === stagedId);
   const matchedItems = itemSearch.trim() && !stagedId ? items.filter((i) => i.qty - i.returned - Number(qty[i.id] || 0) > 0 && i.name.toLowerCase().includes(itemSearch.trim().toLowerCase())) : [];
   const matchedProducts = itemSearch.trim() && !stagedId ? products.filter((p) => [p.name, p.id].some((v) => v.toLowerCase().includes(itemSearch.trim().toLowerCase()))).slice(0, 8) : [];
-  const matches = saleId ? matchedItems : matchedProducts;
+  const matches = pendingNew ? [] : saleId ? matchedItems : matchedProducts;
   const stagedProduct = !saleId ? products.find((p) => p.id === stagedId) : undefined;
   const stage = (id: string, name: string, unit: string, rate: number) => { setStagedId(id); setItemSearch(name); setEntryUnit(unit || "Piece"); setEntryRate(String(rate)); itemRef.current?.focus(); };
-  const resetEntry = () => { setItemSearch(""); setStagedId(null); setEntryQty("1"); setEntryRate(""); setEntryUnit("Piece"); itemRef.current?.focus(); };
-  const addItem = () => {
-    if (!itemSearch.trim()) return;
+  const resetEntry = () => { setItemSearch(""); setStagedId(null); setPendingNew(false); setEntryQty("1"); setEntryRate(""); setEntryUnit("Piece"); itemRef.current?.focus(); };
+  const addItem = async () => {
+    if (!itemSearch.trim() || savingNew) return;
     if (!saleId) {
-      if (!stagedProduct) { if (matchedProducts.length) stage(matchedProducts[0].id, matchedProducts[0].name, matchedProducts[0].unit, matchedProducts[0].salePrice); else toast.error("Choose a saved POS product from the list"); return; }
+      if (!stagedProduct && !pendingNew) {
+        if (matchedProducts.length) stage(matchedProducts[0].id, matchedProducts[0].name, matchedProducts[0].unit, matchedProducts[0].salePrice);
+        else setPendingNew(true);
+        return;
+      }
       const n = Number(entryQty), rate = Number(entryRate);
       if (!Number.isFinite(n) || n <= 0 || n > 1e7 || !Number.isFinite(rate) || rate < 0 || rate > 1e9) return toast.error("Enter a valid quantity and return price");
-      setFreeLines((prev) => [...prev, { productId: stagedProduct.id, name: stagedProduct.name, unit: entryUnit, qty: n, rate }]);
+      let productId = stagedProduct?.id;
+      let name = stagedProduct?.name ?? itemSearch.trim();
+      if (pendingNew) {
+        setSavingNew(true);
+        try {
+          const created = await createPosProduct({ data: { name, unit: entryUnit } });
+          productId = created.id; name = itemSearch.trim();
+          qc.invalidateQueries({ queryKey: ["products-lite"] }); qc.invalidateQueries({ queryKey: ["pos-products"] });
+        } catch (e) { toast.error(e instanceof Error ? e.message : "Product could not be saved"); return; }
+        finally { setSavingNew(false); }
+      }
+      if (!productId) return;
+      setFreeLines((prev) => [...prev, { productId, name, unit: entryUnit, qty: n, rate }]);
       resetEntry(); return;
     }
     if (!sale) return;
@@ -191,15 +210,16 @@ function ReturnsPage() {
               <div className="relative border-b border-border bg-accent/20 px-2 py-2 focus-within:bg-accent/30" onKeyDown={(e) => { if (e.key === "Enter" && !e.ctrlKey && !e.altKey && !e.metaKey && (e.target as HTMLElement).tagName !== "BUTTON") { e.preventDefault(); addItem(); } else if (e.key === "Escape") resetEntry(); }}>
                 <div className={grid}>
                   <Zap className="size-4 text-primary" />
-                  <input ref={itemRef} className={cell} value={itemSearch} onChange={(e) => { setItemSearch(e.target.value); setStagedId(null); }} placeholder={saleId ? "Search item from selected bill" : "Search saved POS product"} aria-label="Search return item" />
-                  <input className={cell} inputMode="decimal" value={entryQty} onChange={(e) => setEntryQty(e.target.value.replace(/[^\d.]/g, ""))} disabled={!stagedItem && !stagedProduct} aria-label="Return Qty" />
+                  <input ref={itemRef} className={cell} value={itemSearch} onChange={(e) => { setItemSearch(e.target.value); setStagedId(null); setPendingNew(false); }} placeholder={saleId ? "Search item from selected bill" : "Search or type new POS product"} aria-label="Search return item" />
+                  <input className={cell} inputMode="decimal" value={entryQty} onChange={(e) => setEntryQty(e.target.value.replace(/[^\d.]/g, ""))} disabled={!stagedItem && !stagedProduct && !pendingNew} aria-label="Return Qty" />
                   {saleId ? <span className="truncate text-sm text-muted-foreground">{stagedItem?.unit || "—"}</span> : <UnitSelect className={cell} value={entryUnit} onChange={setEntryUnit} label="Return unit" />}
-                  {saleId ? <span className="text-sm text-muted-foreground">{stagedItem ? rs(stagedItem.unitRefund) : "—"}</span> : <input className={cell} inputMode="decimal" value={entryRate} onChange={(e) => setEntryRate(e.target.value.replace(/[^\d.]/g, ""))} disabled={!stagedProduct} aria-label="Return price per unit" placeholder="Price" />}
+                  {saleId ? <span className="text-sm text-muted-foreground">{stagedItem ? rs(stagedItem.unitRefund) : "—"}</span> : <input className={cell} inputMode="decimal" value={entryRate} onChange={(e) => setEntryRate(e.target.value.replace(/[^\d.]/g, ""))} disabled={!stagedProduct && !pendingNew} aria-label="Return price per unit" placeholder="Price" />}
                   <span className="text-sm text-muted-foreground" title="Already included in the original bill's refund rate">—</span>
                   <span className="text-sm text-muted-foreground" title="Already included in the original bill's refund rate">—</span>
-                  <span className="text-right text-sm font-semibold">{stagedItem || stagedProduct ? rs(Number(entryQty || 0) * (stagedItem?.unitRefund ?? Number(entryRate || 0))) : "—"}</span>
-                  <Button size="icon-sm" onClick={addItem} disabled={!itemSearch.trim()} aria-label="Add return item"><Zap /></Button>
+                  <span className="text-right text-sm font-semibold">{stagedItem || stagedProduct || pendingNew ? rs(Number(entryQty || 0) * (stagedItem?.unitRefund ?? Number(entryRate || 0))) : "—"}</span>
+                  <Button size="icon-sm" onClick={() => void addItem()} disabled={!itemSearch.trim() || savingNew} aria-label="Add return item"><Zap /></Button>
                 </div>
+                {pendingNew ? <p className="ml-9 mt-1 text-xs text-muted-foreground">New product — press Enter again to save it to inventory and add it to this return.</p> : null}
                 {matches.length ? <ul role="listbox" className="relative z-30 ml-9 mt-1 max-h-72 w-[min(450px,90vw)] overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg">
                   {matches.map((i) => <li key={i.id} role="option" aria-selected={false}><Button variant="ghost" size="sm" className="h-auto w-full justify-start text-left" onClick={() => stage(i.id, i.name, i.unit, saleId ? (i as (typeof items)[number]).unitRefund : (i as (typeof products)[number]).salePrice)}>{i.name} · {saleId ? `${Math.round(((i as (typeof items)[number]).qty - (i as (typeof items)[number]).returned - Number(qty[i.id] || 0)) * 1000) / 1000} ${i.unit} available` : `${i.unit} · ${rs((i as (typeof products)[number]).salePrice)}`}</Button></li>)}
                 </ul> : null}
