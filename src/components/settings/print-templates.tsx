@@ -1,5 +1,6 @@
+import { Button } from "@/components/ui/button";
 import type { PaperFormat, PosConfig, TemplateId } from "@/lib/pos-config";
-import { Check } from "lucide-react";
+import { Check, Save } from "lucide-react";
 
 type Upd = (path: string, v: unknown) => void;
 type Tpl = {
