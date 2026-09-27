@@ -1,3 +1,4 @@
+import { withStore } from "@/lib/pos-store.server";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
@@ -49,7 +50,7 @@ export const bulkUpdateProducts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ rows: z.array(z.record(z.string(), z.union([z.string().max(200), z.boolean()])).refine((r) => typeof r.id === "string")).min(1).max(2000) }).parse(d))
   .handler(async ({ data, context }) => {
-    const { data: res, error } = await (context.supabase as Sb).rpc("pos_bulk_update_products", { _rows: data.rows });
+    const { data: res, error } = await withStore((context.supabase as Sb).rpc("pos_bulk_update_products", { _rows: data.rows }));
     if (error) throw new Error(error.message || "Bulk update failed");
     return res as { updated: number };
   });
@@ -58,7 +59,7 @@ export const adjustStock = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), qty: z.number().positive().max(1e7), kind: z.enum(["adjust_in", "adjust_out", "damage", "opening"]), note: z.string().max(300) }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await (context.supabase as Sb).rpc("pos_adjust_stock", { _id: data.id, _qty: data.qty, _kind: data.kind, _note: data.note });
+    const { error } = await withStore((context.supabase as Sb).rpc("pos_adjust_stock", { _id: data.id, _qty: data.qty, _kind: data.kind, _note: data.note }));
     if (error) throw new Error("Failed to adjust stock");
     return { ok: true };
   });
@@ -170,7 +171,7 @@ export const createPosProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ name: z.string().trim().min(1).max(200), unit: txt, sku: txt, barcode: txt, category: txt, brand: txt, sale_price: txt, purchase_price: txt, wholesale_price: txt, wholesale_min_qty: txt, stock: txt, min_stock: txt, tax_percent: txt }).parse(d))
   .handler(async ({ data, context }) => {
-    const { data: id, error } = await (context.supabase as Sb).rpc("pos_create_product", { _p: data });
+    const { data: id, error } = await withStore((context.supabase as Sb).rpc("pos_create_product", { _p: data }));
     if (error) throw new Error(error.message || "Failed to add product");
     return { id: id as string };
   });

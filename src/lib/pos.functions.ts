@@ -1,3 +1,4 @@
+import { withStore } from "@/lib/pos-store.server";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
@@ -54,7 +55,7 @@ export const savePosDoc = createServerFn({ method: "POST" })
     const { data: prods } = names.length ? await supabase.from("products").select("id, name").eq("scope", "pos").in("name", names) : { data: [] };
     const idOf = new Map<string, string>((prods ?? []).map((p: { id: string; name: string }) => [p.name, p.id]));
 
-    const { data: res, error } = await supabase.rpc("pos_save_sale", {
+    const { data: res, error } = await withStore(supabase.rpc("pos_save_sale", {
       _p: {
         doc_type: data.docType,
         client_ref: data.clientRef ?? "",
@@ -88,7 +89,7 @@ export const savePosDoc = createServerFn({ method: "POST" })
           note: i.note ?? null,
         })),
       },
-    });
+    }));
     if (error || !res) {
       console.error("pos_save_sale", error);
       throw new Error(friendlyDbError(error, "Unable to save invoice."));
@@ -168,7 +169,7 @@ export const deletePosDoc = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await (context.supabase as any).rpc("pos_delete_doc", { _id: data.id });
+    const { error } = await withStore((context.supabase as any).rpc("pos_delete_doc", { _id: data.id }));
     if (error) throw new Error(friendlyDbError(error, "Failed to delete."));
     return { ok: true };
   });
