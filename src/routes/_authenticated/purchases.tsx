@@ -191,11 +191,11 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
                     onChange={(e) => { setTerm(e.target.value); setStaged(null); setHi(0); }}
                     onKeyDown={(e) => { if (e.key === "ArrowDown") { e.preventDefault(); setHi((h) => Math.min(h + 1, matches.length - 1)); } else if (e.key === "ArrowUp") { e.preventDefault(); setHi((h) => Math.max(0, h - 1)); } }}
                     placeholder="Search or type new product · ↑↓ select · Enter add" />
-                  <input className={cell} value={sf.qty} inputMode="decimal" aria-label="Qty" onChange={(e) => setSf({ ...sf, qty: e.target.value })} />
+                  <input className={cell} value={sf.qty} inputMode="decimal" aria-label="Qty" placeholder="Qty · Tab next" onChange={(e) => setSf({ ...sf, qty: e.target.value })} />
                   <UnitSelect value={sf.unit} onChange={(v) => setSf({ ...sf, unit: v })} className={cell} label="Unit" />
-                  <input className={cell} value={sf.rate} inputMode="decimal" aria-label="Price/Unit" onChange={(e) => setSf({ ...sf, rate: e.target.value })} />
-                  <input className={cell} value={sf.discount} inputMode="decimal" aria-label="Discount" onChange={(e) => setSf({ ...sf, discount: e.target.value })} />
-                  <input className={cell} value={sf.tax} inputMode="decimal" aria-label="Tax" onChange={(e) => setSf({ ...sf, tax: e.target.value })} />
+                  <input className={cell} value={sf.rate} inputMode="decimal" aria-label="Price/Unit" placeholder="Rate · Enter adds" onChange={(e) => setSf({ ...sf, rate: e.target.value })} />
+                  <input className={cell} value={sf.discount} inputMode="decimal" aria-label="Discount" placeholder="Disc" onChange={(e) => setSf({ ...sf, discount: e.target.value })} />
+                  <input className={cell} value={sf.tax} inputMode="decimal" aria-label="Tax" placeholder="Tax %" onChange={(e) => setSf({ ...sf, tax: e.target.value })} />
                   <span className="text-right text-sm font-semibold">{rs(stagedAmount)}</span>
                   <Button size="icon-sm" onClick={() => void confirm()} disabled={savingNew || !term.trim()} aria-label="Add to bill"><Zap /></Button>
                 </div>
