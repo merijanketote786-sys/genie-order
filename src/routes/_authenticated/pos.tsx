@@ -747,7 +747,7 @@ function PosPage() {
                     e.preventDefault();
                     const t = term.trim().toLowerCase();
                     if (staged && t === staged.name.toLowerCase()) {
-                      add(staged); setTerm(""); setStaged(null); setHi(-1);
+                      add(staged, undefined, stagedOverrides()); setTerm(""); setStaged(null); setHi(-1); resetSf();
                     } else if (hi >= 0 && list[hi]) {
                       if (pendingCode) saveLink(pendingCode, list[hi]); else stage(list[hi]);
                     } else if (pendingCode) {
