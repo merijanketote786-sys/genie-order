@@ -163,6 +163,16 @@ export const closePosDoc = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Estimate / held bill ko record se hamesha ke liye delete karein (invoices sirf cancel hoti hain). */
+export const deletePosDoc = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await (context.supabase as any).rpc("pos_delete_doc", { _id: data.id });
+    if (error) throw new Error(friendlyDbError(error, "Failed to delete."));
+    return { ok: true };
+  });
+
 /** Customer ka purana baqaya: opening + POS udhaar − returns/receipts. */
 export const getCustomerBalance = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
