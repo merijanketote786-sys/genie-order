@@ -700,8 +700,8 @@ function PosPage() {
           </div>
           <section className="px-4 pb-5 pt-6 sm:min-h-48 sm:px-6 sm:pb-8">
             <div ref={custRef} className="flex flex-wrap items-center gap-2">
-              <div className="min-w-[140px] flex-[1.3_1_0%]"><PosCustomerSearch field="name" className={inputCls} value={customerName} onChange={(v) => { setCustomerName(v); setCustomerCityArea(""); setCustomerAddress(""); setCourierServiceName(""); setGoodsAddaName(""); }} onPick={pickCustomer} placeholder="Customer name (Walk-in)" /></div>
-              <div className="min-w-[110px] flex-[1_1_0%]"><PosCustomerSearch field="phone" className={inputCls} value={customerPhone} onChange={(v) => { setCustomerPhone(v); setCustomerCityArea(""); setCustomerAddress(""); setCourierServiceName(""); setGoodsAddaName(""); }} onPick={pickCustomer} placeholder="Phone" /></div>
+              <div className="min-w-[140px] flex-[1.3_1_0%]"><PosCustomerSearch field="name" className={inputCls} value={customerName} onChange={(v) => { setCustomerName(v); setCustomerCityArea(""); setCustomerAddress(""); setCourierServiceName(""); setGoodsAddaName(""); }} onPick={pickCustomer} placeholder="Customer name (Walk-in) · ↑↓ select · Enter pick" /></div>
+              <div className="min-w-[110px] flex-[1_1_0%]"><PosCustomerSearch field="phone" className={inputCls} value={customerPhone} onChange={(v) => { setCustomerPhone(v); setCustomerCityArea(""); setCustomerAddress(""); setCourierServiceName(""); setGoodsAddaName(""); }} onPick={pickCustomer} placeholder="Phone · ↑↓ select · Enter pick" /></div>
               <input aria-label="City / Area" className={`min-w-[100px] flex-[1_1_0%] ${inputCls}`} value={customerCityArea} onChange={(e) => setCustomerCityArea(e.target.value)} placeholder="City / Area" />
               <input aria-label="Customer address" className={`min-w-[150px] flex-[1.4_1_0%] ${inputCls}`} value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="Address (optional)" />
               <input aria-label="Courier service" className={`min-w-[110px] flex-[1_1_0%] ${inputCls}`} value={courierServiceName} onChange={(e) => setCourierServiceName(e.target.value)} placeholder="Courier service" />
@@ -844,7 +844,7 @@ function PosPage() {
                     }
                   }
                 }}
-                placeholder="Search or scan item"
+                placeholder="Search or scan item · ↑↓ select · Enter add"
                 aria-label="Search or scan item"
                 className="min-w-0 flex-1 bg-transparent text-sm outline-none"
               />
@@ -857,6 +857,7 @@ function PosPage() {
                     <span className="sr-only">Weight</span>
                     <input
                       value={sf.weight}
+                      placeholder="Weight · Tab next"
                       onChange={(e) => setSf((s) => ({ ...s, weight: e.target.value }))}
                       className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none focus:border-ring"
                     />
@@ -865,6 +866,7 @@ function PosPage() {
                     <span className="sr-only">Size</span>
                     <input
                       value={sf.size}
+                      placeholder="Size · Tab next"
                       onChange={(e) => setSf((s) => ({ ...s, size: e.target.value }))}
                       className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none focus:border-ring"
                     />
@@ -873,6 +875,7 @@ function PosPage() {
                     <span className="sr-only">Qty</span>
                     <input
                       value={sf.qty}
+                      placeholder="Qty · Enter adds"
                       inputMode="decimal"
                       onChange={(e) => {
                         const qty = e.target.value;
@@ -896,6 +899,7 @@ function PosPage() {
                     <span className="sr-only">Price/Unit</span>
                     <input
                       value={sf.price}
+                      placeholder="Price · Enter adds"
                       inputMode="decimal"
                       onChange={(e) => {
                         const price = e.target.value;
@@ -911,6 +915,7 @@ function PosPage() {
                     <span className="sr-only">Amount</span>
                     <input
                       value={sf.amount}
+                      placeholder="Amount · Enter adds"
                       inputMode="decimal"
                       onChange={(e) => {
                         const amount = e.target.value;
