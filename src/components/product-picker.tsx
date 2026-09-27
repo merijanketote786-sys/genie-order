@@ -3,6 +3,7 @@
  * Search for a product from the rate list, choose pack size + qty, and insert the line.
  */
 import { getProducts, type DbProduct } from "@/lib/products.functions";
+import { createPosProduct } from "@/lib/inventory.functions";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Copy, CornerDownLeft, Loader2, Search } from "lucide-react";
@@ -57,8 +58,11 @@ export function ProductPickerBody({
   useLabel?: string;
 }) {
   const load = useServerFn(getProducts);
+  const createProduct = useServerFn(createPosProduct);
   const [term, setTerm] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
+  const [pendingNew, setPendingNew] = useState<string | null>(null);
+  const [savingNew, setSavingNew] = useState(false);
   const [pack, setPack] = useState<Pack>("250");
   const [qty, setQty] = useState("1");
 
@@ -75,6 +79,34 @@ export function ProductPickerBody({
     const list = q ? products.filter((p) => p.name.toLowerCase().includes(q)) : products;
     return list.slice(0, 30);
   }, [products, term]);
+
+  const exactMatch = useMemo(() => {
+    const q = term.trim().toLowerCase();
+    return q ? products.some((p) => p.name.toLowerCase() === q) : true;
+  }, [products, term]);
+
+  const handleSearchKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    const name = term.trim();
+    if (!name || exactMatch || savingNew) return;
+    e.preventDefault();
+    if (pendingNew !== name) {
+      // First Enter: keep the name in the search bar, ask for confirmation.
+      setPendingNew(name);
+      return;
+    }
+    // Second Enter: save to inventory by name only.
+    setSavingNew(true);
+    try {
+      await createProduct({ data: { name } });
+      toast.success(`"${name}" saved to inventory — rates and stock can be added later`);
+      setPendingNew(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save product");
+    } finally {
+      setSavingNew(false);
+    }
+  };
 
   const qtyNum = Math.max(1, Number(qty.replace(/[^\d]/g, "")) || 1);
 
@@ -93,15 +125,27 @@ export function ProductPickerBody({
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <input
           value={term}
-          onChange={(e) => setTerm(e.target.value)}
+          onChange={(e) => {
+            setTerm(e.target.value);
+            setPendingNew(null);
+          }}
+          onKeyDown={handleSearchKeyDown}
           placeholder="Enter product name"
           aria-label="Product search"
           className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-9 text-sm text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/30"
         />
-        {isFetching ? (
+        {isFetching || savingNew ? (
           <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
         ) : null}
       </div>
+
+      {pendingNew && !exactMatch ? (
+        <p className="rounded-lg border border-dashed border-primary/50 bg-accent/30 px-3 py-2 text-xs text-foreground">
+          "<span className="font-semibold">{pendingNew}</span>" is not in the rate list — press{" "}
+          <kbd className="rounded border border-border bg-background px-1 font-semibold">Enter</kbd> again to save it
+          to inventory by name (rates and stock can be added later).
+        </p>
+      ) : null}
 
       {results.length === 0 ? (
         <p className="py-3 text-center text-xs text-muted-foreground">
