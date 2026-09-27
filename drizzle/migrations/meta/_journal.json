@@ -218,6 +218,13 @@
       "when": 1790500865424,
       "tag": "0030_customer_delivery_details",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1790509283019,
+      "tag": "0031_optional_unlinked_pos_sales_return",
+      "breakpoints": true
     }
   ]
 }

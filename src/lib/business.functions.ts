@@ -99,9 +99,9 @@ export const getSupplierLedger = createServerFn({ method: "GET" })
 export const listProductsLite = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data } = await (context.supabase as Sb).from("products").select("id, name, unit, purchase_price, sale_price, stock").eq("is_active", true).eq("scope", "pos").order("name").limit(5000);
-    type P = { id: string; name: string; unit: string; purchasePrice: number | null; salePrice: number; stock: number };
-    return { products: ((data ?? []) as any[]).map((p: any): P => ({ id: p.id as string, name: p.name as string, unit: p.unit as string, purchasePrice: p.purchase_price == null ? null : Number(p.purchase_price), salePrice: Number(p.sale_price), stock: Number(p.stock ?? 0) })) };
+    const { data } = await (context.supabase as Sb).from("products").select("id, name, unit, sku, barcode, category, purchase_price, sale_price, stock").eq("is_active", true).eq("scope", "pos").order("name").limit(5000);
+    type P = { id: string; name: string; unit: string; sku: string | null; barcode: string | null; category: string | null; purchasePrice: number | null; salePrice: number; stock: number };
+    return { products: ((data ?? []) as any[]).map((p: any): P => ({ id: p.id as string, name: p.name as string, unit: p.unit as string, sku: p.sku as string | null, barcode: p.barcode as string | null, category: p.category as string | null, purchasePrice: p.purchase_price == null ? null : Number(p.purchase_price), salePrice: Number(p.sale_price), stock: Number(p.stock ?? 0) })) };
   });
 
 export const savePurchase = createServerFn({ method: "POST" })
@@ -232,6 +232,23 @@ export const saveSalesReturn = createServerFn({ method: "POST" })
     });
     if (error || !res) { console.error(error); throw new Error(friendlyDbError(error, "Failed to save return.")); }
     return { ...(res as { id: string; number: string }), total };
+  });
+
+export const saveUnlinkedSalesReturn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({
+    customerId: z.string().uuid().optional(), customerName: z.string().max(120).optional(),
+    mode: z.enum(["refund", "credit"]), method: z.string().max(30), reason: z.string().max(300).optional(),
+    clientRef: z.string().uuid(),
+    items: z.array(z.object({ productId: z.string().uuid(), name: z.string().min(1).max(300), unit: z.string().max(40), qty: z.number().positive().max(1e7), rate: amt })).min(1).max(300),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: res, error } = await (context.supabase as Sb).rpc("pos_save_unlinked_return", { _p: {
+      client_ref: data.clientRef, customer_id: data.customerId ?? "", customer_name: data.customerName ?? "",
+      mode: data.mode, method: data.method, reason: data.reason ?? "", items: data.items.map((i) => ({ product_id: i.productId, name: i.name, unit: i.unit, qty: i.qty, rate: i.rate })),
+    } });
+    if (error || !res) throw new Error(friendlyDbError(error, "Failed to save return."));
+    return res as { id: string; number: string; total: number };
   });
 
 export const listReturns = createServerFn({ method: "GET" })

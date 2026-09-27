@@ -1531,6 +1531,7 @@ export type Database = {
         Args: { _config: Json; _pin: string }
         Returns: undefined
       }
+      pos_save_unlinked_return: { Args: { _p: Json }; Returns: Json }
       pos_set_member_role: {
         Args: { _role: string; _user: string }
         Returns: undefined
