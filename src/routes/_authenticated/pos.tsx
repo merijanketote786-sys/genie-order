@@ -746,7 +746,7 @@ function PosPage() {
                     e.preventDefault(); setHi((h) => (h <= 0 ? list.length - 1 : h - 1));
                   } else if (e.key === "Escape") {
                     setDropOpen(false); setHi(-1);
-                  } else if ((e.key === "Enter" || e.key === "Tab") && term.trim()) {
+                  } else if (e.key === "Enter" && term.trim()) {
                     e.preventDefault();
                     const t = term.trim().toLowerCase();
                     if (staged && t === staged.name.toLowerCase()) {
@@ -778,7 +778,15 @@ function PosPage() {
               </button>
             </div>
             {staged || (pendingNew && pendingNew === term.trim()) ? (
-              <div className="border-t border-border px-3 pb-3 pt-2">
+              <div
+                className="border-t border-border px-3 pb-3 pt-2"
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter" || e.ctrlKey || e.altKey || e.metaKey || savingNew) return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  confirmStaged();
+                }}
+              >
                 <p className="mb-2 truncate text-xs font-medium text-muted-foreground">
                   <span className="truncate">{(staged?.name ?? pendingNew) || ""}</span>
                   {savingNew ? " — Saving…" : staged ? " — ready to add" : " — new item, save with Enter or ⚡"}
