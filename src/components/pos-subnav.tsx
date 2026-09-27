@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { usePosAccess } from "@/components/pos-access";
 import type { PosPerm } from "@/lib/pos-access.functions";
-import { Landmark, Settings2, BarChart3, Boxes, BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users, FileCheck2 } from "lucide-react";
+import { LayoutDashboard, Landmark, Settings2, BarChart3, Boxes, BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users, FileCheck2 } from "lucide-react";
 
 const ITEMS = [
+  { to: "/pos-dashboard", label: "Dashboard", icon: LayoutDashboard, perm: "view_pos" },
   { to: "/pos", label: "Billing", icon: ShoppingCart, perm: "view_pos" },
   { to: "/returns", label: "Returns", icon: Undo2, perm: "create_sale" },
   { to: "/purchases", label: "Purchases", icon: Truck, perm: "manage_purchases" },

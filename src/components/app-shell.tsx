@@ -135,7 +135,7 @@ export function AppShell({
             return (
               <Link
                 key={tab.to}
-                to={tab.to}
+                to={tab.to === "/pos" ? "/pos-dashboard" : tab.to}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
                     "grid min-h-11 grid-cols-[32px_minmax(0,1fr)] items-center gap-2 rounded-lg px-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
@@ -246,7 +246,7 @@ export function AppShell({
               return (
                 <Link
                   key={tab.to}
-                  to={tab.to}
+                  to={tab.to === "/pos" ? "/pos-dashboard" : tab.to}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
                     "flex h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 text-xs font-semibold transition-colors",
