@@ -257,6 +257,7 @@ function PosPage() {
     setSf({ qty: "1", price: pr != null ? String(pr) : "", unit: p.unit || "", size: "", weight: "", amount: pr != null ? String(pr) : "" });
     scanRef.current?.focus();
   };
+  const r2local = (x: number) => Math.round(x * 100) / 100;
   const sfNum = (s: string) => { const n = Number(s); return Number.isFinite(n) ? n : null; };
   const stagedOverrides = () => {
     const qty = sfNum(sf.qty);
