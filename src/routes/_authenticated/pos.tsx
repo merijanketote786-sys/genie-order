@@ -103,6 +103,8 @@ const n = (v: string) => {
   return Number.isFinite(x) ? x : 0;
 };
 
+/** Quantity badalte hi rate khud sale/wholesale me switch ho jati hai. */
+const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
 
 function PosPage() {
   const qc = useQueryClient();
