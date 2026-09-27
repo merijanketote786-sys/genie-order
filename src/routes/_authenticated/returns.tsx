@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cancelDoc, getSaleForReturn, listReturns, saveSalesReturn, searchSales } from "@/lib/business.functions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Search, Undo2 } from "lucide-react";
+import { Search, Trash2, Undo2, Zap } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { newRef } from "@/lib/pos-errors";
@@ -49,6 +49,10 @@ function ReturnsPage() {
   useEffect(() => { const t = setTimeout(() => setDq(q), 250); return () => clearTimeout(t); }, [q]);
   const [saleId, setSaleId] = useState<string | null>(null);
   const [qty, setQty] = useState<Record<string, string>>({});
+  const [itemSearch, setItemSearch] = useState("");
+  const [stagedId, setStagedId] = useState<string | null>(null);
+  const [entryQty, setEntryQty] = useState("1");
+  const itemRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<"refund" | "credit">("refund");
   const [method, setMethod] = useState("Cash");
   const [reason, setReason] = useState("");
@@ -60,8 +64,24 @@ function ReturnsPage() {
   const { data: hist } = useQuery({ queryKey: ["ret-list"], queryFn: () => listReturns() });
 
   const items = sale?.items ?? [];
-  const lines = items.map((i) => ({ i, q: Math.min(Number(qty[i.id] || 0), i.qty - i.returned) })).filter((x) => x.q > 0);
+  const lines = items.map((i) => ({ i, q: Number(qty[i.id] || 0) })).filter((x) => x.q > 0);
   const total = lines.reduce((s, x) => s + x.q * x.i.unitRefund, 0);
+  const stagedItem = items.find((i) => i.id === stagedId);
+  const matches = itemSearch.trim() && !stagedId ? items.filter((i) => i.qty - i.returned - Number(qty[i.id] || 0) > 0 && i.name.toLowerCase().includes(itemSearch.trim().toLowerCase())) : [];
+  const resetEntry = () => { setItemSearch(""); setStagedId(null); setEntryQty("1"); itemRef.current?.focus(); };
+  const addItem = () => {
+    if (!sale || !itemSearch.trim()) return;
+    if (!stagedItem) {
+      if (matches.length) { setStagedId(matches[0].id); setItemSearch(matches[0].name); itemRef.current?.focus(); }
+      else toast.error("Choose an item from the selected bill");
+      return;
+    }
+    const n = Number(entryQty);
+    const remaining = Math.round((stagedItem.qty - stagedItem.returned - Number(qty[stagedItem.id] || 0)) * 1000) / 1000;
+    if (!Number.isFinite(n) || n <= 0 || n > remaining) return toast.error(`Available to return: ${remaining} ${stagedItem.unit}`);
+    setQty((m) => ({ ...m, [stagedItem.id]: String(Math.round((Number(m[stagedItem.id] || 0) + n) * 1000) / 1000) }));
+    resetEntry();
+  };
 
   const cell = "h-9 w-full rounded-sm border border-border bg-background px-2 text-sm";
   const head = "text-[11px] font-bold uppercase tracking-wide text-muted-foreground";
@@ -82,7 +102,7 @@ function ReturnsPage() {
         lines: lines.map((x) => ({ name: x.i.name, unit: x.i.unit ?? undefined, qty: x.q, rate: x.i.unitRefund, total: x.q * x.i.unitRefund })),
         totals: [{ label: mode === "refund" ? "Refund amount" : "Credit amount", value: r.total, bold: true }], notes: reason || undefined,
       }, "return");
-      setQty({}); setReason("");
+      setQty({}); setReason(""); resetEntry();
       qc.invalidateQueries({ queryKey: ["ret-sale"] });
       qc.invalidateQueries({ queryKey: ["ret-list"] });
       qc.invalidateQueries({ queryKey: ["products"] }); qc.invalidateQueries({ queryKey: ["pos-products"] });
@@ -115,14 +135,14 @@ function ReturnsPage() {
               <input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search bill: invoice number, customer name or phone" aria-label="Search bill" />
             </label>
             {sale ? <p className="text-sm font-semibold text-foreground">{sale.sale.number} · {sale.sale.customerName || "Walk-in"} · {rs(sale.sale.total)}</p> : null}
-            {q.trim() && !saleId ? (
+            {q.trim() ? (
               <ul className="absolute left-4 right-4 top-full z-30 max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg">
                 {(found?.sales ?? []).map((s) => (
                   <li key={s.id}>
-                    <button type="button" onClick={() => { setSaleId(s.id); setQty({}); setQ(""); }} className="w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent">
+                    <Button type="button" variant="ghost" onClick={() => { setSaleId(s.id); setQty({}); setQ(""); setItemSearch(""); setStagedId(null); }} className="h-auto w-full justify-start px-2 py-1.5 text-left text-sm">
                       <span className="font-semibold text-foreground">{s.doc_number}</span> · {s.customer_name || "Walk-in"}
                       <span className="block text-xs text-muted-foreground">{rs(s.grand_total)} · {s.payment_status} · {new Date(s.created_at).toLocaleString("en-PK")}</span>
-                    </button>
+                    </Button>
                   </li>
                 ))}
                 {found && !found.sales.length ? <p className="py-3 text-center text-xs text-muted-foreground">No bill found.</p> : null}
@@ -132,32 +152,41 @@ function ReturnsPage() {
 
           <div className="overflow-x-auto">
             <div className="min-w-[820px]">
-              <div className="grid grid-cols-[36px_minmax(220px,2.4fr)_minmax(80px,0.7fr)_minmax(90px,0.8fr)_minmax(100px,0.9fr)_minmax(130px,1fr)_minmax(110px,1fr)] items-center gap-2 border-y border-border bg-surface-2 px-2 py-2">
-                <span className={head}>#</span><span className={head}>Item</span><span className={head}>Sold</span><span className={head}>Returned</span><span className={head}>Rate</span><span className={head}>Return Qty</span><span className={`${head} text-right`}>Amount</span>
+              <div className="grid grid-cols-[36px_minmax(220px,2.4fr)_minmax(85px,0.7fr)_minmax(100px,0.8fr)_minmax(110px,0.9fr)_minmax(110px,1fr)_42px] items-center gap-2 border-y border-border bg-surface-2 px-2 py-2">
+                <span className={head}>#</span><span className={head}>Item</span><span className={head}>Qty</span><span className={head}>Unit</span><span className={head}>Price/Unit</span><span className={`${head} text-right`}>Amount</span><span />
               </div>
-              {!sale ? <p className="py-10 text-center text-sm text-muted-foreground">Upar search kar ke bill chunein — us ke items yahan aa jayenge.</p> : null}
-              {items.map((i, idx) => {
+              <div className="relative border-b border-border bg-accent/20 px-2 py-2 focus-within:bg-accent/30" onKeyDown={(e) => { if (e.key === "Enter" && !e.ctrlKey && !e.altKey && !e.metaKey && (e.target as HTMLElement).tagName !== "BUTTON") { e.preventDefault(); addItem(); } else if (e.key === "Escape") resetEntry(); }}>
+                <div className="grid grid-cols-[36px_minmax(220px,2.4fr)_minmax(85px,0.7fr)_minmax(100px,0.8fr)_minmax(110px,0.9fr)_minmax(110px,1fr)_42px] items-center gap-2">
+                  <Zap className="size-4 text-primary" />
+                  <input ref={itemRef} className={cell} value={itemSearch} disabled={!sale} onChange={(e) => { setItemSearch(e.target.value); setStagedId(null); }} placeholder={sale ? "Search item from selected bill" : "Select a bill first"} aria-label="Search return item" />
+                  <input className={cell} inputMode="decimal" value={entryQty} onChange={(e) => setEntryQty(e.target.value.replace(/[^\d.]/g, ""))} disabled={!stagedItem} aria-label="Return Qty" />
+                  <span className="truncate text-sm text-muted-foreground">{stagedItem?.unit || "—"}</span>
+                  <span className="text-sm text-muted-foreground">{stagedItem ? rs(stagedItem.unitRefund) : "—"}</span>
+                  <span className="text-right text-sm font-semibold">{stagedItem ? rs(Number(entryQty || 0) * stagedItem.unitRefund) : "—"}</span>
+                  <Button size="icon-sm" onClick={addItem} disabled={!sale || !itemSearch.trim()} aria-label="Add return item"><Zap /></Button>
+                </div>
+                {matches.length ? <ul role="listbox" className="relative z-30 ml-9 mt-1 max-h-72 w-[min(450px,90vw)] overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg">
+                  {matches.map((i) => <li key={i.id} role="option" aria-selected={false}><Button variant="ghost" size="sm" className="h-auto w-full justify-start text-left" onClick={() => { setStagedId(i.id); setItemSearch(i.name); itemRef.current?.focus(); }}>{i.name} · {Math.round((i.qty - i.returned - Number(qty[i.id] || 0)) * 1000) / 1000} {i.unit} available</Button></li>)}
+                </ul> : null}
+              </div>
+              {lines.map(({ i, q: rq }, idx) => {
                 const left = Math.round((i.qty - i.returned) * 1000) / 1000;
-                const rq = Math.min(Number(qty[i.id] || 0), left);
                 return (
-                  <div key={i.id} className="grid grid-cols-[36px_minmax(220px,2.4fr)_minmax(80px,0.7fr)_minmax(90px,0.8fr)_minmax(100px,0.9fr)_minmax(130px,1fr)_minmax(110px,1fr)] items-center gap-2 border-b border-border px-2 py-1.5">
+                  <div key={i.id} className="grid grid-cols-[36px_minmax(220px,2.4fr)_minmax(85px,0.7fr)_minmax(100px,0.8fr)_minmax(110px,0.9fr)_minmax(110px,1fr)_42px] items-center gap-2 border-b border-border px-2 py-1.5">
                     <span className="text-sm text-muted-foreground">{idx + 1}</span>
-                    <span className="truncate text-sm font-medium text-foreground">{i.name} <span className="text-xs text-muted-foreground">{i.unit}</span></span>
-                    <span className="text-sm">{i.qty}</span>
-                    <span className="text-sm">{i.returned}</span>
+                    <span className="truncate text-sm font-medium text-foreground" title={`Sold ${i.qty}, previously returned ${i.returned}`}>{i.name}</span>
+                    <input className={cell} inputMode="decimal" value={qty[i.id] ?? ""} onChange={(e) => { const value = e.target.value.replace(/[^\d.]/g, ""); if (!value || Number(value) <= left) setQty((m) => ({ ...m, [i.id]: value })); }} aria-label={`${i.name} return qty`} title={`Maximum ${left} ${i.unit}`} />
+                    <span className="text-sm">{i.unit}</span>
                     <span className="text-sm">{rs(i.unitRefund)}</span>
-                    <div className="flex gap-1">
-                      <input className={cell} inputMode="decimal" disabled={left <= 0} value={qty[i.id] ?? ""} placeholder="0" onChange={(e) => setQty((m) => ({ ...m, [i.id]: e.target.value.replace(/[^\d.]/g, "") }))} aria-label={`${i.name} return qty`} />
-                      <Button size="sm" variant="ghost" disabled={left <= 0} onClick={() => setQty((m) => ({ ...m, [i.id]: String(left) }))}>All</Button>
-                    </div>
                     <span className="text-right text-sm font-semibold">{rs(rq * i.unitRefund)}</span>
+                    <Button size="icon-sm" variant="ghost" onClick={() => setQty((m) => { const next = { ...m }; delete next[i.id]; return next; })} aria-label={`Remove ${i.name}`}><Trash2 /></Button>
                   </div>
                 );
               })}
               {sale ? (
-                <div className="grid grid-cols-[36px_minmax(220px,2.4fr)_minmax(80px,0.7fr)_minmax(90px,0.8fr)_minmax(100px,0.9fr)_minmax(130px,1fr)_minmax(110px,1fr)] items-center gap-2 bg-surface-2 px-2 py-2">
-                  <span /><span className="text-xs font-bold text-muted-foreground">TOTAL</span><span className="text-sm font-bold">{lines.reduce((s, x) => s + x.q, 0)}</span><span /><span /><span />
-                  <span className="text-right text-sm font-bold">{rs(total)}</span>
+                <div className="grid grid-cols-[36px_minmax(220px,2.4fr)_minmax(85px,0.7fr)_minmax(100px,0.8fr)_minmax(110px,0.9fr)_minmax(110px,1fr)_42px] items-center gap-2 bg-surface-2 px-2 py-2">
+                  <span /><Button size="sm" variant="outline" className="w-fit" onClick={() => itemRef.current?.focus()}>ADD ROW</Button><span className="text-sm font-bold">{lines.reduce((s, x) => s + x.q, 0)}</span><span /><span className="text-xs font-bold text-muted-foreground">TOTAL</span>
+                  <span className="text-right text-sm font-bold">{rs(total)}</span><span />
                 </div>
               ) : null}
             </div>
@@ -176,10 +205,11 @@ function ReturnsPage() {
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between border-t border-border pt-2 text-base"><span className="font-bold">{mode === "refund" ? "Refund amount" : "Credit amount"}</span><b className="text-foreground">{rs(total)}</b></div>
                 <div className="flex justify-end gap-2 pt-2">
-                  <Button variant="outline" onClick={() => { setSaleId(null); setQty({}); setReason(""); }}>Clear</Button>
+                  <Button variant="outline" onClick={() => { setSaleId(null); setQty({}); setReason(""); resetEntry(); }}>Clear</Button>
                   <Button size="lg" disabled={!lines.length || saving} onClick={submit}><Undo2 /> Save return (stock +)</Button>
                 </div>
                 <p className="text-right text-[11px] text-muted-foreground">The original bill is not changed — a separate return record is created and stock is restored automatically.</p>
+                <p className="text-right text-[11px] text-muted-foreground">Enter: select item / add row · Tab: next field · Esc: clear entry</p>
               </div>
             </div>
           ) : null}
