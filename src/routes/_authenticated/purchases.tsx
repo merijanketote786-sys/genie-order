@@ -190,7 +190,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
                   <input ref={searchRef} className={cell} value={term} autoFocus aria-label="Search product"
                     onChange={(e) => { setTerm(e.target.value); setStaged(null); setHi(0); }}
                     onKeyDown={(e) => { if (e.key === "ArrowDown") { e.preventDefault(); setHi((h) => Math.min(h + 1, matches.length - 1)); } else if (e.key === "ArrowUp") { e.preventDefault(); setHi((h) => Math.max(0, h - 1)); } }}
-                    placeholder="Search or type new product + Enter" />
+                    placeholder="Search or type new product · ↑↓ select · Enter add" />
                   <input className={cell} value={sf.qty} inputMode="decimal" aria-label="Qty" onChange={(e) => setSf({ ...sf, qty: e.target.value })} />
                   <UnitSelect value={sf.unit} onChange={(v) => setSf({ ...sf, unit: v })} className={cell} label="Unit" />
                   <input className={cell} value={sf.rate} inputMode="decimal" aria-label="Price/Unit" onChange={(e) => setSf({ ...sf, rate: e.target.value })} />

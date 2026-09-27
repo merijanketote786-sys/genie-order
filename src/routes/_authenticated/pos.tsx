@@ -844,7 +844,7 @@ function PosPage() {
                     }
                   }
                 }}
-                placeholder="Search or scan item"
+                placeholder="Search or scan item · ↑↓ select · Enter add"
                 aria-label="Search or scan item"
                 className="min-w-0 flex-1 bg-transparent text-sm outline-none"
               />
