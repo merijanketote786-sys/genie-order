@@ -83,7 +83,7 @@ export function PosCustomerSearch({
       {open && list.length > 0 ? (
         <ul ref={listRef} className="absolute left-0 right-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-xl border border-border bg-popover p-1 shadow-lg">
           {list.map((c, i) => (
-            <li key={c.id}>
+            <li key={c.id} role="option" aria-selected={i === idx}>
               <button
                 type="button"
                 onMouseDown={(e) => { e.preventDefault(); pick(c); }}
