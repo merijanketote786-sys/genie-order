@@ -221,6 +221,20 @@
   box-shadow: var(--shadow-glow);
 }
 
+/* Apply the same restrained hover feedback to older native buttons and toggles. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  button:not(:disabled), [role="switch"]:not([aria-disabled="true"]) {
+    transition: transform 150ms ease, background-color 150ms ease, color 150ms ease;
+  }
+  button:not(:disabled):hover, [role="switch"]:not([aria-disabled="true"]):hover {
+    transform: scale(1.025);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button, [role="switch"] { transition: none !important; }
+}
+
 /* Prevent mobile browsers from auto-zooming when an input/textarea is focused:
    touch devices zoom in whenever the focused field's font-size is below 16px. */
 @media (max-width: 640px) {

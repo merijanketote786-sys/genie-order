@@ -211,6 +211,13 @@
       "when": 1790477525355,
       "tag": "0029_add_wholesale_min_qty",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1790500865424,
+      "tag": "0030_customer_delivery_details",
+      "breakpoints": true
     }
   ]
 }
