@@ -292,9 +292,9 @@ function PosPage() {
     setSavingNew(true);
     try {
       await createPosProduct({ data: { name } });
-      const p: DbProduct = { name, unit: "Piece", p100: null, p250: null, p500: null, sale: 0, stock: null, customSale: null, customP100: null, customP250: null, customP500: null };
-      add(p, "sale");
-      setTerm(""); setPendingNew(null); setHi(-1);
+      const p: DbProduct = { name, unit: sf.unit.trim() || "Piece", p100: null, p250: null, p500: null, sale: 0, stock: null, customSale: null, customP100: null, customP250: null, customP500: null };
+      add(p, "sale", stagedOverrides());
+      setTerm(""); setPendingNew(null); setHi(-1); resetSf();
       qc.invalidateQueries();
       toast.success(`${name} saved to inventory — edit rates/stock later`);
     } catch (e) {
