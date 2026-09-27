@@ -109,8 +109,17 @@ const n = (v: string) => {
 /** Quantity badalte hi rate khud sale/wholesale me switch ho jati hai. */
 const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
 
-function PosPage() {
-  const qc = useQueryClient();
+ function PosPage() {
+   // Phone-width hint: field placeholders shorten so they stay readable on a narrow bill card.
+   const [phone, setPhone] = useState(false);
+   useEffect(() => {
+     const mq = window.matchMedia("(max-width: 767px)");
+     setPhone(mq.matches);
+     const on = (e: MediaQueryListEvent) => setPhone(e.matches);
+     mq.addEventListener("change", on);
+     return () => mq.removeEventListener("change", on);
+   }, []);
+   const qc = useQueryClient();
   const { data: prodData } = useQuery({ queryKey: ["pos-products"], queryFn: () => getProducts({ data: { scope: "pos" } }) });
   const { data: me } = useQuery({ queryKey: ["my-settings"], queryFn: () => getMySettings() });
   const { can, config: posCfg, cfg } = usePosAccess();
@@ -832,7 +841,7 @@ function PosPage() {
           {/* Sale invoice grid — Vyapar jaisi table: # | ITEM | WEIGHT | SIZE | QTY | UNIT | PRICE/UNIT | AMOUNT */}
           <section className="border-y border-border">
             <div className="overflow-x-auto">
-            <div className="md:min-w-[1050px]">
+            <div className="md:min-w-[960px]">
               <div className="mhead mgrid grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] border-b border-border bg-surface-2 text-[11px] font-bold uppercase text-muted-foreground">
                 <span className="px-2 py-3" />
                 <span className="px-2 py-3">Item</span>
@@ -844,11 +853,11 @@ function PosPage() {
                 <span className="px-2 py-3 text-right">Amount</span>
                 <span />
               </div>
-              <div className="relative border-t border-border bg-accent/20 focus-within:bg-accent/30 max-md:border-y-2 max-md:border-primary/60 max-md:bg-primary/5 max-md:shadow-[0_2px_10px_-2px] max-md:shadow-primary/20">
-                 <div className="mgrid grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] items-center py-1.5 max-md:py-2.5">
-                  <span className="px-2 text-center text-primary"><Zap className="mx-auto size-4" /></span>
+              <div className="entry-bar relative">
+                 <div className="mgrid grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_52px] items-center py-2.5 max-md:py-3">
+                   <span className="px-1 text-center"><span className="mx-auto grid size-7 place-items-center rounded-full bg-primary text-primary-foreground"><Zap className="size-4" /></span></span>
                   <div className="flex min-w-0 items-center gap-1 border-r border-border px-1.5">
-                    <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setCamOpen(true)} aria-label="Scan barcode with camera" title="Scan barcode with camera" className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-primary hover:bg-accent"><ScanBarcode className="size-4" /></button>
+                    <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setCamOpen(true)} aria-label="Scan barcode with camera" title="Scan barcode with camera" className="inline-flex size-9 shrink-0 items-center justify-center rounded-sm border border-primary/40 bg-background text-primary hover:bg-accent"><ScanBarcode className="size-4" /></button>
               <input
                 ref={scanRef}
                 autoFocus
@@ -884,7 +893,7 @@ function PosPage() {
                 }}
                 placeholder="Search or scan item · ↑↓ select · Enter add"
                 aria-label="Search or scan item"
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none max-md:text-base max-md:font-semibold max-md:placeholder:font-normal"
+                className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-muted-foreground max-md:text-base max-md:font-semibold max-md:placeholder:font-normal"
               />
                   </div>
                   <div onKeyDown={(e) => {
@@ -895,25 +904,25 @@ function PosPage() {
                     <span className="sr-only">Weight</span>
                     <input
                       value={sf.weight}
-                      placeholder="Weight · Tab next"
+                      placeholder={phone ? "Weight" : "Weight · Tab next"}
                       onChange={(e) => setSf((s) => ({ ...s, weight: e.target.value }))}
-                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none focus:border-ring"
+                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none placeholder:text-xs focus:border-ring"
                     />
                   </label>
                   <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
                     <span className="sr-only">Size</span>
                     <input
                       value={sf.size}
-                      placeholder="Size · Tab next"
+                      placeholder={phone ? "Size" : "Size · Tab next"}
                       onChange={(e) => setSf((s) => ({ ...s, size: e.target.value }))}
-                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none focus:border-ring"
+                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none placeholder:text-xs focus:border-ring"
                     />
                   </label>
                   <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
                     <span className="sr-only">Qty</span>
                     <input
                       value={sf.qty}
-                      placeholder="Qty · Enter adds"
+                      placeholder={phone ? "Qty ⏎" : "Qty · Enter adds"}
                       inputMode="decimal"
                       onChange={(e) => {
                         const qty = e.target.value;
@@ -930,7 +939,7 @@ function PosPage() {
                           return { ...s, qty, price: nextPrice, amount: Number.isFinite(q) && Number.isFinite(pr) && nextPrice !== "" ? String(r2local(q * pr)) : s.amount };
                         });
                       }}
-                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none focus:border-ring"
+                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none placeholder:text-xs focus:border-ring"
                     />
                   </label>
                   <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
@@ -938,14 +947,14 @@ function PosPage() {
                     <UnitSelect
                       value={sf.unit}
                       onChange={(v) => setSf((s) => ({ ...s, unit: v }))}
-                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-1 text-sm outline-none focus:border-ring"
+                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-1 text-sm outline-none placeholder:text-xs focus:border-ring"
                     />
                   </label>
                   <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
                     <span className="sr-only">Price/Unit</span>
                     <input
                       value={sf.price}
-                      placeholder="Price · Enter adds"
+                      placeholder={phone ? "Price ⏎" : "Price · Enter adds"}
                       inputMode="decimal"
                       onChange={(e) => {
                         const price = e.target.value;
@@ -955,14 +964,14 @@ function PosPage() {
                           return { ...s, price, amount: Number.isFinite(q) && Number.isFinite(pr) && price !== "" ? String(r2local(q * pr)) : s.amount };
                         });
                       }}
-                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none focus:border-ring"
+                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none placeholder:text-xs focus:border-ring"
                     />
                   </label>
                   <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
                     <span className="sr-only">Amount</span>
                     <input
                       value={sf.amount}
-                      placeholder="Amount · Enter adds"
+                      placeholder={phone ? "Amount ⏎" : "Amount · Enter adds"}
                       inputMode="decimal"
                       onChange={(e) => {
                         const amount = e.target.value;
@@ -977,7 +986,7 @@ function PosPage() {
                   </label>
                   </div>
                   <div className="px-1">
-                    <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={confirmStaged} aria-label={staged ? `Add ${staged.name} to bill` : "Select first match"} title={staged ? `Add ${staged.name} to bill` : "Select first match"} className="flex h-9 w-full items-center justify-center rounded-sm bg-primary text-primary-foreground hover:opacity-90"><Zap className="size-4" /></button>
+                    <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={confirmStaged} aria-label={staged ? `Add ${staged.name} to bill` : "Select first match"} title={staged ? `Add ${staged.name} to bill` : "Select first match"} className="entry-add flex h-11 w-full items-center justify-center rounded-sm bg-primary text-primary-foreground hover:opacity-90"><Zap className="size-5" /></button>
                   </div>
                 </div>
                 {dropOpen && !staged && !pendingNew && term.trim() && results.length ? (

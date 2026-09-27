@@ -221,6 +221,25 @@
   box-shadow: var(--shadow-glow);
 }
 
+/* The item-entry strip in billing screens is the most-used control on the page, so it
+   reads as one elevated band (tinted, edged, lifted) instead of another table row. */
+@utility entry-bar {
+  background: color-mix(in oklab, var(--primary) 9%, var(--background));
+  border-block: 2px solid color-mix(in oklab, var(--primary) 45%, transparent);
+  box-shadow: var(--shadow-elegant);
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+  &:focus-within {
+    background: color-mix(in oklab, var(--primary) 15%, var(--background));
+    border-block-color: var(--primary);
+    box-shadow: var(--shadow-elegant), 0 0 0 3px color-mix(in oklab, var(--ring) 30%, transparent);
+  }
+}
+
+/* The "add to bill" button at the end of the entry strip — solid, lifted, edged. */
+@utility entry-add {
+  box-shadow: var(--shadow-elegant), 0 0 0 1px color-mix(in oklab, var(--primary) 35%, transparent);
+}
+
 /* Apply the same restrained hover feedback to older native buttons and toggles. */
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   button:not(:disabled), [role="switch"]:not([aria-disabled="true"]) {

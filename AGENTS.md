@@ -13,3 +13,4 @@
 - Save bill-free sales returns through a dedicated permission-checked atomic database function; this keeps linked returns' invoice quantity limits intact while posting stock, refund, and accounting records together.
 
 - POS stock is tracked per store in pos_store_stock (products.stock stays the total); the browser sends the selected store as x-pos-store and database stock moves use it, so existing sale/purchase/return functions work unchanged.
+- Billing entry strips use the shared `entry-bar` / `entry-add` utilities in src/styles.css instead of per-screen background classes; this keeps the most-used row on every POS billing screen visually identical and clearly the primary control.

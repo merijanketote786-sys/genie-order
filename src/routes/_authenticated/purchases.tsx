@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/purchases")({
 type Line = { productId?: string; name: string; unit: string; qty: string; rate: string; discount: string; tax: string; batch: string; expiry: string };
 type Staged = { productId?: string; name: string; isNew: boolean };
 const num = (s: string) => Number(s.replace(/[^\d.]/g, "")) || 0;
-const GRID = "mgrid grid grid-cols-[36px_minmax(200px,2.4fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(100px,1fr)_minmax(80px,0.8fr)_minmax(70px,0.7fr)_minmax(110px,1fr)_42px] items-center gap-2";
+const GRID = "mgrid grid grid-cols-[36px_minmax(200px,2.4fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(100px,1fr)_minmax(80px,0.8fr)_minmax(70px,0.7fr)_minmax(110px,1fr)_52px] items-center gap-2";
 
 export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; startDocType?: "purchase" | "return" } = {}) {
   const qc = useQueryClient();
@@ -183,11 +183,11 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
                 <span className={head}>#</span><span className={head}>Item</span><span className={head}>Qty</span><span className={head}>Unit</span><span className={head}>Price/Unit</span><span className={head}>Disc</span><span className={head}>Tax %</span><span className={`${head} text-right`}>Amount</span><span />
               </div>
 
-              <div className="relative border-b border-border bg-accent/20 px-2 py-2 focus-within:bg-accent/30"
+              <div className="entry-bar relative px-2 py-2.5"
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.ctrlKey && !e.altKey && !e.metaKey && (e.target as HTMLElement).tagName !== "BUTTON") { e.preventDefault(); void confirm(); } else if (e.key === "Escape") clearEntry(); }}>
                 <div className={GRID}>
-                  <Zap className="size-4 text-primary" />
-                  <input ref={searchRef} className={cell} value={term} autoFocus aria-label="Search product"
+                  <span className="grid size-7 place-items-center rounded-full bg-primary text-primary-foreground"><Zap className="size-4" /></span>
+                  <input ref={searchRef} className={`${cell} font-medium`} value={term} autoFocus aria-label="Search product"
                     onChange={(e) => { setTerm(e.target.value); setStaged(null); setHi(0); }}
                     onKeyDown={(e) => { if (e.key === "ArrowDown") { e.preventDefault(); setHi((h) => Math.min(h + 1, matches.length - 1)); } else if (e.key === "ArrowUp") { e.preventDefault(); setHi((h) => Math.max(0, h - 1)); } }}
                     placeholder="Search or type new product · ↑↓ select · Enter add" />
@@ -197,7 +197,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
                   <input className={cell} value={sf.discount} inputMode="decimal" aria-label="Discount" placeholder="Disc" onChange={(e) => setSf({ ...sf, discount: e.target.value })} />
                   <input className={cell} value={sf.tax} inputMode="decimal" aria-label="Tax" placeholder="Tax %" onChange={(e) => setSf({ ...sf, tax: e.target.value })} />
                   <span className="text-right text-sm font-semibold">{rs(stagedAmount)}</span>
-                  <Button size="icon-sm" onClick={() => void confirm()} disabled={savingNew || !term.trim()} aria-label="Add to bill"><Zap /></Button>
+                  <Button size="icon-sm" className="entry-add h-11 w-full shrink-0 px-0" onClick={() => void confirm()} disabled={savingNew || !term.trim()} aria-label="Add to bill"><Zap className="size-5" /></Button>
                 </div>
                 {matches.length ? (
                   <ul ref={dropRef} role="listbox" className="relative z-30 ml-9 mt-1 max-h-72 w-[min(450px,90vw)] overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg">
