@@ -852,7 +852,7 @@ function CartRow({ index, line, focus, onFocused, onDone, onPatch, onRemove, loc
     setTotalText(raw);
     const t = line.taxIncl ? n(raw) : n(raw) / (1 + (line.taxPercent || 0) / 100);
     const q = line.qty || 1;
-    onPatch(line.key, { price: Math.round(((t + (line.discount || 0)) / q) * 100) / 100 });
+    onPatch(line.key, { price: Math.round(((t + (line.discount || 0)) / q) * 100) / 100, priceManual: true });
   };
   const small = "h-9 min-w-0 rounded-md border border-border bg-background px-2 text-sm outline-none focus:border-primary";
   return (
