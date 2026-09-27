@@ -82,6 +82,9 @@ export const saveParty = createServerFn({ method: "POST" })
     });
     if (!id) throw new Error("Phone number sahi nahi hai");
     const { error } = await supabase.from("customers").update({
+      name: data.name,
+      city: data.city || null,
+      address: data.address || null,
       courier_service_name: data.courierServiceName || null,
       goods_adda_name: data.goodsAddaName || null,
     }).eq("id", id);
