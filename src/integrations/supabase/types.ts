@@ -287,10 +287,12 @@ export type Database = {
         Row: {
           address: string | null
           city: string | null
+          courier_service_name: string | null
           created_at: string
           created_by: string | null
           credit_limit: number | null
           email: string | null
+          goods_adda_name: string | null
           id: string
           name: string | null
           opening_balance: number
@@ -301,10 +303,12 @@ export type Database = {
         Insert: {
           address?: string | null
           city?: string | null
+          courier_service_name?: string | null
           created_at?: string
           created_by?: string | null
           credit_limit?: number | null
           email?: string | null
+          goods_adda_name?: string | null
           id?: string
           name?: string | null
           opening_balance?: number
@@ -315,10 +319,12 @@ export type Database = {
         Update: {
           address?: string | null
           city?: string | null
+          courier_service_name?: string | null
           created_at?: string
           created_by?: string | null
           credit_limit?: number | null
           email?: string | null
+          goods_adda_name?: string | null
           id?: string
           name?: string | null
           opening_balance?: number
