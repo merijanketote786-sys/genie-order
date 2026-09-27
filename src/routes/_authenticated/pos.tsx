@@ -807,15 +807,88 @@ function PosPage() {
                 scanRef.current?.focus();
               }}
             />
-            {staged ? (
-              <p className="mt-1 rounded-lg border border-primary/50 bg-accent/40 px-3 py-1.5 text-xs font-semibold text-accent-foreground">
-                <span className="truncate">{staged.name}</span> is ready — press <K>Enter</K> or the ⚡ button to add it to the bill
-              </p>
-            ) : null}
-            {pendingNew && pendingNew === term.trim() ? (
-              <p className="mt-1 rounded-lg border border-primary/50 bg-accent/40 px-3 py-1.5 text-xs font-semibold text-accent-foreground">
-                {savingNew ? "Saving…" : <><span className="truncate">{pendingNew}</span> is not saved — press <K>Enter</K> again or ⚡ to save it to inventory and add it to the bill</>}
-              </p>
+            {staged || (pendingNew && pendingNew === term.trim()) ? (
+              <div className="mt-2 rounded-lg border border-primary/50 bg-accent/40 p-2.5">
+                <p className="mb-2 text-xs font-semibold text-accent-foreground">
+                  <span className="truncate">{(staged?.name ?? pendingNew) || ""}</span>
+                  {staged
+                    ? <> is ready — edit fields below, then press <K>Enter</K> or ⚡ to add</>
+                    : savingNew
+                      ? " — Saving…"
+                      : <> is not saved — set rate below, then press <K>Enter</K> again or ⚡ to save it to inventory and add it to the bill</>}
+                </p>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                  <label className="block">
+                    <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Qty</span>
+                    <input
+                      value={sf.qty}
+                      inputMode="decimal"
+                      onChange={(e) => {
+                        const qty = e.target.value;
+                        setSf((s) => {
+                          const q = Number(qty), pr = Number(s.price);
+                          return { ...s, qty, amount: Number.isFinite(q) && Number.isFinite(pr) && s.price !== "" ? String(r2local(q * pr)) : s.amount };
+                        });
+                      }}
+                      className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs outline-none focus:border-ring"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Unit</span>
+                    <UnitSelect
+                      value={sf.unit}
+                      onChange={(v) => setSf((s) => ({ ...s, unit: v }))}
+                      className="h-8 w-full rounded-md border border-input bg-background px-1 text-xs outline-none focus:border-ring"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Price/Unit</span>
+                    <input
+                      value={sf.price}
+                      inputMode="decimal"
+                      onChange={(e) => {
+                        const price = e.target.value;
+                        setSf((s) => {
+                          const q = Number(s.qty), pr = Number(price);
+                          return { ...s, price, amount: Number.isFinite(q) && Number.isFinite(pr) && price !== "" ? String(r2local(q * pr)) : s.amount };
+                        });
+                      }}
+                      className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs outline-none focus:border-ring"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Weight</span>
+                    <input
+                      value={sf.weight}
+                      onChange={(e) => setSf((s) => ({ ...s, weight: e.target.value }))}
+                      className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs outline-none focus:border-ring"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Size</span>
+                    <input
+                      value={sf.size}
+                      onChange={(e) => setSf((s) => ({ ...s, size: e.target.value }))}
+                      className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs outline-none focus:border-ring"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Amount</span>
+                    <input
+                      value={sf.amount}
+                      inputMode="decimal"
+                      onChange={(e) => {
+                        const amount = e.target.value;
+                        setSf((s) => {
+                          const q = Number(s.qty), am = Number(amount);
+                          return { ...s, amount, price: Number.isFinite(q) && q > 0 && Number.isFinite(am) && amount !== "" ? String(r2local(am / q)) : s.price };
+                        });
+                      }}
+                      className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs font-semibold outline-none focus:border-ring"
+                    />
+                  </label>
+                </div>
+              </div>
             ) : null}
             {pendingCode ? (
               <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-primary bg-accent p-2.5 text-xs text-accent-foreground">
