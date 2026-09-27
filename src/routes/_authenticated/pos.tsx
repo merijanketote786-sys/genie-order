@@ -794,9 +794,6 @@ function PosPage() {
                 <span className="px-2 py-3 text-right">Amount</span>
                 <span />
               </div>
-              {cart.map((l, i) => (
-                <CartRow key={l.key} index={i + 1} line={l} focus={focusKey === l.key} onFocused={() => setFocusKey(null)} onDone={() => scanRef.current?.focus()} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} taxRates={cfg.tax.enabled ? cfg.tax.rates : []} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
-              ))}
               <div className="relative border-t border-border bg-accent/20 focus-within:bg-accent/30">
                 <div className="grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] items-center py-1.5">
                   <span className="px-2 text-center text-primary"><Zap className="mx-auto size-4" /></span>
@@ -940,6 +937,10 @@ function PosPage() {
                 ) : null}
                 {pendingNew && pendingNew === term.trim() ? <p className="px-3 pb-1 text-xs text-muted-foreground">New item — press Enter again to save and add</p> : null}
               </div>
+
+              {cart.map((l, i) => (
+                <CartRow key={l.key} index={i + 1} line={l} focus={focusKey === l.key} onFocused={() => setFocusKey(null)} onDone={() => scanRef.current?.focus()} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} taxRates={cfg.tax.enabled ? cfg.tax.rates : []} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
+              ))}
 
               <div className="flex items-center justify-between gap-2 border-t border-border bg-surface px-3 py-2 text-xs text-muted-foreground">
                 <Button type="button" size="sm" variant="outline" className="h-7 text-xs uppercase" onClick={() => scanRef.current?.focus()}><Plus /> Add row</Button>
