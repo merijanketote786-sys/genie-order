@@ -17,6 +17,12 @@ export function CitySelect({ id, label, placeholder, value, onChange, compact }:
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+
+  // Arrow-key highlight ko scroll kar ke nazar me rakhta hai.
+  useEffect(() => {
+    listRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
+  }, [highlight]);
 
   const results = useMemo(() => (open ? searchCities(query) : []), [query, open]);
 
@@ -106,6 +112,7 @@ export function CitySelect({ id, label, placeholder, value, onChange, compact }:
 
       {!value && open && query.trim() !== "" && (
         <ul
+          ref={listRef}
           id={`${id}-list`}
           role="listbox"
           className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-border bg-card p-1 shadow-lg"
