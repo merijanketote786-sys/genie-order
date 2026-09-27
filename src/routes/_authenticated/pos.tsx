@@ -860,8 +860,11 @@ function CartRow({ index, line, focus, onFocused, onDone, onPatch, onRemove, loc
       <div className="grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] items-center text-sm">
         <div className="px-1 text-center text-xs font-semibold text-muted-foreground">{index}</div>
         <div className="min-w-0 px-2 py-2">
-          <p className="truncate font-semibold text-foreground" title={line.name}>{line.name}</p>
-          <Button size="sm" variant="ghost" className="h-6 px-0 text-xs text-muted-foreground" onClick={() => setShowNote((v) => !v)}><StickyNote className="size-3" /> {line.note ? "Edit note" : "Add note"}</Button>
+          <p className="truncate font-semibold text-foreground" title={line.name}>{line.name}{isWholesale(line) ? <span className="ml-2 rounded bg-primary/15 px-1.5 py-0.5 align-middle text-[10px] font-bold uppercase text-primary">Wholesale</span> : null}</p>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="ghost" className="h-6 px-0 text-xs text-muted-foreground" onClick={() => setShowNote((v) => !v)}><StickyNote className="size-3" /> {line.note ? "Edit note" : "Add note"}</Button>
+            {line.priceManual ? <Button size="sm" variant="ghost" className="h-6 px-0 text-xs text-muted-foreground" onClick={() => onPatch(line.key, { priceManual: false })}>Auto rate</Button> : null}
+          </div>
         </div>
         <div className="px-2"><input className={`${small} w-full`} value={line.weight ?? ""} placeholder="—" onChange={(e) => onPatch(line.key, { weight: e.target.value })} aria-label="Weight" /></div>
         <div className="px-2"><input className={`${small} w-full`} value={line.size ?? ""} placeholder="—" onChange={(e) => onPatch(line.key, { size: e.target.value })} aria-label="Size" /></div>
@@ -871,7 +874,7 @@ function CartRow({ index, line, focus, onFocused, onDone, onPatch, onRemove, loc
           <Button size="icon-sm" variant="ghost" className="h-7 w-6" onClick={() => onPatch(line.key, { qty: +(line.qty + 1).toFixed(3) })} aria-label="Increase"><Plus /></Button>
         </div>
         <div className="px-2"><UnitSelect className={`${small} w-full`} value={line.unitOverride?.trim() || line.unit || ""} onChange={(v) => onPatch(line.key, { unitOverride: v === line.unit ? undefined : v })} /></div>
-        <div className="px-2"><input className={`${small} w-full text-right`} value={String(line.price)} readOnly={lockPrice} onFocus={() => { if (lockPrice) onUnlock?.(); }} inputMode="decimal" onChange={(e) => onPatch(line.key, { price: n(e.target.value) })} aria-label="Rate" /></div>
+        <div className="px-2"><input className={`${small} w-full text-right ${isWholesale(line) ? "border-primary text-primary" : ""}`} value={String(line.price)} readOnly={lockPrice} onFocus={() => { if (lockPrice) onUnlock?.(); }} inputMode="decimal" onChange={(e) => onPatch(line.key, { price: n(e.target.value), priceManual: true })} aria-label="Rate" title={line.wholesaleMinQty ? `Wholesale rate applies from qty ${line.wholesaleMinQty}` : undefined} /></div>
         <div className="px-2"><input className={`${small} w-full text-right font-semibold text-foreground`} value={totalText ?? String(total)} readOnly={lockPrice} onFocus={() => { if (lockPrice) onUnlock?.(); }} inputMode="decimal" onChange={(e) => setTotal(e.target.value)} onBlur={() => setTotalText(null)} aria-label="Total" /></div>
         <Button size="icon-sm" variant="ghost" className="h-9 w-9" onClick={onRemove} aria-label="Remove"><Trash2 /></Button>
       </div>
