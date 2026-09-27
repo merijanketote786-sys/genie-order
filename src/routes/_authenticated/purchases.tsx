@@ -271,6 +271,12 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
           </div>
         </section>
       </div>
+  );
+  if (embedded) return <>{pc.node}{body}</>;
+  return (
+    <AppShell title="Purchases" subtitle="Stock purchases and supplier credit" active="/pos">
+      {pc.node}
+      {body}
     </AppShell>
   );
 }
