@@ -701,7 +701,16 @@ function PosPage() {
             <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+E</K> switch Invoice / Estimate</p>
             <div className="relative mt-3 max-w-2xl">
             <label className="flex h-11 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
-              <ScanBarcode className="size-4 text-primary" />
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setCamOpen(true)}
+                aria-label="Scan barcode with camera"
+                title="Scan barcode with camera"
+                className="inline-flex h-8 shrink-0 items-center justify-center rounded-md px-1.5 text-primary transition hover:scale-[1.05] hover:bg-accent active:scale-95 motion-reduce:transform-none"
+              >
+                <ScanBarcode className="size-4" />
+              </button>
               <input
                 ref={scanRef}
                 autoFocus
