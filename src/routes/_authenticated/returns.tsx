@@ -63,6 +63,8 @@ function ReturnsPage() {
   const lines = items.map((i) => ({ i, q: Math.min(Number(qty[i.id] || 0), i.qty - i.returned) })).filter((x) => x.q > 0);
   const total = lines.reduce((s, x) => s + x.q * x.i.unitRefund, 0);
 
+  const cell = "h-9 w-full rounded-sm border border-border bg-background px-2 text-sm";
+  const head = "text-[11px] font-bold uppercase tracking-wide text-muted-foreground";
   const lockRef = useRef(false);
   const opRef = useRef(newRef());
   const submit = async () => {
