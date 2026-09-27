@@ -85,6 +85,7 @@ function ReturnsPage() {
 
   const cell = "h-9 w-full rounded-sm border border-border bg-background px-2 text-sm";
   const head = "text-[11px] font-bold uppercase tracking-wide text-muted-foreground";
+  const grid = "grid grid-cols-[36px_minmax(200px,2.4fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(100px,1fr)_minmax(80px,0.8fr)_minmax(70px,0.7fr)_minmax(110px,1fr)_42px] items-center gap-2";
   const lockRef = useRef(false);
   const opRef = useRef(newRef());
   const submit = async () => {
@@ -117,24 +118,30 @@ function ReturnsPage() {
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />
         {pinNode}
-        <div className="inline-flex rounded-full border-2 border-primary p-0.5" role="tablist" aria-label="Return type">
-          <button type="button" role="tab" aria-selected={tab === "sale"} onClick={() => setTab("sale")} className={`rounded-full px-4 py-1.5 text-sm font-bold ${tab === "sale" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Sale Return</button>
-          <button type="button" role="tab" aria-selected={tab === "purchase"} onClick={() => setTab("purchase")} className={`rounded-full px-4 py-1.5 text-sm font-bold ${tab === "purchase" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Purchase Return</button>
-        </div>
+        {tab === "purchase" ? <div className="inline-flex rounded-full border-2 border-primary p-0.5" role="tablist" aria-label="Return type">
+          <Button type="button" role="tab" aria-selected={false} variant="ghost" onClick={() => setTab("sale")} className="rounded-full px-4 py-1.5 text-sm font-bold text-muted-foreground">Sale Return</Button>
+          <Button type="button" role="tab" aria-selected={true} className="rounded-full px-4 py-1.5 text-sm font-bold">Purchase Return</Button>
+        </div> : null}
         {tab === "purchase" ? <PurchasesPage embedded startDocType="return" /> : (
         <>
         <section className="overflow-hidden rounded-xl border border-border bg-card">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
-            <p className="text-lg font-bold text-foreground">Sale Return</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-lg font-bold text-foreground">Sale Return</p>
+              <div className="inline-flex rounded-full border-2 border-primary p-0.5" role="tablist" aria-label="Return type">
+                <Button type="button" role="tab" aria-selected={true} className="rounded-full px-4 py-1.5 text-sm font-bold">Sale Return</Button>
+                <Button type="button" role="tab" aria-selected={false} variant="ghost" onClick={() => setTab("purchase")} className="rounded-full px-4 py-1.5 text-sm font-bold text-muted-foreground">Purchase Return</Button>
+              </div>
+            </div>
             <div className="text-right text-sm text-muted-foreground">Bill date <b className="text-foreground">{new Date().toLocaleDateString("en-PK")}</b></div>
           </div>
 
-          <div className="relative flex flex-wrap items-center gap-2 px-4 py-3">
-            <label className="flex h-10 min-w-[280px] flex-1 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
+          <div className="relative px-4 py-3">
+            <label className="flex h-10 w-full items-center gap-2 rounded-lg border border-border bg-background px-3 focus-within:border-primary">
               <Search className="size-4 text-primary" />
               <input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search bill: invoice number, customer name or phone" aria-label="Search bill" />
             </label>
-            {sale ? <p className="text-sm font-semibold text-foreground">{sale.sale.number} · {sale.sale.customerName || "Walk-in"} · {rs(sale.sale.total)}</p> : null}
+            {sale ? <p className="mt-2 text-sm font-semibold text-foreground">{sale.sale.number} · {sale.sale.customerName || "Walk-in"} · {rs(sale.sale.total)}</p> : null}
             {q.trim() ? (
               <ul className="absolute left-4 right-4 top-full z-30 max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg">
                 {(found?.sales ?? []).map((s) => (
@@ -151,17 +158,19 @@ function ReturnsPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <div className="min-w-[820px]">
-              <div className="grid grid-cols-[36px_minmax(220px,2.4fr)_minmax(85px,0.7fr)_minmax(100px,0.8fr)_minmax(110px,0.9fr)_minmax(110px,1fr)_42px] items-center gap-2 border-y border-border bg-surface-2 px-2 py-2">
-                <span className={head}>#</span><span className={head}>Item</span><span className={head}>Qty</span><span className={head}>Unit</span><span className={head}>Price/Unit</span><span className={`${head} text-right`}>Amount</span><span />
+            <div className="min-w-[900px]">
+              <div className={`${grid} border-y border-border bg-surface-2 px-2 py-2`}>
+                <span className={head}>#</span><span className={head}>Item</span><span className={head}>Qty</span><span className={head}>Unit</span><span className={head}>Price/Unit</span><span className={head}>Disc</span><span className={head}>Tax %</span><span className={`${head} text-right`}>Amount</span><span />
               </div>
               <div className="relative border-b border-border bg-accent/20 px-2 py-2 focus-within:bg-accent/30" onKeyDown={(e) => { if (e.key === "Enter" && !e.ctrlKey && !e.altKey && !e.metaKey && (e.target as HTMLElement).tagName !== "BUTTON") { e.preventDefault(); addItem(); } else if (e.key === "Escape") resetEntry(); }}>
-                <div className="grid grid-cols-[36px_minmax(220px,2.4fr)_minmax(85px,0.7fr)_minmax(100px,0.8fr)_minmax(110px,0.9fr)_minmax(110px,1fr)_42px] items-center gap-2">
+                <div className={grid}>
                   <Zap className="size-4 text-primary" />
                   <input ref={itemRef} className={cell} value={itemSearch} disabled={!sale} onChange={(e) => { setItemSearch(e.target.value); setStagedId(null); }} placeholder={sale ? "Search item from selected bill" : "Select a bill first"} aria-label="Search return item" />
                   <input className={cell} inputMode="decimal" value={entryQty} onChange={(e) => setEntryQty(e.target.value.replace(/[^\d.]/g, ""))} disabled={!stagedItem} aria-label="Return Qty" />
                   <span className="truncate text-sm text-muted-foreground">{stagedItem?.unit || "—"}</span>
                   <span className="text-sm text-muted-foreground">{stagedItem ? rs(stagedItem.unitRefund) : "—"}</span>
+                  <span className="text-sm text-muted-foreground" title="Already included in the original bill's refund rate">—</span>
+                  <span className="text-sm text-muted-foreground" title="Already included in the original bill's refund rate">—</span>
                   <span className="text-right text-sm font-semibold">{stagedItem ? rs(Number(entryQty || 0) * stagedItem.unitRefund) : "—"}</span>
                   <Button size="icon-sm" onClick={addItem} disabled={!sale || !itemSearch.trim()} aria-label="Add return item"><Zap /></Button>
                 </div>
@@ -172,38 +181,39 @@ function ReturnsPage() {
               {lines.map(({ i, q: rq }, idx) => {
                 const left = Math.round((i.qty - i.returned) * 1000) / 1000;
                 return (
-                  <div key={i.id} className="grid grid-cols-[36px_minmax(220px,2.4fr)_minmax(85px,0.7fr)_minmax(100px,0.8fr)_minmax(110px,0.9fr)_minmax(110px,1fr)_42px] items-center gap-2 border-b border-border px-2 py-1.5">
+                  <div key={i.id} className={`${grid} border-b border-border px-2 py-1.5`}>
                     <span className="text-sm text-muted-foreground">{idx + 1}</span>
                     <span className="truncate text-sm font-medium text-foreground" title={`Sold ${i.qty}, previously returned ${i.returned}`}>{i.name}</span>
                     <input className={cell} inputMode="decimal" value={qty[i.id] ?? ""} onChange={(e) => { const value = e.target.value.replace(/[^\d.]/g, ""); if (!value || Number(value) <= left) setQty((m) => ({ ...m, [i.id]: value })); }} aria-label={`${i.name} return qty`} title={`Maximum ${left} ${i.unit}`} />
                     <span className="text-sm">{i.unit}</span>
                     <span className="text-sm">{rs(i.unitRefund)}</span>
+                    <span className="text-sm text-muted-foreground">—</span><span className="text-sm text-muted-foreground">—</span>
                     <span className="text-right text-sm font-semibold">{rs(rq * i.unitRefund)}</span>
                     <Button size="icon-sm" variant="ghost" onClick={() => setQty((m) => { const next = { ...m }; delete next[i.id]; return next; })} aria-label={`Remove ${i.name}`}><Trash2 /></Button>
                   </div>
                 );
               })}
-              {sale ? (
-                <div className="grid grid-cols-[36px_minmax(220px,2.4fr)_minmax(85px,0.7fr)_minmax(100px,0.8fr)_minmax(110px,0.9fr)_minmax(110px,1fr)_42px] items-center gap-2 bg-surface-2 px-2 py-2">
-                  <span /><Button size="sm" variant="outline" className="w-fit" onClick={() => itemRef.current?.focus()}>ADD ROW</Button><span className="text-sm font-bold">{lines.reduce((s, x) => s + x.q, 0)}</span><span /><span className="text-xs font-bold text-muted-foreground">TOTAL</span>
-                  <span className="text-right text-sm font-bold">{rs(total)}</span><span />
-                </div>
-              ) : null}
+              <div className={`${grid} bg-surface-2 px-2 py-2`}>
+                <span /><Button size="sm" variant="outline" className="w-fit rounded-full border-primary text-xs font-bold text-primary" onClick={() => itemRef.current?.focus()}>ADD ROW</Button><span className="text-sm font-bold">{lines.reduce((s, x) => s + x.q, 0)}</span><span /><span /><span /><span className="text-xs font-bold text-muted-foreground">TOTAL</span>
+                <span className="text-right text-sm font-bold">{rs(total)}</span><span />
+              </div>
             </div>
           </div>
 
-          {sale ? (
             <div className="grid gap-4 p-4 md:grid-cols-2">
               <div className="space-y-2">
-                <select className={posInput} value={mode} onChange={(e) => setMode(e.target.value as "refund" | "credit")} aria-label="Return mode">
+                <select className={posInput} value={mode} onChange={(e) => setMode(e.target.value as "refund" | "credit")} aria-label="Return mode" disabled={!sale}>
                   <option value="refund">Money back (refund)</option>
-                  <option value="credit" disabled={!sale.sale.hasCustomer}>Credit to customer account</option>
+                  <option value="credit" disabled={!sale?.sale.hasCustomer}>Credit to customer account</option>
                 </select>
-                {mode === "refund" ? <select className={posInput} value={method} onChange={(e) => setMethod(e.target.value)} aria-label="Refund method">{PAY_OPTS.map((m) => <option key={m}>{m}</option>)}</select> : null}
-                <textarea className={`${posInput} min-h-20 py-2`} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (optional)" />
+                {mode === "refund" ? <select className={posInput} value={method} onChange={(e) => setMethod(e.target.value)} aria-label="Refund method" disabled={!sale}>{PAY_OPTS.map((m) => <option key={m}>{m}</option>)}</select> : null}
+                <textarea className={`${posInput} min-h-20 py-2`} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Description / note" disabled={!sale} />
               </div>
               <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between border-t border-border pt-2 text-base"><span className="font-bold">{mode === "refund" ? "Refund amount" : "Credit amount"}</span><b className="text-foreground">{rs(total)}</b></div>
+                <div className="flex items-center justify-between gap-3 text-muted-foreground"><span>Discount (Rs)</span><span title="Original bill adjustments are already included in the refund rate">—</span></div>
+                <div className="flex items-center justify-between border-t border-border pt-2 text-base"><span className="font-bold">Total</span><b className="text-foreground">{rs(total)}</b></div>
+                <div className="flex items-center justify-between"><span className="text-muted-foreground">{mode === "refund" ? "Refunded" : "Customer credit"}</span><b className="text-foreground">{rs(total)}</b></div>
+                <div className="flex items-center justify-between"><span className="text-muted-foreground">Balance</span><b>{rs(0)}</b></div>
                 <div className="flex justify-end gap-2 pt-2">
                   <Button variant="outline" onClick={() => { setSaleId(null); setQty({}); setReason(""); resetEntry(); }}>Clear</Button>
                   <Button size="lg" disabled={!lines.length || saving} onClick={submit}><Undo2 /> Save return (stock +)</Button>
@@ -212,7 +222,6 @@ function ReturnsPage() {
                 <p className="text-right text-[11px] text-muted-foreground">Enter: select item / add row · Tab: next field · Esc: clear entry</p>
               </div>
             </div>
-          ) : null}
         </section>
 
         <section className="rounded-xl border border-border bg-card p-3">
