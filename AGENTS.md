@@ -11,3 +11,5 @@
 
 - Keep POS product search and staged field editing in the invoice table's entry row, aligned to the invoice columns; this makes keyboard entry and the bill a single continuous workflow.
 - Save bill-free sales returns through a dedicated permission-checked atomic database function; this keeps linked returns' invoice quantity limits intact while posting stock, refund, and accounting records together.
+
+- POS stock is tracked per store in pos_store_stock (products.stock stays the total); the browser sends the selected store as x-pos-store and database stock moves use it, so existing sale/purchase/return functions work unchanged.

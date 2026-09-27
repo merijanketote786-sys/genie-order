@@ -1,3 +1,4 @@
+import { withStore } from "@/lib/pos-store.server";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
@@ -129,9 +130,9 @@ export const savePurchase = createServerFn({ method: "POST" })
     const subtotal = r2(items.reduce((s, i) => s + i.line_total - i.tax_amount, 0));
     const tax = r2(items.reduce((s, i) => s + i.tax_amount, 0));
     const total = Math.max(0, r2(subtotal + tax - data.discount));
-    const { data: res, error } = await (context.supabase as Sb).rpc("pos_save_purchase", {
+    const { data: res, error } = await withStore((context.supabase as Sb).rpc("pos_save_purchase", {
       _p: { client_ref: data.clientRef ?? "", doc_type: data.docType, supplier_id: data.supplierId ?? "", supplier_name: data.supplierName ?? "", subtotal, discount_total: data.discount, tax_total: tax, grand_total: total, paid: data.paid, method: data.method, notes: data.notes ?? "", ref_purchase_id: data.refPurchaseId ?? "", items },
-    });
+    }));
     if (error || !res) { console.error(error); throw new Error(friendlyDbError(error, "Failed to save purchase.")); }
     return { ...(res as { id: string; number: string }), total };
   });
@@ -214,7 +215,7 @@ export const saveSalesReturn = createServerFn({ method: "POST" })
       return { product_id: it.productId ?? "", name: it.name, unit: it.unit, rate_type: it.rateType, qty: l.qty, stock_qty: r2(it.stockPerUnit * l.qty * 1000) / 1000, rate: it.unitRefund, line_total: r2(it.unitRefund * l.qty) };
     });
     const total = r2(items.reduce((s, i) => s + i.line_total, 0));
-    const { data: res, error } = await sb.rpc("pos_save_sale", {
+    const { data: res, error } = await withStore(sb.rpc("pos_save_sale", {
       _p: {
         doc_type: "return",
         client_ref: data.clientRef ?? "",
@@ -229,7 +230,7 @@ export const saveSalesReturn = createServerFn({ method: "POST" })
         ui: { lines: data.lines },
         items,
       },
-    });
+    }));
     if (error || !res) { console.error(error); throw new Error(friendlyDbError(error, "Failed to save return.")); }
     return { ...(res as { id: string; number: string }), total };
   });
@@ -243,10 +244,10 @@ export const saveUnlinkedSalesReturn = createServerFn({ method: "POST" })
     items: z.array(z.object({ productId: z.string().uuid(), name: z.string().min(1).max(300), unit: z.string().max(40), qty: z.number().positive().max(1e7), rate: amt })).min(1).max(300),
   }).parse(d))
   .handler(async ({ data, context }) => {
-    const { data: res, error } = await (context.supabase as Sb).rpc("pos_save_unlinked_return", { _p: {
+    const { data: res, error } = await withStore((context.supabase as Sb).rpc("pos_save_unlinked_return", { _p: {
       client_ref: data.clientRef, customer_id: data.customerId ?? "", customer_name: data.customerName ?? "",
       mode: data.mode, method: data.method, reason: data.reason ?? "", items: data.items.map((i) => ({ product_id: i.productId, name: i.name, unit: i.unit, qty: i.qty, rate: i.rate })),
-    } });
+    } }));
     if (error || !res) throw new Error(friendlyDbError(error, "Failed to save return."));
     return res as { id: string; number: string; total: number };
   });
@@ -262,7 +263,7 @@ export const cancelDoc = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), reason: z.string().max(300) }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await (context.supabase as Sb).rpc("pos_cancel_sale", { _id: data.id, _reason: data.reason });
+    const { error } = await withStore((context.supabase as Sb).rpc("pos_cancel_sale", { _id: data.id, _reason: data.reason }));
     if (error) throw new Error(friendlyDbError(error, "Failed to cancel."));
     return { ok: true };
   });

@@ -881,6 +881,72 @@ export type Database = {
         }
         Relationships: []
       }
+      pos_store_stock: {
+        Row: {
+          product_id: string
+          qty: number
+          store_id: string
+          workspace_id: string
+        }
+        Insert: {
+          product_id: string
+          qty?: number
+          store_id: string
+          workspace_id: string
+        }
+        Update: {
+          product_id?: string
+          qty?: number
+          store_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_store_stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_store_stock_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "pos_stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pos_stores: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          is_default: boolean
+          kind: string
+          name: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          kind?: string
+          name: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          kind?: string
+          name?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           barcode: string | null
@@ -905,6 +971,7 @@ export type Database = {
           scope: string
           sku: string | null
           stock: number
+          store_id: string | null
           tax_percent: number | null
           unit: string
           updated_at: string
@@ -935,6 +1002,7 @@ export type Database = {
           scope?: string
           sku?: string | null
           stock?: number
+          store_id?: string | null
           tax_percent?: number | null
           unit: string
           updated_at?: string
@@ -965,6 +1033,7 @@ export type Database = {
           scope?: string
           sku?: string | null
           stock?: number
+          store_id?: string | null
           tax_percent?: number | null
           unit?: string
           updated_at?: string
@@ -972,7 +1041,15 @@ export type Database = {
           wholesale_price?: number | null
           workspace_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "pos_stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1164,6 +1241,7 @@ export type Database = {
           product_id: string
           qty: number
           ref_id: string | null
+          store_id: string | null
           workspace_id: string
         }
         Insert: {
@@ -1175,6 +1253,7 @@ export type Database = {
           product_id: string
           qty: number
           ref_id?: string | null
+          store_id?: string | null
           workspace_id?: string
         }
         Update: {
@@ -1186,6 +1265,7 @@ export type Database = {
           product_id?: string
           qty?: number
           ref_id?: string | null
+          store_id?: string | null
           workspace_id?: string
         }
         Relationships: [
@@ -1194,6 +1274,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "pos_stores"
             referencedColumns: ["id"]
           },
         ]
@@ -1481,12 +1568,14 @@ export type Database = {
       }
       pos_close_doc: { Args: { _id: string }; Returns: undefined }
       pos_create_product: { Args: { _p: Json }; Returns: string }
+      pos_default_store: { Args: { _ws: string }; Returns: string }
       pos_delete_doc: { Args: { _id: string }; Returns: undefined }
       pos_delete_products: { Args: { _ids: string[] }; Returns: number }
       pos_find_customer: {
         Args: { _phone: string; _ws: string }
         Returns: string
       }
+      pos_list_stores: { Args: never; Returns: Json }
       pos_log_event: {
         Args: {
           _action: string
@@ -1520,6 +1609,7 @@ export type Database = {
         Returns: string
       }
       pos_perms: { Args: { _role: string }; Returns: string[] }
+      pos_request_store: { Args: { _ws: string }; Returns: string }
       pos_role: { Args: { _uid: string }; Returns: string }
       pos_save_printers: {
         Args: { _defaults: Json; _printers: Json }
@@ -1531,10 +1621,19 @@ export type Database = {
         Args: { _config: Json; _pin: string }
         Returns: undefined
       }
+      pos_save_store: {
+        Args: { _active: boolean; _id: string; _kind: string; _name: string }
+        Returns: string
+      }
       pos_save_unlinked_return: { Args: { _p: Json }; Returns: Json }
+      pos_set_common_products: { Args: { _on: boolean }; Returns: undefined }
       pos_set_member_role: {
         Args: { _role: string; _user: string }
         Returns: undefined
+      }
+      pos_transfer_stock: {
+        Args: { _from: string; _items: Json; _note: string; _to: string }
+        Returns: number
       }
       pos_update_product: {
         Args: { _id: string; _p: Json }

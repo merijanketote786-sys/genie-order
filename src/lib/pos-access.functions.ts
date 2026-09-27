@@ -1,3 +1,4 @@
+import { withStore } from "@/lib/pos-store.server";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
@@ -75,7 +76,7 @@ export const cancelWithPin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), reason: z.string().max(300), pin: z.string().max(8) }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await (context.supabase as Sb).rpc("pos_cancel_sale_pin", { _id: data.id, _reason: data.reason, _pin: data.pin });
+    const { error } = await withStore((context.supabase as Sb).rpc("pos_cancel_sale_pin", { _id: data.id, _reason: data.reason, _pin: data.pin }));
     if (error) throw new Error(error.message.includes("PIN") ? "Incorrect PIN" : "Could not cancel");
     return { ok: true };
   });

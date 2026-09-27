@@ -1,5 +1,6 @@
 import { PosCustomerSearch } from "@/components/pos-customer-search";
 import { PosSubnav } from "@/components/pos-subnav";
+import { StoreSwitcher, useActiveStore } from "@/components/store-switcher";
 import { usePinPrompt, usePosAccess } from "@/components/pos-access";
 import { AppShell } from "@/components/app-shell";
 import { UnitSelect } from "@/components/unit-select";
@@ -124,7 +125,14 @@ function PosPage() {
     const pin = await askPin("Enter manager PIN to change rate/discount (for this bill only).");
     if (pin) { setUnlocked(true); toast.success("Unlocked for this bill"); }
   };
-  const products = prodData?.products ?? [];
+  const activeStore = useActiveStore();
+  const products = useMemo(() => {
+    const all = prodData?.products ?? [];
+    const st = activeStore.stock;
+    if (!st) return all;
+    const vis = activeStore.commonProducts ? null : new Set(st.visibleNames);
+    return all.filter((p) => !vis || vis.has(p.name)).map((p) => (p.name in st.byName ? { ...p, stock: st.byName[p.name] } : p));
+  }, [prodData, activeStore.stock, activeStore.commonProducts]);
 
   const rate: RateType = "sale";
   const [focusKey, setFocusKey] = useState<string | null>(null);
@@ -681,6 +689,7 @@ function PosPage() {
               <span>{editing ? `Invoice ${editing.number}` : "New invoice"}</span>
               <span className="border-l border-border pl-3">{new Date().toLocaleDateString("en-PK")}</span>
               <Button type="button" size="sm" variant="outline" onClick={() => setGuideOpen(true)} title="Keyboard shortcuts (F1)"><Keyboard /> Shortcuts (F1)</Button>
+              <StoreSwitcher />
             </div>
           </div>
           <section className="px-4 pb-5 pt-6 sm:min-h-48 sm:px-6 sm:pb-8">

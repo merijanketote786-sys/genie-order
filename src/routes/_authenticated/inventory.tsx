@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { PosSubnav, posInput, rs } from "@/components/pos-subnav";
+import { StoreSwitcher, useActiveStore } from "@/components/store-switcher";
 import { Button } from "@/components/ui/button";
 import { adjustStock, getStockLedger, listInventory, updateProductDetails, type InvProduct } from "@/lib/inventory.functions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/inventory")({
   component: InventoryPage,
 });
 
-const KIND: Record<string, string> = { opening: "Opening", sale: "Sale", sale_return: "Sale return", purchase: "Purchase", purchase_return: "Purchase return", adjust_in: "Stock in", adjust_out: "Stock out", damage: "Damage" };
+const KIND: Record<string, string> = { opening: "Opening", sale: "Sale", sale_return: "Sale return", purchase: "Purchase", purchase_return: "Purchase return", adjust_in: "Stock in", adjust_out: "Stock out", damage: "Damage", transfer_in: "Transfer in", transfer_out: "Transfer out", cancel: "Cancel" };
 type Edit = Record<"salePrice" | "sku" | "barcode" | "category" | "brand" | "purchasePrice" | "wholesalePrice" | "wholesaleMinQty" | "minSalePrice" | "minStock" | "taxPercent", string>;
 const toEdit = (p: InvProduct): Edit => ({ salePrice: String(p.salePrice ?? 0), sku: p.sku, barcode: p.barcode, category: p.category, brand: p.brand, purchasePrice: p.purchasePrice?.toString() ?? "", wholesalePrice: p.wholesalePrice?.toString() ?? "", wholesaleMinQty: p.wholesaleMinQty?.toString() ?? "", minSalePrice: p.minSalePrice?.toString() ?? "", minStock: p.minStock?.toString() ?? "", taxPercent: p.taxPercent?.toString() ?? "" });
 const n = (s: string) => (s.trim() === "" ? null : Number(s) || 0);
@@ -42,7 +43,14 @@ function InventoryPage() {
   const [bulk, setBulk] = useState(false);
   const { data: led } = useQuery({ queryKey: ["stock-ledger", sel], queryFn: () => getStockLedger({ data: { id: sel! } }), enabled: !!sel });
 
-  const all = data?.products ?? [];
+  const activeStore = useActiveStore();
+  const all = useMemo(() => {
+    const list = data?.products ?? [];
+    const st = activeStore.stock;
+    if (!st) return list;
+    const vis = activeStore.commonProducts ? null : new Set(st.visibleIds);
+    return list.filter((p) => !vis || vis.has(p.id)).map((p) => ({ ...p, stock: st.byId[p.id] ?? 0 }));
+  }, [data, activeStore.stock, activeStore.commonProducts]);
   const cats = useMemo(() => [...new Set(all.map((p) => p.category).filter(Boolean))].sort(), [all]);
   const isLow = (p: InvProduct) => p.minStock != null && p.stock <= p.minStock;
   const list = useMemo(() => {
@@ -53,7 +61,7 @@ function InventoryPage() {
   const value = all.reduce((s, p) => s + Math.max(0, p.stock) * (p.purchasePrice ?? 0), 0);
   const noCost = all.filter((p) => p.purchasePrice == null).length;
 
-  const refresh = () => ["inventory", "stock-ledger", "products", "pos-products", "products-lite"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+  const refresh = () => ["store-stock", "inventory", "stock-ledger", "products", "pos-products", "products-lite"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   const saveEdit = async () => {
     if (!cur || !edit) return;
     try {
@@ -90,7 +98,7 @@ function InventoryPage() {
           ))}
         </div>
         {noCost ? <p className="text-xs text-muted-foreground">{noCost} products have no purchase price set — select a product and enter the purchase price to show accurate stock value and profit (or it fills in automatically on purchase).</p> : null}
-        <div className="flex justify-end gap-2"><Button variant={adding ? "secondary" : "outline"} onClick={() => setAdding((b) => !b)}><Plus /> New item</Button><Button variant={bulk ? "secondary" : "default"} onClick={() => setBulk((b) => !b)}><Table2 /> {bulk ? "Close bulk update" : "Bulk update items"}</Button></div>
+        <div className="flex justify-end gap-2"><StoreSwitcher /><Button variant={adding ? "secondary" : "outline"} onClick={() => setAdding((b) => !b)}><Plus /> New item</Button><Button variant={bulk ? "secondary" : "default"} onClick={() => setBulk((b) => !b)}><Table2 /> {bulk ? "Close bulk update" : "Bulk update items"}</Button></div>
         {adding ? <NewPosProduct onClose={() => setAdding(false)} onSaved={() => { setAdding(false); refresh(); }} /> : null}
         {bulk ? <BulkUpdateProducts products={all} onClose={() => setBulk(false)} onSaved={refresh} /> : null}
         <div className={`grid gap-3 lg:grid-cols-[1.2fr_1fr] ${bulk ? "hidden" : ""}`}>
