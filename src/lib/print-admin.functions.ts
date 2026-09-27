@@ -18,7 +18,7 @@ export const savePrinters = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({
     printers: z.array(printerSchema).max(30),
-    defaults: z.record(z.enum(["sales", "pos", "a4", "a5", "thermal", "report"]), z.string().max(40)),
+    defaults: z.partialRecord(z.enum(["sales", "pos", "a4", "a5", "thermal", "report"]), z.string().max(40)),
   }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await (context.supabase as Sb).rpc("pos_save_printers", { _printers: data.printers, _defaults: data.defaults });
