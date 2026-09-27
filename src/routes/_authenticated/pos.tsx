@@ -137,14 +137,20 @@ function PosPage() {
   const [docsOpen, setDocsOpen] = useState<"held" | "quotation" | null>(null);
   const [estimate, setEstimate] = useState(false);
   const payRef = useRef<HTMLDivElement>(null);
-  const pickCustomer = (c: { name: string | null; phone: string }) => {
+  const pickCustomer = (c: { name: string | null; phone: string; address: string | null; courierServiceName: string | null; goodsAddaName: string | null }) => {
     setCustomerName(c.name ?? "");
     setCustomerPhone(c.phone ?? "");
+    setCustomerAddress(c.address ?? "");
+    setCourierServiceName(c.courierServiceName ?? "");
+    setGoodsAddaName(c.goodsAddaName ?? "");
   };
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+  const [courierServiceName, setCourierServiceName] = useState("");
+  const [goodsAddaName, setGoodsAddaName] = useState("");
   const [partyOpen, setPartyOpen] = useState(false);
-  const [party, setParty] = useState({ name: "", phone: "", city: "", address: "" });
+  const [party, setParty] = useState({ name: "", phone: "", city: "", address: "", courierServiceName: "", goodsAddaName: "" });
   const [partySaving, setPartySaving] = useState(false);
 
   const addParty = async () => {
@@ -154,11 +160,10 @@ function PosPage() {
     }
     setPartySaving(true);
     try {
-      const r = await saveParty({ data: { name: party.name.trim(), phone: party.phone.trim(), city: party.city.trim() || undefined, address: party.address.trim() || undefined } });
-      setCustomerName(r.customer.name ?? "");
-      setCustomerPhone(r.customer.phone ?? "");
+      const r = await saveParty({ data: { name: party.name.trim(), phone: party.phone.trim(), city: party.city.trim() || undefined, address: party.address.trim() || undefined, courierServiceName: party.courierServiceName.trim() || undefined, goodsAddaName: party.goodsAddaName.trim() || undefined } });
+      pickCustomer(r.customer);
       setPartyOpen(false);
-      setParty({ name: "", phone: "", city: "", address: "" });
+      setParty({ name: "", phone: "", city: "", address: "", courierServiceName: "", goodsAddaName: "" });
       qc.invalidateQueries({ queryKey: ["pos-customers"] });
       toast.success("Party save ho gayi");
     } catch (e) {
@@ -372,6 +377,9 @@ function PosPage() {
     date: new Date().toLocaleString("en-PK"),
     customerName: customerName.trim() || undefined,
     customerPhone: customerPhone.trim() || undefined,
+    customerAddress: customerAddress.trim() || undefined,
+    courierServiceName: courierServiceName.trim() || undefined,
+    goodsAddaName: goodsAddaName.trim() || undefined,
     lines: cart,
     billDiscount: discAmt,
     delivery: n(delivery),
@@ -394,6 +402,9 @@ function PosPage() {
     if (!cfg.sales.keepCustomerAfterSale) {
       setCustomerName("");
       setCustomerPhone("");
+      setCustomerAddress("");
+      setCourierServiceName("");
+      setGoodsAddaName("");
     }
     setEditing(null);
     if (cfg.pos.autoFocusSearch) scanRef.current?.focus();
@@ -450,7 +461,7 @@ function PosPage() {
             lineTotal: lineTotal(l),
             note: [l.note, l.weight?.trim() ? `Wt: ${l.weight.trim()}` : "", l.size?.trim() ? `Size: ${l.size.trim()}` : ""].filter(Boolean).join(" · ") || undefined,
           })),
-          ui: { cart, billDiscount, discType, delivery, notes, customerName, customerPhone },
+           ui: { cart, billDiscount, discType, delivery, notes, customerName, customerPhone, customerAddress, courierServiceName, goodsAddaName },
           clientRef: docRef.current,
         },
       });
@@ -484,7 +495,7 @@ function PosPage() {
 
   const openDoc = (d: PosDocRow, asInvoice: boolean) => {
     try {
-      const ui = d.payload ? (JSON.parse(d.payload) as Partial<{ cart: CartLine[]; billDiscount: string; discType: "amt" | "pct"; delivery: string; notes: string; customerName: string; customerPhone: string }>) : {};
+      const ui = d.payload ? (JSON.parse(d.payload) as Partial<{ cart: CartLine[]; billDiscount: string; discType: "amt" | "pct"; delivery: string; notes: string; customerName: string; customerPhone: string; customerAddress: string; courierServiceName: string; goodsAddaName: string }>) : {};
       setCart(ui.cart ?? []);
       setBillDiscount(ui.billDiscount ?? "");
       setDiscType(ui.discType ?? "amt");
@@ -492,6 +503,9 @@ function PosPage() {
       setNotes(ui.notes ?? "");
       setCustomerName(ui.customerName ?? d.customer_name ?? "");
       setCustomerPhone(ui.customerPhone ?? d.customer_phone ?? "");
+      setCustomerAddress(ui.customerAddress ?? "");
+      setCourierServiceName(ui.courierServiceName ?? "");
+      setGoodsAddaName(ui.goodsAddaName ?? "");
       setPays([{ method: "Cash", amount: "" }]);
       setEditing(asInvoice ? { id: d.id, number: d.doc_number } : null);
       setDocsOpen(null);
@@ -586,11 +600,22 @@ function PosPage() {
           </div>
           <section className="px-4 pb-5 pt-6 sm:min-h-48 sm:px-6 sm:pb-8">
             <div ref={custRef} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:max-w-2xl sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-              <PosCustomerSearch field="name" className={inputCls} value={customerName} onChange={setCustomerName} onPick={pickCustomer} placeholder="Customer name (Walk-in)" />
-              <div className="col-start-1 row-start-2 sm:col-start-2 sm:row-start-1"><PosCustomerSearch field="phone" className={inputCls} value={customerPhone} onChange={setCustomerPhone} onPick={pickCustomer} placeholder="Phone (optional)" /></div>
+              <PosCustomerSearch field="name" className={inputCls} value={customerName} onChange={(v) => { setCustomerName(v); setCustomerAddress(""); setCourierServiceName(""); setGoodsAddaName(""); }} onPick={pickCustomer} placeholder="Customer name (Walk-in)" />
+              <div className="col-start-1 row-start-2 sm:col-start-2 sm:row-start-1"><PosCustomerSearch field="phone" className={inputCls} value={customerPhone} onChange={(v) => { setCustomerPhone(v); setCustomerAddress(""); setCourierServiceName(""); setGoodsAddaName(""); }} onPick={pickCustomer} placeholder="Phone (optional)" /></div>
               <Button type="button" variant="outline" className="col-start-2 row-start-1 h-10 gap-1.5 sm:col-start-3" onClick={() => setPartyOpen((o) => !o)} title="Add new party">
                 <UserPlus className="size-4" /> Party
               </Button>
+            </div>
+            <div className="mt-3 grid gap-2 sm:max-w-2xl sm:grid-cols-2">
+              <label className="text-xs font-medium text-muted-foreground sm:col-span-2">Customer address
+                <input className={inputCls} value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="Address (optional)" />
+              </label>
+              <label className="text-xs font-medium text-muted-foreground">Courier service
+                <input className={inputCls} value={courierServiceName} onChange={(e) => setCourierServiceName(e.target.value)} placeholder="Courier service name" />
+              </label>
+              <label className="text-xs font-medium text-muted-foreground">Goods adda
+                <input className={inputCls} value={goodsAddaName} onChange={(e) => setGoodsAddaName(e.target.value)} placeholder="Goods adda name" />
+              </label>
             </div>
             <p className="mt-1.5 text-[11px] text-muted-foreground"><K>Alt+C</K> customer name · <K>Alt+P</K> add new party</p>
             {partyOpen ? (
@@ -601,6 +626,8 @@ function PosPage() {
                   <input className={inputCls} placeholder="Phone *" inputMode="tel" value={party.phone} onChange={(e) => setParty((p) => ({ ...p, phone: e.target.value.replace(/[^\d+\s-]/g, "") }))} />
                   <input className={inputCls} placeholder="City" value={party.city} onChange={(e) => setParty((p) => ({ ...p, city: e.target.value }))} />
                   <input className={inputCls} placeholder="Address" value={party.address} onChange={(e) => setParty((p) => ({ ...p, address: e.target.value }))} />
+                  <input className={inputCls} placeholder="Courier service name" value={party.courierServiceName} onChange={(e) => setParty((p) => ({ ...p, courierServiceName: e.target.value }))} />
+                  <input className={inputCls} placeholder="Goods adda name" value={party.goodsAddaName} onChange={(e) => setParty((p) => ({ ...p, goodsAddaName: e.target.value }))} />
                 </div>
                 <div className="mt-2 flex justify-end gap-2">
                   <Button type="button" variant="ghost" size="sm" onClick={() => setPartyOpen(false)}>Cancel</Button>
@@ -608,9 +635,9 @@ function PosPage() {
                 </div>
               </div>
             ) : null}
-            <div className="mt-8 flex w-fit max-w-full gap-1 border-b border-border text-sm font-semibold">
-              <Button type="button" size="sm" variant="ghost" aria-pressed={!estimate} onClick={() => setEstimate(false)} className={`rounded-none border-b-2 ${!estimate ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>Invoice</Button>
-              <Button type="button" size="sm" variant="ghost" aria-pressed={estimate} onClick={() => setEstimate(true)} className={`rounded-none border-b-2 ${estimate ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>Estimate</Button>
+            <div className="mt-6 flex w-fit max-w-full gap-1 rounded-lg border-2 border-primary bg-muted p-1.5 shadow-sm" role="group" aria-label="Document type">
+              <Button type="button" size="sm" variant={estimate ? "ghost" : "default"} aria-pressed={!estimate} onClick={() => setEstimate(false)} className="min-w-24 shadow-sm">Invoice</Button>
+              <Button type="button" size="sm" variant={estimate ? "default" : "ghost"} aria-pressed={estimate} onClick={() => setEstimate(true)} className="min-w-24 shadow-sm">Estimate</Button>
             </div>
             <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+E</K> switch Invoice / Estimate</p>
             <div className="relative mt-3 max-w-2xl">
