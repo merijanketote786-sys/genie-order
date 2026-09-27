@@ -250,12 +250,19 @@ function PosPage() {
     const qty = ov?.qty != null && ov.qty > 0 ? ov.qty : 1;
     const wholesalePrice = useRate === "sale" ? p.wholesale ?? null : null;
     const wholesaleMinQty = useRate === "sale" ? p.wholesaleMinQty ?? null : null;
+    const basePrice = priceFor(p, useRate) ?? price;
+    // Entry row ki price agar product ki apni sale/wholesale rate hi hai to manual nahi — auto wholesale chalta rahe
+    const manual = ov?.price != null && ov.price !== basePrice && ov.price !== wholesalePrice;
+    const minSalePrice = useRate === "sale" ? p.minSalePrice ?? null : null;
+    if (manual && minSalePrice != null && minSalePrice > 0 && price > 0 && price < minSalePrice) {
+      toast.warning(`${p.name}: rate raised to min sale price Rs ${minSalePrice}`);
+    }
     const unitOverride = ov?.unit && ov.unit !== p.unit ? ov.unit : undefined;
     setCart((prev) => {
       const key = `${p.name}|${useRate}`;
       const ex = prev.find((l) => l.key === key);
       if (ex && !ov) return prev.map((l) => (l.key === key ? withAutoRate({ ...l, qty: l.qty + 1 }) : l));
-      return [...prev, withAutoRate({ key, name: p.name, unit: p.unit, unitOverride, rateType: useRate, price, basePrice: price, wholesalePrice, wholesaleMinQty, qty, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode, size: ov?.size || undefined, weight: ov?.weight || undefined, priceManual: ov?.price != null ? true : undefined })];
+      return [...prev, withAutoRate({ key, name: p.name, unit: p.unit, unitOverride, rateType: useRate, price: manual ? price : basePrice, basePrice, wholesalePrice, wholesaleMinQty, minSalePrice, qty, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode, size: ov?.size || undefined, weight: ov?.weight || undefined, priceManual: manual ? true : undefined })];
     });
     if (cfg.inventory.trackStock && cfg.inventory.warnOutOfStock && p.stock != null && p.stock <= 0) {
       toast.warning(`${p.name}: out of stock (${p.stock})${cfg.inventory.allowNegativeStock ? "" : " — bill will not save"}`);
@@ -435,8 +442,13 @@ function PosPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const patch = (key: string, v: Partial<CartLine>) =>
+  const patch = (key: string, v: Partial<CartLine>) => {
+    const line = cart.find((l) => l.key === key);
+    if (line && v.price != null && line.minSalePrice != null && line.minSalePrice > 0 && v.price > 0 && v.price < line.minSalePrice) {
+      toast.warning(`${line.name}: rate cannot be below min sale price Rs ${line.minSalePrice}`);
+    }
     setCart((prev) => prev.map((l) => (l.key === key ? withAutoRate({ ...l, ...v }) : l)));
+  };
 
   const pre = totals(cart, 0, 0);
   const discAmt = discType === "pct" ? Math.round(((pre.subtotal + pre.taxTotal) * Math.min(100, n(billDiscount))) / 100 * 100) / 100 : n(billDiscount);
@@ -880,8 +892,21 @@ function PosPage() {
                       onChange={(e) => {
                         const qty = e.target.value;
                         setSf((s) => {
-                          const q = Number(qty), pr = Number(s.price);
-                          return { ...s, qty, amount: Number.isFinite(q) && Number.isFinite(pr) && s.price !== "" ? String(r2local(q * pr)) : s.amount };
+                          const q = Number(qty);
+                          let price = s.price;
+                          // Auto wholesale: price agar product ki apni sale/wholesale rate hai to qty ke hisaab se switch karo
+                          if (staged) {
+                            const base = priceFor(staged, rate);
+                            const wp = rate === "sale" ? staged.wholesale : null;
+                            const mq = rate === "sale" ? staged.wholesaleMinQty : null;
+                            const cur = Number(s.price);
+                            if (s.price === "" || cur === base || (wp != null && cur === wp)) {
+                              const auto = wp != null && wp > 0 && mq != null && mq > 0 && Number.isFinite(q) && q >= mq ? wp : base;
+                              if (auto != null) price = String(auto);
+                            }
+                          }
+                          const pr = Number(price);
+                          return { ...s, qty, price, amount: Number.isFinite(q) && Number.isFinite(pr) && price !== "" ? String(r2local(q * pr)) : s.amount };
                         });
                       }}
                       className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none focus:border-ring"
