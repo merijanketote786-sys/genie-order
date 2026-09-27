@@ -32,6 +32,8 @@
     "@tanstack/react-router": "^1.170.16",
     "@tanstack/react-start": "^1.168.26",
     "@tanstack/router-plugin": "^1.168.18",
+    "@zxing/browser": "^0.2.1",
+    "@zxing/library": "^0.23.0",
     "ai": "^7.0.22",
     "baseline-browser-mapping": "^2.11.23",
     "browserslist": "^4.28.9",
