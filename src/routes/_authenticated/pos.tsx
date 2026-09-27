@@ -183,6 +183,9 @@ function PosPage() {
   const [staged, setStaged] = useState<DbProduct | null>(null);
   const [pendingNew, setPendingNew] = useState<string | null>(null);
   const [savingNew, setSavingNew] = useState(false);
+  // Staged product ke quick-edit fields (search bar ke neeche panel)
+  const [sf, setSf] = useState({ qty: "1", price: "", unit: "", size: "", weight: "", amount: "" });
+  const resetSf = () => setSf({ qty: "1", price: "", unit: "", size: "", weight: "", amount: "" });
   // Product shortcut boxes: default hidden, toggle se khulti hain (is device pe yaad rehta hai)
   const [showGrid, setShowGrid] = useState(false);
   useEffect(() => {
