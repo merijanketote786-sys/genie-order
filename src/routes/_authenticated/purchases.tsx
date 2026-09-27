@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/purchases")({
 type Line = { productId?: string; name: string; unit: string; qty: string; rate: string; discount: string; tax: string; batch: string; expiry: string };
 type Staged = { productId?: string; name: string; isNew: boolean };
 const num = (s: string) => Number(s.replace(/[^\d.]/g, "")) || 0;
-const GRID = "grid grid-cols-[36px_minmax(200px,2.4fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(100px,1fr)_minmax(80px,0.8fr)_minmax(70px,0.7fr)_minmax(110px,1fr)_42px] items-center gap-2";
+const GRID = "mgrid grid grid-cols-[36px_minmax(200px,2.4fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(100px,1fr)_minmax(80px,0.8fr)_minmax(70px,0.7fr)_minmax(110px,1fr)_42px] items-center gap-2";
 
 export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; startDocType?: "purchase" | "return" } = {}) {
   const qc = useQueryClient();
@@ -171,15 +171,15 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
           </div>
 
           <div className="flex flex-wrap items-center gap-2 px-4 py-3">
-            <select className={`${posInput} min-w-[260px] flex-1`} value={supplierId} onChange={(e) => setSupplierId(e.target.value)} aria-label="Supplier">
+            <select className={`${posInput} min-w-0 sm:min-w-[260px] flex-1`} value={supplierId} onChange={(e) => setSupplierId(e.target.value)} aria-label="Supplier">
               <option value="">— Cash purchase (no supplier) —</option>
               {(sup?.suppliers ?? []).map((s) => <option key={s.id} value={s.id}>{s.name} · balance {rs(s.balance)}</option>)}
             </select>
           </div>
 
           <div className="overflow-x-auto">
-            <div className="min-w-[900px]">
-              <div className={`${GRID} border-y border-border bg-surface-2 px-2 py-2`}>
+            <div className="md:min-w-[900px]">
+              <div className={`mhead ${GRID} border-y border-border bg-surface-2 px-2 py-2`}>
                 <span className={head}>#</span><span className={head}>Item</span><span className={head}>Qty</span><span className={head}>Unit</span><span className={head}>Price/Unit</span><span className={head}>Disc</span><span className={head}>Tax %</span><span className={`${head} text-right`}>Amount</span><span />
               </div>
 
@@ -228,7 +228,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
                 </div>
               ))}
 
-              <div className={`${GRID} bg-surface-2 px-2 py-2`}>
+              <div className={`mtotal ${GRID} bg-surface-2 px-2 py-2`}>
                 <span />
                 <button type="button" className="w-fit rounded-md border border-primary px-3 py-1 text-xs font-bold text-primary" onClick={() => searchRef.current?.focus()}>ADD ROW</button>
                 <span className="text-sm font-bold">{totalQty}</span><span /><span /><span /><span className="text-xs font-bold text-muted-foreground">TOTAL</span>

@@ -713,7 +713,7 @@ function PosPage() {
         <div className="border border-border bg-card">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-6">
             <h1 className="text-lg font-bold text-foreground">{estimate ? "Estimate" : "Sale"}</h1>
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground sm:gap-3">
               <span>{editing ? `Invoice ${editing.number}` : "New invoice"}</span>
               <span className="border-l border-border pl-3">{new Date().toLocaleDateString("en-PK")}</span>
               <Button type="button" size="sm" variant="outline" onClick={() => setGuideOpen(true)} title="Keyboard shortcuts (F1)"><Keyboard /> Shortcuts (F1)</Button>
@@ -816,8 +816,8 @@ function PosPage() {
           {/* Sale invoice grid — Vyapar jaisi table: # | ITEM | WEIGHT | SIZE | QTY | UNIT | PRICE/UNIT | AMOUNT */}
           <section className="border-y border-border">
             <div className="overflow-x-auto">
-            <div className="min-w-[1050px]">
-              <div className="grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] border-b border-border bg-surface-2 text-[11px] font-bold uppercase text-muted-foreground">
+            <div className="md:min-w-[1050px]">
+              <div className="mhead mgrid grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] border-b border-border bg-surface-2 text-[11px] font-bold uppercase text-muted-foreground">
                 <span className="px-2 py-3" />
                 <span className="px-2 py-3">Item</span>
                 <span className="px-2 py-3">Weight</span>
@@ -829,7 +829,7 @@ function PosPage() {
                 <span />
               </div>
               <div className="relative border-t border-border bg-accent/20 focus-within:bg-accent/30">
-                <div className="grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] items-center py-1.5">
+                <div className="mgrid grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] items-center py-1.5">
                   <span className="px-2 text-center text-primary"><Zap className="mx-auto size-4" /></span>
                   <div className="flex min-w-0 items-center gap-1 border-r border-border px-1.5">
                     <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setCamOpen(true)} aria-label="Scan barcode with camera" title="Scan barcode with camera" className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-primary hover:bg-accent"><ScanBarcode className="size-4" /></button>
@@ -1006,7 +1006,7 @@ function PosPage() {
                 <span className="hidden sm:inline"><K>Enter</K> add item · <K>Tab</K> next field · <K>Ctrl+Shift+Backspace</K> remove last item</span>
                 <span>{cart.length} {cart.length === 1 ? "item" : "items"}</span>
               </div>
-              <div className="grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] border-t border-border bg-surface-2 text-sm font-semibold text-foreground">
+              <div className="mtotal mgrid grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] border-t border-border bg-surface-2 text-sm font-semibold text-foreground">
                 <span className="col-span-4 px-2 py-2.5 pr-4 text-right text-[11px] font-bold uppercase text-muted-foreground">Total</span>
                 <span className="px-2 py-2.5 text-center">{qtyTotal ? money(qtyTotal) : ""}</span>
                 <span className="px-2 py-2.5" />
@@ -1124,7 +1124,7 @@ function CartRow({ index, line, focus, onFocused, onDone, onPatch, onRemove, loc
   const small = "h-9 min-w-0 rounded-md border border-border bg-background px-2 text-sm outline-none focus:border-primary";
   return (
     <div className="border-b border-border even:bg-surface/60">
-      <div className="grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] items-center text-sm">
+      <div className="mrow-sale mgrid grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] items-center text-sm">
         <div className="px-1 text-center text-xs font-semibold text-muted-foreground">{index}</div>
         <div className="min-w-0 px-2 py-2">
           <p className="truncate font-semibold text-foreground" title={line.name}>{line.name}{isWholesale(line) ? <span className="ml-2 rounded bg-primary/15 px-1.5 py-0.5 align-middle text-[10px] font-bold uppercase text-primary">Wholesale</span> : null}</p>
