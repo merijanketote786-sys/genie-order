@@ -129,7 +129,7 @@ function ReturnsPage() {
 
   const cell = "h-9 w-full rounded-sm border border-border bg-background px-2 text-sm";
   const head = "text-[11px] font-bold uppercase tracking-wide text-muted-foreground";
-  const grid = "grid grid-cols-[36px_minmax(200px,2.4fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(100px,1fr)_minmax(80px,0.8fr)_minmax(70px,0.7fr)_minmax(110px,1fr)_42px] items-center gap-2";
+  const grid = "mgrid grid grid-cols-[36px_minmax(200px,2.4fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(100px,1fr)_minmax(80px,0.8fr)_minmax(70px,0.7fr)_minmax(110px,1fr)_42px] items-center gap-2";
   const lockRef = useRef(false);
   const opRef = useRef(newRef());
   const submit = async () => {
@@ -207,8 +207,8 @@ function ReturnsPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <div className="min-w-[900px]">
-              <div className={`${grid} border-y border-border bg-surface-2 px-2 py-2`}>
+            <div className="md:min-w-[900px]">
+              <div className={`mhead ${grid} border-y border-border bg-surface-2 px-2 py-2`}>
                 <span className={head}>#</span><span className={head}>Item</span><span className={head}>Qty</span><span className={head}>Unit</span><span className={head}>Price/Unit</span><span className={head}>Disc</span><span className={head}>Tax %</span><span className={`${head} text-right`}>Amount</span><span />
               </div>
               <div className="relative border-b border-border bg-accent/20 px-2 py-2 focus-within:bg-accent/30" onKeyDown={(e) => { if (e.key === "Enter" && !e.ctrlKey && !e.altKey && !e.metaKey && (e.target as HTMLElement).tagName !== "BUTTON") { e.preventDefault(); addItem(); } else if (e.key === "Escape") resetEntry(); }}>
@@ -244,7 +244,7 @@ function ReturnsPage() {
                 );
               })}
               {!saleId && freeLines.map((l, idx) => <div key={`${l.productId}-${idx}`} className={`${grid} border-b border-border px-2 py-1.5`}><span className="text-sm text-muted-foreground">{idx + 1}</span><span className="truncate text-sm font-medium">{l.name}</span><input className={cell} inputMode="decimal" value={l.qty} onChange={(e) => { const qty = Number(e.target.value); if (qty > 0 && qty <= 1e7) setFreeLines((prev) => prev.map((x, j) => j === idx ? { ...x, qty } : x)); }} aria-label={`${l.name} return qty`} /><span>{l.unit}</span><input className={cell} inputMode="decimal" value={l.rate} onChange={(e) => { const rate = Number(e.target.value); if (rate >= 0 && rate <= 1e9) setFreeLines((prev) => prev.map((x, j) => j === idx ? { ...x, rate } : x)); }} aria-label={`${l.name} return price`} /><span className="text-muted-foreground">—</span><span className="text-muted-foreground">—</span><span className="text-right font-semibold">{rs(l.qty * l.rate)}</span><Button size="icon-sm" variant="ghost" onClick={() => setFreeLines((prev) => prev.filter((_, j) => j !== idx))} aria-label={`Remove ${l.name}`}><Trash2 /></Button></div>)}
-              <div className={`${grid} bg-surface-2 px-2 py-2`}>
+              <div className={`mtotal ${grid} bg-surface-2 px-2 py-2`}>
                 <span /><Button size="sm" variant="outline" className="w-fit rounded-full border-primary text-xs font-bold text-primary" onClick={() => itemRef.current?.focus()}>ADD ROW</Button><span className="text-sm font-bold">{saleId ? lines.reduce((s, x) => s + x.q, 0) : freeLines.reduce((s, x) => s + x.qty, 0)}</span><span /><span /><span /><span className="text-xs font-bold text-muted-foreground">TOTAL</span>
                 <span className="text-right text-sm font-bold">{rs(total)}</span><span />
               </div>
