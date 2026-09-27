@@ -129,7 +129,7 @@ function ReturnsPage() {
 
   const cell = "h-9 w-full rounded-sm border border-border bg-background px-2 text-sm";
   const head = "text-[11px] font-bold uppercase tracking-wide text-muted-foreground";
-  const grid = "mgrid grid grid-cols-[36px_minmax(200px,2.4fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(100px,1fr)_minmax(80px,0.8fr)_minmax(70px,0.7fr)_minmax(110px,1fr)_42px] items-center gap-2";
+  const grid = "mgrid grid grid-cols-[36px_minmax(200px,2.4fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(100px,1fr)_minmax(80px,0.8fr)_minmax(70px,0.7fr)_minmax(110px,1fr)_52px] items-center gap-2";
   const lockRef = useRef(false);
   const opRef = useRef(newRef());
   const submit = async () => {
@@ -211,9 +211,9 @@ function ReturnsPage() {
               <div className={`mhead ${grid} border-y border-border bg-surface-2 px-2 py-2`}>
                 <span className={head}>#</span><span className={head}>Item</span><span className={head}>Qty</span><span className={head}>Unit</span><span className={head}>Price/Unit</span><span className={head}>Disc</span><span className={head}>Tax %</span><span className={`${head} text-right`}>Amount</span><span />
               </div>
-              <div className="relative border-b border-border bg-accent/20 px-2 py-2 focus-within:bg-accent/30" onKeyDown={(e) => { if (e.key === "Enter" && !e.ctrlKey && !e.altKey && !e.metaKey && (e.target as HTMLElement).tagName !== "BUTTON") { e.preventDefault(); addItem(); } else if (e.key === "Escape") resetEntry(); }}>
+              <div className="entry-bar relative px-2 py-2.5" onKeyDown={(e) => { if (e.key === "Enter" && !e.ctrlKey && !e.altKey && !e.metaKey && (e.target as HTMLElement).tagName !== "BUTTON") { e.preventDefault(); addItem(); } else if (e.key === "Escape") resetEntry(); }}>
                 <div className={grid}>
-                  <Zap className="size-4 text-primary" />
+                  <span className="grid size-7 place-items-center rounded-full bg-primary text-primary-foreground"><Zap className="size-4" /></span>
                   <div className="flex min-w-0 items-center gap-1"><input ref={itemRef} className={`${cell} min-w-0 flex-1`} value={itemSearch} onChange={(e) => { setItemSearch(e.target.value); setStagedId(null); setPendingNew(false); }} placeholder={saleId ? "Search item from selected bill · Enter select" : "Search or type new POS product · Enter select"} aria-label="Search return item" />{!saleId ? <Button size="icon-sm" variant="ghost" className="shrink-0" title="Scan barcode" aria-label="Scan barcode with camera" onClick={() => setCameraOpen(true)}><ScanBarcode /></Button> : null}</div>
                   <input className={cell} inputMode="decimal" value={entryQty} onChange={(e) => setEntryQty(e.target.value.replace(/[^\d.]/g, ""))} disabled={!stagedItem && !stagedProduct && !pendingNew} aria-label="Return Qty" />
                   {saleId ? <span className="truncate text-sm text-muted-foreground">{stagedItem?.unit || "—"}</span> : <UnitSelect className={cell} value={entryUnit} onChange={setEntryUnit} label="Return unit" />}
@@ -221,7 +221,7 @@ function ReturnsPage() {
                   <span className="text-sm text-muted-foreground" title="Already included in the original bill's refund rate">—</span>
                   <span className="text-sm text-muted-foreground" title="Already included in the original bill's refund rate">—</span>
                   <span className="text-right text-sm font-semibold">{stagedItem || stagedProduct || pendingNew ? rs(Number(entryQty || 0) * (stagedItem?.unitRefund ?? Number(entryRate || 0))) : "—"}</span>
-                  <Button size="icon-sm" onClick={() => void addItem()} disabled={!itemSearch.trim() || savingNew} aria-label="Add return item"><Zap /></Button>
+                  <Button size="icon-sm" className="h-11 w-full shrink-0 px-0 shadow-elegant" onClick={() => void addItem()} disabled={!itemSearch.trim() || savingNew} aria-label="Add return item"><Zap className="size-5" /></Button>
                 </div>
                 {pendingNew ? <p className="ml-9 mt-1 text-xs text-muted-foreground">New product — press Enter again to save it to inventory and add it to this return.</p> : null}
                 {matches.length ? <ul role="listbox" className="relative z-30 ml-9 mt-1 max-h-72 w-[min(450px,90vw)] overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg">
