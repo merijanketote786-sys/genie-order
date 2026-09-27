@@ -139,9 +139,10 @@ function PosPage() {
   const [docsOpen, setDocsOpen] = useState<"held" | "quotation" | null>(null);
   const [estimate, setEstimate] = useState(false);
   const payRef = useRef<HTMLDivElement>(null);
-  const pickCustomer = (c: { name: string | null; phone: string; address: string | null; courierServiceName: string | null; goodsAddaName: string | null }) => {
+  const pickCustomer = (c: { name: string | null; phone: string; city: string | null; address: string | null; courierServiceName: string | null; goodsAddaName: string | null }) => {
     setCustomerName(c.name ?? "");
     setCustomerPhone(c.phone ?? "");
+    setCustomerCityArea(c.city ?? "");
     setCustomerAddress(c.address ?? "");
     setCourierServiceName(c.courierServiceName ?? "");
     setGoodsAddaName(c.goodsAddaName ?? "");
@@ -149,6 +150,7 @@ function PosPage() {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
+  const [customerCityArea, setCustomerCityArea] = useState("");
   const [courierServiceName, setCourierServiceName] = useState("");
   const [goodsAddaName, setGoodsAddaName] = useState("");
   const [partyOpen, setPartyOpen] = useState(false);
@@ -457,6 +459,7 @@ function PosPage() {
     customerName: customerName.trim() || undefined,
     customerPhone: customerPhone.trim() || undefined,
     customerAddress: customerAddress.trim() || undefined,
+    customerCityArea: customerCityArea.trim() || undefined,
     courierServiceName: courierServiceName.trim() || undefined,
     goodsAddaName: goodsAddaName.trim() || undefined,
     lines: cart,
@@ -576,7 +579,7 @@ function PosPage() {
 
   const openDoc = (d: PosDocRow, asInvoice: boolean) => {
     try {
-      const ui = d.payload ? (JSON.parse(d.payload) as Partial<{ cart: CartLine[]; billDiscount: string; discType: "amt" | "pct"; delivery: string; notes: string; customerName: string; customerPhone: string; customerAddress: string; courierServiceName: string; goodsAddaName: string }>) : {};
+      const ui = d.payload ? (JSON.parse(d.payload) as Partial<{ cart: CartLine[]; billDiscount: string; discType: "amt" | "pct"; delivery: string; notes: string; customerName: string; customerPhone: string; customerAddress: string; customerCityArea: string; courierServiceName: string; goodsAddaName: string }>) : {};
       setCart(ui.cart ?? []);
       setBillDiscount(ui.billDiscount ?? "");
       setDiscType(ui.discType ?? "amt");
@@ -585,6 +588,7 @@ function PosPage() {
       setCustomerName(ui.customerName ?? d.customer_name ?? "");
       setCustomerPhone(ui.customerPhone ?? d.customer_phone ?? "");
       setCustomerAddress(ui.customerAddress ?? "");
+      setCustomerCityArea(ui.customerCityArea ?? "");
       setCourierServiceName(ui.courierServiceName ?? "");
       setGoodsAddaName(ui.goodsAddaName ?? "");
       setPays([{ method: "Cash", amount: "" }]);
@@ -680,23 +684,16 @@ function PosPage() {
             </div>
           </div>
           <section className="px-4 pb-5 pt-6 sm:min-h-48 sm:px-6 sm:pb-8">
-            <div ref={custRef} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:max-w-2xl sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-              <PosCustomerSearch field="name" className={inputCls} value={customerName} onChange={(v) => { setCustomerName(v); setCustomerAddress(""); setCourierServiceName(""); setGoodsAddaName(""); }} onPick={pickCustomer} placeholder="Customer name (Walk-in)" />
-              <div className="col-start-1 row-start-2 sm:col-start-2 sm:row-start-1"><PosCustomerSearch field="phone" className={inputCls} value={customerPhone} onChange={(v) => { setCustomerPhone(v); setCustomerAddress(""); setCourierServiceName(""); setGoodsAddaName(""); }} onPick={pickCustomer} placeholder="Phone (optional)" /></div>
-              <Button type="button" variant="outline" className="col-start-2 row-start-1 h-10 gap-1.5 sm:col-start-3" onClick={() => setPartyOpen((o) => !o)} title="Add new party">
+            <div ref={custRef} className="flex flex-wrap items-center gap-2">
+              <div className="min-w-[180px] flex-[1.4_1_0%]"><PosCustomerSearch field="name" className={inputCls} value={customerName} onChange={(v) => { setCustomerName(v); setCustomerCityArea(""); setCustomerAddress(""); setCourierServiceName(""); setGoodsAddaName(""); }} onPick={pickCustomer} placeholder="Customer name (Walk-in)" /></div>
+              <div className="min-w-[140px] flex-[1_1_0%]"><PosCustomerSearch field="phone" className={inputCls} value={customerPhone} onChange={(v) => { setCustomerPhone(v); setCustomerCityArea(""); setCustomerAddress(""); setCourierServiceName(""); setGoodsAddaName(""); }} onPick={pickCustomer} placeholder="Phone" /></div>
+              <input aria-label="City / Area" className={`min-w-[130px] flex-[1_1_0%] ${inputCls}`} value={customerCityArea} onChange={(e) => setCustomerCityArea(e.target.value)} placeholder="City / Area" />
+              <input aria-label="Customer address" className={`min-w-[180px] flex-[1.5_1_0%] ${inputCls}`} value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="Address (optional)" />
+              <input aria-label="Courier service" className={`min-w-[150px] flex-[1_1_0%] ${inputCls}`} value={courierServiceName} onChange={(e) => setCourierServiceName(e.target.value)} placeholder="Courier service" />
+              <input aria-label="Goods adda" className={`min-w-[150px] flex-[1_1_0%] ${inputCls}`} value={goodsAddaName} onChange={(e) => setGoodsAddaName(e.target.value)} placeholder="Goods adda" />
+              <Button type="button" variant="outline" className="h-10 gap-1.5" onClick={() => setPartyOpen((o) => !o)} title="Add new party">
                 <UserPlus className="size-4" /> Party
               </Button>
-            </div>
-            <div className="mt-3 grid gap-2 sm:max-w-2xl sm:grid-cols-2">
-              <label className="text-xs font-medium text-muted-foreground sm:col-span-2">Customer address
-                <input className={inputCls} value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="Address (optional)" />
-              </label>
-              <label className="text-xs font-medium text-muted-foreground">Courier service
-                <input className={inputCls} value={courierServiceName} onChange={(e) => setCourierServiceName(e.target.value)} placeholder="Courier service name" />
-              </label>
-              <label className="text-xs font-medium text-muted-foreground">Goods adda
-                <input className={inputCls} value={goodsAddaName} onChange={(e) => setGoodsAddaName(e.target.value)} placeholder="Goods adda name" />
-              </label>
             </div>
             <p className="mt-1.5 text-[11px] text-muted-foreground"><K>Alt+C</K> customer name · <K>Alt+P</K> add new party</p>
             {partyOpen ? (
