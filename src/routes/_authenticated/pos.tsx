@@ -235,6 +235,31 @@ function PosPage() {
     } else toast.success(`${p.name} added to cart`, { duration: 1200 });
   };
 
+  // Two-step add: selecting a product first lands its name in the search bar;
+  // Enter again or the ⚡ button then adds it to the bill.
+  const stage = (p: DbProduct) => {
+    setStaged(p);
+    setTerm(p.name);
+    setHi(-1);
+    setDropOpen(false);
+    scanRef.current?.focus();
+  };
+  const confirmStaged = () => {
+    const t = term.trim().toLowerCase();
+    if (staged && t === staged.name.toLowerCase()) {
+      add(staged);
+      setTerm("");
+      setStaged(null);
+      setHi(-1);
+      return;
+    }
+    const exact = results.find((p) => p.name.toLowerCase() === t);
+    const pick = exact ?? results[0];
+    if (pick) stage(pick);
+    else onScan();
+  };
+
+
   // Barcode ↔ product links (company ke apne barcodes ke liye), is device pe saved
   const [links, setLinks] = useState<Record<string, { name: string; rate: RateType }>>({});
   const [pendingCode, setPendingCode] = useState<string | null>(null);
