@@ -189,6 +189,12 @@ function PosPage() {
   const scanRef = useRef<HTMLInputElement>(null);
   const [camOpen, setCamOpen] = useState(false);
   const [hi, setHi] = useState(-1);
+  const dropRef = useRef<HTMLUListElement>(null);
+  // Arrow-key highlight ko dropdown me nazar me rakhta hai (mouse scroll ki zaroorat nahi).
+  useEffect(() => {
+    if (hi < 0) return;
+    dropRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
+  }, [hi]);
   const [dropOpen, setDropOpen] = useState(false);
   const [staged, setStaged] = useState<DbProduct | null>(null);
   const [pendingNew, setPendingNew] = useState<string | null>(null);

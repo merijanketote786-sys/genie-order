@@ -7,7 +7,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PackagePlus, Trash2, Undo2, Zap } from "lucide-react";
 import { UnitSelect } from "@/components/unit-select";
 import { createPosProduct } from "@/lib/inventory.functions";
-import { useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { toast } from "sonner";
 import { newRef } from "@/lib/pos-errors";
 import { usePrintCenter } from "@/components/print-center";
