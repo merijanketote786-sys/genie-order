@@ -736,7 +736,7 @@ function PosPage() {
                 role="combobox"
                 aria-expanded={dropOpen}
                 onChange={(e) => { setTerm(e.target.value); setStaged(null); setPendingNew(null); setHi(-1); setDropOpen(true); resetSf(); }}
-                onFocus={() => setDropOpen(true)}
+                onFocus={() => { if (!staged && !pendingNew) setDropOpen(true); }}
                 onBlur={() => setTimeout(() => setDropOpen(false), 150)}
                 onKeyDown={(e) => {
                   const list = term.trim() ? results.slice(0, 10) : [];
@@ -857,8 +857,8 @@ function PosPage() {
               </div>
             ) : null}
             </div>
-            {dropOpen && term.trim() && results.length ? (
-              <ul role="listbox" className="absolute inset-x-0 top-12 z-30 max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg">
+            {dropOpen && !staged && !pendingNew && term.trim() && results.length ? (
+              <ul role="listbox" className="absolute inset-x-0 top-full z-30 mt-1 max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg">
                 {results.slice(0, 10).map((p, i) => {
                   const price = priceFor(p, rate);
                   return (
