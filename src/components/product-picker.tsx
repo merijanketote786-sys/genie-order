@@ -125,12 +125,16 @@ export function ProductPickerBody({
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <input
           value={term}
-          onChange={(e) => setTerm(e.target.value)}
+          onChange={(e) => {
+            setTerm(e.target.value);
+            setPendingNew(null);
+          }}
+          onKeyDown={handleSearchKeyDown}
           placeholder="Enter product name"
           aria-label="Product search"
           className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-9 text-sm text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/30"
         />
-        {isFetching ? (
+        {isFetching || savingNew ? (
           <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
         ) : null}
       </div>
