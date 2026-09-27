@@ -31,13 +31,13 @@ type Staged = { productId?: string; name: string; isNew: boolean };
 const num = (s: string) => Number(s.replace(/[^\d.]/g, "")) || 0;
 const GRID = "grid grid-cols-[36px_minmax(200px,2.4fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(100px,1fr)_minmax(80px,0.8fr)_minmax(70px,0.7fr)_minmax(110px,1fr)_42px] items-center gap-2";
 
-function PurchasesPage() {
+export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; startDocType?: "purchase" | "return" } = {}) {
   const qc = useQueryClient();
   const pc = usePrintCenter();
   const { data: sup } = useQuery({ queryKey: ["suppliers"], queryFn: () => listSuppliers() });
   const { data: prod } = useQuery({ queryKey: ["products-lite"], queryFn: () => listProductsLite(), staleTime: 60_000 });
   const { data: hist } = useQuery({ queryKey: ["purchases"], queryFn: () => listPurchases() });
-  const [docType, setDocType] = useState<"purchase" | "return">("purchase");
+  const [docType, setDocType] = useState<"purchase" | "return">(startDocType ?? "purchase");
   const [refId, setRefId] = useState<string | undefined>();
   const [supplierId, setSupplierId] = useState("");
   const [lines, setLines] = useState<Line[]>([]);
@@ -151,11 +151,9 @@ function PurchasesPage() {
 
   const cell = "h-9 w-full rounded-sm border border-border bg-background px-2 text-sm";
   const head = "text-[11px] font-bold uppercase tracking-wide text-muted-foreground";
-  return (
-    <AppShell title="Purchases" subtitle="Stock purchases and supplier credit" active="/pos">
-      {pc.node}
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3" onKeyDown={onKeys}>
-        <PosSubnav />
+  const body = (
+      <div className={embedded ? "space-y-3" : "min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3"} onKeyDown={onKeys}>
+        {embedded ? null : <PosSubnav />}
         <section className="overflow-hidden rounded-xl border border-border bg-card">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
             <div className="flex items-center gap-3">
@@ -273,6 +271,12 @@ function PurchasesPage() {
           </div>
         </section>
       </div>
+  );
+  if (embedded) return <>{pc.node}{body}</>;
+  return (
+    <AppShell title="Purchases" subtitle="Stock purchases and supplier credit" active="/pos">
+      {pc.node}
+      {body}
     </AppShell>
   );
 }

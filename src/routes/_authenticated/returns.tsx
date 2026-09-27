@@ -11,6 +11,7 @@ import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { newRef } from "@/lib/pos-errors";
 import { usePrintCenter } from "@/components/print-center";
+import { PurchasesPage } from "./purchases";
 
 export const Route = createFileRoute("/_authenticated/returns")({
   head: () => ({
@@ -52,6 +53,7 @@ function ReturnsPage() {
   const [method, setMethod] = useState("Cash");
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
+  const [tab, setTab] = useState<"sale" | "purchase">("sale");
 
   const { data: found } = useQuery({ queryKey: ["ret-search", dq], queryFn: () => searchSales({ data: { q: dq } }) });
   const { data: sale } = useQuery({ queryKey: ["ret-sale", saleId], queryFn: () => getSaleForReturn({ data: { id: saleId! } }), enabled: !!saleId });
@@ -93,6 +95,12 @@ function ReturnsPage() {
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />
         {pinNode}
+        <div className="inline-flex rounded-full border-2 border-primary p-0.5" role="tablist" aria-label="Return type">
+          <button type="button" role="tab" aria-selected={tab === "sale"} onClick={() => setTab("sale")} className={`rounded-full px-4 py-1.5 text-sm font-bold ${tab === "sale" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Sale Return</button>
+          <button type="button" role="tab" aria-selected={tab === "purchase"} onClick={() => setTab("purchase")} className={`rounded-full px-4 py-1.5 text-sm font-bold ${tab === "purchase" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Purchase Return</button>
+        </div>
+        {tab === "purchase" ? <PurchasesPage embedded startDocType="return" /> : (
+        <>
         <div className="grid gap-3 lg:grid-cols-[1fr_1.2fr]">
           <section className="rounded-xl border border-border bg-card p-3">
             <label className="flex h-10 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
@@ -171,6 +179,8 @@ function ReturnsPage() {
             {hist && !hist.returns.length ? <p className="py-3 text-center text-xs text-muted-foreground">No returns yet.</p> : null}
           </div>
         </section>
+        </>
+        )}
       </div>
     </AppShell>
   );
