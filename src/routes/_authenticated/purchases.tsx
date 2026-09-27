@@ -45,6 +45,10 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const [staged, setStaged] = useState<Staged | null>(null);
   const [sf, setSf] = useState({ qty: "1", unit: "Piece", rate: "", discount: "", tax: "0" });
   const [hi, setHi] = useState(0);
+  const dropRef = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    dropRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
+  }, [hi]);
   const [discount, setDiscount] = useState("");
   const [paid, setPaid] = useState("");
   const [method, setMethod] = useState("Cash");
