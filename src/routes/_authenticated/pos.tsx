@@ -732,7 +732,7 @@ function PosPage() {
                 value={term}
                 role="combobox"
                 aria-expanded={dropOpen}
-                onChange={(e) => { setTerm(e.target.value); setStaged(null); setPendingNew(null); setHi(-1); setDropOpen(true); }}
+                onChange={(e) => { setTerm(e.target.value); setStaged(null); setPendingNew(null); setHi(-1); setDropOpen(true); resetSf(); }}
                 onFocus={() => setDropOpen(true)}
                 onBlur={() => setTimeout(() => setDropOpen(false), 150)}
                 onKeyDown={(e) => {
