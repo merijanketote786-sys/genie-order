@@ -274,6 +274,10 @@ function PosPage() {
       resetSf();
       return;
     }
+    if (pendingNew?.toLowerCase() === t) {
+      void newOrSave();
+      return;
+    }
     const exact = results.find((p) => p.name.toLowerCase() === t);
     const pick = exact ?? results[0];
     if (pick) stage(pick);
@@ -840,7 +844,7 @@ function PosPage() {
                     e.preventDefault(); e.stopPropagation(); confirmStaged();
                   }} className="contents">
                   <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
-                    
+                    <span className="sr-only">Weight</span>
                     <input
                       value={sf.weight}
                       onChange={(e) => setSf((s) => ({ ...s, weight: e.target.value }))}
@@ -848,7 +852,7 @@ function PosPage() {
                     />
                   </label>
                   <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
-                    
+                    <span className="sr-only">Size</span>
                     <input
                       value={sf.size}
                       onChange={(e) => setSf((s) => ({ ...s, size: e.target.value }))}
@@ -856,7 +860,7 @@ function PosPage() {
                     />
                   </label>
                   <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
-                    
+                    <span className="sr-only">Qty</span>
                     <input
                       value={sf.qty}
                       inputMode="decimal"
@@ -879,7 +883,7 @@ function PosPage() {
                     />
                   </label>
                   <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
-                    
+                    <span className="sr-only">Price/Unit</span>
                     <input
                       value={sf.price}
                       inputMode="decimal"
@@ -894,7 +898,7 @@ function PosPage() {
                     />
                   </label>
                   <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
-                    
+                    <span className="sr-only">Amount</span>
                     <input
                       value={sf.amount}
                       inputMode="decimal"
@@ -914,7 +918,7 @@ function PosPage() {
                   </div>
                 </div>
                 {dropOpen && !staged && !pendingNew && term.trim() && results.length ? (
-                  <ul role="listbox" className="absolute left-9 top-full z-30 mt-1 max-h-72 w-[min(450px,90vw)] overflow-y-auto rounded-sm border border-border bg-popover p-1 text-popover-foreground shadow-lg">
+                  <ul role="listbox" className="relative z-30 ml-9 max-h-72 w-[min(450px,90vw)] overflow-y-auto rounded-sm border border-border bg-popover p-1 text-popover-foreground shadow-lg">
                 {results.slice(0, 10).map((p, i) => {
                   const price = priceFor(p, rate);
                   return (
