@@ -35,14 +35,16 @@ export const PRINT_TEMPLATES: Tpl[] = [
 
 const DOCS = ["pos", "sale", "quotation", "return", "purchase", "purchase_return", "receipt"] as const;
 
-export function PrintTemplatesPicker({ draft, upd, disabled }: { draft: PosConfig; upd: Upd; disabled: boolean }) {
+export function PrintTemplatesPicker({ draft, upd, disabled, dirty = false, saving = false, onSave }: { draft: PosConfig; upd: Upd; disabled: boolean; dirty?: boolean; saving?: boolean; onSave?: () => void }) {
   const current = draft.printing?.preset;
+  const chosen = PRINT_TEMPLATES.find((t) => t.id === current);
   const choose = (t: Tpl) => {
     for (const [k, v] of Object.entries(t.apply)) upd(k, v);
     upd(`printing.templates.${t.format}`, t.design);
     for (const d of DOCS) upd(`printing.defaults.${d}`, t.format);
     upd("printing.preset", t.id);
   };
+
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">Pick one template that matches your printer, then press <b className="text-foreground">Save</b>. Every bill, return, purchase and receipt will print in this size.</p>
