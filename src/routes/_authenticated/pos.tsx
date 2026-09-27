@@ -920,6 +920,7 @@ function PosPage() {
                     ["Purchase price", p.purchase == null ? "—" : `Rs ${money(p.purchase)}`],
                     ["Wholesale price", p.wholesale == null ? "—" : `Rs ${money(p.wholesale)}`],
                     ["Min wholesale qty", p.wholesaleMinQty == null ? "—" : money(p.wholesaleMinQty)],
+                    ["Min sale price", p.minSalePrice == null ? "—" : `Rs ${money(p.minSalePrice)}`],
                     ["Stock qty", p.stock == null ? "—" : money(p.stock)],
                     ["Unit", p.unit || "—"],
                   ];
