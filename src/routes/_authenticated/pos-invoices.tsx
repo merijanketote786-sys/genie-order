@@ -145,7 +145,20 @@ function PosInvoicesPage() {
   };
 
   const convertToInvoice = (s: SaleRow) => {
-    sessionStorage.setItem("pos-open-doc", JSON.stringify({ id: s.id, doc_number: s.doc_number, customer_name: s.customer_name, customer_phone: s.customer_phone, grand_total: s.grand_total, created_at: s.created_at, payload: null, status: s.status, items: s.items, notes: s.notes }));
+    const cart = s.items.map((i, idx) => ({
+      key: `conv-${s.id}-${idx}`,
+      name: i.name,
+      unit: i.unit ?? "pcs",
+      rateType: "custom",
+      price: Number(i.rate),
+      qty: Number(i.qty),
+      discount: Number(i.discount),
+      taxPercent: Number(i.tax_percent),
+      sku: i.sku ?? undefined,
+      note: i.note ?? undefined,
+    }));
+    const payload = JSON.stringify({ cart, notes: s.notes ?? "", customerName: s.customer_name ?? "", customerPhone: s.customer_phone ?? "", delivery: String(Number(s.delivery) || "") });
+    sessionStorage.setItem("pos-open-doc", JSON.stringify({ id: s.id, doc_number: s.doc_number, customer_name: s.customer_name, customer_phone: s.customer_phone, grand_total: s.grand_total, created_at: s.created_at, payload, status: s.status }));
     navigate({ to: "/pos" });
   };
 

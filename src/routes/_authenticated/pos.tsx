@@ -495,6 +495,17 @@ function PosPage() {
     }
   };
 
+  // POS Invoices se "Convert to Invoice" — estimate wapas kholne ke liye handoff.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("pos-open-doc");
+      if (!raw) return;
+      sessionStorage.removeItem("pos-open-doc");
+      openDoc(JSON.parse(raw) as PosDocRow, true);
+    } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Keyboard shortcuts (mouse-free POS). Full list in SHORTCUTS / guide dialog.
   const shortcutsRef = useRef(true);
   shortcutsRef.current = cfg.pos.shortcuts;
