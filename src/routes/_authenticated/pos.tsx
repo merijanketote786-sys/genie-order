@@ -272,6 +272,11 @@ function PosPage() {
       setStaged(null);
       setHi(-1);
       resetSf();
+      requestAnimationFrame(() => scanRef.current?.focus());
+      return;
+    }
+    if (pendingNew?.toLowerCase() === t) {
+      void newOrSave();
       return;
     }
     const exact = results.find((p) => p.name.toLowerCase() === t);
@@ -716,177 +721,6 @@ function PosPage() {
               <Button type="button" size="sm" variant={estimate ? "default" : "ghost"} aria-pressed={estimate} onClick={() => setEstimate(true)} className="min-w-24 shadow-sm">Estimate</Button>
             </div>
             <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+E</K> switch Invoice / Estimate</p>
-            <div className="relative mt-3 w-full">
-            <div className="rounded-lg border border-border bg-background focus-within:border-primary">
-            <div className="flex h-11 items-center gap-2 px-3">
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => setCamOpen(true)}
-                aria-label="Scan barcode with camera"
-                title="Scan barcode with camera"
-                className="inline-flex h-8 shrink-0 items-center justify-center rounded-md px-1.5 text-primary transition hover:scale-[1.05] hover:bg-accent active:scale-95 motion-reduce:transform-none"
-              >
-                <ScanBarcode className="size-4" />
-              </button>
-              <input
-                ref={scanRef}
-                autoFocus
-                value={term}
-                role="combobox"
-                aria-expanded={dropOpen}
-                onChange={(e) => { setTerm(e.target.value); setStaged(null); setPendingNew(null); setHi(-1); setDropOpen(true); resetSf(); }}
-                onFocus={() => { if (!staged && !pendingNew) setDropOpen(true); }}
-                onBlur={() => setTimeout(() => setDropOpen(false), 150)}
-                onKeyDown={(e) => {
-                  const list = term.trim() ? results.slice(0, 10) : [];
-                  if (e.key === "ArrowDown" && list.length) {
-                    e.preventDefault(); setDropOpen(true); setHi((h) => (h + 1) % list.length);
-                  } else if (e.key === "ArrowUp" && list.length) {
-                    e.preventDefault(); setHi((h) => (h <= 0 ? list.length - 1 : h - 1));
-                  } else if (e.key === "Escape") {
-                    setDropOpen(false); setHi(-1);
-                  } else if (e.key === "Enter" && term.trim()) {
-                    e.preventDefault();
-                    const t = term.trim().toLowerCase();
-                    if (staged && t === staged.name.toLowerCase()) {
-                      add(staged, undefined, stagedOverrides()); setTerm(""); setStaged(null); setHi(-1); resetSf();
-                    } else if (hi >= 0 && list[hi]) {
-                      if (pendingCode) saveLink(pendingCode, list[hi]); else stage(list[hi]);
-                    } else if (pendingCode) {
-                      onScan();
-                    } else {
-                      const exact = results.find((p) => p.name.toLowerCase() === t);
-                      const pick = exact ?? list[0];
-                      if (pick) stage(pick); else newOrSave();
-                    }
-                  }
-                }}
-                placeholder="Search or scan item"
-                aria-label="Search or scan item"
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-              />
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={confirmStaged}
-                aria-label={staged ? `Add ${staged.name} to bill` : "Select first match"}
-                title={staged ? `Add ${staged.name} to bill` : "Select first match"}
-                className={`inline-flex h-8 shrink-0 items-center justify-center rounded-md px-2 transition hover:scale-[1.05] active:scale-95 motion-reduce:transform-none ${staged ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-accent"}`}
-              >
-                <Zap className="size-4" />
-              </button>
-            </div>
-            {staged || (pendingNew && pendingNew === term.trim()) ? (
-              <div
-                className="border-t border-border px-3 pb-3 pt-2"
-                onKeyDown={(e) => {
-                  if (e.key !== "Enter" || e.ctrlKey || e.altKey || e.metaKey || savingNew) return;
-                  e.preventDefault();
-                  e.stopPropagation();
-                  confirmStaged();
-                }}
-              >
-                <p className="mb-2 truncate text-xs font-medium text-muted-foreground">
-                  <span className="truncate">{(staged?.name ?? pendingNew) || ""}</span>
-                  {savingNew ? " — Saving…" : staged ? " — ready to add" : " — new item, save with Enter or ⚡"}
-                </p>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-                  <label className="block">
-                    <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Qty</span>
-                    <input
-                      value={sf.qty}
-                      inputMode="decimal"
-                      onChange={(e) => {
-                        const qty = e.target.value;
-                        setSf((s) => {
-                          const q = Number(qty), pr = Number(s.price);
-                          return { ...s, qty, amount: Number.isFinite(q) && Number.isFinite(pr) && s.price !== "" ? String(r2local(q * pr)) : s.amount };
-                        });
-                      }}
-                      className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs outline-none focus:border-ring"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Unit</span>
-                    <UnitSelect
-                      value={sf.unit}
-                      onChange={(v) => setSf((s) => ({ ...s, unit: v }))}
-                      className="h-8 w-full rounded-md border border-input bg-background px-1 text-xs outline-none focus:border-ring"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Price/Unit</span>
-                    <input
-                      value={sf.price}
-                      inputMode="decimal"
-                      onChange={(e) => {
-                        const price = e.target.value;
-                        setSf((s) => {
-                          const q = Number(s.qty), pr = Number(price);
-                          return { ...s, price, amount: Number.isFinite(q) && Number.isFinite(pr) && price !== "" ? String(r2local(q * pr)) : s.amount };
-                        });
-                      }}
-                      className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs outline-none focus:border-ring"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Weight</span>
-                    <input
-                      value={sf.weight}
-                      onChange={(e) => setSf((s) => ({ ...s, weight: e.target.value }))}
-                      className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs outline-none focus:border-ring"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Size</span>
-                    <input
-                      value={sf.size}
-                      onChange={(e) => setSf((s) => ({ ...s, size: e.target.value }))}
-                      className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs outline-none focus:border-ring"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Amount</span>
-                    <input
-                      value={sf.amount}
-                      inputMode="decimal"
-                      onChange={(e) => {
-                        const amount = e.target.value;
-                        setSf((s) => {
-                          const q = Number(s.qty), am = Number(amount);
-                          return { ...s, amount, price: Number.isFinite(q) && q > 0 && Number.isFinite(am) && amount !== "" ? String(r2local(am / q)) : s.price };
-                        });
-                      }}
-                      className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs font-semibold outline-none focus:border-ring"
-                    />
-                  </label>
-                </div>
-              </div>
-            ) : null}
-            </div>
-            {dropOpen && !staged && !pendingNew && term.trim() && results.length ? (
-              <ul role="listbox" className="absolute inset-x-0 top-full z-30 mt-1 max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg">
-                {results.slice(0, 10).map((p, i) => {
-                  const price = priceFor(p, rate);
-                  return (
-                    <li
-                      key={p.name}
-                      role="option"
-                      aria-selected={i === hi}
-                      onMouseDown={(e) => { e.preventDefault(); if (pendingCode) saveLink(pendingCode, p); else stage(p); }}
-                      onMouseEnter={() => setHi(i)}
-                      className={`flex cursor-pointer items-center justify-between gap-2 rounded-md px-3 py-2 text-sm ${i === hi ? "bg-accent text-accent-foreground" : ""}`}
-                    >
-                      <span className="truncate font-medium">{p.name}</span>
-                      <span className="shrink-0 text-xs text-muted-foreground">{price != null ? `Rs ${money(price)}` : "No rate"} · {p.stock ?? "-"}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : null}
-            </div>
-            <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+S</K> / <K>F4</K> search · <K>Enter</K> select item · <K>Enter</K> again or <K>⚡</K> add to bill · <K>↑</K> <K>↓</K> browse list</p>
             <BarcodeScannerDialog
               open={camOpen}
               onOpenChange={setCamOpen}
@@ -963,10 +797,153 @@ function PosPage() {
               {cart.map((l, i) => (
                 <CartRow key={l.key} index={i + 1} line={l} focus={focusKey === l.key} onFocused={() => setFocusKey(null)} onDone={() => scanRef.current?.focus()} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} taxRates={cfg.tax.enabled ? cfg.tax.rates : []} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
               ))}
-              {!cart.length ? <div className="min-h-36 px-4 py-10 text-left text-sm text-muted-foreground">Search an item above to start the invoice.</div> : null}
+              <div className="relative border-t border-border bg-accent/20 focus-within:bg-accent/30">
+                <div className="grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] items-center py-1.5">
+                  <span className="px-2 text-center text-primary"><Zap className="mx-auto size-4" /></span>
+                  <div className="flex min-w-0 items-center gap-1 border-r border-border px-1.5">
+                    <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setCamOpen(true)} aria-label="Scan barcode with camera" title="Scan barcode with camera" className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-primary hover:bg-accent"><ScanBarcode className="size-4" /></button>
+              <input
+                ref={scanRef}
+                autoFocus
+                value={term}
+                role="combobox"
+                aria-expanded={dropOpen}
+                onChange={(e) => { setTerm(e.target.value); setStaged(null); setPendingNew(null); setHi(-1); setDropOpen(true); resetSf(); }}
+                onFocus={() => { if (!staged && !pendingNew) setDropOpen(true); }}
+                onBlur={() => setTimeout(() => setDropOpen(false), 150)}
+                onKeyDown={(e) => {
+                  const list = term.trim() ? results.slice(0, 10) : [];
+                  if (e.key === "ArrowDown" && list.length) {
+                    e.preventDefault(); setDropOpen(true); setHi((h) => (h + 1) % list.length);
+                  } else if (e.key === "ArrowUp" && list.length) {
+                    e.preventDefault(); setHi((h) => (h <= 0 ? list.length - 1 : h - 1));
+                  } else if (e.key === "Escape") {
+                    setDropOpen(false); setHi(-1);
+                  } else if (e.key === "Enter" && term.trim()) {
+                    e.preventDefault();
+                    const t = term.trim().toLowerCase();
+                    if (staged && t === staged.name.toLowerCase()) {
+                      add(staged, undefined, stagedOverrides()); setTerm(""); setStaged(null); setHi(-1); resetSf();
+                    } else if (hi >= 0 && list[hi]) {
+                      if (pendingCode) saveLink(pendingCode, list[hi]); else stage(list[hi]);
+                    } else if (pendingCode) {
+                      onScan();
+                    } else {
+                      const exact = results.find((p) => p.name.toLowerCase() === t);
+                      const pick = exact ?? list[0];
+                      if (pick) stage(pick); else newOrSave();
+                    }
+                  }
+                }}
+                placeholder="Search or scan item"
+                aria-label="Search or scan item"
+                className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+              />
+                  </div>
+                  <div onKeyDown={(e) => {
+                    if (e.key !== "Enter" || e.ctrlKey || e.altKey || e.metaKey || savingNew || !(staged || pendingNew)) return;
+                    e.preventDefault(); e.stopPropagation(); confirmStaged();
+                  }} className="contents">
+                  <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
+                    <span className="sr-only">Weight</span>
+                    <input
+                      value={sf.weight}
+                      onChange={(e) => setSf((s) => ({ ...s, weight: e.target.value }))}
+                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none focus:border-ring"
+                    />
+                  </label>
+                  <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
+                    <span className="sr-only">Size</span>
+                    <input
+                      value={sf.size}
+                      onChange={(e) => setSf((s) => ({ ...s, size: e.target.value }))}
+                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none focus:border-ring"
+                    />
+                  </label>
+                  <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
+                    <span className="sr-only">Qty</span>
+                    <input
+                      value={sf.qty}
+                      inputMode="decimal"
+                      onChange={(e) => {
+                        const qty = e.target.value;
+                        setSf((s) => {
+                          const q = Number(qty), pr = Number(s.price);
+                          return { ...s, qty, amount: Number.isFinite(q) && Number.isFinite(pr) && s.price !== "" ? String(r2local(q * pr)) : s.amount };
+                        });
+                      }}
+                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none focus:border-ring"
+                    />
+                  </label>
+                  <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
+                    <span className="sr-only">Unit</span>
+                    <UnitSelect
+                      value={sf.unit}
+                      onChange={(v) => setSf((s) => ({ ...s, unit: v }))}
+                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-1 text-sm outline-none focus:border-ring"
+                    />
+                  </label>
+                  <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
+                    <span className="sr-only">Price/Unit</span>
+                    <input
+                      value={sf.price}
+                      inputMode="decimal"
+                      onChange={(e) => {
+                        const price = e.target.value;
+                        setSf((s) => {
+                          const q = Number(s.qty), pr = Number(price);
+                          return { ...s, price, amount: Number.isFinite(q) && Number.isFinite(pr) && price !== "" ? String(r2local(q * pr)) : s.amount };
+                        });
+                      }}
+                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none focus:border-ring"
+                    />
+                  </label>
+                  <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
+                    <span className="sr-only">Amount</span>
+                    <input
+                      value={sf.amount}
+                      inputMode="decimal"
+                      onChange={(e) => {
+                        const amount = e.target.value;
+                        setSf((s) => {
+                          const q = Number(s.qty), am = Number(amount);
+                          return { ...s, amount, price: Number.isFinite(q) && q > 0 && Number.isFinite(am) && amount !== "" ? String(r2local(am / q)) : s.price };
+                        });
+                      }}
+                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm font-semibold outline-none focus:border-ring"
+                    />
+                  </label>
+                  </div>
+                  <div className="px-1">
+                    <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={confirmStaged} aria-label={staged ? `Add ${staged.name} to bill` : "Select first match"} title={staged ? `Add ${staged.name} to bill` : "Select first match"} className="flex h-9 w-full items-center justify-center rounded-sm bg-primary text-primary-foreground hover:opacity-90"><Zap className="size-4" /></button>
+                  </div>
+                </div>
+                {dropOpen && !staged && !pendingNew && term.trim() && results.length ? (
+                  <ul role="listbox" className="relative z-30 ml-9 max-h-72 w-[min(450px,90vw)] overflow-y-auto rounded-sm border border-border bg-popover p-1 text-popover-foreground shadow-lg">
+                {results.slice(0, 10).map((p, i) => {
+                  const price = priceFor(p, rate);
+                  return (
+                    <li
+                      key={p.name}
+                      role="option"
+                      aria-selected={i === hi}
+                      onMouseDown={(e) => { e.preventDefault(); if (pendingCode) saveLink(pendingCode, p); else stage(p); }}
+                      onMouseEnter={() => setHi(i)}
+                      className={`flex cursor-pointer items-center justify-between gap-2 rounded-md px-3 py-2 text-sm ${i === hi ? "bg-accent text-accent-foreground" : ""}`}
+                    >
+                      <span className="truncate font-medium">{p.name}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground">{price != null ? `Rs ${money(price)}` : "No rate"} · {p.stock ?? "-"}</span>
+                    </li>
+                  );
+                })}
+                  </ul>
+                ) : null}
+                {pendingNew && pendingNew === term.trim() ? <p className="px-3 pb-1 text-xs text-muted-foreground">New item — press Enter again to save and add</p> : null}
+              </div>
+
               <div className="flex items-center justify-between gap-2 border-t border-border bg-surface px-3 py-2 text-xs text-muted-foreground">
                 <Button type="button" size="sm" variant="outline" className="h-7 text-xs uppercase" onClick={() => scanRef.current?.focus()}><Plus /> Add row</Button>
-                <span className="hidden sm:inline"><K>Ctrl+Shift+Backspace</K> remove last item</span>
+                <span className="hidden sm:inline"><K>Enter</K> add item · <K>Tab</K> next field · <K>Ctrl+Shift+Backspace</K> remove last item</span>
                 <span>{cart.length} {cart.length === 1 ? "item" : "items"}</span>
               </div>
               <div className="grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] border-t border-border bg-surface-2 text-sm font-semibold text-foreground">
