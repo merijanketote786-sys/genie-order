@@ -109,8 +109,17 @@ const n = (v: string) => {
 /** Quantity badalte hi rate khud sale/wholesale me switch ho jati hai. */
 const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
 
-function PosPage() {
-  const qc = useQueryClient();
+ function PosPage() {
+   // Phone-width hint: field placeholders shorten so they stay readable on a narrow bill card.
+   const [phone, setPhone] = useState(false);
+   useEffect(() => {
+     const mq = window.matchMedia("(max-width: 767px)");
+     setPhone(mq.matches);
+     const on = (e: MediaQueryListEvent) => setPhone(e.matches);
+     mq.addEventListener("change", on);
+     return () => mq.removeEventListener("change", on);
+   }, []);
+   const qc = useQueryClient();
   const { data: prodData } = useQuery({ queryKey: ["pos-products"], queryFn: () => getProducts({ data: { scope: "pos" } }) });
   const { data: me } = useQuery({ queryKey: ["my-settings"], queryFn: () => getMySettings() });
   const { can, config: posCfg, cfg } = usePosAccess();
