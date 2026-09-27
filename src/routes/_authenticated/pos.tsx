@@ -419,6 +419,8 @@ function PosPage() {
 
   const reset = () => {
     setCart([]);
+    setTerm("");
+    setStaged(null);
     setBillDiscount("");
     setDiscType("amt");
     setDelivery("");
@@ -688,12 +690,18 @@ function PosPage() {
                     setDropOpen(false); setHi(-1);
                   } else if ((e.key === "Enter" || e.key === "Tab") && term.trim()) {
                     e.preventDefault();
-                    if (hi >= 0 && list[hi]) {
-                      if (pendingCode) saveLink(pendingCode, list[hi]); else add(list[hi]);
-                      setTerm(""); setHi(-1);
-                    } else if (!handleCode(term) && list[0] && !pendingCode) {
-                      add(list[0]); setTerm("");
-                    } else if (!list.length) onScan();
+                    const t = term.trim().toLowerCase();
+                    if (staged && t === staged.name.toLowerCase()) {
+                      add(staged); setTerm(""); setStaged(null); setHi(-1);
+                    } else if (hi >= 0 && list[hi]) {
+                      if (pendingCode) saveLink(pendingCode, list[hi]); else stage(list[hi]);
+                    } else if (pendingCode) {
+                      onScan();
+                    } else {
+                      const exact = results.find((p) => p.name.toLowerCase() === t);
+                      const pick = exact ?? list[0];
+                      if (pick) stage(pick); else onScan();
+                    }
                   }
                 }}
                 placeholder="Search or scan item"
