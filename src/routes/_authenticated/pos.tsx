@@ -201,7 +201,11 @@ function PosPage() {
   const [savingNew, setSavingNew] = useState(false);
   // Staged product quick-edit fields live inside the expanded search box
   const [sf, setSf] = useState({ qty: "1", price: "", unit: "", size: "", weight: "", amount: "" });
-  const resetSf = () => setSf({ qty: "1", price: "", unit: "", size: "", weight: "", amount: "" });
+  const [sfPriceManual, setSfPriceManual] = useState(false);
+  const resetSf = () => {
+    setSf({ qty: "1", price: "", unit: "", size: "", weight: "", amount: "" });
+    setSfPriceManual(false);
+  };
   // Product shortcut boxes: default hidden, toggle se khulti hain (is device pe yaad rehta hai)
   const [showGrid, setShowGrid] = useState(false);
   useEffect(() => {
@@ -277,6 +281,7 @@ function PosPage() {
     setDropOpen(false);
     const pr = priceFor(p, rate);
     setSf({ qty: "1", price: pr != null ? String(pr) : "", unit: p.unit || "", size: "", weight: "", amount: pr != null ? String(pr) : "" });
+    setSfPriceManual(false);
     scanRef.current?.focus();
   };
   const r2local = (x: number) => Math.round(x * 100) / 100;
@@ -284,7 +289,7 @@ function PosPage() {
   const stagedOverrides = () => {
     const qty = sfNum(sf.qty);
     const price = sf.price.trim() === "" ? null : sfNum(sf.price);
-    return { qty: qty != null && qty > 0 ? qty : 1, price: price ?? undefined, unit: sf.unit.trim() || undefined, size: sf.size.trim() || undefined, weight: sf.weight.trim() || undefined };
+    return { qty: qty != null && qty > 0 ? qty : 1, price: sfPriceManual ? price ?? undefined : undefined, unit: sf.unit.trim() || undefined, size: sf.size.trim() || undefined, weight: sf.weight.trim() || undefined };
   };
   const confirmStaged = () => {
     const t = term.trim().toLowerCase();
@@ -314,6 +319,7 @@ function PosPage() {
     if (pendingNew?.toLowerCase() !== name.toLowerCase()) {
       setPendingNew(name);
       setSf({ qty: "1", price: "0", unit: "Piece", size: "", weight: "", amount: "0" });
+      setSfPriceManual(true);
       setDropOpen(false);
       return;
     }
@@ -896,8 +902,16 @@ function PosPage() {
                       onChange={(e) => {
                         const qty = e.target.value;
                         setSf((s) => {
-                          const q = Number(qty), pr = Number(s.price);
-                          return { ...s, qty, amount: Number.isFinite(q) && Number.isFinite(pr) && s.price !== "" ? String(r2local(q * pr)) : s.amount };
+                          const q = Number(qty);
+                          let nextPrice = s.price;
+                          if (staged && !sfPriceManual && Number.isFinite(q)) {
+                            const salePrice = priceFor(staged, rate);
+                            if (salePrice != null) {
+                              nextPrice = String(autoRate({ qty: q, price: salePrice, basePrice: salePrice, wholesalePrice: staged.wholesale ?? null, wholesaleMinQty: staged.wholesaleMinQty ?? null }));
+                            }
+                          }
+                          const pr = Number(nextPrice);
+                          return { ...s, qty, price: nextPrice, amount: Number.isFinite(q) && Number.isFinite(pr) && nextPrice !== "" ? String(r2local(q * pr)) : s.amount };
                         });
                       }}
                       className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none focus:border-ring"
@@ -919,6 +933,7 @@ function PosPage() {
                       inputMode="decimal"
                       onChange={(e) => {
                         const price = e.target.value;
+                        setSfPriceManual(true);
                         setSf((s) => {
                           const q = Number(s.qty), pr = Number(price);
                           return { ...s, price, amount: Number.isFinite(q) && Number.isFinite(pr) && price !== "" ? String(r2local(q * pr)) : s.amount };
@@ -935,6 +950,7 @@ function PosPage() {
                       inputMode="decimal"
                       onChange={(e) => {
                         const amount = e.target.value;
+                        setSfPriceManual(true);
                         setSf((s) => {
                           const q = Number(s.qty), am = Number(amount);
                           return { ...s, amount, price: Number.isFinite(q) && q > 0 && Number.isFinite(am) && amount !== "" ? String(r2local(am / q)) : s.price };
