@@ -144,6 +144,7 @@ function PosPage() {
   const [pays, setPays] = useState<{ method: PayMethod; amount: string }[]>([{ method: "Cash", amount: "" }]);
   const [notes, setNotes] = useState("");
   const [editing, setEditing] = useState<{ id: string; number: string } | null>(null);
+  const [manualNumber, setManualNumber] = useState("");
   const [docsOpen, setDocsOpen] = useState<"held" | "quotation" | null>(null);
   const [estimate, setEstimate] = useState(false);
   const payRef = useRef<HTMLDivElement>(null);
@@ -527,6 +528,7 @@ function PosPage() {
       setGoodsAddaName("");
     }
     setEditing(null);
+    setManualNumber("");
     if (cfg.pos.autoFocusSearch) scanRef.current?.focus();
   };
 
@@ -556,6 +558,7 @@ function PosPage() {
       const res = await savePosDoc({
         data: {
           docType: kind,
+          docNumber: manualNumber.trim() || undefined,
           customerName: r.customerName,
           phone: r.customerPhone,
           subtotal,
@@ -628,6 +631,7 @@ function PosPage() {
       setCourierServiceName(ui.courierServiceName ?? "");
       setGoodsAddaName(ui.goodsAddaName ?? "");
       setPays([{ method: "Cash", amount: "" }]);
+      setManualNumber("");
       setEditing(asInvoice ? { id: d.id, number: d.doc_number } : null);
       setDocsOpen(null);
       toast.success(`${d.doc_number} opened — now Save`);
@@ -715,6 +719,14 @@ function PosPage() {
             <h1 className="text-lg font-bold text-foreground">{estimate ? "Estimate" : "Sale"}</h1>
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground sm:gap-3">
               <span>{editing ? `Invoice ${editing.number}` : "New invoice"}</span>
+              <input
+                aria-label="Invoice number (optional)"
+                className="h-8 w-32 rounded-md border border-input bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                value={manualNumber}
+                onChange={(e) => setManualNumber(e.target.value)}
+                placeholder="Invoice # (auto)"
+                title="Leave empty for automatic number, or type your own invoice number"
+              />
               <span className="border-l border-border pl-3">{new Date().toLocaleDateString("en-PK")}</span>
               <Button type="button" size="sm" variant="outline" onClick={() => setGuideOpen(true)} title="Keyboard shortcuts (F1)"><Keyboard /> Shortcuts (F1)</Button>
               <StoreSwitcher />
