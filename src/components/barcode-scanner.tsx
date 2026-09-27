@@ -37,10 +37,37 @@ export function BarcodeScannerDialog({
     let raf = 0;
     let stopped = false;
 
+    let zxingControls: { stop: () => void } | null = null;
+
+    const startZxing = async () => {
+      try {
+        const { BrowserMultiFormatReader } = await import("@zxing/browser");
+        if (stopped) return;
+        const video = videoRef.current;
+        if (!video) return;
+        const reader = new BrowserMultiFormatReader();
+        zxingControls = await reader.decodeFromConstraints(
+          { video: { facingMode: "environment" }, audio: false },
+          video,
+          (result) => {
+            if (result && !stopped) {
+              stopped = true;
+              zxingControls?.stop();
+              onCode(result.getText().trim());
+            }
+          },
+        );
+        if (stopped) { zxingControls.stop(); return; }
+        setActive(true);
+      } catch {
+        setError("Camera permission was not given. Allow camera access (Settings → Safari → Camera) and try again.");
+      }
+    };
+
     const start = async () => {
       setError(null);
       if (!window.BarcodeDetector) {
-        setError("This browser does not support camera barcode scanning. Use Google Chrome on Android, or type the barcode in the search box.");
+        await startZxing();
         return;
       }
       try {
@@ -82,6 +109,7 @@ export function BarcodeScannerDialog({
       setActive(false);
       if (raf) clearTimeout(raf);
       stream?.getTracks().forEach((t) => t.stop());
+      zxingControls?.stop();
     };
   }, [open, onCode]);
 
