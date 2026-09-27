@@ -707,6 +707,16 @@ function PosPage() {
                 placeholder="Search or scan item"
                 className="min-w-0 flex-1 bg-transparent text-sm outline-none"
               />
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={confirmStaged}
+                aria-label={staged ? `Add ${staged.name} to bill` : "Select first match"}
+                title={staged ? `Add ${staged.name} to bill` : "Select first match"}
+                className={`inline-flex h-8 shrink-0 items-center justify-center rounded-md px-2 transition hover:scale-[1.05] active:scale-95 motion-reduce:transform-none ${staged ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-accent"}`}
+              >
+                <Zap className="size-4" />
+              </button>
             </label>
             {dropOpen && term.trim() && results.length ? (
               <ul role="listbox" className="absolute inset-x-0 top-12 z-30 max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg">
