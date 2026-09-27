@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cancelDoc, getSaleForReturn, listReturns, saveSalesReturn, saveUnlinkedSalesReturn, searchSales } from "@/lib/business.functions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Search, Trash2, Undo2, Zap } from "lucide-react";
+import { ScanBarcode, Search, Trash2, Undo2, Zap } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { newRef } from "@/lib/pos-errors";
@@ -16,6 +16,7 @@ import { listProductsLite } from "@/lib/business.functions";
 import { UnitSelect } from "@/components/unit-select";
 import { PosCustomerSearch } from "@/components/pos-customer-search";
 import { createPosProduct } from "@/lib/inventory.functions";
+import { BarcodeScannerDialog } from "@/components/barcode-scanner";
 
 export const Route = createFileRoute("/_authenticated/returns")({
   head: () => ({
@@ -57,6 +58,7 @@ function ReturnsPage() {
   const [stagedId, setStagedId] = useState<string | null>(null);
   const [pendingNew, setPendingNew] = useState(false);
   const [savingNew, setSavingNew] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [entryQty, setEntryQty] = useState("1");
   const [entryRate, setEntryRate] = useState("");
   const [entryUnit, setEntryUnit] = useState("Piece");
@@ -82,7 +84,7 @@ function ReturnsPage() {
   const total = saleId ? lines.reduce((s, x) => s + x.q * x.i.unitRefund, 0) : freeLines.reduce((s, x) => s + x.qty * x.rate, 0);
   const stagedItem = items.find((i) => i.id === stagedId);
   const matchedItems = itemSearch.trim() && !stagedId ? items.filter((i) => i.qty - i.returned - Number(qty[i.id] || 0) > 0 && i.name.toLowerCase().includes(itemSearch.trim().toLowerCase())) : [];
-  const matchedProducts = itemSearch.trim() && !stagedId ? products.filter((p) => [p.name, p.id].some((v) => v.toLowerCase().includes(itemSearch.trim().toLowerCase()))).slice(0, 8) : [];
+  const matchedProducts = itemSearch.trim() && !stagedId ? products.filter((p) => [p.name, p.sku, p.barcode, p.category].some((v) => v?.toLowerCase().includes(itemSearch.trim().toLowerCase()))).slice(0, 8) : [];
   const matches = pendingNew ? [] : saleId ? matchedItems : matchedProducts;
   const stagedProduct = !saleId ? products.find((p) => p.id === stagedId) : undefined;
   const stage = (id: string, name: string, unit: string, rate: number) => { setStagedId(id); setItemSearch(name); setEntryUnit(unit || "Piece"); setEntryRate(String(rate)); itemRef.current?.focus(); };
@@ -91,12 +93,13 @@ function ReturnsPage() {
     if (!itemSearch.trim() || savingNew) return;
     if (!saleId) {
       if (!stagedProduct && !pendingNew) {
-        if (matchedProducts.length) stage(matchedProducts[0].id, matchedProducts[0].name, matchedProducts[0].unit, matchedProducts[0].salePrice);
+        const exact = matchedProducts.find((p) => p.name.toLowerCase() === itemSearch.trim().toLowerCase() || p.sku?.toLowerCase() === itemSearch.trim().toLowerCase() || p.barcode?.toLowerCase() === itemSearch.trim().toLowerCase());
+        if (exact || matchedProducts.length) { const p = exact ?? matchedProducts[0]; stage(p.id, p.name, p.unit, p.salePrice); }
         else setPendingNew(true);
         return;
       }
       const n = Number(entryQty), rate = Number(entryRate);
-      if (!Number.isFinite(n) || n <= 0 || n > 1e7 || !Number.isFinite(rate) || rate < 0 || rate > 1e9) return toast.error("Enter a valid quantity and return price");
+      if (!Number.isFinite(n) || n <= 0 || n > 1e7 || !Number.isFinite(rate) || rate < 0 || rate > 1e9 || Math.round(n * rate * 100) <= 0) return toast.error("Enter a positive return amount and valid quantity");
       let productId = stagedProduct?.id;
       let name = stagedProduct?.name ?? itemSearch.trim();
       if (pendingNew) {
@@ -132,6 +135,7 @@ function ReturnsPage() {
   const opRef = useRef(newRef());
   const submit = async () => {
     if (lockRef.current || (saleId ? !lines.length : !freeLines.length)) return;
+    if (total <= 0 || total > 1e9) return toast.error("Enter a valid positive refund total");
     if (!saleId && mode === "credit" && !customerId) return toast.error("Select a saved customer for account credit");
     lockRef.current = true;
     setSaving(true);
@@ -148,7 +152,7 @@ function ReturnsPage() {
         lines: saleId ? lines.map((x) => ({ name: x.i.name, unit: x.i.unit ?? undefined, qty: x.q, rate: x.i.unitRefund, total: x.q * x.i.unitRefund })) : freeLines.map((x) => ({ name: x.name, unit: x.unit, qty: x.qty, rate: x.rate, total: x.qty * x.rate })),
         totals: [{ label: mode === "refund" ? "Refund amount" : "Credit amount", value: r.total, bold: true }], notes: reason || undefined,
       }, "return");
-      setQty({}); setFreeLines([]); setReason(""); resetEntry();
+      setQty({}); setFreeLines([]); setReason(""); setCustomerId(null); setCustomerName(""); setCustomerPhone(""); setSaleId(null); setMode("refund"); resetEntry();
       qc.invalidateQueries({ queryKey: ["ret-sale"] }); qc.invalidateQueries({ queryKey: ["ret-list"] });
       qc.invalidateQueries({ queryKey: ["products"] }); qc.invalidateQueries({ queryKey: ["products-lite"] }); qc.invalidateQueries({ queryKey: ["pos-products"] });
     } catch (e) {
@@ -159,6 +163,7 @@ function ReturnsPage() {
   return (
     <AppShell title="Sales Returns" subtitle="Refund ya customer credit" active="/pos">
       {pc.node}
+      <BarcodeScannerDialog open={cameraOpen} onOpenChange={setCameraOpen} onCode={(code) => { setCameraOpen(false); if (saleId) { setItemSearch(code); setStagedId(null); return; } const p = products.find((p) => p.barcode === code || p.sku === code); if (p) stage(p.id, p.name, p.unit, p.salePrice); else { setItemSearch(code); setStagedId(null); toast.error("Barcode not linked to a POS product"); } }} />
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />
         {pinNode}
@@ -210,7 +215,7 @@ function ReturnsPage() {
               <div className="relative border-b border-border bg-accent/20 px-2 py-2 focus-within:bg-accent/30" onKeyDown={(e) => { if (e.key === "Enter" && !e.ctrlKey && !e.altKey && !e.metaKey && (e.target as HTMLElement).tagName !== "BUTTON") { e.preventDefault(); addItem(); } else if (e.key === "Escape") resetEntry(); }}>
                 <div className={grid}>
                   <Zap className="size-4 text-primary" />
-                  <input ref={itemRef} className={cell} value={itemSearch} onChange={(e) => { setItemSearch(e.target.value); setStagedId(null); setPendingNew(false); }} placeholder={saleId ? "Search item from selected bill" : "Search or type new POS product"} aria-label="Search return item" />
+                  <div className="flex items-center gap-1"><input ref={itemRef} className={cell} value={itemSearch} onChange={(e) => { setItemSearch(e.target.value); setStagedId(null); setPendingNew(false); }} placeholder={saleId ? "Search item from selected bill" : "Search or type new POS product"} aria-label="Search return item" />{!saleId ? <Button size="icon-sm" variant="ghost" title="Scan barcode" aria-label="Scan barcode with camera" onClick={() => setCameraOpen(true)}><ScanBarcode /></Button> : null}</div>
                   <input className={cell} inputMode="decimal" value={entryQty} onChange={(e) => setEntryQty(e.target.value.replace(/[^\d.]/g, ""))} disabled={!stagedItem && !stagedProduct && !pendingNew} aria-label="Return Qty" />
                   {saleId ? <span className="truncate text-sm text-muted-foreground">{stagedItem?.unit || "—"}</span> : <UnitSelect className={cell} value={entryUnit} onChange={setEntryUnit} label="Return unit" />}
                   {saleId ? <span className="text-sm text-muted-foreground">{stagedItem ? rs(stagedItem.unitRefund) : "—"}</span> : <input className={cell} inputMode="decimal" value={entryRate} onChange={(e) => setEntryRate(e.target.value.replace(/[^\d.]/g, ""))} disabled={!stagedProduct && !pendingNew} aria-label="Return price per unit" placeholder="Price" />}
@@ -254,7 +259,7 @@ function ReturnsPage() {
                   <option value="credit" disabled={saleId ? !sale?.sale.hasCustomer : !customerId}>Credit to customer account</option>
                 </select>
                 {mode === "refund" ? <select className={posInput} value={method} onChange={(e) => setMethod(e.target.value)} aria-label="Refund method" disabled={false}>{PAY_OPTS.map((m) => <option key={m}>{m}</option>)}</select> : null}
-                <textarea className={`${posInput} min-h-20 py-2`} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Description / note" disabled={!sale} />
+                <textarea className={`${posInput} min-h-20 py-2`} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Description / note" />
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between gap-3 text-muted-foreground"><span>Discount (Rs)</span><span title="Original bill adjustments are already included in the refund rate">—</span></div>
@@ -263,7 +268,7 @@ function ReturnsPage() {
                 <div className="flex items-center justify-between"><span className="text-muted-foreground">Balance</span><b>{rs(0)}</b></div>
                 <div className="flex justify-end gap-2 pt-2">
                   <Button variant="outline" onClick={() => { setSaleId(null); setQty({}); setFreeLines([]); setCustomerId(null); setCustomerName(""); setCustomerPhone(""); setReason(""); setMode("refund"); resetEntry(); }}>Clear</Button>
-                  <Button size="lg" disabled={!(saleId ? lines.length : freeLines.length) || saving || (!saleId && mode === "credit" && !customerId)} onClick={submit}><Undo2 /> Save return (stock +)</Button>
+                  <Button size="lg" disabled={!(saleId ? lines.length : freeLines.length) || total <= 0 || saving || (!saleId && mode === "credit" && !customerId)} onClick={submit}><Undo2 /> Save return (stock +)</Button>
                 </div>
                 <p className="text-right text-[11px] text-muted-foreground">A separate return record is created and stock is restored automatically. Without a bill, choose the product and enter its return price.</p>
                 <p className="text-right text-[11px] text-muted-foreground">Enter: select item / add row · Tab: next field · Esc: clear entry</p>
