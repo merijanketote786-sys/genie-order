@@ -74,7 +74,8 @@ export function PrintTemplatesPicker({ draft, upd, disabled, dirty = false, savi
         })}
       </div>
 
-      <div className="sticky bottom-0 z-30 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur">
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
+
         <div className="mr-auto min-w-0">
           <p className="text-sm font-semibold text-foreground">
             {chosen ? `Selected template: ${chosen.name}` : "No template selected yet"}
