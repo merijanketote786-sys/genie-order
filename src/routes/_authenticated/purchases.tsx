@@ -200,7 +200,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
                   <Button size="icon-sm" onClick={() => void confirm()} disabled={savingNew || !term.trim()} aria-label="Add to bill"><Zap /></Button>
                 </div>
                 {matches.length ? (
-                  <ul role="listbox" className="relative z-30 ml-9 mt-1 max-h-72 w-[min(450px,90vw)] overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg">
+                  <ul ref={dropRef} role="listbox" className="relative z-30 ml-9 mt-1 max-h-72 w-[min(450px,90vw)] overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg">
                     {matches.map((p, i) => (
                       <li key={p.id} role="option" aria-selected={i === hi}>
                         <button type="button" className={`w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent ${i === hi ? "bg-accent" : ""}`} onMouseDown={(e) => e.preventDefault()} onClick={() => stage(p)}>
