@@ -21,6 +21,11 @@ export function PosCustomerSearch({
 }) {
   const [open, setOpen] = useState(false);
   const [idx, setIdx] = useState(0);
+  const listRef = useRef<HTMLUListElement>(null);
+  // Arrow-key highlight ko scroll kar ke nazar me rakhta hai.
+  useEffect(() => {
+    listRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
+  }, [idx]);
   const [q, setQ] = useState("");
   useEffect(() => {
     const t = setTimeout(() => setQ(value.trim()), 200);
