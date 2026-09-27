@@ -677,7 +677,7 @@ function PosPage() {
                 value={term}
                 role="combobox"
                 aria-expanded={dropOpen}
-                onChange={(e) => { setTerm(e.target.value); setHi(-1); setDropOpen(true); }}
+                onChange={(e) => { setTerm(e.target.value); setStaged(null); setHi(-1); setDropOpen(true); }}
                 onFocus={() => setDropOpen(true)}
                 onBlur={() => setTimeout(() => setDropOpen(false), 150)}
                 onKeyDown={(e) => {
@@ -717,7 +717,7 @@ function PosPage() {
                       key={p.name}
                       role="option"
                       aria-selected={i === hi}
-                      onMouseDown={(e) => { e.preventDefault(); if (pendingCode) saveLink(pendingCode, p); else add(p); setTerm(""); setHi(-1); }}
+                      onMouseDown={(e) => { e.preventDefault(); if (pendingCode) saveLink(pendingCode, p); else stage(p); }}
                       onMouseEnter={() => setHi(i)}
                       className={`flex cursor-pointer items-center justify-between gap-2 rounded-md px-3 py-2 text-sm ${i === hi ? "bg-accent text-accent-foreground" : ""}`}
                     >
