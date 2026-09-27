@@ -780,6 +780,18 @@ function PosPage() {
             ) : null}
             </div>
             <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+S</K> / <K>F4</K> search · <K>Enter</K> select item · <K>Enter</K> again or <K>⚡</K> add to bill · <K>↑</K> <K>↓</K> browse list</p>
+            <BarcodeScannerDialog
+              open={camOpen}
+              onOpenChange={setCamOpen}
+              onCode={(code) => {
+                setCamOpen(false);
+                if (!handleCode(code)) {
+                  setPendingCode(code.toUpperCase());
+                  toast.error("This barcode is not linked to any product — choose a product to link it");
+                }
+                scanRef.current?.focus();
+              }}
+            />
             {staged ? (
               <p className="mt-1 rounded-lg border border-primary/50 bg-accent/40 px-3 py-1.5 text-xs font-semibold text-accent-foreground">
                 <span className="truncate">{staged.name}</span> is ready — press <K>Enter</K> or the ⚡ button to add it to the bill
