@@ -212,11 +212,13 @@ function PosPage() {
       toast.error(`${p.name} has no ${RATE_TYPES.find((x) => x.id === r)?.label} rate`);
       return;
     }
+    const wholesalePrice = useRate === "sale" ? p.wholesale ?? null : null;
+    const wholesaleMinQty = useRate === "sale" ? p.wholesaleMinQty ?? null : null;
     setCart((prev) => {
       const key = `${p.name}|${useRate}`;
       const ex = prev.find((l) => l.key === key);
-      if (ex) return prev.map((l) => (l.key === key ? { ...l, qty: l.qty + 1 } : l));
-      return [...prev, { key, name: p.name, unit: p.unit, rateType: useRate, price, qty: 1, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode }];
+      if (ex) return prev.map((l) => (l.key === key ? withAutoRate({ ...l, qty: l.qty + 1 }) : l));
+      return [...prev, withAutoRate({ key, name: p.name, unit: p.unit, rateType: useRate, price, basePrice: price, wholesalePrice, wholesaleMinQty, qty: 1, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode })];
     });
     if (cfg.inventory.trackStock && cfg.inventory.warnOutOfStock && p.stock != null && p.stock <= 0) {
       toast.warning(`${p.name}: out of stock (${p.stock})${cfg.inventory.allowNegativeStock ? "" : " — bill will not save"}`);
@@ -330,7 +332,7 @@ function PosPage() {
   }, []);
 
   const patch = (key: string, v: Partial<CartLine>) =>
-    setCart((prev) => prev.map((l) => (l.key === key ? { ...l, ...v } : l)));
+    setCart((prev) => prev.map((l) => (l.key === key ? withAutoRate({ ...l, ...v }) : l)));
 
   const pre = totals(cart, 0, 0);
   const discAmt = discType === "pct" ? Math.round(((pre.subtotal + pre.taxTotal) * Math.min(100, n(billDiscount))) / 100 * 100) / 100 : n(billDiscount);
