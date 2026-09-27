@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import type { PrintDoc } from "@/lib/print/render";
-import QR from "qrcode";
 import { MessageCircle, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
