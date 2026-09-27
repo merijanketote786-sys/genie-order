@@ -101,65 +101,87 @@ function ReturnsPage() {
         </div>
         {tab === "purchase" ? <PurchasesPage embedded startDocType="return" /> : (
         <>
-        <div className="grid gap-3 lg:grid-cols-[1fr_1.2fr]">
-          <section className="rounded-xl border border-border bg-card p-3">
-            <label className="flex h-10 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
-              <Search className="size-4 text-primary" />
-              <input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Invoice number, name or phone" />
-            </label>
-            <ul className="mt-2 max-h-[28rem] space-y-1 overflow-y-auto">
-              {(found?.sales ?? []).map((s) => (
-                <li key={s.id}>
-                  <button type="button" onClick={() => { setSaleId(s.id); setQty({}); }} className={`w-full rounded-lg border p-2 text-left text-sm ${saleId === s.id ? "border-primary bg-accent" : "border-border"}`}>
-                    <span className="font-semibold text-foreground">{s.doc_number}</span> · {s.customer_name || "Walk-in"}
-                    <span className="block text-xs text-muted-foreground">{rs(s.grand_total)} · {s.payment_status} · {new Date(s.created_at).toLocaleString("en-PK")}</span>
-                  </button>
-                </li>
-              ))}
-              {found && !found.sales.length ? <p className="py-4 text-center text-xs text-muted-foreground">No bill found.</p> : null}
-            </ul>
-          </section>
+        <section className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+            <p className="text-lg font-bold text-foreground">Sale Return</p>
+            <div className="text-right text-sm text-muted-foreground">Bill date <b className="text-foreground">{new Date().toLocaleDateString("en-PK")}</b></div>
+          </div>
 
-          <section className="space-y-3 rounded-xl border border-border bg-card p-3">
-            {!sale ? <p className="py-10 text-center text-sm text-muted-foreground">Select a bill from the left.</p> : (
-              <>
-                <p className="font-bold text-foreground">{sale.sale.number} · {sale.sale.customerName || "Walk-in"} · {rs(sale.sale.total)}</p>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead><tr className="text-left text-xs text-muted-foreground"><th>Item</th><th>Sold</th><th>Already returned</th><th>Rate</th><th>Return qty</th></tr></thead>
-                    <tbody>
-                      {items.map((i) => {
-                        const left = Math.round((i.qty - i.returned) * 1000) / 1000;
-                        return (
-                          <tr key={i.id} className="border-t border-border">
-                            <td className="py-1.5">{i.name} <span className="text-xs text-muted-foreground">{i.unit}</span></td>
-                            <td>{i.qty}</td><td>{i.returned}</td><td>{rs(i.unitRefund)}</td>
-                            <td className="w-28">
-                              <div className="flex gap-1">
-                                <input className="h-8 w-16 rounded-md border border-border bg-background px-2" inputMode="decimal" disabled={left <= 0} value={qty[i.id] ?? ""} placeholder="0" onChange={(e) => setQty((m) => ({ ...m, [i.id]: e.target.value.replace(/[^\d.]/g, "") }))} aria-label={`${i.name} return qty`} />
-                                <Button size="sm" variant="ghost" disabled={left <= 0} onClick={() => setQty((m) => ({ ...m, [i.id]: String(left) }))}>All</Button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+          <div className="relative flex flex-wrap items-center gap-2 px-4 py-3">
+            <label className="flex h-10 min-w-[280px] flex-1 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
+              <Search className="size-4 text-primary" />
+              <input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search bill: invoice number, customer name or phone" aria-label="Search bill" />
+            </label>
+            {sale ? <p className="text-sm font-semibold text-foreground">{sale.sale.number} · {sale.sale.customerName || "Walk-in"} · {rs(sale.sale.total)}</p> : null}
+            {q.trim() && !saleId ? (
+              <ul className="absolute left-4 right-4 top-full z-30 max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg">
+                {(found?.sales ?? []).map((s) => (
+                  <li key={s.id}>
+                    <button type="button" onClick={() => { setSaleId(s.id); setQty({}); setQ(""); }} className="w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent">
+                      <span className="font-semibold text-foreground">{s.doc_number}</span> · {s.customer_name || "Walk-in"}
+                      <span className="block text-xs text-muted-foreground">{rs(s.grand_total)} · {s.payment_status} · {new Date(s.created_at).toLocaleString("en-PK")}</span>
+                    </button>
+                  </li>
+                ))}
+                {found && !found.sales.length ? <p className="py-3 text-center text-xs text-muted-foreground">No bill found.</p> : null}
+              </ul>
+            ) : null}
+          </div>
+
+          <div className="overflow-x-auto">
+            <div className="min-w-[820px]">
+              <div className="grid grid-cols-[36px_minmax(220px,2.4fr)_minmax(80px,0.7fr)_minmax(90px,0.8fr)_minmax(100px,0.9fr)_minmax(130px,1fr)_minmax(110px,1fr)] items-center gap-2 border-y border-border bg-surface-2 px-2 py-2">
+                <span className={head}>#</span><span className={head}>Item</span><span className={head}>Sold</span><span className={head}>Returned</span><span className={head}>Rate</span><span className={head}>Return Qty</span><span className={`${head} text-right`}>Amount</span>
+              </div>
+              {!sale ? <p className="py-10 text-center text-sm text-muted-foreground">Upar search kar ke bill chunein — us ke items yahan aa jayenge.</p> : null}
+              {items.map((i, idx) => {
+                const left = Math.round((i.qty - i.returned) * 1000) / 1000;
+                const rq = Math.min(Number(qty[i.id] || 0), left);
+                return (
+                  <div key={i.id} className="grid grid-cols-[36px_minmax(220px,2.4fr)_minmax(80px,0.7fr)_minmax(90px,0.8fr)_minmax(100px,0.9fr)_minmax(130px,1fr)_minmax(110px,1fr)] items-center gap-2 border-b border-border px-2 py-1.5">
+                    <span className="text-sm text-muted-foreground">{idx + 1}</span>
+                    <span className="truncate text-sm font-medium text-foreground">{i.name} <span className="text-xs text-muted-foreground">{i.unit}</span></span>
+                    <span className="text-sm">{i.qty}</span>
+                    <span className="text-sm">{i.returned}</span>
+                    <span className="text-sm">{rs(i.unitRefund)}</span>
+                    <div className="flex gap-1">
+                      <input className={cell} inputMode="decimal" disabled={left <= 0} value={qty[i.id] ?? ""} placeholder="0" onChange={(e) => setQty((m) => ({ ...m, [i.id]: e.target.value.replace(/[^\d.]/g, "") }))} aria-label={`${i.name} return qty`} />
+                      <Button size="sm" variant="ghost" disabled={left <= 0} onClick={() => setQty((m) => ({ ...m, [i.id]: String(left) }))}>All</Button>
+                    </div>
+                    <span className="text-right text-sm font-semibold">{rs(rq * i.unitRefund)}</span>
+                  </div>
+                );
+              })}
+              {sale ? (
+                <div className="grid grid-cols-[36px_minmax(220px,2.4fr)_minmax(80px,0.7fr)_minmax(90px,0.8fr)_minmax(100px,0.9fr)_minmax(130px,1fr)_minmax(110px,1fr)] items-center gap-2 bg-surface-2 px-2 py-2">
+                  <span /><span className="text-xs font-bold text-muted-foreground">TOTAL</span><span className="text-sm font-bold">{lines.reduce((s, x) => s + x.q, 0)}</span><span /><span /><span />
+                  <span className="text-right text-sm font-bold">{rs(total)}</span>
                 </div>
-                <div className="grid gap-2 sm:grid-cols-3">
-                  <select className={posInput} value={mode} onChange={(e) => setMode(e.target.value as "refund" | "credit")} aria-label="Return mode">
-                    <option value="refund">Money back (refund)</option>
-                    <option value="credit" disabled={!sale.sale.hasCustomer}>Credit to customer account</option>
-                  </select>
-                  {mode === "refund" ? <select className={posInput} value={method} onChange={(e) => setMethod(e.target.value)} aria-label="Refund method">{PAY_OPTS.map((m) => <option key={m}>{m}</option>)}</select> : <div />}
-                  <input className={posInput} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (optional)" />
+              ) : null}
+            </div>
+          </div>
+
+          {sale ? (
+            <div className="grid gap-4 p-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <select className={posInput} value={mode} onChange={(e) => setMode(e.target.value as "refund" | "credit")} aria-label="Return mode">
+                  <option value="refund">Money back (refund)</option>
+                  <option value="credit" disabled={!sale.sale.hasCustomer}>Credit to customer account</option>
+                </select>
+                {mode === "refund" ? <select className={posInput} value={method} onChange={(e) => setMethod(e.target.value)} aria-label="Refund method">{PAY_OPTS.map((m) => <option key={m}>{m}</option>)}</select> : null}
+                <textarea className={`${posInput} min-h-20 py-2`} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (optional)" />
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between border-t border-border pt-2 text-base"><span className="font-bold">{mode === "refund" ? "Refund amount" : "Credit amount"}</span><b className="text-foreground">{rs(total)}</b></div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" onClick={() => { setSaleId(null); setQty({}); setReason(""); }}>Clear</Button>
+                  <Button size="lg" disabled={!lines.length || saving} onClick={submit}><Undo2 /> Save return (stock +)</Button>
                 </div>
-                <Button size="lg" className="w-full" disabled={!lines.length || saving} onClick={submit}><Undo2 /> Save return — {rs(total)}</Button>
-                <p className="text-xs text-muted-foreground">The original bill is not changed — a separate return record is created and stock is restored automatically.</p>
-              </>
-            )}
-          </section>
-        </div>
+                <p className="text-right text-[11px] text-muted-foreground">The original bill is not changed — a separate return record is created and stock is restored automatically.</p>
+              </div>
+            </div>
+          ) : null}
+        </section>
 
         <section className="rounded-xl border border-border bg-card p-3">
           <p className="mb-2 text-sm font-bold text-foreground">Return history</p>
