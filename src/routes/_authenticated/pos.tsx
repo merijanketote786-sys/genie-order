@@ -15,6 +15,8 @@ import { Link } from "@tanstack/react-router";
 import type { PrintDoc } from "@/lib/print/render";
 import {
   RATE_TYPES,
+  autoRate,
+  isWholesale,
   receiptToDoc,
   lineTax,
   lineTotal,
