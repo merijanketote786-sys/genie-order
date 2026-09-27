@@ -11,6 +11,7 @@ import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { newRef } from "@/lib/pos-errors";
 import { usePrintCenter } from "@/components/print-center";
+import { PurchasesPage } from "./purchases";
 
 export const Route = createFileRoute("/_authenticated/returns")({
   head: () => ({
@@ -52,6 +53,7 @@ function ReturnsPage() {
   const [method, setMethod] = useState("Cash");
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
+  const [tab, setTab] = useState<"sale" | "purchase">("sale");
 
   const { data: found } = useQuery({ queryKey: ["ret-search", dq], queryFn: () => searchSales({ data: { q: dq } }) });
   const { data: sale } = useQuery({ queryKey: ["ret-sale", saleId], queryFn: () => getSaleForReturn({ data: { id: saleId! } }), enabled: !!saleId });
