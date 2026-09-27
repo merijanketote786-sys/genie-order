@@ -514,6 +514,10 @@ function PosPage() {
     setCart([]);
     setTerm("");
     setStaged(null);
+    setPendingNew(null);
+    setHi(-1);
+    setDropOpen(false);
+    resetSf();
     setBillDiscount("");
     setDiscType("amt");
     setDelivery("");
@@ -840,8 +844,8 @@ function PosPage() {
                 <span className="px-2 py-3 text-right">Amount</span>
                 <span />
               </div>
-              <div className="relative border-t border-border bg-accent/20 focus-within:bg-accent/30">
-                <div className="mgrid grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] items-center py-1.5">
+              <div className="relative border-t border-border bg-accent/20 focus-within:bg-accent/30 max-md:border-y-2 max-md:border-primary/60 max-md:bg-primary/5 max-md:shadow-[0_2px_10px_-2px] max-md:shadow-primary/20">
+                 <div className="mgrid grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] items-center py-1.5 max-md:py-2.5">
                   <span className="px-2 text-center text-primary"><Zap className="mx-auto size-4" /></span>
                   <div className="flex min-w-0 items-center gap-1 border-r border-border px-1.5">
                     <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setCamOpen(true)} aria-label="Scan barcode with camera" title="Scan barcode with camera" className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-primary hover:bg-accent"><ScanBarcode className="size-4" /></button>
@@ -880,7 +884,7 @@ function PosPage() {
                 }}
                 placeholder="Search or scan item · ↑↓ select · Enter add"
                 aria-label="Search or scan item"
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+                className="min-w-0 flex-1 bg-transparent text-sm outline-none max-md:text-base max-md:font-semibold max-md:placeholder:font-normal"
               />
                   </div>
                   <div onKeyDown={(e) => {
