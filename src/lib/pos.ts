@@ -39,6 +39,8 @@ export type CartLine = {
   /** Wholesale rate aur us par lagne wali kam az kam quantity */
   wholesalePrice?: number | null;
   wholesaleMinQty?: number | null;
+  /** Is se kam rate par bechna mana hai */
+  minSalePrice?: number | null;
   /** Rate haath se badli gayi ho to auto wholesale band */
   priceManual?: boolean;
 };
