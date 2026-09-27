@@ -127,6 +127,11 @@ function SettingsHub() {
       <section key={id} className="space-y-3 rounded-xl border border-border bg-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-base font-bold text-foreground">{meta.label}</h2>
+          {id === "business" ? (
+            <Button size="sm" disabled={!admin || saving || !dirty} onClick={trySave} title={dirty ? "Save business settings" : "Nothing to save"}>
+              <Save /> {saving ? "Saving…" : dirty ? "Save settings" : "Saved"}
+            </Button>
+          ) : null}
           {id === "printing" || id === "invoices" ? (
             <div className="flex flex-wrap items-center gap-2">
               <Button size="sm" variant="outline" onClick={() => pc.preview({ ...sampleDoc(), kind: "sale" })}><Eye /> Sample preview</Button>
