@@ -8,6 +8,7 @@ import { getProducts, type DbProduct } from "@/lib/products.functions";
 import { getMySettings } from "@/lib/settings.functions";
 import { closePosDoc, getCustomerBalance, listPosDocs, savePosDoc } from "@/lib/pos.functions";
 import { saveParty } from "@/lib/records.functions";
+import { createPosProduct } from "@/lib/inventory.functions";
 import { newRef } from "@/lib/pos-errors";
 import { usePrintCenter } from "@/components/print-center";
 import { getSyncOverview } from "@/lib/print-admin.functions";
@@ -178,6 +179,8 @@ function PosPage() {
   const [hi, setHi] = useState(-1);
   const [dropOpen, setDropOpen] = useState(false);
   const [staged, setStaged] = useState<DbProduct | null>(null);
+  const [pendingNew, setPendingNew] = useState<string | null>(null);
+  const [savingNew, setSavingNew] = useState(false);
   // Product shortcut boxes: default hidden, toggle se khulti hain (is device pe yaad rehta hai)
   const [showGrid, setShowGrid] = useState(false);
   useEffect(() => {
@@ -256,7 +259,33 @@ function PosPage() {
     const exact = results.find((p) => p.name.toLowerCase() === t);
     const pick = exact ?? results[0];
     if (pick) stage(pick);
-    else onScan();
+    else newOrSave();
+  };
+
+  // Unsaved name: 1st Enter keeps it in the bar, 2nd Enter / ⚡ saves it to inventory (name only) and adds it to the bill
+  const newOrSave = async () => {
+    const name = term.trim();
+    if (!name) return;
+    if (pendingNew?.toLowerCase() !== name.toLowerCase()) {
+      setPendingNew(name);
+      setDropOpen(false);
+      return;
+    }
+    if (savingNew) return;
+    setSavingNew(true);
+    try {
+      await createPosProduct({ data: { name } });
+      const p: DbProduct = { name, unit: "Piece", p100: null, p250: null, p500: null, sale: 0, stock: null, customSale: null, customP100: null, customP250: null, customP500: null };
+      add(p, "sale");
+      setTerm(""); setPendingNew(null); setHi(-1);
+      qc.invalidateQueries();
+      toast.success(`${name} saved to inventory — edit rates/stock later`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Product save failed");
+    } finally {
+      setSavingNew(false);
+      scanRef.current?.focus();
+    }
   };
 
 
@@ -677,7 +706,7 @@ function PosPage() {
                 value={term}
                 role="combobox"
                 aria-expanded={dropOpen}
-                onChange={(e) => { setTerm(e.target.value); setStaged(null); setHi(-1); setDropOpen(true); }}
+                onChange={(e) => { setTerm(e.target.value); setStaged(null); setPendingNew(null); setHi(-1); setDropOpen(true); }}
                 onFocus={() => setDropOpen(true)}
                 onBlur={() => setTimeout(() => setDropOpen(false), 150)}
                 onKeyDown={(e) => {
@@ -700,7 +729,7 @@ function PosPage() {
                     } else {
                       const exact = results.find((p) => p.name.toLowerCase() === t);
                       const pick = exact ?? list[0];
-                      if (pick) stage(pick); else onScan();
+                      if (pick) stage(pick); else newOrSave();
                     }
                   }
                 }}
@@ -743,6 +772,11 @@ function PosPage() {
             {staged ? (
               <p className="mt-1 rounded-lg border border-primary/50 bg-accent/40 px-3 py-1.5 text-xs font-semibold text-accent-foreground">
                 <span className="truncate">{staged.name}</span> is ready — press <K>Enter</K> or the ⚡ button to add it to the bill
+              </p>
+            ) : null}
+            {pendingNew && pendingNew === term.trim() ? (
+              <p className="mt-1 rounded-lg border border-primary/50 bg-accent/40 px-3 py-1.5 text-xs font-semibold text-accent-foreground">
+                {savingNew ? "Saving…" : <><span className="truncate">{pendingNew}</span> is not saved — press <K>Enter</K> again or ⚡ to save it to inventory and add it to the bill</>}
               </p>
             ) : null}
             {pendingCode ? (
