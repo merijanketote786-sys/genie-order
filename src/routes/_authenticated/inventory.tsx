@@ -98,7 +98,7 @@ function InventoryPage() {
           ))}
         </div>
         {noCost ? <p className="text-xs text-muted-foreground">{noCost} products have no purchase price set — select a product and enter the purchase price to show accurate stock value and profit (or it fills in automatically on purchase).</p> : null}
-        <div className="flex justify-end gap-2"><div className="mr-auto"><StoreSwitcher /></div><Button variant={adding ? "secondary" : "outline"} onClick={() => setAdding((b) => !b)}><Plus /> New item</Button><Button variant={bulk ? "secondary" : "default"} onClick={() => setBulk((b) => !b)}><Table2 /> {bulk ? "Close bulk update" : "Bulk update items"}</Button></div>
+        <div className="flex justify-end gap-2"><StoreSwitcher /><Button variant={adding ? "secondary" : "outline"} onClick={() => setAdding((b) => !b)}><Plus /> New item</Button><Button variant={bulk ? "secondary" : "default"} onClick={() => setBulk((b) => !b)}><Table2 /> {bulk ? "Close bulk update" : "Bulk update items"}</Button></div>
         {adding ? <NewPosProduct onClose={() => setAdding(false)} onSaved={() => { setAdding(false); refresh(); }} /> : null}
         {bulk ? <BulkUpdateProducts products={all} onClose={() => setBulk(false)} onSaved={refresh} /> : null}
         <div className={`grid gap-3 lg:grid-cols-[1.2fr_1fr] ${bulk ? "hidden" : ""}`}>
