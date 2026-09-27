@@ -123,7 +123,7 @@ export const listPosSales = createServerFn({ method: "GET" })
     const supabase = context.supabase as any;
     let q = supabase
       .from("pos_sales")
-      .select("id, doc_number, doc_type, status, payment_status, customer_name, customer_phone, subtotal, discount_total, tax_total, delivery, grand_total, paid_total, balance, notes, created_at")
+      .select("id, doc_number, doc_type, status, payment_status, customer_name, customer_phone, subtotal, discount_total, tax_total, delivery, grand_total, paid_total, balance, notes, created_at, payload")
       .in("doc_type", data.estimates ? ["quotation"] : ["sale", "return"])
       .order("created_at", { ascending: false })
       .limit(200);

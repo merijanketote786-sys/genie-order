@@ -39,6 +39,7 @@ type SaleRow = {
   paid_total: number;
   balance: number;
   notes: string | null;
+  payload: { ui?: { customerAddress?: string; courierServiceName?: string; goodsAddaName?: string }; customerAddress?: string; courierServiceName?: string; goodsAddaName?: string } | null;
   created_at: string;
   items: { name: string; sku: string | null; unit: string | null; qty: number; rate: number; discount: number; tax_percent: number; line_total: number; note: string | null }[];
   payments: { method: string; amount: number; kind: string }[];
@@ -46,6 +47,7 @@ type SaleRow = {
 
 function saleToDoc(s: SaleRow): PrintDoc {
   const isReturn = s.doc_type === "return";
+  const delivery = s.payload?.ui ?? s.payload;
   const totals: PrintDoc["totals"] = [{ label: "Subtotal", value: Number(s.subtotal) }];
   if (Number(s.tax_total)) totals!.push({ label: "Tax", value: Number(s.tax_total) });
   if (Number(s.discount_total)) totals!.push({ label: "Discount", value: Number(s.discount_total), neg: true });
@@ -57,7 +59,8 @@ function saleToDoc(s: SaleRow): PrintDoc {
     title: isReturn ? "Sale Return" : s.doc_type === "quotation" ? "Estimate" : "Invoice",
     number: s.doc_number,
     date: s.created_at,
-    party: { label: "Customer", name: s.customer_name ?? undefined, phone: s.customer_phone ?? undefined },
+    party: { label: "Customer", name: s.customer_name ?? undefined, phone: s.customer_phone ?? undefined, address: delivery?.customerAddress },
+    meta: [["Courier service", delivery?.courierServiceName], ["Goods adda", delivery?.goodsAddaName]].filter((entry): entry is [string, string] => Boolean(entry[1])),
     lines: s.items.map((i) => ({ name: i.name, sku: i.sku ?? undefined, unit: i.unit ?? undefined, qty: Number(i.qty), rate: Number(i.rate), discount: Number(i.discount), taxPct: Number(i.tax_percent), total: Number(i.line_total), note: i.note ?? undefined })),
     totals,
     payments: s.payments.map((p) => ({ method: p.method, amount: Number(p.amount) })),
@@ -69,13 +72,15 @@ function saleToDoc(s: SaleRow): PrintDoc {
 
 /** Delivery challan — print-only document, koi transaction nahi banta. */
 function challanDoc(s: SaleRow): PrintDoc {
+  const delivery = s.payload?.ui ?? s.payload;
   return {
     kind: "pos",
     id: s.id,
     title: "Delivery Challan",
     number: `DC-${s.doc_number}`,
     date: s.created_at,
-    party: { label: "Deliver To", name: s.customer_name ?? undefined, phone: s.customer_phone ?? undefined },
+    party: { label: "Deliver To", name: s.customer_name ?? undefined, phone: s.customer_phone ?? undefined, address: delivery?.customerAddress },
+    meta: [["Courier service", delivery?.courierServiceName], ["Goods adda", delivery?.goodsAddaName]].filter((entry): entry is [string, string] => Boolean(entry[1])),
     lines: s.items.map((i) => ({ name: i.name, unit: i.unit ?? undefined, qty: Number(i.qty), rate: 0, discount: 0, taxPct: 0, total: 0, note: i.note ?? undefined })),
     totals: [],
     payments: [],

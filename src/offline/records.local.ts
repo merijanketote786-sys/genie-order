@@ -123,6 +123,22 @@ export async function listCustomers(arg?: Arg<{ search?: string }>) {
   };
 }
 
+export async function saveParty(arg: Arg<{ name: string; phone: string; city?: string; address?: string; courierServiceName?: string; goodsAddaName?: string }>) {
+  const data = arg?.data;
+  if (!data?.name.trim() || !data.phone.trim()) throw new Error("Name and phone are required");
+  const id = upsertCustomer(data);
+  if (!id) throw new Error("Invalid phone number");
+  const customer = db().customers.find((c) => c.id === id);
+  if (!customer) throw new Error("Could not save party");
+  customer.name = data.name.trim();
+  customer.city = data.city?.trim() || null;
+  customer.address = data.address?.trim() || null;
+  customer.courier_service_name = data.courierServiceName?.trim() || null;
+  customer.goods_adda_name = data.goodsAddaName?.trim() || null;
+  commit();
+  return { ok: true, customer: { id, name: customer.name, phone: customer.phone, city: customer.city, address: customer.address, courierServiceName: customer.courier_service_name, goodsAddaName: customer.goods_adda_name } };
+}
+
 export async function getCustomerDetail(arg: Arg<{ id: string }>) {
   const d = db();
   const id = arg!.data.id;
