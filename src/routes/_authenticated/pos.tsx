@@ -739,7 +739,12 @@ function PosPage() {
               </ul>
             ) : null}
             </div>
-            <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+S</K> / <K>F4</K> search · <K>Enter</K> add item (cursor stays in search) · <K>↑</K> <K>↓</K> browse list</p>
+            <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+S</K> / <K>F4</K> search · <K>Enter</K> select item · <K>Enter</K> again or <K>⚡</K> add to bill · <K>↑</K> <K>↓</K> browse list</p>
+            {staged ? (
+              <p className="mt-1 rounded-lg border border-primary/50 bg-accent/40 px-3 py-1.5 text-xs font-semibold text-accent-foreground">
+                <span className="truncate">{staged.name}</span> is ready — press <K>Enter</K> or the ⚡ button to add it to the bill
+              </p>
+            ) : null}
             {pendingCode ? (
               <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-primary bg-accent p-2.5 text-xs text-accent-foreground">
                 <span>Barcode <b>{pendingCode}</b> is new — search for a product below and press <b>Link</b>, next time scanning will add it directly.</span>
@@ -989,7 +994,7 @@ function K({ children }: { children: string }) {
 
 const SHORTCUTS: { group: string; items: [string, string][] }[] = [
   { group: "Navigation", items: [["Tab / Shift+Tab", "Move to next / previous field or button"], ["Enter / Space", "Press the focused button"], ["Alt+C", "Customer name"], ["Alt+S or F4", "Item search"], ["Alt+M or F8", "Payment"], ["Esc", "Close popup / search list"]] },
-  { group: "Items", items: [["↑ / ↓", "Move in search results"], ["Enter", "Add item, then jump to quantity"], ["Enter (in qty)", "Back to search"], ["Ctrl+Shift+Backspace", "Remove last item"]] },
+  { group: "Items", items: [["↑ / ↓", "Move in search results"], ["Enter", "Select item — lands in search bar"], ["Enter again / ⚡", "Add selected item to bill"], ["Enter (in qty)", "Back to search"], ["Ctrl+Shift+Backspace", "Remove last item"]] },
   { group: "Bill", items: [["Alt+E", "Switch Invoice / Estimate"], ["Alt+P", "Add new party"], ["Ctrl+S or F9", "Save + Print"], ["Ctrl+Enter", "Save without print"], ["Ctrl+Shift+H or F10", "Hold bill"], ["Alt+N or F2", "New bill"]] },
   { group: "Lists & help", items: [["Alt+H", "Held bills"], ["Alt+Q", "Quotations / estimates"], ["F1, Alt+K or Ctrl+/", "Open / close this guide"]] },
 ];
