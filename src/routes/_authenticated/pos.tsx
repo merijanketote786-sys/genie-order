@@ -35,6 +35,7 @@ import {
 } from "@/lib/pos";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { BarcodeScannerDialog } from "@/components/barcode-scanner";
 import { Minus, Plus, Printer, ScanBarcode, Trash2, MessageCircle, LayoutGrid, ReceiptText, Save, StickyNote, Pause, FileText, FolderOpen, RotateCcw, Download, Share2, X, UserPlus, Keyboard, Zap } from "lucide-react";
 
 type PosDocRow = { id: string; doc_number: string; customer_name: string | null; customer_phone: string | null; grand_total: number; created_at: string; payload: string | null; status: string };
@@ -176,6 +177,7 @@ function PosPage() {
   const [saving, setSaving] = useState(false);
   const [last, setLast] = useState<ReceiptInput | null>(null);
   const scanRef = useRef<HTMLInputElement>(null);
+  const [camOpen, setCamOpen] = useState(false);
   const [hi, setHi] = useState(-1);
   const [dropOpen, setDropOpen] = useState(false);
   const [staged, setStaged] = useState<DbProduct | null>(null);
@@ -699,7 +701,16 @@ function PosPage() {
             <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+E</K> switch Invoice / Estimate</p>
             <div className="relative mt-3 max-w-2xl">
             <label className="flex h-11 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
-              <ScanBarcode className="size-4 text-primary" />
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setCamOpen(true)}
+                aria-label="Scan barcode with camera"
+                title="Scan barcode with camera"
+                className="inline-flex h-8 shrink-0 items-center justify-center rounded-md px-1.5 text-primary transition hover:scale-[1.05] hover:bg-accent active:scale-95 motion-reduce:transform-none"
+              >
+                <ScanBarcode className="size-4" />
+              </button>
               <input
                 ref={scanRef}
                 autoFocus
@@ -769,6 +780,18 @@ function PosPage() {
             ) : null}
             </div>
             <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+S</K> / <K>F4</K> search · <K>Enter</K> select item · <K>Enter</K> again or <K>⚡</K> add to bill · <K>↑</K> <K>↓</K> browse list</p>
+            <BarcodeScannerDialog
+              open={camOpen}
+              onOpenChange={setCamOpen}
+              onCode={(code) => {
+                setCamOpen(false);
+                if (!handleCode(code)) {
+                  setPendingCode(code.toUpperCase());
+                  toast.error("This barcode is not linked to any product — choose a product to link it");
+                }
+                scanRef.current?.focus();
+              }}
+            />
             {staged ? (
               <p className="mt-1 rounded-lg border border-primary/50 bg-accent/40 px-3 py-1.5 text-xs font-semibold text-accent-foreground">
                 <span className="truncate">{staged.name}</span> is ready — press <K>Enter</K> or the ⚡ button to add it to the bill
