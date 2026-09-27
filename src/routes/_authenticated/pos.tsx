@@ -183,6 +183,9 @@ function PosPage() {
   const [staged, setStaged] = useState<DbProduct | null>(null);
   const [pendingNew, setPendingNew] = useState<string | null>(null);
   const [savingNew, setSavingNew] = useState(false);
+  // Staged product ke quick-edit fields (search bar ke neeche panel)
+  const [sf, setSf] = useState({ qty: "1", price: "", unit: "", size: "", weight: "", amount: "" });
+  const resetSf = () => setSf({ qty: "1", price: "", unit: "", size: "", weight: "", amount: "" });
   // Product shortcut boxes: default hidden, toggle se khulti hain (is device pe yaad rehta hai)
   const [showGrid, setShowGrid] = useState(false);
   useEffect(() => {
@@ -219,21 +222,24 @@ function PosPage() {
     return [...exact, ...rest].slice(0, 24);
   }, [products, term]);
 
-  const add = (p: DbProduct, rateOverride?: RateType) => {
+  const add = (p: DbProduct, rateOverride?: RateType, ov?: { qty?: number; price?: number; unit?: string; size?: string; weight?: string }) => {
     const r = rateOverride ?? rate;
-    const price = priceFor(p, r) ?? (rateOverride ? priceFor(p, rate) : null);
+    let price = priceFor(p, r) ?? (rateOverride ? priceFor(p, rate) : null);
     const useRate = priceFor(p, r) != null ? r : rate;
+    if (ov?.price != null) price = ov.price;
     if (price == null) {
       toast.error(`${p.name} has no ${RATE_TYPES.find((x) => x.id === r)?.label} rate`);
       return;
     }
+    const qty = ov?.qty != null && ov.qty > 0 ? ov.qty : 1;
     const wholesalePrice = useRate === "sale" ? p.wholesale ?? null : null;
     const wholesaleMinQty = useRate === "sale" ? p.wholesaleMinQty ?? null : null;
+    const unitOverride = ov?.unit && ov.unit !== p.unit ? ov.unit : undefined;
     setCart((prev) => {
       const key = `${p.name}|${useRate}`;
       const ex = prev.find((l) => l.key === key);
-      if (ex) return prev.map((l) => (l.key === key ? withAutoRate({ ...l, qty: l.qty + 1 }) : l));
-      return [...prev, withAutoRate({ key, name: p.name, unit: p.unit, rateType: useRate, price, basePrice: price, wholesalePrice, wholesaleMinQty, qty: 1, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode })];
+      if (ex && !ov) return prev.map((l) => (l.key === key ? withAutoRate({ ...l, qty: l.qty + 1 }) : l));
+      return [...prev, withAutoRate({ key, name: p.name, unit: p.unit, unitOverride, rateType: useRate, price, basePrice: price, wholesalePrice, wholesaleMinQty, qty, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode, size: ov?.size || undefined, weight: ov?.weight || undefined, priceManual: ov?.price != null ? true : undefined })];
     });
     if (cfg.inventory.trackStock && cfg.inventory.warnOutOfStock && p.stock != null && p.stock <= 0) {
       toast.warning(`${p.name}: out of stock (${p.stock})${cfg.inventory.allowNegativeStock ? "" : " — bill will not save"}`);
@@ -247,15 +253,25 @@ function PosPage() {
     setTerm(p.name);
     setHi(-1);
     setDropOpen(false);
+    const pr = priceFor(p, rate);
+    setSf({ qty: "1", price: pr != null ? String(pr) : "", unit: p.unit || "", size: "", weight: "", amount: pr != null ? String(pr) : "" });
     scanRef.current?.focus();
+  };
+  const r2local = (x: number) => Math.round(x * 100) / 100;
+  const sfNum = (s: string) => { const n = Number(s); return Number.isFinite(n) ? n : null; };
+  const stagedOverrides = () => {
+    const qty = sfNum(sf.qty);
+    const price = sf.price.trim() === "" ? null : sfNum(sf.price);
+    return { qty: qty != null && qty > 0 ? qty : 1, price: price ?? undefined, unit: sf.unit.trim() || undefined, size: sf.size.trim() || undefined, weight: sf.weight.trim() || undefined };
   };
   const confirmStaged = () => {
     const t = term.trim().toLowerCase();
     if (staged && t === staged.name.toLowerCase()) {
-      add(staged);
+      add(staged, undefined, stagedOverrides());
       setTerm("");
       setStaged(null);
       setHi(-1);
+      resetSf();
       return;
     }
     const exact = results.find((p) => p.name.toLowerCase() === t);
@@ -277,9 +293,9 @@ function PosPage() {
     setSavingNew(true);
     try {
       await createPosProduct({ data: { name } });
-      const p: DbProduct = { name, unit: "Piece", p100: null, p250: null, p500: null, sale: 0, stock: null, customSale: null, customP100: null, customP250: null, customP500: null };
-      add(p, "sale");
-      setTerm(""); setPendingNew(null); setHi(-1);
+      const p: DbProduct = { name, unit: sf.unit.trim() || "Piece", p100: null, p250: null, p500: null, sale: 0, stock: null, customSale: null, customP100: null, customP250: null, customP500: null };
+      add(p, "sale", stagedOverrides());
+      setTerm(""); setPendingNew(null); setHi(-1); resetSf();
       qc.invalidateQueries();
       toast.success(`${name} saved to inventory — edit rates/stock later`);
     } catch (e) {
@@ -717,7 +733,7 @@ function PosPage() {
                 value={term}
                 role="combobox"
                 aria-expanded={dropOpen}
-                onChange={(e) => { setTerm(e.target.value); setStaged(null); setPendingNew(null); setHi(-1); setDropOpen(true); }}
+                onChange={(e) => { setTerm(e.target.value); setStaged(null); setPendingNew(null); setHi(-1); setDropOpen(true); resetSf(); }}
                 onFocus={() => setDropOpen(true)}
                 onBlur={() => setTimeout(() => setDropOpen(false), 150)}
                 onKeyDown={(e) => {
@@ -732,7 +748,7 @@ function PosPage() {
                     e.preventDefault();
                     const t = term.trim().toLowerCase();
                     if (staged && t === staged.name.toLowerCase()) {
-                      add(staged); setTerm(""); setStaged(null); setHi(-1);
+                      add(staged, undefined, stagedOverrides()); setTerm(""); setStaged(null); setHi(-1); resetSf();
                     } else if (hi >= 0 && list[hi]) {
                       if (pendingCode) saveLink(pendingCode, list[hi]); else stage(list[hi]);
                     } else if (pendingCode) {
@@ -792,15 +808,88 @@ function PosPage() {
                 scanRef.current?.focus();
               }}
             />
-            {staged ? (
-              <p className="mt-1 rounded-lg border border-primary/50 bg-accent/40 px-3 py-1.5 text-xs font-semibold text-accent-foreground">
-                <span className="truncate">{staged.name}</span> is ready — press <K>Enter</K> or the ⚡ button to add it to the bill
-              </p>
-            ) : null}
-            {pendingNew && pendingNew === term.trim() ? (
-              <p className="mt-1 rounded-lg border border-primary/50 bg-accent/40 px-3 py-1.5 text-xs font-semibold text-accent-foreground">
-                {savingNew ? "Saving…" : <><span className="truncate">{pendingNew}</span> is not saved — press <K>Enter</K> again or ⚡ to save it to inventory and add it to the bill</>}
-              </p>
+            {staged || (pendingNew && pendingNew === term.trim()) ? (
+              <div className="mt-2 rounded-lg border border-primary/50 bg-accent/40 p-2.5">
+                <p className="mb-2 text-xs font-semibold text-accent-foreground">
+                  <span className="truncate">{(staged?.name ?? pendingNew) || ""}</span>
+                  {staged
+                    ? <> is ready — edit fields below, then press <K>Enter</K> or ⚡ to add</>
+                    : savingNew
+                      ? " — Saving…"
+                      : <> is not saved — set rate below, then press <K>Enter</K> again or ⚡ to save it to inventory and add it to the bill</>}
+                </p>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                  <label className="block">
+                    <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Qty</span>
+                    <input
+                      value={sf.qty}
+                      inputMode="decimal"
+                      onChange={(e) => {
+                        const qty = e.target.value;
+                        setSf((s) => {
+                          const q = Number(qty), pr = Number(s.price);
+                          return { ...s, qty, amount: Number.isFinite(q) && Number.isFinite(pr) && s.price !== "" ? String(r2local(q * pr)) : s.amount };
+                        });
+                      }}
+                      className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs outline-none focus:border-ring"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Unit</span>
+                    <UnitSelect
+                      value={sf.unit}
+                      onChange={(v) => setSf((s) => ({ ...s, unit: v }))}
+                      className="h-8 w-full rounded-md border border-input bg-background px-1 text-xs outline-none focus:border-ring"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Price/Unit</span>
+                    <input
+                      value={sf.price}
+                      inputMode="decimal"
+                      onChange={(e) => {
+                        const price = e.target.value;
+                        setSf((s) => {
+                          const q = Number(s.qty), pr = Number(price);
+                          return { ...s, price, amount: Number.isFinite(q) && Number.isFinite(pr) && price !== "" ? String(r2local(q * pr)) : s.amount };
+                        });
+                      }}
+                      className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs outline-none focus:border-ring"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Weight</span>
+                    <input
+                      value={sf.weight}
+                      onChange={(e) => setSf((s) => ({ ...s, weight: e.target.value }))}
+                      className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs outline-none focus:border-ring"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Size</span>
+                    <input
+                      value={sf.size}
+                      onChange={(e) => setSf((s) => ({ ...s, size: e.target.value }))}
+                      className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs outline-none focus:border-ring"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Amount</span>
+                    <input
+                      value={sf.amount}
+                      inputMode="decimal"
+                      onChange={(e) => {
+                        const amount = e.target.value;
+                        setSf((s) => {
+                          const q = Number(s.qty), am = Number(amount);
+                          return { ...s, amount, price: Number.isFinite(q) && q > 0 && Number.isFinite(am) && amount !== "" ? String(r2local(am / q)) : s.price };
+                        });
+                      }}
+                      className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs font-semibold outline-none focus:border-ring"
+                    />
+                  </label>
+                </div>
+              </div>
             ) : null}
             {pendingCode ? (
               <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-primary bg-accent p-2.5 text-xs text-accent-foreground">
