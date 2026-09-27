@@ -436,7 +436,17 @@ function PosPage() {
   }, []);
 
   const patch = (key: string, v: Partial<CartLine>) =>
-    setCart((prev) => prev.map((l) => (l.key === key ? withAutoRate({ ...l, ...v }) : l)));
+    setCart((prev) =>
+      prev.map((l) => {
+        if (l.key !== key) return l;
+        // Min sale price se neeche rate jaane na dein
+        if (v.price != null && l.minSalePrice != null && l.minSalePrice > 0 && v.price < l.minSalePrice) {
+          toast.error(`${l.name}: min sale price Rs ${money(l.minSalePrice)} hai — is se kam rate nahi lag sakti`, { duration: 2500 });
+          v = { ...v, price: l.minSalePrice };
+        }
+        return withAutoRate({ ...l, ...v });
+      }),
+    );
 
   const pre = totals(cart, 0, 0);
   const discAmt = discType === "pct" ? Math.round(((pre.subtotal + pre.taxTotal) * Math.min(100, n(billDiscount))) / 100 * 100) / 100 : n(billDiscount);
