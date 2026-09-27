@@ -222,21 +222,24 @@ function PosPage() {
     return [...exact, ...rest].slice(0, 24);
   }, [products, term]);
 
-  const add = (p: DbProduct, rateOverride?: RateType) => {
+  const add = (p: DbProduct, rateOverride?: RateType, ov?: { qty?: number; price?: number; unit?: string; size?: string; weight?: string }) => {
     const r = rateOverride ?? rate;
-    const price = priceFor(p, r) ?? (rateOverride ? priceFor(p, rate) : null);
+    let price = priceFor(p, r) ?? (rateOverride ? priceFor(p, rate) : null);
     const useRate = priceFor(p, r) != null ? r : rate;
+    if (ov?.price != null) price = ov.price;
     if (price == null) {
       toast.error(`${p.name} has no ${RATE_TYPES.find((x) => x.id === r)?.label} rate`);
       return;
     }
+    const qty = ov?.qty != null && ov.qty > 0 ? ov.qty : 1;
     const wholesalePrice = useRate === "sale" ? p.wholesale ?? null : null;
     const wholesaleMinQty = useRate === "sale" ? p.wholesaleMinQty ?? null : null;
+    const unitOverride = ov?.unit && ov.unit !== p.unit ? ov.unit : undefined;
     setCart((prev) => {
       const key = `${p.name}|${useRate}`;
       const ex = prev.find((l) => l.key === key);
-      if (ex) return prev.map((l) => (l.key === key ? withAutoRate({ ...l, qty: l.qty + 1 }) : l));
-      return [...prev, withAutoRate({ key, name: p.name, unit: p.unit, rateType: useRate, price, basePrice: price, wholesalePrice, wholesaleMinQty, qty: 1, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode })];
+      if (ex && !ov) return prev.map((l) => (l.key === key ? withAutoRate({ ...l, qty: l.qty + 1 }) : l));
+      return [...prev, withAutoRate({ key, name: p.name, unit: p.unit, unitOverride, rateType: useRate, price, basePrice: price, wholesalePrice, wholesaleMinQty, qty, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode, size: ov?.size || undefined, weight: ov?.weight || undefined, priceManual: ov?.price != null ? true : undefined })];
     });
     if (cfg.inventory.trackStock && cfg.inventory.warnOutOfStock && p.stock != null && p.stock <= 0) {
       toast.warning(`${p.name}: out of stock (${p.stock})${cfg.inventory.allowNegativeStock ? "" : " — bill will not save"}`);
@@ -250,15 +253,24 @@ function PosPage() {
     setTerm(p.name);
     setHi(-1);
     setDropOpen(false);
+    const pr = priceFor(p, rate);
+    setSf({ qty: "1", price: pr != null ? String(pr) : "", unit: p.unit || "", size: "", weight: "", amount: pr != null ? String(pr) : "" });
     scanRef.current?.focus();
+  };
+  const sfNum = (s: string) => { const n = Number(s); return Number.isFinite(n) ? n : null; };
+  const stagedOverrides = () => {
+    const qty = sfNum(sf.qty);
+    const price = sf.price.trim() === "" ? null : sfNum(sf.price);
+    return { qty: qty != null && qty > 0 ? qty : 1, price: price ?? undefined, unit: sf.unit.trim() || undefined, size: sf.size.trim() || undefined, weight: sf.weight.trim() || undefined };
   };
   const confirmStaged = () => {
     const t = term.trim().toLowerCase();
     if (staged && t === staged.name.toLowerCase()) {
-      add(staged);
+      add(staged, undefined, stagedOverrides());
       setTerm("");
       setStaged(null);
       setHi(-1);
+      resetSf();
       return;
     }
     const exact = results.find((p) => p.name.toLowerCase() === t);
