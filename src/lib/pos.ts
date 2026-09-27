@@ -111,6 +111,7 @@ export type ReceiptInput = {
   customerName?: string;
   customerPhone?: string;
   customerAddress?: string;
+  customerCityArea?: string;
   courierServiceName?: string;
   goodsAddaName?: string;
   lines: CartLine[];
@@ -137,6 +138,7 @@ export function receiptText(r: ReceiptInput) {
   if (r.customerName) out.push(`Customer: ${r.customerName}`);
   if (r.customerPhone) out.push(`Phone: ${r.customerPhone}`);
   if (r.customerAddress) out.push(`Address: ${r.customerAddress}`);
+  if (r.customerCityArea) out.push(`City/Area: ${r.customerCityArea}`);
   if (r.courierServiceName) out.push(`Courier service: ${r.courierServiceName}`);
   if (r.goodsAddaName) out.push(`Goods adda: ${r.goodsAddaName}`);
   out.push("");
@@ -213,7 +215,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:1mm 0;vertical-align:top
 <h1>${esc(r.business || "Invoice")}</h1>
 ${r.address ? `<div class=c>${esc(r.address)}</div>` : ""}${r.phone ? `<div class=c>${esc(r.phone)}</div>` : ""}
 <div class=c><b>${esc(r.title || "Invoice")}</b></div>
- <hr><table>${line("No.", esc(r.invoiceNumber))}${line("Date", esc(r.date))}${r.customerName ? line("Customer", esc(r.customerName)) : ""}${r.customerPhone ? line("Phone", esc(r.customerPhone)) : ""}${r.customerAddress ? line("Address", esc(r.customerAddress)) : ""}${r.courierServiceName ? line("Courier service", esc(r.courierServiceName)) : ""}${r.goodsAddaName ? line("Goods adda", esc(r.goodsAddaName)) : ""}</table><hr>
+ <hr><table>${line("No.", esc(r.invoiceNumber))}${line("Date", esc(r.date))}${r.customerName ? line("Customer", esc(r.customerName)) : ""}${r.customerPhone ? line("Phone", esc(r.customerPhone)) : ""}${r.customerAddress ? line("Address", esc(r.customerAddress)) : ""}${r.customerCityArea ? line("City/Area", esc(r.customerCityArea)) : ""}${r.courierServiceName ? line("Courier service", esc(r.courierServiceName)) : ""}${r.goodsAddaName ? line("Goods adda", esc(r.goodsAddaName)) : ""}</table><hr>
 <table class=items><tr><th>Item</th><th class=r>Qty</th>${wide ? "<th class=r>Rate</th>" : ""}<th class=r>Amount</th></tr>${rows}</table><hr>
 <table>${line("Subtotal", `${c} ${money(subtotal)}`)}${taxTotal ? line("Tax", `${c} ${money(taxTotal)}`) : ""}${r.billDiscount ? line("Discount", `- ${c} ${money(r.billDiscount)}`) : ""}${r.delivery ? line("Delivery", `${c} ${money(r.delivery)}`) : ""}${line("Grand Total", `${c} ${money(total)}`, true)}${
     quote
@@ -254,7 +256,7 @@ export async function downloadReceiptPdf(r: ReceiptInput) {
   doc.setFont("helvetica", "normal").setFontSize(9).text(r.date, 196, 23, { align: "right" });
   y = Math.max(y, 30);
    if (r.customerName || r.customerPhone) { doc.text(`Customer: ${[r.customerName, r.customerPhone].filter(Boolean).join(" · ")}`, 14, y); y += 5; }
-   for (const [label, value] of [["Address", r.customerAddress], ["Courier service", r.courierServiceName], ["Goods adda", r.goodsAddaName]] as const) {
+   for (const [label, value] of [["Address", r.customerAddress], ["City/Area", r.customerCityArea], ["Courier service", r.courierServiceName], ["Goods adda", r.goodsAddaName]] as const) {
      if (value) { doc.text(`${label}: ${value}`, 14, y, { maxWidth: 180 }); y += 5; }
    }
   autoTable(doc, {
@@ -297,7 +299,7 @@ export function receiptToDoc(r: ReceiptInput, o: { kind?: import("@/lib/pos-conf
     number: r.invoiceNumber,
     date: o.date ?? r.date,
     currency: r.currency,
-     party: { label: "Customer", name: r.customerName, phone: r.customerPhone, address: r.customerAddress },
+     party: { label: "Customer", name: r.customerName, phone: r.customerPhone, address: [r.customerAddress, r.customerCityArea].filter(Boolean).join(", ") || undefined },
      meta: [["Courier service", r.courierServiceName], ["Goods adda", r.goodsAddaName]].filter((entry): entry is [string, string] => Boolean(entry[1])),
     lines: r.lines.map((l) => ({ name: l.name, sku: l.sku, barcode: l.barcode, unit: packLabel(l), qty: l.qty, rate: l.price, discount: l.discount || 0, taxPct: l.taxPercent || 0, total: lineTotal(l), note: l.note })),
     totals: t,
