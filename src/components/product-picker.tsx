@@ -80,6 +80,34 @@ export function ProductPickerBody({
     return list.slice(0, 30);
   }, [products, term]);
 
+  const exactMatch = useMemo(() => {
+    const q = term.trim().toLowerCase();
+    return q ? products.some((p) => p.name.toLowerCase() === q) : true;
+  }, [products, term]);
+
+  const handleSearchKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    const name = term.trim();
+    if (!name || exactMatch || savingNew) return;
+    e.preventDefault();
+    if (pendingNew !== name) {
+      // First Enter: keep the name in the search bar, ask for confirmation.
+      setPendingNew(name);
+      return;
+    }
+    // Second Enter: save to inventory by name only.
+    setSavingNew(true);
+    try {
+      await createProduct({ data: { name } });
+      toast.success(`"${name}" saved to inventory — rates and stock can be added later`);
+      setPendingNew(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save product");
+    } finally {
+      setSavingNew(false);
+    }
+  };
+
   const qtyNum = Math.max(1, Number(qty.replace(/[^\d]/g, "")) || 1);
 
   const copy = async (line: string) => {
