@@ -31,13 +31,13 @@ type Staged = { productId?: string; name: string; isNew: boolean };
 const num = (s: string) => Number(s.replace(/[^\d.]/g, "")) || 0;
 const GRID = "grid grid-cols-[36px_minmax(200px,2.4fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(100px,1fr)_minmax(80px,0.8fr)_minmax(70px,0.7fr)_minmax(110px,1fr)_42px] items-center gap-2";
 
-function PurchasesPage() {
+export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; startDocType?: "purchase" | "return" } = {}) {
   const qc = useQueryClient();
   const pc = usePrintCenter();
   const { data: sup } = useQuery({ queryKey: ["suppliers"], queryFn: () => listSuppliers() });
   const { data: prod } = useQuery({ queryKey: ["products-lite"], queryFn: () => listProductsLite(), staleTime: 60_000 });
   const { data: hist } = useQuery({ queryKey: ["purchases"], queryFn: () => listPurchases() });
-  const [docType, setDocType] = useState<"purchase" | "return">("purchase");
+  const [docType, setDocType] = useState<"purchase" | "return">(startDocType ?? "purchase");
   const [refId, setRefId] = useState<string | undefined>();
   const [supplierId, setSupplierId] = useState("");
   const [lines, setLines] = useState<Line[]>([]);
