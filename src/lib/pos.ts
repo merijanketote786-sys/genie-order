@@ -34,7 +34,28 @@ export type CartLine = {
   note?: string;
   weight?: string; // sirf maloomat ke liye — Vyapar jaisi table ka WEIGHT column
   size?: string; // sirf maloomat ke liye — Vyapar jaisi table ka SIZE column
+  /** Product ki normal sale rate (wholesale se wapas aane ke liye) */
+  basePrice?: number;
+  /** Wholesale rate aur us par lagne wali kam az kam quantity */
+  wholesalePrice?: number | null;
+  wholesaleMinQty?: number | null;
+  /** Rate haath se badli gayi ho to auto wholesale band */
+  priceManual?: boolean;
 };
+
+/** Quantity ke hisaab se rate: min wholesale qty par pohnchte hi wholesale rate khud lag jati hai. */
+export function autoRate(line: Pick<CartLine, "qty" | "price" | "basePrice" | "wholesalePrice" | "wholesaleMinQty" | "priceManual">): number {
+  if (line.priceManual) return line.price;
+  const wp = line.wholesalePrice, mq = line.wholesaleMinQty;
+  if (wp != null && wp > 0 && mq != null && mq > 0 && (line.qty || 0) >= mq) return wp;
+  return line.basePrice ?? line.price;
+}
+
+/** Is line par wholesale rate lagi hui hai? */
+export function isWholesale(line: Pick<CartLine, "qty" | "price" | "basePrice" | "wholesalePrice" | "wholesaleMinQty" | "priceManual">): boolean {
+  const wp = line.wholesalePrice, mq = line.wholesaleMinQty;
+  return !line.priceManual && wp != null && wp > 0 && mq != null && mq > 0 && (line.qty || 0) >= mq;
+}
 
 export function priceFor(p: DbProduct, rate: RateType): number | null {
   return rate === "sale" ? p.sale : rate === "p100" ? p.p100 : rate === "p250" ? p.p250 : p.p500;

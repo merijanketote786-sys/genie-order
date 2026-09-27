@@ -204,6 +204,13 @@
       "when": 1790243817941,
       "tag": "0028_accounting_module",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1790477525355,
+      "tag": "0029_add_wholesale_min_qty",
+      "breakpoints": true
     }
   ]
 }

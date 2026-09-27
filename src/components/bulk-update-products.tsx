@@ -17,6 +17,7 @@ const COLS: Col[] = [
   { k: "purchase_price", label: "Purchase price", w: "w-32", num: true },
   { k: "sale_price", label: "Sale price", w: "w-32", num: true },
   { k: "wholesale_price", label: "Wholesale price", w: "w-32", num: true },
+  { k: "wholesale_min_qty", label: "Min wholesale qty", w: "w-32", num: true },
   { k: "min_sale_price", label: "Min sale price", w: "w-32", num: true },
   { k: "stock", label: "Stock qty", w: "w-24", num: true },
   { k: "stock_value", label: "Stock value", w: "w-32", num: true },
@@ -27,6 +28,7 @@ type Row = Record<string, string>;
 const base = (p: InvProduct): Row => ({
   name: p.name, sku: p.sku, barcode: p.barcode, category: p.category, brand: p.brand, unit: p.unit,
   purchase_price: p.purchasePrice?.toString() ?? "", sale_price: String(p.salePrice ?? 0), wholesale_price: p.wholesalePrice?.toString() ?? "",
+  wholesale_min_qty: p.wholesaleMinQty?.toString() ?? "",
   min_sale_price: p.minSalePrice?.toString() ?? "", stock: String(p.stock), min_stock: p.minStock?.toString() ?? "", tax_percent: p.taxPercent?.toString() ?? "",
 });
 const val = (r: Row) => { const s = Number(r.stock) || 0, c = Number(r.purchase_price) || 0; return r.purchase_price === "" ? "" : String(Math.round(Math.max(0, s) * c * 100) / 100); };
@@ -106,7 +108,7 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
         <Search className="size-4 text-primary" /><input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search product" />
       </label>
       <div className="max-h-[60vh] overflow-auto rounded-lg border border-border">
-        <table className="w-full min-w-[1900px] table-fixed border-collapse text-sm">
+        <table className="w-full min-w-[2050px] table-fixed border-collapse text-sm">
           <colgroup>
             <col className="w-12" />
             {COLS.map((c) => <col key={c.k} className={c.w} />)}

@@ -8,7 +8,7 @@ const optNum = z.number().min(0).max(1e9).nullable();
 
 export type InvProduct = {
   id: string; name: string; unit: string; stock: number; salePrice: number; purchasePrice: number | null;
-  wholesalePrice: number | null; minSalePrice: number | null; minStock: number | null; taxPercent: number | null;
+  wholesalePrice: number | null; wholesaleMinQty: number | null; minSalePrice: number | null; minStock: number | null; taxPercent: number | null;
   sku: string; barcode: string; category: string; brand: string;
 };
 
@@ -16,11 +16,12 @@ export const listInventory = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data } = await (context.supabase as Sb).from("products")
-      .select("id, name, unit, stock, sale_price, custom_sale_price, purchase_price, wholesale_price, min_sale_price, min_stock, tax_percent, sku, barcode, category, brand")
+      .select("id, name, unit, stock, sale_price, custom_sale_price, purchase_price, wholesale_price, wholesale_min_qty, min_sale_price, min_stock, tax_percent, sku, barcode, category, brand")
       .eq("is_active", true).eq("scope", "pos").order("name").limit(5000);
     const products: InvProduct[] = ((data ?? []) as any[]).map((p) => ({
       id: p.id, name: p.name, unit: p.unit, stock: Number(p.stock ?? 0), salePrice: Number(p.custom_sale_price ?? p.sale_price ?? 0),
       purchasePrice: p.purchase_price == null ? null : Number(p.purchase_price), wholesalePrice: p.wholesale_price == null ? null : Number(p.wholesale_price),
+      wholesaleMinQty: p.wholesale_min_qty == null ? null : Number(p.wholesale_min_qty),
       minSalePrice: p.min_sale_price == null ? null : Number(p.min_sale_price), minStock: p.min_stock == null ? null : Number(p.min_stock),
       taxPercent: p.tax_percent == null ? null : Number(p.tax_percent), sku: p.sku ?? "", barcode: p.barcode ?? "", category: p.category ?? "", brand: p.brand ?? "",
     }));
@@ -31,13 +32,14 @@ export const updateProductDetails = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({
     id: z.string().uuid(), sku: z.string().max(60), barcode: z.string().max(60), category: z.string().max(60), brand: z.string().max(60),
-    salePrice: optNum.optional(), purchasePrice: optNum, wholesalePrice: optNum, minSalePrice: optNum, minStock: optNum, taxPercent: z.number().min(0).max(100).nullable(),
+    salePrice: optNum.optional(), purchasePrice: optNum, wholesalePrice: optNum, wholesaleMinQty: optNum.optional(), minSalePrice: optNum, minStock: optNum, taxPercent: z.number().min(0).max(100).nullable(),
   }).parse(d))
   .handler(async ({ data, context }) => {
     const s = (n: number | null) => (n == null ? "" : String(n));
     const { error } = await (context.supabase as Sb).rpc("pos_update_product", { _id: data.id, _p: {
       sku: data.sku, barcode: data.barcode, category: data.category, brand: data.brand, purchase_price: s(data.purchasePrice),
-      wholesale_price: s(data.wholesalePrice), min_sale_price: s(data.minSalePrice), min_stock: s(data.minStock), tax_percent: s(data.taxPercent), ...(data.salePrice != null ? { sale_price: String(data.salePrice) } : {}),
+      wholesale_price: s(data.wholesalePrice), ...(data.wholesaleMinQty !== undefined ? { wholesale_min_qty: s(data.wholesaleMinQty) } : {}),
+      min_sale_price: s(data.minSalePrice), min_stock: s(data.minStock), tax_percent: s(data.taxPercent), ...(data.salePrice != null ? { sale_price: String(data.salePrice) } : {}),
     } });
     if (error) throw new Error("Failed to save product");
     return { ok: true };
@@ -166,7 +168,7 @@ export const getReport = createServerFn({ method: "GET" })
 const txt = z.string().max(200).optional();
 export const createPosProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ name: z.string().trim().min(1).max(200), unit: txt, sku: txt, barcode: txt, category: txt, brand: txt, sale_price: txt, purchase_price: txt, wholesale_price: txt, stock: txt, min_stock: txt, tax_percent: txt }).parse(d))
+  .inputValidator((d: unknown) => z.object({ name: z.string().trim().min(1).max(200), unit: txt, sku: txt, barcode: txt, category: txt, brand: txt, sale_price: txt, purchase_price: txt, wholesale_price: txt, wholesale_min_qty: txt, stock: txt, min_stock: txt, tax_percent: txt }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: id, error } = await (context.supabase as Sb).rpc("pos_create_product", { _p: data });
     if (error) throw new Error(error.message || "Failed to add product");

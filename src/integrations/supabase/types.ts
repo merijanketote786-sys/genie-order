@@ -902,6 +902,7 @@ export type Database = {
           tax_percent: number | null
           unit: string
           updated_at: string
+          wholesale_min_qty: number | null
           wholesale_price: number | null
           workspace_id: string
         }
@@ -931,6 +932,7 @@ export type Database = {
           tax_percent?: number | null
           unit: string
           updated_at?: string
+          wholesale_min_qty?: number | null
           wholesale_price?: number | null
           workspace_id: string
         }
@@ -960,6 +962,7 @@ export type Database = {
           tax_percent?: number | null
           unit?: string
           updated_at?: string
+          wholesale_min_qty?: number | null
           wholesale_price?: number | null
           workspace_id?: string
         }

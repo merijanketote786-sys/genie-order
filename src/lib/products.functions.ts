@@ -18,6 +18,9 @@ export type DbProduct = {
   sku?: string;
   barcode?: string;
   category?: string;
+  /** Wholesale rate aur us par lagne wali kam az kam quantity */
+  wholesale?: number | null;
+  wholesaleMinQty?: number | null;
 };
 
 const num = (v: unknown) => (v == null ? null : Number(v));
@@ -47,7 +50,7 @@ export const getProducts = createServerFn({ method: "GET" })
   const { data, error } = await supabase
     .from("products")
     .select(
-      "name, unit, sale_price, p100_staff_price, p250_staff_price, p500_staff_price, stock, custom_sale_price, custom_p100_price, custom_p250_price, custom_p500_price, sku, barcode, category",
+      "name, unit, sale_price, p100_staff_price, p250_staff_price, p500_staff_price, stock, custom_sale_price, custom_p100_price, custom_p250_price, custom_p500_price, sku, barcode, category, wholesale_price, wholesale_min_qty",
     )
     .eq("is_active", true)
     .eq("scope", input?.scope ?? "rates")
@@ -79,6 +82,8 @@ export const getProducts = createServerFn({ method: "GET" })
         sku: r["sku"] ? String(r["sku"]) : undefined,
         barcode: r["barcode"] ? String(r["barcode"]) : undefined,
         category: r["category"] ? String(r["category"]) : undefined,
+        wholesale: num(r["wholesale_price"]),
+        wholesaleMinQty: num(r["wholesale_min_qty"]),
       };
     }) as DbProduct[],
   };
