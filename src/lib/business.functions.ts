@@ -99,9 +99,9 @@ export const getSupplierLedger = createServerFn({ method: "GET" })
 export const listProductsLite = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data } = await (context.supabase as Sb).from("products").select("id, name, unit, purchase_price, sale_price, stock").eq("is_active", true).eq("scope", "pos").order("name").limit(5000);
-    type P = { id: string; name: string; unit: string; purchasePrice: number | null; salePrice: number; stock: number };
-    return { products: ((data ?? []) as any[]).map((p: any): P => ({ id: p.id as string, name: p.name as string, unit: p.unit as string, purchasePrice: p.purchase_price == null ? null : Number(p.purchase_price), salePrice: Number(p.sale_price), stock: Number(p.stock ?? 0) })) };
+    const { data } = await (context.supabase as Sb).from("products").select("id, name, unit, sku, barcode, category, purchase_price, sale_price, stock").eq("is_active", true).eq("scope", "pos").order("name").limit(5000);
+    type P = { id: string; name: string; unit: string; sku: string | null; barcode: string | null; category: string | null; purchasePrice: number | null; salePrice: number; stock: number };
+    return { products: ((data ?? []) as any[]).map((p: any): P => ({ id: p.id as string, name: p.name as string, unit: p.unit as string, sku: p.sku as string | null, barcode: p.barcode as string | null, category: p.category as string | null, purchasePrice: p.purchase_price == null ? null : Number(p.purchase_price), salePrice: Number(p.sale_price), stock: Number(p.stock ?? 0) })) };
   });
 
 export const savePurchase = createServerFn({ method: "POST" })
