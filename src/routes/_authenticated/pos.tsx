@@ -832,7 +832,7 @@ function PosPage() {
           {/* Sale invoice grid — Vyapar jaisi table: # | ITEM | WEIGHT | SIZE | QTY | UNIT | PRICE/UNIT | AMOUNT */}
           <section className="border-y border-border">
             <div className="overflow-x-auto">
-            <div className="md:min-w-[1050px]">
+            <div className="md:min-w-[960px]">
               <div className="mhead mgrid grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] border-b border-border bg-surface-2 text-[11px] font-bold uppercase text-muted-foreground">
                 <span className="px-2 py-3" />
                 <span className="px-2 py-3">Item</span>
