@@ -41,11 +41,16 @@ export type CartLine = {
   wholesaleMinQty?: number | null;
   /** Rate haath se badli gayi ho to auto wholesale band */
   priceManual?: boolean;
+  /** Is se kam rate par manual sale nahi */
+  minSalePrice?: number | null;
 };
 
 /** Quantity ke hisaab se rate: min wholesale qty par pohnchte hi wholesale rate khud lag jati hai. */
-export function autoRate(line: Pick<CartLine, "qty" | "price" | "basePrice" | "wholesalePrice" | "wholesaleMinQty" | "priceManual">): number {
-  if (line.priceManual) return line.price;
+export function autoRate(line: Pick<CartLine, "qty" | "price" | "basePrice" | "wholesalePrice" | "wholesaleMinQty" | "priceManual" | "minSalePrice">): number {
+  if (line.priceManual) {
+    const m = line.minSalePrice;
+    return m != null && m > 0 && line.price > 0 && line.price < m ? m : line.price;
+  }
   const wp = line.wholesalePrice, mq = line.wholesaleMinQty;
   if (wp != null && wp > 0 && mq != null && mq > 0 && (line.qty || 0) >= mq) return wp;
   return line.basePrice ?? line.price;
