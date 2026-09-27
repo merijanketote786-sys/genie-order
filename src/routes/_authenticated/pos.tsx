@@ -242,7 +242,13 @@ function PosPage() {
     const r = rateOverride ?? rate;
     let price = priceFor(p, r) ?? (rateOverride ? priceFor(p, rate) : null);
     const useRate = priceFor(p, r) != null ? r : rate;
-    if (ov?.price != null) price = ov.price;
+    if (ov?.price != null) {
+      price = ov.price;
+      if (p.minSalePrice != null && p.minSalePrice > 0 && price < p.minSalePrice) {
+        toast.error(`${p.name}: min sale price Rs ${money(p.minSalePrice)} hai — is se kam rate nahi lag sakti`, { duration: 2500 });
+        price = p.minSalePrice;
+      }
+    }
     if (price == null) {
       toast.error(`${p.name} has no ${RATE_TYPES.find((x) => x.id === r)?.label} rate`);
       return;
@@ -255,7 +261,7 @@ function PosPage() {
       const key = `${p.name}|${useRate}`;
       const ex = prev.find((l) => l.key === key);
       if (ex && !ov) return prev.map((l) => (l.key === key ? withAutoRate({ ...l, qty: l.qty + 1 }) : l));
-      return [...prev, withAutoRate({ key, name: p.name, unit: p.unit, unitOverride, rateType: useRate, price, basePrice: price, wholesalePrice, wholesaleMinQty, qty, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode, size: ov?.size || undefined, weight: ov?.weight || undefined, priceManual: ov?.price != null ? true : undefined })];
+      return [...prev, withAutoRate({ key, name: p.name, unit: p.unit, unitOverride, rateType: useRate, price, basePrice: price, wholesalePrice, wholesaleMinQty, minSalePrice: p.minSalePrice ?? null, qty, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode, size: ov?.size || undefined, weight: ov?.weight || undefined, priceManual: ov?.price != null ? true : undefined })];
     });
     if (cfg.inventory.trackStock && cfg.inventory.warnOutOfStock && p.stock != null && p.stock <= 0) {
       toast.warning(`${p.name}: out of stock (${p.stock})${cfg.inventory.allowNegativeStock ? "" : " — bill will not save"}`);
@@ -436,7 +442,17 @@ function PosPage() {
   }, []);
 
   const patch = (key: string, v: Partial<CartLine>) =>
-    setCart((prev) => prev.map((l) => (l.key === key ? withAutoRate({ ...l, ...v }) : l)));
+    setCart((prev) =>
+      prev.map((l) => {
+        if (l.key !== key) return l;
+        // Min sale price se neeche rate jaane na dein
+        if (v.price != null && l.minSalePrice != null && l.minSalePrice > 0 && v.price < l.minSalePrice) {
+          toast.error(`${l.name}: min sale price Rs ${money(l.minSalePrice)} hai — is se kam rate nahi lag sakti`, { duration: 2500 });
+          v = { ...v, price: l.minSalePrice };
+        }
+        return withAutoRate({ ...l, ...v });
+      }),
+    );
 
   const pre = totals(cart, 0, 0);
   const discAmt = discType === "pct" ? Math.round(((pre.subtotal + pre.taxTotal) * Math.min(100, n(billDiscount))) / 100 * 100) / 100 : n(billDiscount);
