@@ -183,7 +183,7 @@ function PosPage() {
   const [staged, setStaged] = useState<DbProduct | null>(null);
   const [pendingNew, setPendingNew] = useState<string | null>(null);
   const [savingNew, setSavingNew] = useState(false);
-  // Staged product ke quick-edit fields (search bar ke neeche panel)
+  // Staged product quick-edit fields live inside the expanded search box
   const [sf, setSf] = useState({ qty: "1", price: "", unit: "", size: "", weight: "", amount: "" });
   const resetSf = () => setSf({ qty: "1", price: "", unit: "", size: "", weight: "", amount: "" });
   // Product shortcut boxes: default hidden, toggle se khulti hain (is device pe yaad rehta hai)
@@ -286,6 +286,7 @@ function PosPage() {
     if (!name) return;
     if (pendingNew?.toLowerCase() !== name.toLowerCase()) {
       setPendingNew(name);
+      setSf({ qty: "1", price: "0", unit: "Piece", size: "", weight: "", amount: "0" });
       setDropOpen(false);
       return;
     }
@@ -715,8 +716,9 @@ function PosPage() {
               <Button type="button" size="sm" variant={estimate ? "default" : "ghost"} aria-pressed={estimate} onClick={() => setEstimate(true)} className="min-w-24 shadow-sm">Estimate</Button>
             </div>
             <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+E</K> switch Invoice / Estimate</p>
-            <div className="relative mt-3 max-w-2xl">
-            <label className="flex h-11 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
+            <div className="relative mt-3 w-full">
+            <div className="rounded-lg border border-border bg-background focus-within:border-primary">
+            <div className="flex h-11 items-center gap-2 px-3">
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
@@ -761,6 +763,7 @@ function PosPage() {
                   }
                 }}
                 placeholder="Search or scan item"
+                aria-label="Search or scan item"
                 className="min-w-0 flex-1 bg-transparent text-sm outline-none"
               />
               <button
@@ -773,52 +776,14 @@ function PosPage() {
               >
                 <Zap className="size-4" />
               </button>
-            </label>
-            {dropOpen && term.trim() && results.length ? (
-              <ul role="listbox" className="absolute inset-x-0 top-12 z-30 max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg">
-                {results.slice(0, 10).map((p, i) => {
-                  const price = priceFor(p, rate);
-                  return (
-                    <li
-                      key={p.name}
-                      role="option"
-                      aria-selected={i === hi}
-                      onMouseDown={(e) => { e.preventDefault(); if (pendingCode) saveLink(pendingCode, p); else stage(p); }}
-                      onMouseEnter={() => setHi(i)}
-                      className={`flex cursor-pointer items-center justify-between gap-2 rounded-md px-3 py-2 text-sm ${i === hi ? "bg-accent text-accent-foreground" : ""}`}
-                    >
-                      <span className="truncate font-medium">{p.name}</span>
-                      <span className="shrink-0 text-xs text-muted-foreground">{price != null ? `Rs ${money(price)}` : "No rate"} · {p.stock ?? "-"}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : null}
             </div>
-            <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+S</K> / <K>F4</K> search · <K>Enter</K> select item · <K>Enter</K> again or <K>⚡</K> add to bill · <K>↑</K> <K>↓</K> browse list</p>
-            <BarcodeScannerDialog
-              open={camOpen}
-              onOpenChange={setCamOpen}
-              onCode={(code) => {
-                setCamOpen(false);
-                if (!handleCode(code)) {
-                  setPendingCode(code.toUpperCase());
-                  toast.error("This barcode is not linked to any product — choose a product to link it");
-                }
-                scanRef.current?.focus();
-              }}
-            />
             {staged || (pendingNew && pendingNew === term.trim()) ? (
-              <div className="mt-2 rounded-lg border border-primary/50 bg-accent/40 p-2.5">
-                <p className="mb-2 text-xs font-semibold text-accent-foreground">
+              <div className="border-t border-border px-3 pb-3 pt-2">
+                <p className="mb-2 truncate text-xs font-medium text-muted-foreground">
                   <span className="truncate">{(staged?.name ?? pendingNew) || ""}</span>
-                  {staged
-                    ? <> is ready — edit fields below, then press <K>Enter</K> or ⚡ to add</>
-                    : savingNew
-                      ? " — Saving…"
-                      : <> is not saved — set rate below, then press <K>Enter</K> again or ⚡ to save it to inventory and add it to the bill</>}
+                  {savingNew ? " — Saving…" : staged ? " — ready to add" : " — new item, save with Enter or ⚡"}
                 </p>
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
                   <label className="block">
                     <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Qty</span>
                     <input
@@ -891,6 +856,41 @@ function PosPage() {
                 </div>
               </div>
             ) : null}
+            </div>
+            {dropOpen && term.trim() && results.length ? (
+              <ul role="listbox" className="absolute inset-x-0 top-12 z-30 max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg">
+                {results.slice(0, 10).map((p, i) => {
+                  const price = priceFor(p, rate);
+                  return (
+                    <li
+                      key={p.name}
+                      role="option"
+                      aria-selected={i === hi}
+                      onMouseDown={(e) => { e.preventDefault(); if (pendingCode) saveLink(pendingCode, p); else stage(p); }}
+                      onMouseEnter={() => setHi(i)}
+                      className={`flex cursor-pointer items-center justify-between gap-2 rounded-md px-3 py-2 text-sm ${i === hi ? "bg-accent text-accent-foreground" : ""}`}
+                    >
+                      <span className="truncate font-medium">{p.name}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground">{price != null ? `Rs ${money(price)}` : "No rate"} · {p.stock ?? "-"}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+S</K> / <K>F4</K> search · <K>Enter</K> select item · <K>Enter</K> again or <K>⚡</K> add to bill · <K>↑</K> <K>↓</K> browse list</p>
+            <BarcodeScannerDialog
+              open={camOpen}
+              onOpenChange={setCamOpen}
+              onCode={(code) => {
+                setCamOpen(false);
+                if (!handleCode(code)) {
+                  setPendingCode(code.toUpperCase());
+                  toast.error("This barcode is not linked to any product — choose a product to link it");
+                }
+                scanRef.current?.focus();
+              }}
+            />
             {pendingCode ? (
               <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-primary bg-accent p-2.5 text-xs text-accent-foreground">
                 <span>Barcode <b>{pendingCode}</b> is new — search for a product below and press <b>Link</b>, next time scanning will add it directly.</span>
