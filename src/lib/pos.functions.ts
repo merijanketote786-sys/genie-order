@@ -7,6 +7,7 @@ import { friendlyDbError } from "./pos-errors";
 const money = z.number().min(0).max(1e9);
 const docInput = z.object({
   docType: z.enum(["sale", "quotation", "held", "return"]),
+  docNumber: z.string().trim().max(40).optional(),
   customerId: z.string().uuid().optional(),
   customerName: z.string().trim().max(120).optional(),
   phone: z.string().trim().max(30).optional(),
@@ -58,6 +59,7 @@ export const savePosDoc = createServerFn({ method: "POST" })
     const { data: res, error } = await withStore(supabase.rpc("pos_save_sale", {
       _p: {
         doc_type: data.docType,
+        doc_number: data.docNumber ?? "",
         client_ref: data.clientRef ?? "",
         convert_from_id: data.convertFromId ?? "",
         customer_id: data.customerId ?? "",
