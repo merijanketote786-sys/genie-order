@@ -242,7 +242,13 @@ function PosPage() {
     const r = rateOverride ?? rate;
     let price = priceFor(p, r) ?? (rateOverride ? priceFor(p, rate) : null);
     const useRate = priceFor(p, r) != null ? r : rate;
-    if (ov?.price != null) price = ov.price;
+    if (ov?.price != null) {
+      price = ov.price;
+      if (p.minSalePrice != null && p.minSalePrice > 0 && price < p.minSalePrice) {
+        toast.error(`${p.name}: min sale price Rs ${money(p.minSalePrice)} hai — is se kam rate nahi lag sakti`, { duration: 2500 });
+        price = p.minSalePrice;
+      }
+    }
     if (price == null) {
       toast.error(`${p.name} has no ${RATE_TYPES.find((x) => x.id === r)?.label} rate`);
       return;
