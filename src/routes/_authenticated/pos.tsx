@@ -857,6 +857,7 @@ function PosPage() {
                     <span className="sr-only">Weight</span>
                     <input
                       value={sf.weight}
+                      placeholder="Weight · Tab next"
                       onChange={(e) => setSf((s) => ({ ...s, weight: e.target.value }))}
                       className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none focus:border-ring"
                     />
@@ -865,6 +866,7 @@ function PosPage() {
                     <span className="sr-only">Size</span>
                     <input
                       value={sf.size}
+                      placeholder="Size · Tab next"
                       onChange={(e) => setSf((s) => ({ ...s, size: e.target.value }))}
                       className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none focus:border-ring"
                     />
@@ -873,6 +875,7 @@ function PosPage() {
                     <span className="sr-only">Qty</span>
                     <input
                       value={sf.qty}
+                      placeholder="Qty · Enter adds"
                       inputMode="decimal"
                       onChange={(e) => {
                         const qty = e.target.value;
@@ -896,6 +899,7 @@ function PosPage() {
                     <span className="sr-only">Price/Unit</span>
                     <input
                       value={sf.price}
+                      placeholder="Price · Enter adds"
                       inputMode="decimal"
                       onChange={(e) => {
                         const price = e.target.value;
@@ -911,6 +915,7 @@ function PosPage() {
                     <span className="sr-only">Amount</span>
                     <input
                       value={sf.amount}
+                      placeholder="Amount · Enter adds"
                       inputMode="decimal"
                       onChange={(e) => {
                         const amount = e.target.value;
