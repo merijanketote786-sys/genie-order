@@ -35,6 +35,7 @@ import {
 } from "@/lib/pos";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { BarcodeScannerDialog } from "@/components/barcode-scanner";
 import { Minus, Plus, Printer, ScanBarcode, Trash2, MessageCircle, LayoutGrid, ReceiptText, Save, StickyNote, Pause, FileText, FolderOpen, RotateCcw, Download, Share2, X, UserPlus, Keyboard, Zap } from "lucide-react";
 
 type PosDocRow = { id: string; doc_number: string; customer_name: string | null; customer_phone: string | null; grand_total: number; created_at: string; payload: string | null; status: string };
@@ -176,6 +177,7 @@ function PosPage() {
   const [saving, setSaving] = useState(false);
   const [last, setLast] = useState<ReceiptInput | null>(null);
   const scanRef = useRef<HTMLInputElement>(null);
+  const [camOpen, setCamOpen] = useState(false);
   const [hi, setHi] = useState(-1);
   const [dropOpen, setDropOpen] = useState(false);
   const [staged, setStaged] = useState<DbProduct | null>(null);
