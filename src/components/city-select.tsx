@@ -112,6 +112,7 @@ export function CitySelect({ id, label, placeholder, value, onChange, compact }:
 
       {!value && open && query.trim() !== "" && (
         <ul
+          ref={listRef}
           id={`${id}-list`}
           role="listbox"
           className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-border bg-card p-1 shadow-lg"

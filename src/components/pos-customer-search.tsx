@@ -1,6 +1,6 @@
 import { listCustomers } from "@/lib/records.functions";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Cust = { id: string; name: string | null; phone: string; city: string | null; address: string | null; courierServiceName: string | null; goodsAddaName: string | null };
 
@@ -81,7 +81,7 @@ export function PosCustomerSearch({
         }}
       />
       {open && list.length > 0 ? (
-        <ul className="absolute left-0 right-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-xl border border-border bg-popover p-1 shadow-lg">
+        <ul ref={listRef} className="absolute left-0 right-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-xl border border-border bg-popover p-1 shadow-lg">
           {list.map((c, i) => (
             <li key={c.id}>
               <button
