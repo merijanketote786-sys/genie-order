@@ -139,7 +139,7 @@ function SettingsHub() {
             </div>
           ) : null}
         </div>
-        {custom.map((c, i) => <div key={i}>{c.render({ draft, upd, disabled: !admin })}</div>)}
+        {custom.map((c, i) => <div key={i}>{c.render({ draft, upd, disabled: !admin, dirty, saving, onSave: trySave })}</div>)}
         {others.length ? <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{others.map(renderField)}</div> : null}
         {bools.length ? <div className="grid gap-2 sm:grid-cols-2">{bools.map(renderField)}</div> : null}
       </section>
