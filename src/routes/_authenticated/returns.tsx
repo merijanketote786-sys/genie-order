@@ -3,7 +3,7 @@ import { usePinPrompt } from "@/components/pos-access";
 import { cancelWithPin } from "@/lib/pos-access.functions";
 import { PAY_OPTS, PosSubnav, posInput, rs } from "@/components/pos-subnav";
 import { Button } from "@/components/ui/button";
-import { cancelDoc, getSaleForReturn, listReturns, saveSalesReturn, saveUnlinkedSalesReturn, searchSales } from "@/lib/business.functions";
+import { cancelDoc, getSaleForReturn, listProductsLite, listReturns, saveSalesReturn, saveUnlinkedSalesReturn, searchSales } from "@/lib/business.functions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ScanBarcode, Search, Trash2, Undo2, Zap } from "lucide-react";
@@ -12,7 +12,6 @@ import { toast } from "sonner";
 import { newRef } from "@/lib/pos-errors";
 import { usePrintCenter } from "@/components/print-center";
 import { PurchasesPage } from "./purchases";
-import { listProductsLite } from "@/lib/business.functions";
 import { UnitSelect } from "@/components/unit-select";
 import { PosCustomerSearch } from "@/components/pos-customer-search";
 import { createPosProduct } from "@/lib/inventory.functions";
@@ -215,7 +214,7 @@ function ReturnsPage() {
               <div className="relative border-b border-border bg-accent/20 px-2 py-2 focus-within:bg-accent/30" onKeyDown={(e) => { if (e.key === "Enter" && !e.ctrlKey && !e.altKey && !e.metaKey && (e.target as HTMLElement).tagName !== "BUTTON") { e.preventDefault(); addItem(); } else if (e.key === "Escape") resetEntry(); }}>
                 <div className={grid}>
                   <Zap className="size-4 text-primary" />
-                  <div className="flex items-center gap-1"><input ref={itemRef} className={cell} value={itemSearch} onChange={(e) => { setItemSearch(e.target.value); setStagedId(null); setPendingNew(false); }} placeholder={saleId ? "Search item from selected bill" : "Search or type new POS product"} aria-label="Search return item" />{!saleId ? <Button size="icon-sm" variant="ghost" title="Scan barcode" aria-label="Scan barcode with camera" onClick={() => setCameraOpen(true)}><ScanBarcode /></Button> : null}</div>
+                  <div className="flex min-w-0 items-center gap-1"><input ref={itemRef} className={`${cell} min-w-0 flex-1`} value={itemSearch} onChange={(e) => { setItemSearch(e.target.value); setStagedId(null); setPendingNew(false); }} placeholder={saleId ? "Search item from selected bill" : "Search or type new POS product"} aria-label="Search return item" />{!saleId ? <Button size="icon-sm" variant="ghost" className="shrink-0" title="Scan barcode" aria-label="Scan barcode with camera" onClick={() => setCameraOpen(true)}><ScanBarcode /></Button> : null}</div>
                   <input className={cell} inputMode="decimal" value={entryQty} onChange={(e) => setEntryQty(e.target.value.replace(/[^\d.]/g, ""))} disabled={!stagedItem && !stagedProduct && !pendingNew} aria-label="Return Qty" />
                   {saleId ? <span className="truncate text-sm text-muted-foreground">{stagedItem?.unit || "—"}</span> : <UnitSelect className={cell} value={entryUnit} onChange={setEntryUnit} label="Return unit" />}
                   {saleId ? <span className="text-sm text-muted-foreground">{stagedItem ? rs(stagedItem.unitRefund) : "—"}</span> : <input className={cell} inputMode="decimal" value={entryRate} onChange={(e) => setEntryRate(e.target.value.replace(/[^\d.]/g, ""))} disabled={!stagedProduct && !pendingNew} aria-label="Return price per unit" placeholder="Price" />}
@@ -254,11 +253,11 @@ function ReturnsPage() {
 
             <div className="grid gap-4 p-4 md:grid-cols-2">
               <div className="space-y-2">
-                <select className={posInput} value={mode} onChange={(e) => setMode(e.target.value as "refund" | "credit")} aria-label="Return mode" disabled={false}>
+                <select className={posInput} value={mode} onChange={(e) => setMode(e.target.value as "refund" | "credit")} aria-label="Return mode">
                   <option value="refund">Money back (refund)</option>
                   <option value="credit" disabled={saleId ? !sale?.sale.hasCustomer : !customerId}>Credit to customer account</option>
                 </select>
-                {mode === "refund" ? <select className={posInput} value={method} onChange={(e) => setMethod(e.target.value)} aria-label="Refund method" disabled={false}>{PAY_OPTS.map((m) => <option key={m}>{m}</option>)}</select> : null}
+                {mode === "refund" ? <select className={posInput} value={method} onChange={(e) => setMethod(e.target.value)} aria-label="Refund method">{PAY_OPTS.map((m) => <option key={m}>{m}</option>)}</select> : null}
                 <textarea className={`${posInput} min-h-20 py-2`} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Description / note" />
               </div>
               <div className="space-y-2 text-sm">
