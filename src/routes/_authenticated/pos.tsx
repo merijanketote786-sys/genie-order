@@ -255,7 +255,7 @@ function PosPage() {
       const key = `${p.name}|${useRate}`;
       const ex = prev.find((l) => l.key === key);
       if (ex && !ov) return prev.map((l) => (l.key === key ? withAutoRate({ ...l, qty: l.qty + 1 }) : l));
-      return [...prev, withAutoRate({ key, name: p.name, unit: p.unit, unitOverride, rateType: useRate, price, basePrice: price, wholesalePrice, wholesaleMinQty, qty, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode, size: ov?.size || undefined, weight: ov?.weight || undefined, priceManual: ov?.price != null ? true : undefined })];
+      return [...prev, withAutoRate({ key, name: p.name, unit: p.unit, unitOverride, rateType: useRate, price, basePrice: price, wholesalePrice, wholesaleMinQty, minSalePrice: p.minSalePrice ?? null, qty, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode, size: ov?.size || undefined, weight: ov?.weight || undefined, priceManual: ov?.price != null ? true : undefined })];
     });
     if (cfg.inventory.trackStock && cfg.inventory.warnOutOfStock && p.stock != null && p.stock <= 0) {
       toast.warning(`${p.name}: out of stock (${p.stock})${cfg.inventory.allowNegativeStock ? "" : " — bill will not save"}`);
