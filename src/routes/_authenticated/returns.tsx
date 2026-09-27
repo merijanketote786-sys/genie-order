@@ -221,7 +221,7 @@ function ReturnsPage() {
                   <span className="text-sm text-muted-foreground" title="Already included in the original bill's refund rate">—</span>
                   <span className="text-sm text-muted-foreground" title="Already included in the original bill's refund rate">—</span>
                   <span className="text-right text-sm font-semibold">{stagedItem || stagedProduct || pendingNew ? rs(Number(entryQty || 0) * (stagedItem?.unitRefund ?? Number(entryRate || 0))) : "—"}</span>
-                  <Button size="icon-sm" className="h-11 w-full shrink-0 px-0 shadow-elegant" onClick={() => void addItem()} disabled={!itemSearch.trim() || savingNew} aria-label="Add return item"><Zap className="size-5" /></Button>
+                  <Button size="icon-sm" className="entry-add h-11 w-full shrink-0 px-0" onClick={() => void addItem()} disabled={!itemSearch.trim() || savingNew} aria-label="Add return item"><Zap className="size-5" /></Button>
                 </div>
                 {pendingNew ? <p className="ml-9 mt-1 text-xs text-muted-foreground">New product — press Enter again to save it to inventory and add it to this return.</p> : null}
                 {matches.length ? <ul role="listbox" className="relative z-30 ml-9 mt-1 max-h-72 w-[min(450px,90vw)] overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg">

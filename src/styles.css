@@ -235,6 +235,11 @@
   }
 }
 
+/* The "add to bill" button at the end of the entry strip — solid, lifted, edged. */
+@utility entry-add {
+  box-shadow: var(--shadow-elegant), 0 0 0 1px color-mix(in oklab, var(--primary) 35%, transparent);
+}
+
 /* Apply the same restrained hover feedback to older native buttons and toggles. */
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   button:not(:disabled), [role="switch"]:not([aria-disabled="true"]) {

@@ -977,7 +977,7 @@ function PosPage() {
                   </label>
                   </div>
                   <div className="px-1">
-                    <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={confirmStaged} aria-label={staged ? `Add ${staged.name} to bill` : "Select first match"} title={staged ? `Add ${staged.name} to bill` : "Select first match"} className="flex h-11 w-full items-center justify-center rounded-sm bg-primary text-primary-foreground shadow-elegant hover:opacity-90"><Zap className="size-5" /></button>
+                    <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={confirmStaged} aria-label={staged ? `Add ${staged.name} to bill` : "Select first match"} title={staged ? `Add ${staged.name} to bill` : "Select first match"} className="entry-add flex h-11 w-full items-center justify-center rounded-sm bg-primary text-primary-foreground hover:opacity-90"><Zap className="size-5" /></button>
                   </div>
                 </div>
                 {dropOpen && !staged && !pendingNew && term.trim() && results.length ? (
