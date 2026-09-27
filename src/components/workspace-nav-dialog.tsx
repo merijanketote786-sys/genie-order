@@ -53,7 +53,7 @@ export function WorkspaceNavDialog({ tabs, active }: { tabs: readonly NavItem[];
             return (
               <Link
                 key={tab.to}
-                to={tab.to}
+                to={tab.to === "/pos" ? "/pos-dashboard" : tab.to}
                 className={cn(
                   "flex min-h-24 min-w-0 flex-col items-center justify-center gap-2 rounded-lg border px-2 text-center",
                   selected
