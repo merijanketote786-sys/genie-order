@@ -3,6 +3,7 @@
  * Search for a product from the rate list, choose pack size + qty, and insert the line.
  */
 import { getProducts, type DbProduct } from "@/lib/products.functions";
+import { createPosProduct } from "@/lib/inventory.functions";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Copy, CornerDownLeft, Loader2, Search } from "lucide-react";
@@ -57,8 +58,11 @@ export function ProductPickerBody({
   useLabel?: string;
 }) {
   const load = useServerFn(getProducts);
+  const createProduct = useServerFn(createPosProduct);
   const [term, setTerm] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
+  const [pendingNew, setPendingNew] = useState<string | null>(null);
+  const [savingNew, setSavingNew] = useState(false);
   const [pack, setPack] = useState<Pack>("250");
   const [qty, setQty] = useState("1");
 
