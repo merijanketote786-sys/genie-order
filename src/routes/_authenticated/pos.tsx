@@ -34,7 +34,7 @@ import {
 } from "@/lib/pos";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Minus, Plus, Printer, ScanBarcode, Trash2, MessageCircle, LayoutGrid, ReceiptText, Save, StickyNote, Pause, FileText, FolderOpen, RotateCcw, Download, Share2, X, UserPlus, Keyboard } from "lucide-react";
+import { Minus, Plus, Printer, ScanBarcode, Trash2, MessageCircle, LayoutGrid, ReceiptText, Save, StickyNote, Pause, FileText, FolderOpen, RotateCcw, Download, Share2, X, UserPlus, Keyboard, Zap } from "lucide-react";
 
 type PosDocRow = { id: string; doc_number: string; customer_name: string | null; customer_phone: string | null; grand_total: number; created_at: string; payload: string | null; status: string };
 
@@ -177,6 +177,7 @@ function PosPage() {
   const scanRef = useRef<HTMLInputElement>(null);
   const [hi, setHi] = useState(-1);
   const [dropOpen, setDropOpen] = useState(false);
+  const [staged, setStaged] = useState<DbProduct | null>(null);
   // Product shortcut boxes: default hidden, toggle se khulti hain (is device pe yaad rehta hai)
   const [showGrid, setShowGrid] = useState(false);
   useEffect(() => {
@@ -233,6 +234,31 @@ function PosPage() {
       toast.warning(`${p.name}: out of stock (${p.stock})${cfg.inventory.allowNegativeStock ? "" : " — bill will not save"}`);
     } else toast.success(`${p.name} added to cart`, { duration: 1200 });
   };
+
+  // Two-step add: selecting a product first lands its name in the search bar;
+  // Enter again or the ⚡ button then adds it to the bill.
+  const stage = (p: DbProduct) => {
+    setStaged(p);
+    setTerm(p.name);
+    setHi(-1);
+    setDropOpen(false);
+    scanRef.current?.focus();
+  };
+  const confirmStaged = () => {
+    const t = term.trim().toLowerCase();
+    if (staged && t === staged.name.toLowerCase()) {
+      add(staged);
+      setTerm("");
+      setStaged(null);
+      setHi(-1);
+      return;
+    }
+    const exact = results.find((p) => p.name.toLowerCase() === t);
+    const pick = exact ?? results[0];
+    if (pick) stage(pick);
+    else onScan();
+  };
+
 
   // Barcode ↔ product links (company ke apne barcodes ke liye), is device pe saved
   const [links, setLinks] = useState<Record<string, { name: string; rate: RateType }>>({});
@@ -393,6 +419,8 @@ function PosPage() {
 
   const reset = () => {
     setCart([]);
+    setTerm("");
+    setStaged(null);
     setBillDiscount("");
     setDiscType("amt");
     setDelivery("");
@@ -649,7 +677,7 @@ function PosPage() {
                 value={term}
                 role="combobox"
                 aria-expanded={dropOpen}
-                onChange={(e) => { setTerm(e.target.value); setHi(-1); setDropOpen(true); }}
+                onChange={(e) => { setTerm(e.target.value); setStaged(null); setHi(-1); setDropOpen(true); }}
                 onFocus={() => setDropOpen(true)}
                 onBlur={() => setTimeout(() => setDropOpen(false), 150)}
                 onKeyDown={(e) => {
@@ -662,17 +690,33 @@ function PosPage() {
                     setDropOpen(false); setHi(-1);
                   } else if ((e.key === "Enter" || e.key === "Tab") && term.trim()) {
                     e.preventDefault();
-                    if (hi >= 0 && list[hi]) {
-                      if (pendingCode) saveLink(pendingCode, list[hi]); else add(list[hi]);
-                      setTerm(""); setHi(-1);
-                    } else if (!handleCode(term) && list[0] && !pendingCode) {
-                      add(list[0]); setTerm("");
-                    } else if (!list.length) onScan();
+                    const t = term.trim().toLowerCase();
+                    if (staged && t === staged.name.toLowerCase()) {
+                      add(staged); setTerm(""); setStaged(null); setHi(-1);
+                    } else if (hi >= 0 && list[hi]) {
+                      if (pendingCode) saveLink(pendingCode, list[hi]); else stage(list[hi]);
+                    } else if (pendingCode) {
+                      onScan();
+                    } else {
+                      const exact = results.find((p) => p.name.toLowerCase() === t);
+                      const pick = exact ?? list[0];
+                      if (pick) stage(pick); else onScan();
+                    }
                   }
                 }}
                 placeholder="Search or scan item"
                 className="min-w-0 flex-1 bg-transparent text-sm outline-none"
               />
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={confirmStaged}
+                aria-label={staged ? `Add ${staged.name} to bill` : "Select first match"}
+                title={staged ? `Add ${staged.name} to bill` : "Select first match"}
+                className={`inline-flex h-8 shrink-0 items-center justify-center rounded-md px-2 transition hover:scale-[1.05] active:scale-95 motion-reduce:transform-none ${staged ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-accent"}`}
+              >
+                <Zap className="size-4" />
+              </button>
             </label>
             {dropOpen && term.trim() && results.length ? (
               <ul role="listbox" className="absolute inset-x-0 top-12 z-30 max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg">
@@ -683,7 +727,7 @@ function PosPage() {
                       key={p.name}
                       role="option"
                       aria-selected={i === hi}
-                      onMouseDown={(e) => { e.preventDefault(); if (pendingCode) saveLink(pendingCode, p); else add(p); setTerm(""); setHi(-1); }}
+                      onMouseDown={(e) => { e.preventDefault(); if (pendingCode) saveLink(pendingCode, p); else stage(p); }}
                       onMouseEnter={() => setHi(i)}
                       className={`flex cursor-pointer items-center justify-between gap-2 rounded-md px-3 py-2 text-sm ${i === hi ? "bg-accent text-accent-foreground" : ""}`}
                     >
@@ -695,7 +739,12 @@ function PosPage() {
               </ul>
             ) : null}
             </div>
-            <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+S</K> / <K>F4</K> search · <K>Enter</K> add item (cursor stays in search) · <K>↑</K> <K>↓</K> browse list</p>
+            <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+S</K> / <K>F4</K> search · <K>Enter</K> select item · <K>Enter</K> again or <K>⚡</K> add to bill · <K>↑</K> <K>↓</K> browse list</p>
+            {staged ? (
+              <p className="mt-1 rounded-lg border border-primary/50 bg-accent/40 px-3 py-1.5 text-xs font-semibold text-accent-foreground">
+                <span className="truncate">{staged.name}</span> is ready — press <K>Enter</K> or the ⚡ button to add it to the bill
+              </p>
+            ) : null}
             {pendingCode ? (
               <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-primary bg-accent p-2.5 text-xs text-accent-foreground">
                 <span>Barcode <b>{pendingCode}</b> is new — search for a product below and press <b>Link</b>, next time scanning will add it directly.</span>
@@ -945,7 +994,7 @@ function K({ children }: { children: string }) {
 
 const SHORTCUTS: { group: string; items: [string, string][] }[] = [
   { group: "Navigation", items: [["Tab / Shift+Tab", "Move to next / previous field or button"], ["Enter / Space", "Press the focused button"], ["Alt+C", "Customer name"], ["Alt+S or F4", "Item search"], ["Alt+M or F8", "Payment"], ["Esc", "Close popup / search list"]] },
-  { group: "Items", items: [["↑ / ↓", "Move in search results"], ["Enter", "Add item, then jump to quantity"], ["Enter (in qty)", "Back to search"], ["Ctrl+Shift+Backspace", "Remove last item"]] },
+  { group: "Items", items: [["↑ / ↓", "Move in search results"], ["Enter", "Select item — lands in search bar"], ["Enter again / ⚡", "Add selected item to bill"], ["Enter (in qty)", "Back to search"], ["Ctrl+Shift+Backspace", "Remove last item"]] },
   { group: "Bill", items: [["Alt+E", "Switch Invoice / Estimate"], ["Alt+P", "Add new party"], ["Ctrl+S or F9", "Save + Print"], ["Ctrl+Enter", "Save without print"], ["Ctrl+Shift+H or F10", "Hold bill"], ["Alt+N or F2", "New bill"]] },
   { group: "Lists & help", items: [["Alt+H", "Held bills"], ["Alt+Q", "Quotations / estimates"], ["F1, Alt+K or Ctrl+/", "Open / close this guide"]] },
 ];
