@@ -1,5 +1,6 @@
+import { Button } from "@/components/ui/button";
 import type { PaperFormat, PosConfig, TemplateId } from "@/lib/pos-config";
-import { Check } from "lucide-react";
+import { Check, Save } from "lucide-react";
 
 type Upd = (path: string, v: unknown) => void;
 type Tpl = {
@@ -34,14 +35,16 @@ export const PRINT_TEMPLATES: Tpl[] = [
 
 const DOCS = ["pos", "sale", "quotation", "return", "purchase", "purchase_return", "receipt"] as const;
 
-export function PrintTemplatesPicker({ draft, upd, disabled }: { draft: PosConfig; upd: Upd; disabled: boolean }) {
+export function PrintTemplatesPicker({ draft, upd, disabled, dirty = false, saving = false, onSave }: { draft: PosConfig; upd: Upd; disabled: boolean; dirty?: boolean; saving?: boolean; onSave?: () => void }) {
   const current = draft.printing?.preset;
+  const chosen = PRINT_TEMPLATES.find((t) => t.id === current);
   const choose = (t: Tpl) => {
     for (const [k, v] of Object.entries(t.apply)) upd(k, v);
     upd(`printing.templates.${t.format}`, t.design);
     for (const d of DOCS) upd(`printing.defaults.${d}`, t.format);
     upd("printing.preset", t.id);
   };
+
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">Pick one template that matches your printer, then press <b className="text-foreground">Save</b>. Every bill, return, purchase and receipt will print in this size.</p>
@@ -70,6 +73,29 @@ export function PrintTemplatesPicker({ draft, upd, disabled }: { draft: PosConfi
           );
         })}
       </div>
+
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
+
+        <div className="mr-auto min-w-0">
+          <p className="text-sm font-semibold text-foreground">
+            {chosen ? `Selected template: ${chosen.name}` : "No template selected yet"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {disabled
+              ? "You can view templates; only Admin can save them."
+              : dirty
+                ? "Changes are not saved yet — press Save template to apply them."
+                : chosen
+                  ? "Saved and active on every device."
+                  : "Pick a template above, then press Save template."}
+          </p>
+        </div>
+        <Button size="sm" disabled={disabled || saving || !dirty || !onSave} onClick={() => onSave?.()}>
+          {dirty ? <Save /> : <Check />}
+          {saving ? "Saving…" : dirty ? "Save template" : "Saved"}
+        </Button>
+      </div>
     </div>
   );
 }
+

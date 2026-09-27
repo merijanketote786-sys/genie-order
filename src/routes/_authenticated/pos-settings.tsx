@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/pos-settings")({
 });
 
 /** Custom (non-schema) blocks har section me. keywords search ke liye. */
-const CUSTOM: Partial<Record<SectionId, { keywords: string; render: (p: { draft: PosConfig; upd: (p: string, v: unknown) => void; disabled: boolean }) => ReactNode }[]>> = {
+const CUSTOM: Partial<Record<SectionId, { keywords: string; render: (p: { draft: PosConfig; upd: (p: string, v: unknown) => void; disabled: boolean; dirty: boolean; saving: boolean; onSave: () => void }) => ReactNode }[]>> = {
   business: [{ keywords: "logo image", render: (p) => <LogoField {...p} /> }],
   payments: [{ keywords: "payment method cash card bank jazzcash easypaisa credit custom default", render: (p) => <PaymentsEditor {...p} /> }],
   taxes: [{ keywords: "tax rates multiple gst percentage name", render: (p) => <TaxRatesEditor {...p} /> }],
@@ -130,11 +130,16 @@ function SettingsHub() {
           {id === "printing" || id === "invoices" ? (
             <div className="flex flex-wrap items-center gap-2">
               <Button size="sm" variant="outline" onClick={() => pc.preview({ ...sampleDoc(), kind: "sale" })}><Eye /> Sample preview</Button>
+              {id === "printing" ? (
+                <Button size="sm" disabled={!admin || saving || !dirty} onClick={trySave} title={dirty ? "Save the selected print template" : "Nothing to save"}>
+                  <Save /> {saving ? "Saving…" : dirty ? "Save template" : "Saved"}
+                </Button>
+              ) : null}
               <span className="text-[11px] text-muted-foreground">Preview shows saved settings — save first</span>
             </div>
           ) : null}
         </div>
-        {custom.map((c, i) => <div key={i}>{c.render({ draft, upd, disabled: !admin })}</div>)}
+        {custom.map((c, i) => <div key={i}>{c.render({ draft, upd, disabled: !admin, dirty, saving, onSave: trySave })}</div>)}
         {others.length ? <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{others.map(renderField)}</div> : null}
         {bools.length ? <div className="grid gap-2 sm:grid-cols-2">{bools.map(renderField)}</div> : null}
       </section>
