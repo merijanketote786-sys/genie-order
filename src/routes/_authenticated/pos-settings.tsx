@@ -130,6 +130,11 @@ function SettingsHub() {
           {id === "printing" || id === "invoices" ? (
             <div className="flex flex-wrap items-center gap-2">
               <Button size="sm" variant="outline" onClick={() => pc.preview({ ...sampleDoc(), kind: "sale" })}><Eye /> Sample preview</Button>
+              {id === "printing" ? (
+                <Button size="sm" disabled={!admin || saving || !dirty} onClick={trySave} title={dirty ? "Save the selected print template" : "Nothing to save"}>
+                  <Save /> {saving ? "Saving…" : dirty ? "Save template" : "Saved"}
+                </Button>
+              ) : null}
               <span className="text-[11px] text-muted-foreground">Preview shows saved settings — save first</span>
             </div>
           ) : null}
