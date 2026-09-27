@@ -50,6 +50,8 @@ export type OfflineCustomer = {
   name: string | null;
   city: string | null;
   address: string | null;
+  courier_service_name?: string | null;
+  goods_adda_name?: string | null;
   created_at: string;
 };
 

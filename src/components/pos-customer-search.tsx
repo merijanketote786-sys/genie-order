@@ -2,7 +2,7 @@ import { listCustomers } from "@/lib/records.functions";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
-type Cust = { id: string; name: string | null; phone: string; city: string | null };
+type Cust = { id: string; name: string | null; phone: string; city: string | null; address: string | null; courierServiceName: string | null; goodsAddaName: string | null };
 
 export function PosCustomerSearch({
   value,
@@ -35,6 +35,17 @@ export function PosCustomerSearch({
   });
   const list = ((data?.customers ?? []) as Cust[]).slice(0, 8);
   useEffect(() => setIdx(0), [q]);
+
+  // A complete, unambiguous saved name/number fills the address without requiring a click.
+  useEffect(() => {
+    if (!open || !q || q !== value.trim()) return;
+    const matches = list.filter((c) => field === "phone"
+      ? c.phone.replace(/\D/g, "") === q.replace(/\D/g, "")
+      : c.name?.trim().toLowerCase() === q.toLowerCase());
+    if (matches.length === 1) onPick(matches[0]);
+    // Only react to fresh search results; onPick updates the other input as well.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, q, open, field]);
 
   const pick = (c: Cust) => {
     onPick(c);
@@ -74,8 +85,9 @@ export function PosCustomerSearch({
                 onMouseEnter={() => setIdx(i)}
                 className={`w-full rounded-lg px-2.5 py-1.5 text-left ${i === idx ? "bg-accent text-accent-foreground" : "text-popover-foreground"}`}
               >
-                <p className="truncate text-sm font-semibold">{c.name || "Be-naam"}</p>
+                 <p className="truncate text-sm font-semibold">{c.name || "No name"}</p>
                 <p className="truncate text-xs text-muted-foreground">{c.phone}{c.city ? ` · ${c.city}` : ""}</p>
+                 {c.address ? <p className="truncate text-xs text-muted-foreground">{c.address}</p> : null}
               </button>
             </li>
           ))}

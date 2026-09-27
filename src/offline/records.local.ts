@@ -112,6 +112,8 @@ export async function listCustomers(arg?: Arg<{ search?: string }>) {
         name: r.name,
         city: r.city,
         address: r.address,
+        courierServiceName: r.courier_service_name ?? null,
+        goodsAddaName: r.goods_adda_name ?? null,
         orderCount: orders.length,
         totalSpent: orders.reduce((sum, o) => sum + Number(o.product_total ?? 0), 0),
         lastOrderAt: orders.map((o) => o.created_at).sort().at(-1) ?? null,

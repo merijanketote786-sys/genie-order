@@ -66,6 +66,8 @@ export const saveParty = createServerFn({ method: "POST" })
         phone: z.string().trim().min(7).max(20),
         city: z.string().trim().max(120).optional(),
         address: z.string().trim().max(500).optional(),
+        courierServiceName: z.string().trim().max(120).optional(),
+        goodsAddaName: z.string().trim().max(120).optional(),
       })
       .parse(data),
   )
@@ -79,8 +81,13 @@ export const saveParty = createServerFn({ method: "POST" })
       address: data.address,
     });
     if (!id) throw new Error("Phone number sahi nahi hai");
+    const { error } = await supabase.from("customers").update({
+      courier_service_name: data.courierServiceName || null,
+      goods_adda_name: data.goodsAddaName || null,
+    }).eq("id", id);
+    if (error) throw new Error("Could not save delivery details");
     const phone = normalizePhone(data.phone) ?? data.phone;
-    return { ok: true, customer: { id, name: data.name, phone, city: data.city ?? null } };
+    return { ok: true, customer: { id, name: data.name, phone, city: data.city ?? null, address: data.address ?? null, courierServiceName: data.courierServiceName ?? null, goodsAddaName: data.goodsAddaName ?? null } };
   });
 
 /* ------------------------------- orders -------------------------------- */
@@ -238,6 +245,8 @@ export type CustomerRow = {
   name: string | null;
   city: string | null;
   address: string | null;
+  courierServiceName: string | null;
+  goodsAddaName: string | null;
   orderCount: number;
   totalSpent: number;
   lastOrderAt: string | null;
@@ -254,7 +263,7 @@ export const listCustomers = createServerFn({ method: "GET" })
 
     let query = supabase
       .from("customers")
-      .select("id, phone, name, city, address")
+      .select("id, phone, name, city, address, courier_service_name, goods_adda_name")
       .order("updated_at", { ascending: false })
       .limit(1000);
 
@@ -290,6 +299,8 @@ export const listCustomers = createServerFn({ method: "GET" })
         name: r.name,
         city: r.city,
         address: r.address,
+        courierServiceName: r.courier_service_name,
+        goodsAddaName: r.goods_adda_name,
         orderCount: stats[r.id]?.count ?? 0,
         totalSpent: stats[r.id]?.total ?? 0,
         lastOrderAt: stats[r.id]?.last ?? null,
