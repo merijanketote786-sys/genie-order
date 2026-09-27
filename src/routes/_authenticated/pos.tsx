@@ -272,6 +272,7 @@ function PosPage() {
       setStaged(null);
       setHi(-1);
       resetSf();
+      requestAnimationFrame(() => scanRef.current?.focus());
       return;
     }
     if (pendingNew?.toLowerCase() === t) {
