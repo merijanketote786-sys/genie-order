@@ -189,6 +189,12 @@ function PosPage() {
   const scanRef = useRef<HTMLInputElement>(null);
   const [camOpen, setCamOpen] = useState(false);
   const [hi, setHi] = useState(-1);
+  const dropRef = useRef<HTMLUListElement>(null);
+  // Arrow-key highlight ko dropdown me nazar me rakhta hai (mouse scroll ki zaroorat nahi).
+  useEffect(() => {
+    if (hi < 0) return;
+    dropRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
+  }, [hi]);
   const [dropOpen, setDropOpen] = useState(false);
   const [staged, setStaged] = useState<DbProduct | null>(null);
   const [pendingNew, setPendingNew] = useState<string | null>(null);
@@ -922,7 +928,7 @@ function PosPage() {
                   </div>
                 </div>
                 {dropOpen && !staged && !pendingNew && term.trim() && results.length ? (
-                  <ul role="listbox" className="relative z-30 ml-9 max-h-80 w-[min(760px,calc(100vw-4rem))] overflow-y-auto rounded-sm border border-border bg-popover p-1 text-popover-foreground shadow-lg">
+                  <ul ref={dropRef} role="listbox" className="relative z-30 ml-9 max-h-80 w-[min(760px,calc(100vw-4rem))] overflow-y-auto rounded-sm border border-border bg-popover p-1 text-popover-foreground shadow-lg">
                 {results.slice(0, 10).map((p, i) => {
                   const detail = [
                     ["Sale price", p.sale == null ? "—" : `Rs ${money(p.sale)}`],

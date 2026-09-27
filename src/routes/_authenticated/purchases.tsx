@@ -7,7 +7,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PackagePlus, Trash2, Undo2, Zap } from "lucide-react";
 import { UnitSelect } from "@/components/unit-select";
 import { createPosProduct } from "@/lib/inventory.functions";
-import { useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { toast } from "sonner";
 import { newRef } from "@/lib/pos-errors";
 import { usePrintCenter } from "@/components/print-center";
@@ -45,6 +45,10 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const [staged, setStaged] = useState<Staged | null>(null);
   const [sf, setSf] = useState({ qty: "1", unit: "Piece", rate: "", discount: "", tax: "0" });
   const [hi, setHi] = useState(0);
+  const dropRef = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    dropRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
+  }, [hi]);
   const [discount, setDiscount] = useState("");
   const [paid, setPaid] = useState("");
   const [method, setMethod] = useState("Cash");
@@ -196,7 +200,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
                   <Button size="icon-sm" onClick={() => void confirm()} disabled={savingNew || !term.trim()} aria-label="Add to bill"><Zap /></Button>
                 </div>
                 {matches.length ? (
-                  <ul role="listbox" className="relative z-30 ml-9 mt-1 max-h-72 w-[min(450px,90vw)] overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg">
+                  <ul ref={dropRef} role="listbox" className="relative z-30 ml-9 mt-1 max-h-72 w-[min(450px,90vw)] overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg">
                     {matches.map((p, i) => (
                       <li key={p.id} role="option" aria-selected={i === hi}>
                         <button type="button" className={`w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent ${i === hi ? "bg-accent" : ""}`} onMouseDown={(e) => e.preventDefault()} onClick={() => stage(p)}>
