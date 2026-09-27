@@ -897,7 +897,7 @@ function PosPage() {
                       value={sf.weight}
                       placeholder="Weight · Tab next"
                       onChange={(e) => setSf((s) => ({ ...s, weight: e.target.value }))}
-                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none focus:border-ring"
+                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none placeholder:text-xs focus:border-ring"
                     />
                   </label>
                   <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
@@ -906,7 +906,7 @@ function PosPage() {
                       value={sf.size}
                       placeholder="Size · Tab next"
                       onChange={(e) => setSf((s) => ({ ...s, size: e.target.value }))}
-                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none focus:border-ring"
+                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none placeholder:text-xs focus:border-ring"
                     />
                   </label>
                   <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
@@ -930,7 +930,7 @@ function PosPage() {
                           return { ...s, qty, price: nextPrice, amount: Number.isFinite(q) && Number.isFinite(pr) && nextPrice !== "" ? String(r2local(q * pr)) : s.amount };
                         });
                       }}
-                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none focus:border-ring"
+                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none placeholder:text-xs focus:border-ring"
                     />
                   </label>
                   <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
@@ -938,7 +938,7 @@ function PosPage() {
                     <UnitSelect
                       value={sf.unit}
                       onChange={(v) => setSf((s) => ({ ...s, unit: v }))}
-                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-1 text-sm outline-none focus:border-ring"
+                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-1 text-sm outline-none placeholder:text-xs focus:border-ring"
                     />
                   </label>
                   <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
@@ -955,7 +955,7 @@ function PosPage() {
                           return { ...s, price, amount: Number.isFinite(q) && Number.isFinite(pr) && price !== "" ? String(r2local(q * pr)) : s.amount };
                         });
                       }}
-                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none focus:border-ring"
+                      className="h-9 w-full min-w-0 rounded-sm border border-input bg-background px-2 text-sm outline-none placeholder:text-xs focus:border-ring"
                     />
                   </label>
                   <label className="min-w-0 border-r border-border px-1.5 last:border-r-0">
