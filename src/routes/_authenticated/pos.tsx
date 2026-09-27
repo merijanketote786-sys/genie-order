@@ -685,13 +685,13 @@ function PosPage() {
           </div>
           <section className="px-4 pb-5 pt-6 sm:min-h-48 sm:px-6 sm:pb-8">
             <div ref={custRef} className="flex flex-wrap items-center gap-2">
-              <div className="min-w-[180px] flex-[1.4_1_0%]"><PosCustomerSearch field="name" className={inputCls} value={customerName} onChange={(v) => { setCustomerName(v); setCustomerCityArea(""); setCustomerAddress(""); setCourierServiceName(""); setGoodsAddaName(""); }} onPick={pickCustomer} placeholder="Customer name (Walk-in)" /></div>
-              <div className="min-w-[140px] flex-[1_1_0%]"><PosCustomerSearch field="phone" className={inputCls} value={customerPhone} onChange={(v) => { setCustomerPhone(v); setCustomerCityArea(""); setCustomerAddress(""); setCourierServiceName(""); setGoodsAddaName(""); }} onPick={pickCustomer} placeholder="Phone" /></div>
-              <input aria-label="City / Area" className={`min-w-[130px] flex-[1_1_0%] ${inputCls}`} value={customerCityArea} onChange={(e) => setCustomerCityArea(e.target.value)} placeholder="City / Area" />
-              <input aria-label="Customer address" className={`min-w-[180px] flex-[1.5_1_0%] ${inputCls}`} value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="Address (optional)" />
-              <input aria-label="Courier service" className={`min-w-[150px] flex-[1_1_0%] ${inputCls}`} value={courierServiceName} onChange={(e) => setCourierServiceName(e.target.value)} placeholder="Courier service" />
-              <input aria-label="Goods adda" className={`min-w-[150px] flex-[1_1_0%] ${inputCls}`} value={goodsAddaName} onChange={(e) => setGoodsAddaName(e.target.value)} placeholder="Goods adda" />
-              <Button type="button" variant="outline" className="h-10 gap-1.5" onClick={() => setPartyOpen((o) => !o)} title="Add new party">
+              <div className="min-w-[140px] flex-[1.3_1_0%]"><PosCustomerSearch field="name" className={inputCls} value={customerName} onChange={(v) => { setCustomerName(v); setCustomerCityArea(""); setCustomerAddress(""); setCourierServiceName(""); setGoodsAddaName(""); }} onPick={pickCustomer} placeholder="Customer name (Walk-in)" /></div>
+              <div className="min-w-[110px] flex-[1_1_0%]"><PosCustomerSearch field="phone" className={inputCls} value={customerPhone} onChange={(v) => { setCustomerPhone(v); setCustomerCityArea(""); setCustomerAddress(""); setCourierServiceName(""); setGoodsAddaName(""); }} onPick={pickCustomer} placeholder="Phone" /></div>
+              <input aria-label="City / Area" className={`min-w-[100px] flex-[1_1_0%] ${inputCls}`} value={customerCityArea} onChange={(e) => setCustomerCityArea(e.target.value)} placeholder="City / Area" />
+              <input aria-label="Customer address" className={`min-w-[150px] flex-[1.4_1_0%] ${inputCls}`} value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="Address (optional)" />
+              <input aria-label="Courier service" className={`min-w-[110px] flex-[1_1_0%] ${inputCls}`} value={courierServiceName} onChange={(e) => setCourierServiceName(e.target.value)} placeholder="Courier service" />
+              <input aria-label="Goods adda" className={`min-w-[110px] flex-[1_1_0%] ${inputCls}`} value={goodsAddaName} onChange={(e) => setGoodsAddaName(e.target.value)} placeholder="Goods adda" />
+              <Button type="button" variant="outline" className="h-10 gap-1 px-2.5" onClick={() => setPartyOpen((o) => !o)} title="Add new party">
                 <UserPlus className="size-4" /> Party
               </Button>
             </div>
