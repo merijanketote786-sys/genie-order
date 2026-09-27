@@ -234,6 +234,23 @@ export const saveSalesReturn = createServerFn({ method: "POST" })
     return { ...(res as { id: string; number: string }), total };
   });
 
+export const saveUnlinkedSalesReturn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({
+    customerId: z.string().uuid().optional(), customerName: z.string().max(120).optional(),
+    mode: z.enum(["refund", "credit"]), method: z.string().max(30), reason: z.string().max(300).optional(),
+    clientRef: z.string().uuid(),
+    items: z.array(z.object({ productId: z.string().uuid(), name: z.string().min(1).max(300), unit: z.string().max(40), qty: z.number().positive().max(1e7), rate: amt })).min(1).max(300),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: res, error } = await (context.supabase as Sb).rpc("pos_save_unlinked_return", { _p: {
+      client_ref: data.clientRef, customer_id: data.customerId ?? "", customer_name: data.customerName ?? "",
+      mode: data.mode, method: data.method, reason: data.reason ?? "", items: data.items.map((i) => ({ product_id: i.productId, name: i.name, unit: i.unit, qty: i.qty, rate: i.rate })),
+    } });
+    if (error || !res) throw new Error(friendlyDbError(error, "Failed to save return."));
+    return res as { id: string; number: string; total: number };
+  });
+
 export const listReturns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
