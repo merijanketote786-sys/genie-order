@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import type { PrintDoc } from "@/lib/print/render";
-import QR from "qrcode";
 import { MessageCircle, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -41,7 +40,7 @@ export function WhatsAppSendDialog({ doc, business, onClose }: { doc: PrintDoc; 
 
   useEffect(() => {
     let live = true;
-    if (valid) QR.toDataURL(link, { margin: 1, width: 220 }).then((u) => live && setQr(u)).catch(() => live && setQr(""));
+    if (valid) void import("qrcode").then((m) => (m.default ?? m).toDataURL(link, { margin: 1, width: 220 })).then((u) => { if (live) setQr(u); }).catch(() => { if (live) setQr(""); });
     else setQr("");
     return () => { live = false; };
   }, [link, valid]);
