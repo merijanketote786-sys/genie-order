@@ -9,7 +9,7 @@ export type DbProduct = {
   p250: number | null;
   p500: number | null;
   sale: number | null;
-  purchase: number | null;
+  purchase?: number | null;
   stock: number | null;
   /** manual overrides (null = auto) */
   customSale: number | null;
