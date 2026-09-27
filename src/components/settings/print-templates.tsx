@@ -73,6 +73,28 @@ export function PrintTemplatesPicker({ draft, upd, disabled, dirty = false, savi
           );
         })}
       </div>
+
+      <div className="sticky bottom-0 z-30 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur">
+        <div className="mr-auto min-w-0">
+          <p className="text-sm font-semibold text-foreground">
+            {chosen ? `Selected template: ${chosen.name}` : "No template selected yet"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {disabled
+              ? "You can view templates; only Admin can save them."
+              : dirty
+                ? "Changes are not saved yet — press Save template to apply them."
+                : chosen
+                  ? "Saved and active on every device."
+                  : "Pick a template above, then press Save template."}
+          </p>
+        </div>
+        <Button size="sm" disabled={disabled || saving || !dirty || !onSave} onClick={() => onSave?.()}>
+          {dirty ? <Save /> : <Check />}
+          {saving ? "Saving…" : dirty ? "Save template" : "Saved"}
+        </Button>
+      </div>
     </div>
   );
 }
+
