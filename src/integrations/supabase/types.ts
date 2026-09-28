@@ -297,6 +297,7 @@ export type Database = {
           name: string | null
           opening_balance: number
           phone: string
+          pos_scoped: boolean
           updated_at: string
           workspace_id: string
         }
@@ -313,6 +314,7 @@ export type Database = {
           name?: string | null
           opening_balance?: number
           phone: string
+          pos_scoped?: boolean
           updated_at?: string
           workspace_id?: string
         }
@@ -329,6 +331,7 @@ export type Database = {
           name?: string | null
           opening_balance?: number
           phone?: string
+          pos_scoped?: boolean
           updated_at?: string
           workspace_id?: string
         }

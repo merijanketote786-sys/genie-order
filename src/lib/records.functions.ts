@@ -87,6 +87,7 @@ export const saveParty = createServerFn({ method: "POST" })
       address: data.address || null,
       courier_service_name: data.courierServiceName || null,
       goods_adda_name: data.goodsAddaName || null,
+      pos_scoped: true,
     }).eq("id", id);
     if (error) throw new Error("Could not save delivery details");
     const phone = normalizePhone(data.phone) ?? data.phone;
