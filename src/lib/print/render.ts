@@ -296,10 +296,11 @@ function customRows(cfg: { printing: { customFields?: { label: string; value: st
   return (cfg.printing.customFields ?? [])
     .filter((c) => c.show !== false && (c.label?.trim() || c.value?.trim()))
     .map((c) => {
-      const sz = c.sizePt && c.sizePt >= 5 && c.sizePt <= 36 ? ` style="font-size:${c.sizePt}pt!important"` : "";
+      const fs = c.sizePt && c.sizePt >= 5 && c.sizePt <= 36 ? `font-size:${c.sizePt}pt!important;` : "";
+      const sz = ` style="${fs}${thermal ? "" : "margin-bottom:1mm"}"`;
       const lab = c.label?.trim() ? `<b>${esc(c.label.trim())}:</b> ` : "";
       return thermal
         ? `<div class="fs-custom"${sz}>${lab}${esc(c.value ?? "")}</div>`
-        : `<div class="fs-custom"${sz} style="margin-bottom:1mm">${lab}${esc(c.value ?? "")}</div>`;
+        : `<div class="fs-custom"${sz}>${lab}${esc(c.value ?? "")}</div>`;
     }).join("");
 }
