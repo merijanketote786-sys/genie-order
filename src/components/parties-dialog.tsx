@@ -1,6 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { UserPlus } from "lucide-react";
+import { FileText, UserPlus } from "lucide-react";
+import { usePrintCenter } from "@/components/print-center";
+import { getCustomerLedger } from "@/lib/ledger.functions";
+import { getSupplierLedger } from "@/lib/business.functions";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -9,7 +12,7 @@ import { listSuppliers, saveSupplier } from "@/lib/business.functions";
 import { saveParty } from "@/lib/records.functions";
 import { rs } from "@/components/pos-subnav";
 
-type Party = { key: string; name: string; phone: string; kind: string; balance: number };
+type Party = { key: string; name: string; phone: string; kind: string; balance: number; customerId?: string; supplierId?: string; address?: string };
 
 const tail = (p: string) => p.replace(/\D/g, "").slice(-10);
 const inputCls = "h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
@@ -22,6 +25,57 @@ export function PartiesDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   const [addPhone, setAddPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const qc = useQueryClient();
+  const pc = usePrintCenter();
+  const today = new Date().toISOString().slice(0, 10);
+  const monthStart = today.slice(0, 8) + "01";
+  const [stParty, setStParty] = useState<Party | null>(null);
+  const [from, setFrom] = useState(monthStart);
+  const [to, setTo] = useState(today);
+  const [stBusy, setStBusy] = useState(false);
+
+  const openStatement = async () => {
+    const p = stParty; if (!p) return;
+    if (from > to) { toast.error("From date must be before To date"); return; }
+    setStBusy(true);
+    try {
+      const [cl, sl] = await Promise.all([
+        p.customerId ? getCustomerLedger({ data: { id: p.customerId } }) : null,
+        p.supplierId ? getSupplierLedger({ data: { id: p.supplierId } }) : null,
+      ]);
+      // Our view: debit increases receivable, credit reduces it.
+      type R = { date: string; kind: string; ref: string; debit: number; credit: number };
+      const rows: R[] = [...(cl?.rows ?? []), ...(sl?.rows ?? []).map((r) => ({ date: r.date, kind: r.kind, ref: r.ref, debit: r.debit, credit: r.credit }))];
+      rows.sort((a, b) => a.date.localeCompare(b.date));
+      let run = Number(cl?.opening ?? 0) - Number(sl?.opening ?? 0);
+      const d = (x: string) => new Date(x).toLocaleDateString("en-CA");
+      const inRange: (string | number)[][] = [];
+      let dr = 0, cr = 0;
+      for (const r of rows) {
+        const day = d(r.date);
+        if (day > to) break;
+        run = Math.round((run + r.debit - r.credit) * 100) / 100;
+        if (day < from) continue;
+        dr += r.debit; cr += r.credit;
+        inRange.push([new Date(r.date).toLocaleDateString("en-PK"), r.kind, r.ref, r.debit || "", r.credit || "", run]);
+      }
+      const opening = Math.round((run - dr + cr) * 100) / 100;
+      const fmt = (x: string) => new Date(x).toLocaleDateString("en-PK");
+      onOpenChange(false);
+      pc.preview({
+        kind: "statement", title: "Party Statement", number: p.name, date: new Date(),
+        party: { label: p.kind, name: p.name, phone: p.phone, address: p.address ?? "" },
+        meta: [["Period", `${fmt(from)} to ${fmt(to)}`]],
+        table: { head: ["Date", "Detail", "Ref", "Debit", "Credit", "Balance"], align: ["l", "l", "l", "r", "r", "r"], rows: [["", "Opening balance", "", "", "", opening], ...inRange] },
+        totals: [
+          { label: "Total debit", value: dr },
+          { label: "Total credit", value: cr },
+          { label: run >= 0 ? "Closing balance (receivable)" : "Closing balance (payable)", value: Math.abs(run), bold: true },
+        ],
+      });
+      setStParty(null);
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Statement could not be loaded"); }
+    setStBusy(false);
+  };
   const c = useQuery({ queryKey: ["customer-balances", "pos"], queryFn: () => listCustomerBalances({ data: { posOnly: true } }), enabled: open });
   const s = useQuery({ queryKey: ["suppliers"], queryFn: () => listSuppliers(), enabled: open });
 
@@ -42,13 +96,13 @@ export function PartiesDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   const map = new Map<string, Party>();
   for (const x of c.data?.customers ?? []) {
     const k = x.phone ? `p${tail(x.phone)}` : `c${x.id}`;
-    map.set(k, { key: k, name: x.name || x.phone || "No name", phone: x.phone, kind: "Customer", balance: x.balance });
+    map.set(k, { key: k, name: x.name || x.phone || "No name", phone: x.phone, kind: "Customer", balance: x.balance, customerId: x.id });
   }
   for (const x of s.data?.suppliers ?? []) {
     const k = x.phone ? `p${tail(x.phone)}` : `s${x.id}`;
     const e = map.get(k);
-    if (e) { e.balance -= x.balance; e.kind = "Customer · Supplier"; }
-    else map.set(k, { key: k, name: x.name, phone: x.phone, kind: "Supplier", balance: -x.balance });
+    if (e) { e.balance -= x.balance; e.kind = "Customer · Supplier"; e.supplierId = x.id; }
+    else map.set(k, { key: k, name: x.name, phone: x.phone, kind: "Supplier", balance: -x.balance, supplierId: x.id, address: x.address ?? "" });
   }
   const ql = q.trim().toLowerCase();
   const list = [...map.values()]
@@ -57,6 +111,8 @@ export function PartiesDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   const loading = c.isLoading || s.isLoading;
 
   return (
+    <>
+    {pc.node}
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle>Parties</DialogTitle></DialogHeader>
@@ -82,16 +138,29 @@ export function PartiesDialog({ open, onOpenChange }: { open: boolean; onOpenCha
           {loading ? <li className="p-4 text-center text-sm text-muted-foreground">Loading parties…</li> : null}
           {!loading && !list.length ? <li className="p-4 text-center text-sm text-muted-foreground">No parties found</li> : null}
           {list.map((p) => (
-            <li key={p.key} className="flex items-center justify-between gap-3 px-3 py-2">
+            <li key={p.key} className="flex flex-wrap items-center justify-between gap-3 px-3 py-2">
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{p.name}</p>
                 <p className="truncate text-xs text-muted-foreground">{p.kind}{p.phone ? ` · ${p.phone}` : ""}</p>
               </div>
-              <span className={`shrink-0 text-sm font-bold tabular-nums ${p.balance > 0 ? "text-success" : "text-destructive"}`}>{rs(Math.abs(p.balance))}</span>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className={`text-sm font-bold tabular-nums ${p.balance > 0 ? "text-success" : "text-destructive"}`}>{rs(Math.abs(p.balance))}</span>
+                <Button type="button" size="sm" variant="outline" className="h-8 gap-1 px-2" onClick={() => setStParty(stParty?.key === p.key ? null : p)} aria-label={`Statement for ${p.name}`}><FileText className="size-4" /> Statement</Button>
+              </div>
+              {stParty?.key === p.key ? (
+                <div className="basis-full space-y-2 rounded-lg border border-border bg-muted/40 p-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="text-xs text-muted-foreground">From<input type="date" className={inputCls} value={from} max={to} onChange={(e) => setFrom(e.target.value)} /></label>
+                    <label className="text-xs text-muted-foreground">To<input type="date" className={inputCls} value={to} min={from} onChange={(e) => setTo(e.target.value)} /></label>
+                  </div>
+                  <Button type="button" className="w-full" disabled={stBusy} onClick={openStatement}>{stBusy ? "Loading…" : "Preview statement · Print / PDF / Share"}</Button>
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
