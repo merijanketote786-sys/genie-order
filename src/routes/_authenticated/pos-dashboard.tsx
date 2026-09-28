@@ -9,7 +9,9 @@ import {
   AlertTriangle, BarChart3, Boxes, FileText, HandCoins, Landmark, Notebook, Receipt, RefreshCw,
   ShoppingCart, TrendingUp, Truck, Undo2, Users, Wallet,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { Factory } from "lucide-react";
+import { ManufactureDialog } from "@/components/manufacture-dialog";
 
 export const Route = createFileRoute("/_authenticated/pos-dashboard")({
   head: () => ({
@@ -74,6 +76,7 @@ const QUICK = [
 
 function PosDashboardPage() {
   const { can } = usePosAccess();
+  const [mfgOpen, setMfgOpen] = useState(false);
   const q = useQuery({ queryKey: ["pos-dashboard"], queryFn: () => getPosDashboard(), staleTime: 30_000 });
   const d = q.data;
   const maxBar = d ? Math.max(1, ...d.series.map((p) => Math.max(p.sales, p.purchases))) : 1;
@@ -86,6 +89,8 @@ function PosDashboardPage() {
           {QUICK.filter((x) => can(x.perm)).map((x) => (
             <Button key={x.to} asChild variant="outline" size="sm"><Link to={x.to}><x.icon className="size-4" /> {x.label}</Link></Button>
           ))}
+          {can("edit_stock") ? <Button variant="outline" size="sm" onClick={() => setMfgOpen(true)}><Factory className="size-4" /> Manufacture</Button> : null}
+          <ManufactureDialog open={mfgOpen} onOpenChange={setMfgOpen} />
           <Button variant="ghost" size="sm" onClick={() => q.refetch()} disabled={q.isFetching} className="ml-auto"><RefreshCw className={`size-4 ${q.isFetching ? "animate-spin" : ""}`} /> Refresh</Button>
         </div>
 
