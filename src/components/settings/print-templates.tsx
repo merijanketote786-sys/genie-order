@@ -127,6 +127,31 @@ export function PrintTemplatesPicker({ draft, upd, disabled, dirty = false, savi
             })}
           </div>
         </div>
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">Custom fields · add your own lines to the invoice (e.g. Bank account, NTN, Delivery note)</p>
+          {(draft.printing?.customFields ?? []).map((c, i, arr) => {
+            const set = (patch: Partial<typeof c>) => upd("printing.customFields", arr.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+            return (
+              <div key={i} className="flex flex-wrap items-center gap-2">
+                <input type="checkbox" className="size-3.5 shrink-0" disabled={disabled} checked={c.show !== false}
+                  aria-label={`Show custom field ${i + 1} on invoice`} onChange={(e) => set({ show: e.target.checked })} />
+                <input className="h-9 w-36 rounded-md border border-border bg-background px-2 text-sm text-foreground" placeholder="Label" maxLength={40}
+                  disabled={disabled} value={c.label} aria-label={`Custom field ${i + 1} label`} onChange={(e) => set({ label: e.target.value })} />
+                <input className="h-9 min-w-0 flex-1 rounded-md border border-border bg-background px-2 text-sm text-foreground" placeholder="Value" maxLength={200}
+                  disabled={disabled} value={c.value} aria-label={`Custom field ${i + 1} value`} onChange={(e) => set({ value: e.target.value })} />
+                <input className="h-9 w-20 rounded-md border border-border bg-background px-2 text-sm text-foreground" type="number" min={5} max={36} step={0.5}
+                  placeholder="Auto" disabled={disabled} value={c.sizePt ?? ""} aria-label={`Custom field ${i + 1} font size (pt)`}
+                  onChange={(e) => set({ sizePt: e.target.value === "" ? undefined : Math.min(36, Math.max(0, Number(e.target.value) || 0)) })}
+                  onBlur={(e) => { if (e.target.value !== "") set({ sizePt: Math.min(36, Math.max(5, Number(e.target.value) || 5)) }); }} />
+                <button type="button" disabled={disabled} className="h-9 rounded-md border border-border px-3 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                  onClick={() => upd("printing.customFields", arr.filter((_, j) => j !== i))}>Remove</button>
+              </div>
+            );
+          })}
+          <button type="button" disabled={disabled || (draft.printing?.customFields?.length ?? 0) >= 20}
+            className="h-9 rounded-md border border-dashed border-primary px-3 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
+            onClick={() => upd("printing.customFields", [...(draft.printing?.customFields ?? []), { label: "", value: "", show: true }])}>+ Add custom field</button>
+        </div>
       </div>
 
       <LivePreview draft={draft} />
