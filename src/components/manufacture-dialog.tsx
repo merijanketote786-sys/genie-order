@@ -31,7 +31,7 @@ export function ManufactureDialog({ open, onOpenChange }: { open: boolean; onOpe
   const sel = items.find((p: any) => p.id === pid);
   const recipe = rec?.recipes.find((r) => r.productId === pid);
   const storeStock = (id: string) => {
-    const s: any = activeStore.stock?.data;
+    const s: any = activeStore.stock;
     return s?.byId?.[id] ?? null;
   };
 
