@@ -94,6 +94,7 @@ export type PosConfig = {
     preset?: string;
     fontFamily?: InvoiceFont;
     fontSizes?: Partial<Record<InvoiceTextField, number>>;
+    customFields?: { label: string; value: string; show?: boolean; sizePt?: number }[];
   };
   printers?: PrinterCfg[];
   printerDefaults?: Partial<Record<PrinterRole, string>>;
@@ -157,6 +158,7 @@ export function resolveCfg(c: PosConfig = {}) {
       signatureLabel: pr.signatureLabel ?? "Authorized signature",
       fontFamily: pr.fontFamily ?? "default",
       fontSizes: pr.fontSizes ?? {},
+      customFields: (pr.customFields ?? []).slice(0, 20),
     },
     printers: c.printers ?? [],
     printerDefaults: c.printerDefaults ?? {},
