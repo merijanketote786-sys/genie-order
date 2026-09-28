@@ -1,5 +1,6 @@
 /** POS helpers — client-safe (online + offline dono me). */
 import type { DbProduct } from "@/lib/products.functions";
+import type { InvoiceCustomField } from "@/lib/pos-config";
 
 export type RateType = "sale" | "p100" | "p250" | "p500";
 export const RATE_TYPES: { id: RateType; label: string; packGrams: number | null }[] = [
@@ -90,11 +91,18 @@ export const lineBase = (l: CartLine) => (l.taxIncl ? r2(grossOf(l) - lineTax(l)
 export const lineTotal = (l: CartLine) => (l.taxIncl ? r2(grossOf(l)) : r2(grossOf(l) + lineTax(l)));
 
 /** billDiscount = amount (percent pehle hi amount me convert karein). */
-export function totals(lines: CartLine[], billDiscount: number, delivery: number) {
+export function customChargesTotal(fields?: InvoiceCustomField[]) {
+  return r2((fields ?? []).filter((field) => field.show !== false && field.addToTotal).reduce((sum, field) => {
+    const amount = Number(String(field.value ?? "").replace(/,/g, "").trim());
+    return sum + (Number.isFinite(amount) && amount > 0 ? amount : 0);
+  }, 0));
+}
+
+export function totals(lines: CartLine[], billDiscount: number, delivery: number, customCharges = 0) {
   const subtotal = r2(lines.reduce((s, l) => s + lineBase(l), 0));
   const taxTotal = r2(lines.reduce((s, l) => s + lineTax(l), 0));
   const itemDiscount = r2(lines.reduce((s, l) => s + (l.discount || 0), 0));
-  const total = Math.max(0, r2(subtotal + taxTotal - (billDiscount || 0) + (delivery || 0)));
+  const total = Math.max(0, r2(subtotal + taxTotal - (billDiscount || 0) + (delivery || 0) + (customCharges || 0)));
   return { subtotal, taxTotal, itemDiscount, total };
 }
 
@@ -126,7 +134,7 @@ export type ReceiptInput = {
   notes?: string;
   terms?: string;
   footer?: string;
-  customFields?: { label: string; value: string; show?: boolean; sizePt?: number }[];
+  customFields?: InvoiceCustomField[];
   currency: string;
 };
 
@@ -135,7 +143,7 @@ const payLabel = (r: ReceiptInput) =>
 
 /** Plain text invoice — record + WhatsApp ke liye. */
 export function receiptText(r: ReceiptInput) {
-  const { subtotal, taxTotal, total } = totals(r.lines, r.billDiscount, r.delivery);
+  const { subtotal, taxTotal, total } = totals(r.lines, r.billDiscount, r.delivery, customChargesTotal(r.customFields));
   const out: string[] = [];
   out.push(`*${r.business || "Invoice"}*`, `${r.title || "Invoice"}: ${r.invoiceNumber}`, `Date: ${r.date}`);
   if (r.customerName) out.push(`Customer: ${r.customerName}`);
@@ -155,6 +163,12 @@ export function receiptText(r: ReceiptInput) {
   if (taxTotal) out.push(`Tax: ${r.currency} ${money(taxTotal)}`);
   if (r.billDiscount) out.push(`Discount: ${r.currency} ${money(r.billDiscount)}`);
   if (r.delivery) out.push(`Delivery Charges: ${r.currency} ${money(r.delivery)}`);
+  for (const field of r.customFields ?? []) {
+    if (field.show !== false && field.addToTotal) {
+      const amount = Number(String(field.value ?? "").replace(/,/g, "").trim());
+      if (Number.isFinite(amount) && amount > 0) out.push(`${field.label.trim() || "Custom charge"}: ${r.currency} ${money(amount)}`);
+    }
+  }
   out.push(`Grand Total: ${r.currency} ${money(total)}`);
   if (r.title !== "Quotation") {
     out.push(`Payment: ${payLabel(r)}`, `Paid: ${r.currency} ${money(Math.min(r.paid, total))}`);
@@ -164,7 +178,7 @@ export function receiptText(r: ReceiptInput) {
   }
   if (r.notes) out.push("", `Note: ${r.notes}`);
   for (const field of r.customFields ?? []) {
-    if (field.show !== false && (field.label.trim() || field.value.trim())) out.push(`${field.label.trim()}${field.label.trim() ? ": " : ""}${field.value.trim()}`);
+    if (field.show !== false && !field.addToTotal && (field.label.trim() || field.value.trim())) out.push(`${field.label.trim()}${field.label.trim() ? ": " : ""}${field.value.trim()}`);
   }
   return out.join("\n");
 }
@@ -199,7 +213,7 @@ export const PRINTER_PRESETS: ReceiptPrinter[] = [
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
 export function receiptHtml(r: ReceiptInput, p: ReceiptPrinter) {
-  const { subtotal, taxTotal, total } = totals(r.lines, r.billDiscount, r.delivery);
+  const { subtotal, taxTotal, total } = totals(r.lines, r.billDiscount, r.delivery, customChargesTotal(r.customFields));
   const wide = p.widthMm >= 120;
   const rows = r.lines
     .map(
@@ -296,6 +310,11 @@ export function receiptToDoc(r: ReceiptInput, o: { kind?: import("@/lib/pos-conf
   if (taxTotal) t.push({ label: "Tax", value: taxTotal });
   if (r.billDiscount) t.push({ label: "Discount", value: r.billDiscount, neg: true });
   if (r.delivery) t.push({ label: "Delivery", value: r.delivery });
+  for (const field of r.customFields ?? []) {
+    if (field.show === false || !field.addToTotal) continue;
+    const amount = Number(String(field.value ?? "").replace(/,/g, "").trim());
+    if (Number.isFinite(amount) && amount > 0) t.push({ label: field.label.trim() || "Custom charge", value: amount });
+  }
   t.push({ label: "Grand Total", value: total, bold: true });
   if (!quote && r.previousBalance) t.push({ label: "Previous balance", value: r.previousBalance });
   return {

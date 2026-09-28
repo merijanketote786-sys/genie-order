@@ -128,7 +128,7 @@ export function PrintTemplatesPicker({ draft, upd, disabled, dirty = false, savi
           </div>
         </div>
         <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">Custom fields · add your own lines to the invoice (e.g. Bank account, NTN, Delivery note)</p>
+          <p className="text-xs font-medium text-muted-foreground">Custom fields · add your own lines to the invoice. Tick Add to total for numeric charges.</p>
           {(draft.printing?.customFields ?? []).map((c, i, arr) => {
             const set = (patch: Partial<typeof c>) => upd("printing.customFields", arr.map((x, j) => (j === i ? { ...x, ...patch } : x)));
             return (
@@ -143,6 +143,11 @@ export function PrintTemplatesPicker({ draft, upd, disabled, dirty = false, savi
                   placeholder="Auto" disabled={disabled} value={c.sizePt ?? ""} aria-label={`Custom field ${i + 1} font size (pt)`}
                   onChange={(e) => set({ sizePt: e.target.value === "" ? undefined : Math.min(36, Math.max(0, Number(e.target.value) || 0)) })}
                   onBlur={(e) => { if (e.target.value !== "") set({ sizePt: Math.min(36, Math.max(5, Number(e.target.value) || 5)) }); }} />
+                <label className="flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md border border-border px-2 text-xs text-foreground">
+                  <input type="checkbox" className="size-3.5" disabled={disabled} checked={c.addToTotal === true}
+                    aria-label={`Add custom field ${i + 1} to invoice total`} onChange={(e) => set({ addToTotal: e.target.checked })} />
+                  Add to total
+                </label>
                 <button type="button" disabled={disabled} className="h-9 rounded-md border border-border px-3 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
                   onClick={() => upd("printing.customFields", arr.filter((_, j) => j !== i))}>Remove</button>
               </div>
@@ -150,7 +155,7 @@ export function PrintTemplatesPicker({ draft, upd, disabled, dirty = false, savi
           })}
           <button type="button" disabled={disabled || (draft.printing?.customFields?.length ?? 0) >= 20}
             className="h-9 rounded-md border border-dashed border-primary px-3 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
-            onClick={() => upd("printing.customFields", [...(draft.printing?.customFields ?? []), { label: "", value: "", show: true }])}>+ Add custom field</button>
+            onClick={() => upd("printing.customFields", [...(draft.printing?.customFields ?? []), { label: "", value: "", show: true, addToTotal: false }])}>+ Add custom field</button>
         </div>
       </div>
 

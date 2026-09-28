@@ -18,6 +18,7 @@ import type { PrintDoc } from "@/lib/print/render";
 import {
   RATE_TYPES,
   autoRate,
+  customChargesTotal,
   isWholesale,
   receiptToDoc,
   lineTax,
@@ -473,7 +474,9 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
 
   const pre = totals(cart, 0, 0);
   const discAmt = discType === "pct" ? Math.round(((pre.subtotal + pre.taxTotal) * Math.min(100, n(billDiscount))) / 100 * 100) / 100 : n(billDiscount);
-  const { subtotal, taxTotal, itemDiscount, total } = totals(cart, discAmt, n(delivery));
+  const billCustomFields = cfg.printing.customFields.map((field, index) => ({ ...field, value: customFieldValues[index] ?? field.value ?? "" }));
+  const customCharges = customChargesTotal(billCustomFields);
+  const { subtotal, taxTotal, itemDiscount, total } = totals(cart, discAmt, n(delivery), customCharges);
   const qtyTotal = Math.round(cart.reduce((s, l) => s + (l.qty || 0), 0) * 1000) / 1000;
 
   // Payments: sirf ek line aur amount khali = poora us method se
@@ -517,10 +520,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
     paid: paidNum,
     previousBalance: balance?.found && balance.balance > 0 ? balance.balance : undefined,
     notes: notes.trim() || undefined,
-    customFields: cfg.printing.customFields.map((field, index) => ({
-      ...field,
-      value: customFieldValues[index] ?? field.value ?? "",
-    })),
+    customFields: billCustomFields,
     currency: cfg.business.currencySymbol || ws?.currency || "Rs",
   });
 
@@ -637,7 +637,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
 
   const openDoc = (d: PosDocRow, asInvoice: boolean) => {
     try {
-      const ui = d.payload ? (JSON.parse(d.payload) as Partial<{ cart: CartLine[]; billDiscount: string; discType: "amt" | "pct"; delivery: string; notes: string; customerName: string; customerPhone: string; customerAddress: string; customerCityArea: string; courierServiceName: string; goodsAddaName: string; customFields: { label: string; value: string; show?: boolean; sizePt?: number }[] }>) : {};
+      const ui = d.payload ? (JSON.parse(d.payload) as Partial<{ cart: CartLine[]; billDiscount: string; discType: "amt" | "pct"; delivery: string; notes: string; customerName: string; customerPhone: string; customerAddress: string; customerCityArea: string; courierServiceName: string; goodsAddaName: string; customFields: { label: string; value: string; show?: boolean; sizePt?: number; addToTotal?: boolean }[] }>) : {};
       setCart(ui.cart ?? []);
       setBillDiscount(ui.billDiscount ?? "");
       setDiscType(ui.discType ?? "amt");
@@ -1093,6 +1093,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
               {taxTotal ? <Row a="Tax" b={`Rs ${money(taxTotal)}`} /> : null}
               {discAmt ? <Row a="Bill discount" b={`- Rs ${money(discAmt)}`} /> : null}
               {n(delivery) ? <Row a="Delivery" b={`Rs ${money(n(delivery))}`} /> : null}
+              {billCustomFields.map((field, index) => field.show !== false && field.addToTotal && n(field.value) > 0 ? <Row key={`${field.label}-${index}`} a={field.label.trim() || "Custom charge"} b={`Rs ${money(n(field.value))}`} /> : null)}
               <Row a="Grand Total" b={`Rs ${money(total)}`} bold />
               <Row a="Paid" b={`Rs ${money(Math.min(paidNum, total))}`} />
               {paidNum > total ? <Row a="Change due" b={`Rs ${money(paidNum - total)}`} /> : null}
@@ -1109,7 +1110,8 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
                       className={inputCls}
                       value={customFieldValues[index] ?? field.value ?? ""}
                       onChange={(e) => setCustomFieldValues((values) => ({ ...values, [index]: e.target.value }))}
-                      placeholder="Enter value for this invoice"
+                      placeholder={field.addToTotal ? "Enter amount" : "Enter value for this invoice"}
+                      inputMode={field.addToTotal ? "decimal" : "text"}
                       maxLength={200}
                     />
                   </label>
