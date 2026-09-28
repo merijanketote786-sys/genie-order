@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/item-manufacturing")({
   component: ManufacturingPage,
 });
 
-type MatRow = { productId: string; qty: string };
+type MatRow = { productId: string; qty: string; cost: string };
 type ExpRow = { name: string; amount: string };
 const num = (s: string) => { const n = Number(s); return Number.isFinite(n) ? n : 0; };
 
@@ -89,7 +89,7 @@ function ManufacturingPage() {
 
   const [productId, setProductId] = useState(search.product ?? "");
   const [outputQty, setOutputQty] = useState("1");
-  const [mats, setMats] = useState<MatRow[]>([{ productId: "", qty: "" }]);
+  const [mats, setMats] = useState<MatRow[]>([{ productId: "", qty: "", cost: "" }]);
   const [exps, setExps] = useState<ExpRow[]>([{ name: "", amount: "" }]);
   const [makeQty, setMakeQty] = useState("");
   const [busy, setBusy] = useState(false);
@@ -100,14 +100,15 @@ function ManufacturingPage() {
     if (!productId) return;
     if (saved) {
       setOutputQty(String(saved.outputQty));
-      setMats(saved.materials.length ? saved.materials.map((m) => ({ productId: m.product_id, qty: String(m.qty) })) : [{ productId: "", qty: "" }]);
+      setMats(saved.materials.length ? saved.materials.map((m) => ({ productId: m.product_id, qty: String(m.qty), cost: m.cost != null ? String(m.cost) : "" })) : [{ productId: "", qty: "", cost: "" }]);
       setExps(saved.expenses.length ? saved.expenses.map((e) => ({ name: e.name, amount: String(e.amount) })) : [{ name: "", amount: "" }]);
-    } else { setOutputQty("1"); setMats([{ productId: "", qty: "" }]); setExps([{ name: "", amount: "" }]); }
+    } else { setOutputQty("1"); setMats([{ productId: "", qty: "", cost: "" }]); setExps([{ name: "", amount: "" }]); }
     setMakeQty("");
   }, [productId, saved]);
 
   const product = byId.get(productId);
-  const matCost = mats.reduce((s, m) => s + num(m.qty) * (byId.get(m.productId)?.purchasePrice ?? 0), 0);
+  const matRate = (m: MatRow) => (m.cost.trim() !== "" ? num(m.cost) : (byId.get(m.productId)?.purchasePrice ?? 0));
+  const matCost = mats.reduce((s, m) => s + num(m.qty) * matRate(m), 0);
   const expCost = exps.reduce((s, e) => s + num(e.amount), 0);
   const total = matCost + expCost;
   const oq = num(outputQty);
@@ -117,7 +118,7 @@ function ManufacturingPage() {
   const save = async () => {
     if (!productId) return toast.error("Select a product first");
     if (!(oq > 0)) return toast.error("Enter the total quantity produced");
-    const materials = mats.filter((m) => m.productId).map((m) => ({ product_id: m.productId, qty: num(m.qty) }));
+    const materials = mats.filter((m) => m.productId).map((m) => ({ product_id: m.productId, qty: num(m.qty), cost: matRate(m) }));
     if (!materials.length) return toast.error("Add at least one raw material");
     if (materials.some((m) => !(m.qty > 0))) return toast.error("Enter quantity for every raw material");
     const expenses = exps.filter((e) => e.name.trim() || num(e.amount)).map((e) => ({ name: e.name.trim() || "Expense", amount: num(e.amount) }));
@@ -174,15 +175,16 @@ function ManufacturingPage() {
               {mats.map((m, i) => {
                 const p = byId.get(m.productId);
                 return (
-                  <div key={i} className="grid gap-2 sm:grid-cols-[1fr_8rem_8rem_auto] sm:items-center">
-                    <ProductSearch products={products} value={m.productId} exclude={productId} placeholder="Select raw material from stock" onPick={(id) => setMats((x) => x.map((r, j) => (j === i ? { ...r, productId: id } : r)))} />
+                  <div key={i} className="grid gap-2 sm:grid-cols-[1fr_7rem_7rem_7rem_auto] sm:items-center">
+                    <ProductSearch products={products} value={m.productId} exclude={productId} placeholder="Select raw material from stock" onPick={(id) => setMats((x) => x.map((r, j) => (j === i ? { ...r, productId: id, cost: byId.get(id)?.purchasePrice != null ? String(byId.get(id)!.purchasePrice) : r.cost } : r)))} />
                     <input className={posInput} inputMode="decimal" placeholder={`Qty${p ? ` (${p.unit})` : ""}`} value={m.qty} disabled={!canEdit} onChange={(e) => setMats((x) => x.map((r, j) => (j === i ? { ...r, qty: e.target.value } : r)))} aria-label="Raw material quantity" />
-                    <span className="text-right text-sm text-muted-foreground">{rs(num(m.qty) * (p?.purchasePrice ?? 0))}</span>
-                    <Button variant="ghost" size="icon" disabled={!canEdit} onClick={() => setMats((x) => (x.length > 1 ? x.filter((_, j) => j !== i) : [{ productId: "", qty: "" }]))} aria-label="Remove raw material"><Trash2 /></Button>
+                    <input className={posInput} inputMode="decimal" placeholder={`Cost${p?.purchasePrice != null ? ` (${p.purchasePrice})` : ""}`} value={m.cost} disabled={!canEdit} onChange={(e) => setMats((x) => x.map((r, j) => (j === i ? { ...r, cost: e.target.value } : r)))} aria-label="Raw material cost per unit" />
+                    <span className="text-right text-sm text-muted-foreground">{rs(num(m.qty) * matRate(m))}</span>
+                    <Button variant="ghost" size="icon" disabled={!canEdit} onClick={() => setMats((x) => (x.length > 1 ? x.filter((_, j) => j !== i) : [{ productId: "", qty: "", cost: "" }]))} aria-label="Remove raw material"><Trash2 /></Button>
                   </div>
                 );
               })}
-              <Button variant="outline" size="sm" disabled={!canEdit} onClick={() => setMats((x) => [...x, { productId: "", qty: "" }])}><Plus /> Add raw material</Button>
+              <Button variant="outline" size="sm" disabled={!canEdit} onClick={() => setMats((x) => [...x, { productId: "", qty: "", cost: "" }])}><Plus /> Add raw material</Button>
             </section>
 
             <section className="space-y-2 rounded-xl border border-border bg-card p-3">
@@ -210,7 +212,7 @@ function ManufacturingPage() {
                 <Button disabled={!canEdit || busy} onClick={save}><Save /> Save setup</Button>
                 {saved ? <Button variant="ghost" disabled={!canEdit || busy} onClick={remove}><Trash2 /> Remove setup</Button> : null}
               </div>
-              <p className="text-[11px] text-muted-foreground">Raw material cost uses each item's purchase price.</p>
+              <p className="text-[11px] text-muted-foreground">Raw material cost defaults to each item's purchase price — edit the Cost field to override it for this setup.</p>
             </section>
 
             <section className="space-y-2 rounded-xl border border-border bg-card p-3">
