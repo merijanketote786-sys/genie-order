@@ -8,8 +8,15 @@ const r2 = (x: number) => Math.round(x * 100) / 100;
 
 /* --------------------------- Customer balances --------------------------- */
 
+/** Invoice ke custom charges (shipping waghera) ka total — statement/balance mein shamil nahi hote. */
+function payloadCharges(payload: unknown): number {
+  const fields = (payload as { customFields?: { addToTotal?: boolean; value?: string }[] } | null)?.customFields;
+  if (!Array.isArray(fields)) return 0;
+  return fields.reduce((s, f) => { if (!f?.addToTotal) return s; const v = Number(String(f.value ?? "").replace(/,/g, "").trim()); return Number.isFinite(v) && v > 0 ? s + v : s; }, 0);
+}
+
 async function customerFlows(sb: Sb, customerId?: string) {
-  let s = sb.from("pos_sales").select("id, customer_id, doc_type, doc_number, grand_total, created_at").in("doc_type", ["sale", "return"]).neq("status", "cancelled").not("customer_id", "is", null);
+  let s = sb.from("pos_sales").select("id, customer_id, doc_type, doc_number, grand_total, payload, created_at").in("doc_type", ["sale", "return"]).neq("status", "cancelled").not("customer_id", "is", null);
   let p = sb.from("pos_payments").select("customer_id, kind, direction, method, amount, note, created_at").eq("status", "completed").not("customer_id", "is", null);
   if (customerId) { s = s.eq("customer_id", customerId); p = p.eq("customer_id", customerId); }
   const [{ data: sales }, { data: pays }] = await Promise.all([s.limit(20000), p.limit(20000)]);
@@ -29,7 +36,7 @@ export const listCustomerBalances = createServerFn({ method: "GET" })
     ]);
     const agg = new Map<string, { sales: number; paid: number; bal: number }>();
     const g = (id: string) => agg.get(id) ?? (agg.set(id, { sales: 0, paid: 0, bal: 0 }), agg.get(id)!);
-    for (const s of flows.sales) { const a = g(s.customer_id); const v = Number(s.grand_total); if (s.doc_type === "sale") { a.sales += v; a.bal += v; } else a.bal -= v; }
+    for (const s of flows.sales) { const a = g(s.customer_id); const v = r2(Number(s.grand_total) - payloadCharges(s.payload)); if (s.doc_type === "sale") { a.sales += v; a.bal += v; } else a.bal -= v; }
     for (const p of flows.pays) { const a = g(p.customer_id); const v = Number(p.amount); if (p.direction === "in") { a.paid += v; a.bal -= v; } else a.bal += v; }
     // posOnly: sirf woh customers jo POS mein use hue (sale/return/payment) — baqi workspace customers chhupa do.
     const posIds = data.posOnly ? new Set<string>([...flows.sales.map((s) => s.customer_id), ...flows.pays.map((p) => p.customer_id)]) : null;
@@ -51,7 +58,7 @@ export const getCustomerLedger = createServerFn({ method: "GET" })
     ]);
     type Row = { date: string; kind: string; ref: string; debit: number; credit: number };
     const rows: Row[] = [];
-    for (const s of flows.sales) rows.push(s.doc_type === "sale" ? { date: s.created_at, kind: "Sale invoice", ref: s.doc_number, debit: Number(s.grand_total), credit: 0 } : { date: s.created_at, kind: "Sale return", ref: s.doc_number, debit: 0, credit: Number(s.grand_total) });
+    for (const s of flows.sales) { const v = r2(Number(s.grand_total) - payloadCharges(s.payload)); rows.push(s.doc_type === "sale" ? { date: s.created_at, kind: "Sale invoice", ref: s.doc_number, debit: v, credit: 0 } : { date: s.created_at, kind: "Sale return", ref: s.doc_number, debit: 0, credit: v }); }
     for (const p of flows.pays) {
       const v = Number(p.amount);
       if (p.direction === "in") rows.push({ date: p.created_at, kind: p.kind === "receipt" ? `Payment mili (${p.method})` : `Bill par paid (${p.method})`, ref: p.note ?? "", debit: 0, credit: v });
