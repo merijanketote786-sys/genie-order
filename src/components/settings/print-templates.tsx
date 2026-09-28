@@ -109,6 +109,8 @@ export function PrintTemplatesPicker({ draft, upd, disabled, dirty = false, savi
         </div>
       </div>
 
+      <LivePreview draft={draft} />
+
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
 
         <div className="mr-auto min-w-0">
