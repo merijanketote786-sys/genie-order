@@ -70,6 +70,7 @@ function InventoryPage() {
     } catch (e) { toast.error(e instanceof Error ? e.message : "Could not complete"); }
   };
   const doAdjust = async () => {
+    if (activeStore.isAllStores) return toast.error("Select a specific store before adjusting stock");
     const qty = Number(adj.qty);
     if (!cur || !(qty > 0)) return toast.error("Enter a quantity");
     try {
@@ -98,7 +99,12 @@ function InventoryPage() {
           ))}
         </div>
         {noCost ? <p className="text-xs text-muted-foreground">{noCost} products have no purchase price set — select a product and enter the purchase price to show accurate stock value and profit (or it fills in automatically on purchase).</p> : null}
-        <div className="flex justify-end gap-2"><StoreSwitcher /><Button variant={adding ? "secondary" : "outline"} onClick={() => setAdding((b) => !b)}><Plus /> New item</Button><Button variant={bulk ? "secondary" : "default"} onClick={() => setBulk((b) => !b)}><Table2 /> {bulk ? "Close bulk update" : "Bulk update items"}</Button></div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {activeStore.isAllStores ? <span className="text-xs text-muted-foreground">Combined stock · select a store to make stock changes</span> : null}
+          <StoreSwitcher />
+          <Button variant={adding ? "secondary" : "outline"} disabled={activeStore.isAllStores} onClick={() => setAdding((b) => !b)}><Plus /> New item</Button>
+          <Button variant={bulk ? "secondary" : "default"} disabled={activeStore.isAllStores} onClick={() => setBulk((b) => !b)}><Table2 /> {bulk ? "Close bulk update" : "Bulk update items"}</Button>
+        </div>
         {adding ? <NewPosProduct onClose={() => setAdding(false)} onSaved={() => { setAdding(false); refresh(); }} /> : null}
         {bulk ? <BulkUpdateProducts products={all} onClose={() => setBulk(false)} onSaved={refresh} /> : null}
         <div className={`grid gap-3 lg:grid-cols-[1.2fr_1fr] ${bulk ? "hidden" : ""}`}>

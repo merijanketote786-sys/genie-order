@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 const KEY = "pos-store-id";
 const EVT = "pos-store-change";
+export const ALL_STORES_ID = "all-stores";
 
 export function getSelectedStoreId(): string {
   if (typeof window === "undefined") return "";
