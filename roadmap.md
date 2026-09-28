@@ -9,3 +9,4 @@
 - [x] Printing & Settings: central print engine (A4/A5/58/80/custom), settings hub, printers, POS/purchase/return/statement/receipt/expense/day book printing, offline + desktop printer bridge
 - [x] Advanced Accounting: COA, journals, auto-posting, GL, TB, P&L, BS, AR/AP, dashboard, periods, permissions
 - [x] Sale Return: optional original bill, POS product dropdown and staged entry, atomic bill-free refund/stock posting
+- [x] Item Manufacturing: per-product raw materials + expenses setup, cost per unit, Manufacture button deducts raw stock
