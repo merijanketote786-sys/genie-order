@@ -1,6 +1,11 @@
+import { sampleDoc } from "@/components/settings/sections";
 import { Button } from "@/components/ui/button";
-import { INVOICE_FONTS, INVOICE_TEXT_FIELDS, type InvoiceFont, type InvoiceTextField, type PaperFormat, type PosConfig, type TemplateId } from "@/lib/pos-config";
+import { FORMAT_LABEL, INVOICE_FONTS, INVOICE_TEXT_FIELDS, resolveCfg, type InvoiceFont, type InvoiceTextField, type PaperFormat, type PosConfig, type TemplateId } from "@/lib/pos-config";
+import { renderPrint } from "@/lib/print/render";
 import { Check, Save } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+
+const PX_PER_MM = 96 / 25.4;
 
 type Upd = (path: string, v: unknown) => void;
 type Tpl = {
@@ -104,6 +109,8 @@ export function PrintTemplatesPicker({ draft, upd, disabled, dirty = false, savi
         </div>
       </div>
 
+      <LivePreview draft={draft} />
+
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
 
         <div className="mr-auto min-w-0">
@@ -124,6 +131,62 @@ export function PrintTemplatesPicker({ draft, upd, disabled, dirty = false, savi
           {dirty ? <Save /> : <Check />}
           {saving ? "Saving…" : dirty ? "Save template" : "Saved"}
         </Button>
+      </div>
+    </div>
+  );
+}
+
+/** Live invoice preview — current (unsaved) settings se turant render hota hai. */
+function LivePreview({ draft }: { draft: PosConfig }) {
+  const cfg = resolveCfg(draft);
+  const [format, setFormat] = useState<PaperFormat>(cfg.printing.defaults.sale);
+  const [html, setHtml] = useState("");
+  const [spec, setSpec] = useState({ widthMm: 80, heightMm: null as number | null });
+  const boxRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef<HTMLIFrameElement>(null);
+  const [scale, setScale] = useState(1);
+  const [frameH, setFrameH] = useState(600);
+
+  useEffect(() => {
+    let live = true;
+    const t = setTimeout(() => {
+      renderPrint(sampleDoc(), cfg, { format, template: cfg.printing.templates[format], copies: 1 })
+        .then((r) => { if (live) { setHtml(r.html); setSpec(r.spec); } })
+        .catch(() => null);
+    }, 150);
+    return () => { live = false; clearTimeout(t); };
+  }, [cfg, format]);
+
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const fit = () => setScale(Math.min(1, (el.clientWidth - 16) / (spec.widthMm * PX_PER_MM)));
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [spec]);
+
+  return (
+    <div className="space-y-2 rounded-xl border border-border bg-muted/40 p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="mr-auto text-sm font-semibold text-foreground">Live preview <span className="text-xs font-normal text-muted-foreground">— changes show here instantly, save only when final</span></p>
+        <select className="h-8 rounded-md border border-border bg-background px-2 text-xs" value={format} onChange={(e) => setFormat(e.target.value as PaperFormat)} aria-label="Preview paper size">
+          {(Object.keys(FORMAT_LABEL) as PaperFormat[]).map((f) => <option key={f} value={f}>{FORMAT_LABEL[f]}</option>)}
+        </select>
+      </div>
+      <div ref={boxRef} className="max-h-[480px] overflow-auto rounded-lg bg-muted p-2">
+        <div className="mx-auto bg-background shadow" style={{ width: spec.widthMm * PX_PER_MM * scale, height: (spec.heightMm ? spec.heightMm * PX_PER_MM : frameH) * scale, overflow: "hidden" }}>
+          {html ? (
+            <iframe
+              ref={frameRef}
+              title="Live invoice preview"
+              srcDoc={html}
+              style={{ width: spec.widthMm * PX_PER_MM, height: spec.heightMm ? spec.heightMm * PX_PER_MM : frameH, border: 0, transform: `scale(${scale})`, transformOrigin: "0 0", background: "#fff" }}
+              onLoad={() => { const h = frameRef.current?.contentDocument?.body?.scrollHeight; if (h && !spec.heightMm) setFrameH(h + 4); }}
+            />
+          ) : <div className="grid h-32 place-items-center text-xs text-muted-foreground">Loading preview…</div>}
+        </div>
       </div>
     </div>
   );

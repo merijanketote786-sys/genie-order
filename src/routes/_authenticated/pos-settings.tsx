@@ -140,7 +140,7 @@ function SettingsHub() {
                   <Save /> {saving ? "Saving…" : dirty ? "Save template" : "Saved"}
                 </Button>
               ) : null}
-              <span className="text-[11px] text-muted-foreground">Preview shows saved settings — save first</span>
+              {id === "invoices" ? <span className="text-[11px] text-muted-foreground">Preview shows saved settings — save first</span> : null}
             </div>
           ) : null}
         </div>
