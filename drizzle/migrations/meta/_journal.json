@@ -232,6 +232,13 @@
       "when": 1790510505704,
       "tag": "0032_pos_multi_store",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1790596567581,
+      "tag": "0033_own_workspace_admin_for_new_users",
+      "breakpoints": true
     }
   ]
 }
