@@ -138,3 +138,34 @@ export const getDayBook = createServerFn({ method: "GET" })
     for (const r of rows) byMethod[r.method] = r2((byMethod[r.method] ?? 0) + (r.dir === "in" ? r.amount : -r.amount));
     return { opening, cashIn, cashOut, closing: r2(opening + cashIn - cashOut), byKind, byMethod, rows };
   });
+
+/** Line items per document number for a party statement (POS sales + purchases). */
+export const getPartyStatementItems = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ customerId: z.string().uuid().optional(), supplierId: z.string().uuid().optional() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as Sb;
+    type It = { name: string; unit: string; qty: number; rate: number; total: number };
+    const out: Record<string, It[]> = {};
+    const add = (docs: { id: string; doc_number: string }[], items: { parent: string; name: string; unit: string | null; qty: number; rate: number; line_total: number }[]) => {
+      const byId = new Map(docs.map((d) => [d.id, d.doc_number]));
+      for (const i of items) { const n = byId.get(i.parent); if (!n) continue; (out[n] ??= []).push({ name: i.name, unit: i.unit ?? "", qty: Number(i.qty), rate: Number(i.rate), total: Number(i.line_total) }); }
+    };
+    if (data.customerId) {
+      const { data: s } = await sb.from("pos_sales").select("id, doc_number").eq("customer_id", data.customerId);
+      const ids = (s ?? []).map((x: { id: string }) => x.id);
+      if (ids.length) {
+        const { data: it } = await sb.from("pos_sale_items").select("sale_id, name, unit, qty, rate, line_total").in("sale_id", ids);
+        add(s ?? [], (it ?? []).map((x: { sale_id: string; name: string; unit: string | null; qty: number; rate: number; line_total: number }) => ({ ...x, parent: x.sale_id })));
+      }
+    }
+    if (data.supplierId) {
+      const { data: p } = await sb.from("purchases").select("id, doc_number").eq("supplier_id", data.supplierId);
+      const ids = (p ?? []).map((x: { id: string }) => x.id);
+      if (ids.length) {
+        const { data: it } = await sb.from("purchase_items").select("purchase_id, name, unit, qty, rate, line_total").in("purchase_id", ids);
+        add(p ?? [], (it ?? []).map((x: { purchase_id: string; name: string; unit: string | null; qty: number; rate: number; line_total: number }) => ({ ...x, parent: x.purchase_id })));
+      }
+    }
+    return { items: out };
+  });
