@@ -1,6 +1,12 @@
 import { sampleDoc } from "@/components/settings/sections";
 import { Button } from "@/components/ui/button";
 import { FORMAT_LABEL, INVOICE_FONTS, INVOICE_TEXT_FIELDS, resolveCfg, type InvoiceFont, type InvoiceTextField, type PaperFormat, type PosConfig, type TemplateId } from "@/lib/pos-config";
+
+// Invoice-text fields that can be hidden: business/header fields map to
+// printing.fields, table columns map to printing.columns. Item/amount/meta/
+// tableHeader are structural and always shown.
+const FIELD_HIDEABLE = ["logo", "businessName", "address", "phone", "email", "website", "taxId", "title", "number", "dateTime", "customer", "customerPhone", "customerAddress", "subtotal", "totals", "grandTotal", "paid", "balance", "paymentMethod", "notes", "terms", "footer", "signature"] as const;
+const COL_HIDEABLE = ["sku", "barcode", "unit", "qty", "rate", "discount", "tax"] as const;
 import { renderPrint } from "@/lib/print/render";
 import { Check, Save } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
