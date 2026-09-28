@@ -2,8 +2,8 @@
  * Central print renderer. Har paper format ka apna layout (A4, A5, 58mm, 80mm, custom) —
  * ek layout ko scale nahi kiya jata. Output: mukammal HTML document (@page ke saath).
  */
-import type { ColKey, DocKind, PaperFormat, ResolvedCfg, TemplateId } from "@/lib/pos-config";
-import { formatDate } from "@/lib/pos-config";
+import type { ColKey, DocKind, InvoiceTextField, PaperFormat, ResolvedCfg, TemplateId } from "@/lib/pos-config";
+import { formatDate, INVOICE_TEXT_FIELDS } from "@/lib/pos-config";
 
 export type PrintLine = { name: string; sku?: string; barcode?: string; unit?: string; qty: number; rate: number; discount?: number; taxPct?: number; total: number; note?: string };
 export type PrintTotal = { label: string; value: number; bold?: boolean; neg?: boolean };
@@ -63,6 +63,25 @@ const TEMPLATE_CSS: Record<TemplateId, string> = {
   thermal: `body{font-family:'Courier New',monospace}.items thead th{border-bottom:1px dashed #000}.items tbody td{border-bottom:1px dotted #999}.grand td{border-top:1px dashed #000}`,
 };
 
+const FONT_CSS = {
+  arial: "Arial,Helvetica,sans-serif", georgia: "Georgia,'Times New Roman',serif",
+  times: "'Times New Roman',Times,serif", courier: "'Courier New',Courier,monospace",
+  verdana: "Verdana,Geneva,sans-serif", tahoma: "Tahoma,Verdana,sans-serif",
+  trebuchet: "'Trebuchet MS',Arial,sans-serif",
+} as const;
+
+function typographyCss(cfg: ResolvedCfg) {
+  const family = cfg.printing.fontFamily;
+  const sizes = cfg.printing.fontSizes;
+  const font = family in FONT_CSS ? FONT_CSS[family as keyof typeof FONT_CSS] : null;
+  return `${font ? `body,body *{font-family:${font}!important}` : ""}${(Object.keys(INVOICE_TEXT_FIELDS) as InvoiceTextField[])
+    .map((key) => {
+      const pt = Number(sizes[key]);
+      return sizes[key] != null && Number.isFinite(pt) && pt >= 5 && pt <= 36
+        ? `.fs-${key},.fs-${key} *{font-size:${pt}pt!important}` : "";
+    }).join("")}`;
+}
+
 function colsFor(format: PaperFormat, cfg: ResolvedCfg): Record<ColKey, boolean> {
   return format === "a5" ? cfg.printing.a5.columns : cfg.printing.columns;
 }
@@ -84,16 +103,16 @@ function pageHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, tpl: Tem
   const date = typeof doc.date === "string" ? doc.date : formatDate(doc.date, cfg, f.dateTime);
 
   const logo = f.logo && b.logo ? `<img class=logo src="${esc(b.logo)}" alt="">` : "";
-  const bizLines = [f.address && b.address, f.phone && b.phone && `Ph: ${b.phone}`, f.email && b.email, f.website && b.website, f.taxId && b.taxId && `NTN/GST: ${b.taxId}`].filter(Boolean) as string[];
+  const bizLines = ([ ["address", f.address && b.address], ["phone", f.phone && b.phone && `Ph: ${b.phone}`], ["email", f.email && b.email], ["website", f.website && b.website], ["taxId", f.taxId && b.taxId && `NTN/GST: ${b.taxId}`] ] as const).filter((x) => x[1]);
   const header = `<div class="hd ${L.logoAlign === "center" ? "hd-c" : L.logoAlign === "right" ? "hd-r" : ""}">
-    ${logo}<div class=biz>${f.businessName ? `<div class=bizname>${esc(b.name || "HB Chemicals Pakistan")}</div>` : ""}${bizLines.map((x) => `<div class=muted>${esc(x)}</div>`).join("")}</div>
-    <div class=docbox>${f.title ? `<div class=doc-title>${esc(doc.title)}</div>` : ""}${f.number ? `<div><b>${esc(doc.number)}</b></div>` : ""}<div class=muted>${esc(date)}</div></div>
+    ${logo}<div class=biz>${f.businessName ? `<div class="bizname fs-businessName">${esc(b.name || "HB Chemicals Pakistan")}</div>` : ""}${bizLines.map(([key, value]) => `<div class="muted fs-${key}">${esc(value)}</div>`).join("")}</div>
+    <div class=docbox>${f.title ? `<div class="doc-title fs-title">${esc(doc.title)}</div>` : ""}${f.number ? `<div class=fs-number><b>${esc(doc.number)}</b></div>` : ""}<div class="muted fs-dateTime">${esc(date)}</div></div>
   </div>`;
 
   const party = doc.party && (f.customer || f.customerPhone || f.customerAddress) && (doc.party.name || doc.party.phone || doc.party.address)
-    ? `<div class="box party"><div class=lbl>${esc(doc.party.label)}</div>${f.customer && doc.party.name ? `<div class=pname>${esc(doc.party.name)}</div>` : ""}${f.customerPhone && doc.party.phone ? `<div>${esc(doc.party.phone)}</div>` : ""}${f.customerAddress && doc.party.address ? `<div>${esc(doc.party.address)}</div>` : ""}</div>`
+    ? `<div class="box party"><div class="lbl fs-customer">${esc(doc.party.label)}</div>${f.customer && doc.party.name ? `<div class="pname fs-customer">${esc(doc.party.name)}</div>` : ""}${f.customerPhone && doc.party.phone ? `<div class=fs-customerPhone>${esc(doc.party.phone)}</div>` : ""}${f.customerAddress && doc.party.address ? `<div class=fs-customerAddress>${esc(doc.party.address)}</div>` : ""}</div>`
     : "";
-  const meta = doc.meta?.length ? `<div class="box meta">${doc.meta.map(([k, v]) => `<div><span class=lbl>${esc(k)}:</span> ${esc(v)}</div>`).join("")}</div>` : "";
+  const meta = doc.meta?.length ? `<div class="box meta">${doc.meta.map(([k, v]) => `<div class=fs-meta><span class=lbl>${esc(k)}:</span> ${esc(v)}</div>`).join("")}</div>` : "";
 
   let body = "";
   if (doc.lines?.length) {
@@ -123,25 +142,25 @@ function pageHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, tpl: Tem
         default: return m(l.total);
       }
     };
-    body = `<table class=items>${colgroup}<thead><tr><th>#</th>${colDefs.map((c) => `<th${c.r ? " class=r" : ""}>${c.label}</th>`).join("")}</tr></thead><tbody>${doc.lines
-      .map((l, i) => `<tr><td>${i + 1}</td>${colDefs.map((c) => `<td${c.r ? " class=r" : ""}>${cell(l, c.key)}</td>`).join("")}</tr>`)
+    body = `<table class=items>${colgroup}<thead><tr><th class=fs-tableHeader>#</th>${colDefs.map((c) => `<th class="fs-tableHeader${c.r ? " r" : ""}">${c.label}</th>`).join("")}</tr></thead><tbody>${doc.lines
+      .map((l, i) => `<tr><td>${i + 1}</td>${colDefs.map((c) => `<td class="fs-${c.key === "total" ? "amount" : c.key}${c.r ? " r" : ""}">${cell(l, c.key)}</td>`).join("")}</tr>`)
       .join("")}</tbody></table>`;
   }
   if (doc.table) {
     const al = doc.table.align ?? [];
-    body += `<table class=items><thead><tr>${doc.table.head.map((h, i) => `<th${al[i] === "r" ? " class=r" : ""}>${esc(h)}</th>`).join("")}</tr></thead><tbody>${doc.table.rows
-      .map((r) => `<tr>${r.map((v, i) => `<td${al[i] === "r" ? " class=r" : ""}>${esc(typeof v === "number" ? m(v) : v)}</td>`).join("")}</tr>`)
+    body += `<table class=items><thead><tr>${doc.table.head.map((h, i) => `<th class="fs-tableHeader${al[i] === "r" ? " r" : ""}">${esc(h)}</th>`).join("")}</tr></thead><tbody>${doc.table.rows
+      .map((r) => `<tr>${r.map((v, i) => `<td class="fs-${i === 0 ? "item" : "amount"}${al[i] === "r" ? " r" : ""}">${esc(typeof v === "number" ? m(v) : v)}</td>`).join("")}</tr>`)
       .join("")}</tbody></table>`;
   }
 
   const totalsRows = (doc.totals ?? [])
     .filter((t) => f.subtotal || !/^sub/i.test(t.label))
-    .map((t) => `<tr class="${t.bold ? "grand" : ""}"><td>${esc(t.label)}</td><td class=r>${t.neg ? "- " : ""}${cur} ${m(t.value)}</td></tr>`)
+    .map((t) => `<tr class="${t.bold ? "grand" : ""}"><td class="fs-${t.bold ? "grandTotal" : /^sub/i.test(t.label) ? "subtotal" : "totals"}">${esc(t.label)}</td><td class="r fs-${t.bold ? "grandTotal" : /^sub/i.test(t.label) ? "subtotal" : "totals"}">${t.neg ? "- " : ""}${cur} ${m(t.value)}</td></tr>`)
     .join("");
   const payRows = [
-    f.paymentMethod && doc.payments?.length ? `<tr><td>Payment</td><td class=r>${esc(doc.payments.filter((x) => x.amount > 0).map((x) => `${x.method} ${m(x.amount)}`).join(", "))}</td></tr>` : "",
-    f.paid && doc.paid != null ? `<tr><td>Paid</td><td class=r>${cur} ${m(doc.paid)}</td></tr>` : "",
-    f.balance && doc.balance ? `<tr class=bal><td>Balance</td><td class=r>${cur} ${m(doc.balance)}</td></tr>` : "",
+    f.paymentMethod && doc.payments?.length ? `<tr><td class=fs-paymentMethod>Payment</td><td class="r fs-paymentMethod">${esc(doc.payments.filter((x) => x.amount > 0).map((x) => `${x.method} ${m(x.amount)}`).join(", "))}</td></tr>` : "",
+    f.paid && doc.paid != null ? `<tr><td class=fs-paid>Paid</td><td class="r fs-paid">${cur} ${m(doc.paid)}</td></tr>` : "",
+    f.balance && doc.balance ? `<tr class=bal><td class=fs-balance>Balance</td><td class="r fs-balance">${cur} ${m(doc.balance)}</td></tr>` : "",
   ].join("");
   const totals = totalsRows || payRows ? `<table class=totals>${totalsRows}${payRows}</table>` : "";
   const qr = ex.qrDataUrl ? `<img class=qr src="${ex.qrDataUrl}" alt="">` : "";
@@ -149,9 +168,9 @@ function pageHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, tpl: Tem
   const footerText = a5 ? p.a5.footer || cfg.footer : cfg.footer;
   const showSig = a5 ? p.a5.signature && f.signature : f.signature;
   const end = `<div class=end>
-    <div class=endl>${f.notes && doc.notes ? `<div><b>Note:</b> ${esc(doc.notes)}</div>` : ""}${f.terms && cfg.terms ? `<div class=terms>${esc(cfg.terms)}</div>` : ""}</div>
-    <div class=endr>${qr}${showSig ? `<div class=sig>${esc(p.signatureLabel)}</div>` : ""}</div>
-  </div>${f.footer && footerText ? `<div class=foot>${esc(footerText)}</div>` : ""}`;
+    <div class=endl>${f.notes && doc.notes ? `<div class=fs-notes><b>Note:</b> ${esc(doc.notes)}</div>` : ""}${f.terms && cfg.terms ? `<div class="terms fs-terms">${esc(cfg.terms)}</div>` : ""}</div>
+    <div class=endr>${qr}${showSig ? `<div class="sig fs-signature">${esc(p.signatureLabel)}</div>` : ""}</div>
+  </div>${f.footer && footerText ? `<div class="foot fs-footer">${esc(footerText)}</div>` : ""}`;
 
   const css = `
   *{box-sizing:border-box}html,body{margin:0;padding:0}
@@ -178,7 +197,7 @@ function pageHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, tpl: Tem
   .sig{margin-top:${a5 ? 8 : 14}mm;border-top:0.8px solid #000;padding-top:1mm;min-width:${a5 ? 32 : 50}mm;font-size:${Math.max(6.5, font - 1)}pt}
   .foot{text-align:center;margin-top:${a5 ? 2 : 4}mm;font-size:${a5 ? Math.max(6.5, font - 1) : L.footerPt}pt;color:#444;border-top:0.5px solid #ccc;padding-top:1.5mm}
   .copy{page-break-after:always;break-after:page}.copy:last-child{page-break-after:auto;break-after:auto}
-  ${TEMPLATE_CSS[tpl]}`;
+   ${TEMPLATE_CSS[tpl]}${typographyCss(cfg)}`;
   const inner = `${header}${party || meta ? `<div class=row2>${party}${meta}</div>` : ""}${body}${totals}${end}`;
   return { css, inner };
 }
@@ -194,18 +213,16 @@ function thermalHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, ex: E
   const font = narrow ? Math.min(t.fontPt, 8) : t.fontPt;
   const b = cfg.business;
   const date = typeof doc.date === "string" ? doc.date : formatDate(doc.date, cfg, f.dateTime);
-  const kv = (a: string, v: string, cls = "") => `<div class="kv ${cls}"><span>${a}</span><span>${v}</span></div>`;
+  const kv = (a: string, v: string, cls = "", field?: InvoiceTextField) => `<div class="kv ${cls} ${field ? `fs-${field}` : ""}"><span>${a}</span><span>${v}</span></div>`;
   const lines = (doc.lines ?? [])
-    .map((l, i) => `<div class=it><div class=nm>${i + 1}. ${esc(l.name)}${l.unit && !narrow ? ` <small>${esc(l.unit)}</small>` : ""}</div>${
-      t.showQtyRate ? kv(`${qtyFmt(l.qty)} × ${m(l.rate)}${l.discount ? ` -${m(l.discount)}` : ""}${l.taxPct ? ` +${l.taxPct}%` : ""}`, m(l.total)) : kv(`x${qtyFmt(l.qty)}`, m(l.total))
-    }${l.note ? `<div class=note>${esc(l.note)}</div>` : ""}</div>`)
+    .map((l, i) => `<div class=it><div class="nm fs-item">${i + 1}. ${esc(l.name)}${l.unit && !narrow ? ` <small class=fs-unit>${esc(l.unit)}</small>` : ""}</div><div class=kv><span><span class=fs-qty>${t.showQtyRate ? qtyFmt(l.qty) : `x${qtyFmt(l.qty)}`}</span>${t.showQtyRate ? ` × <span class=fs-rate>${m(l.rate)}</span>${l.discount ? ` <span class=fs-discount>-${m(l.discount)}</span>` : ""}${l.taxPct ? ` <span class=fs-tax>+${l.taxPct}%</span>` : ""}` : ""}</span><span class=fs-amount>${m(l.total)}</span></div>${l.note ? `<div class="note fs-notes">${esc(l.note)}</div>` : ""}</div>`)
     .join("");
-  const table = doc.table ? doc.table.rows.map((r) => `<div class=it>${r.map((v, i) => (i === 0 ? `<div class=nm>${esc(v)}</div>` : "")).join("")}${kv(doc.table!.head.slice(1).map((h, i) => `${h}: ${typeof r[i + 1] === "number" ? m(r[i + 1] as number) : esc(r[i + 1])}`).join(" · "), "")}</div>`).join("") : "";
-  const totals = (doc.totals ?? []).map((x) => kv(esc(x.label), `${x.neg ? "-" : ""}${cur} ${m(x.value)}`, x.bold && t.boldTotal ? "grand" : "")).join("");
+  const table = doc.table ? doc.table.rows.map((r) => `<div class=it>${r.map((v, i) => (i === 0 ? `<div class="nm fs-item">${esc(v)}</div>` : "")).join("")}${kv(doc.table!.head.slice(1).map((h, i) => `${h}: ${typeof r[i + 1] === "number" ? m(r[i + 1] as number) : esc(r[i + 1])}`).join(" · "), "", "", "amount")}</div>`).join("") : "";
+  const totals = (doc.totals ?? []).map((x) => kv(esc(x.label), `${x.neg ? "-" : ""}${cur} ${m(x.value)}`, x.bold && t.boldTotal ? "grand" : "", x.bold ? "grandTotal" : /^sub/i.test(x.label) ? "subtotal" : "totals")).join("");
   const pays = [
-    f.paymentMethod && doc.payments?.length ? kv("Payment", esc(doc.payments.filter((x) => x.amount > 0).map((x) => `${x.method} ${m(x.amount)}`).join(", "))) : "",
-    f.paid && doc.paid != null ? kv("Paid", `${cur} ${m(doc.paid)}`) : "",
-    f.balance && doc.balance ? kv("Balance", `${cur} ${m(doc.balance)}`, "grand") : "",
+    f.paymentMethod && doc.payments?.length ? kv("Payment", esc(doc.payments.filter((x) => x.amount > 0).map((x) => `${x.method} ${m(x.amount)}`).join(", ")), "", "paymentMethod") : "",
+    f.paid && doc.paid != null ? kv("Paid", `${cur} ${m(doc.paid)}`, "", "paid") : "",
+    f.balance && doc.balance ? kv("Balance", `${cur} ${m(doc.balance)}`, "grand", "balance") : "",
   ].join("");
   const footer = t.footer || cfg.footer;
   const css = `
@@ -220,17 +237,18 @@ function thermalHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, ex: E
   small{font-size:${font - 1}pt}.grand{font-weight:800;font-size:${font + 2}pt}
   .code{text-align:center;margin-top:1.5mm}.code svg{max-width:100%;height:${narrow ? 10 : 12}mm}.code img{width:${narrow ? 22 : 28}mm}
   .feed{height:${Math.max(0, t.feedLines) * font * 0.5}mm}
-  .copy{page-break-after:always;break-after:page}.copy:last-child{page-break-after:auto}`;
-  const inner = `<div class=c>${f.logo && b.logo ? `<img class=logo src="${esc(b.logo)}" alt="">` : ""}${f.businessName ? `<div class=bn>${esc(b.name || "HB Chemicals Pakistan")}</div>` : ""}
-    ${f.address && b.address ? `<div>${esc(b.address)}</div>` : ""}${f.phone && b.phone ? `<div>${esc(b.phone)}</div>` : ""}${f.taxId && b.taxId ? `<div>NTN/GST: ${esc(b.taxId)}</div>` : ""}
-    ${f.title ? `<div><b>${esc(doc.title)}</b></div>` : ""}</div><hr>
-    ${f.number ? kv("No.", esc(doc.number)) : ""}${kv("Date", esc(date))}
-    ${t.showCustomer && doc.party?.name && f.customer ? kv(esc(doc.party.label), esc(doc.party.name)) : ""}${t.showCustomer && doc.party?.phone && f.customerPhone ? kv("Phone", esc(doc.party.phone)) : ""}
-    ${(doc.meta ?? []).map(([k, v]) => kv(esc(k), esc(v))).join("")}<hr>
+   .copy{page-break-after:always;break-after:page}.copy:last-child{page-break-after:auto}
+   ${typographyCss(cfg)}`;
+   const inner = `<div class=c>${f.logo && b.logo ? `<img class=logo src="${esc(b.logo)}" alt="">` : ""}${f.businessName ? `<div class="bn fs-businessName">${esc(b.name || "HB Chemicals Pakistan")}</div>` : ""}
+    ${f.address && b.address ? `<div class=fs-address>${esc(b.address)}</div>` : ""}${f.phone && b.phone ? `<div class=fs-phone>${esc(b.phone)}</div>` : ""}${f.email && b.email ? `<div class=fs-email>${esc(b.email)}</div>` : ""}${f.website && b.website ? `<div class=fs-website>${esc(b.website)}</div>` : ""}${f.taxId && b.taxId ? `<div class=fs-taxId>NTN/GST: ${esc(b.taxId)}</div>` : ""}
+    ${f.title ? `<div class=fs-title><b>${esc(doc.title)}</b></div>` : ""}</div><hr>
+    ${f.number ? kv("No.", esc(doc.number), "", "number") : ""}${kv("Date", esc(date), "", "dateTime")}
+    ${t.showCustomer && doc.party?.name && f.customer ? kv(esc(doc.party.label), esc(doc.party.name), "", "customer") : ""}${t.showCustomer && doc.party?.phone && f.customerPhone ? kv("Phone", esc(doc.party.phone), "", "customerPhone") : ""}${t.showCustomer && doc.party?.address && f.customerAddress ? kv("Address", esc(doc.party.address), "", "customerAddress") : ""}
+    ${(doc.meta ?? []).map(([k, v]) => kv(esc(k), esc(v), "", "meta")).join("")}<hr>
     ${lines}${table}${totals || pays ? `<hr>${totals}${pays}` : ""}
-    ${f.notes && doc.notes ? `<hr><div>Note: ${esc(doc.notes)}</div>` : ""}${f.terms && cfg.terms ? `<div><small>${esc(cfg.terms)}</small></div>` : ""}
+    ${f.notes && doc.notes ? `<hr><div class=fs-notes>Note: ${esc(doc.notes)}</div>` : ""}${f.terms && cfg.terms ? `<div class=fs-terms><small>${esc(cfg.terms)}</small></div>` : ""}
     ${ex.barcodeSvg ? `<div class=code>${ex.barcodeSvg}</div>` : ""}${ex.qrDataUrl ? `<div class=code><img src="${ex.qrDataUrl}" alt=""></div>` : ""}
-    ${f.footer && footer ? `<hr><div class=c>${esc(footer)}</div>` : ""}<div class=feed></div>`;
+    ${f.footer && footer ? `<hr><div class="c fs-footer">${esc(footer)}</div>` : ""}<div class=feed></div>`;
   return { css, inner };
 }
 

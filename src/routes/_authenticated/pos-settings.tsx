@@ -34,7 +34,7 @@ const CUSTOM: Partial<Record<SectionId, { keywords: string; render: (p: { draft:
   payments: [{ keywords: "payment method cash card bank jazzcash easypaisa credit custom default", render: (p) => <PaymentsEditor {...p} /> }],
   taxes: [{ keywords: "tax rates multiple gst percentage name", render: (p) => <TaxRatesEditor {...p} /> }],
   invoices: [{ keywords: "invoice fields show hide logo signature sku barcode columns width discount tax", render: (p) => <InvoiceFieldsEditor {...p} /> }],
-  printing: [{ keywords: "template size orientation a4 a5 thermal 58mm 80mm letter label landscape portrait", render: (p) => <PrintTemplatesPicker {...p} /> }],
+  printing: [{ keywords: "template size orientation a4 a5 thermal 58mm 80mm letter label landscape portrait font style font size typography invoice fields", render: (p) => <PrintTemplatesPicker {...p} /> }],
   printers: [{ keywords: "printer default test print rename remove paper status", render: () => <PrintersManager /> }],
   users: [{ keywords: "user role permission pin staff cashier manager", render: () => <UsersSection /> }],
   backup: [{ keywords: "backup export csv excel import data", render: () => <BackupSection /> }],
