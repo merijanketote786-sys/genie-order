@@ -1,6 +1,11 @@
+import { sampleDoc } from "@/components/settings/sections";
 import { Button } from "@/components/ui/button";
-import { INVOICE_FONTS, INVOICE_TEXT_FIELDS, type InvoiceFont, type InvoiceTextField, type PaperFormat, type PosConfig, type TemplateId } from "@/lib/pos-config";
+import { FORMAT_LABEL, INVOICE_FONTS, INVOICE_TEXT_FIELDS, resolveCfg, type InvoiceFont, type InvoiceTextField, type PaperFormat, type PosConfig, type TemplateId } from "@/lib/pos-config";
+import { renderPrint } from "@/lib/print/render";
 import { Check, Save } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+
+const PX_PER_MM = 96 / 25.4;
 
 type Upd = (path: string, v: unknown) => void;
 type Tpl = {
