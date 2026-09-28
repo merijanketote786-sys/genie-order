@@ -1,4 +1,5 @@
 # Roadmap — Vyapar-style POS
+- [x] Custom invoice fields: bill-level values on Sale page, saved with invoice and included in preview/print/PDF
 - [x] Printing templates: individual invoice field font sizes and whole-invoice font style
 - [x] Match POS billing page to the supplied full-width sale-invoice layout without changing billing behavior
 - [x] Phase 1–6: POS business system

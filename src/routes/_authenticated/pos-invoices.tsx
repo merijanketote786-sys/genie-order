@@ -39,7 +39,7 @@ type SaleRow = {
   paid_total: number;
   balance: number;
   notes: string | null;
-  payload: { ui?: { customerAddress?: string; customerCityArea?: string; courierServiceName?: string; goodsAddaName?: string }; customerAddress?: string; customerCityArea?: string; courierServiceName?: string; goodsAddaName?: string } | null;
+  payload: { ui?: { customerAddress?: string; customerCityArea?: string; courierServiceName?: string; goodsAddaName?: string; customFields?: { label: string; value: string; show?: boolean; sizePt?: number }[] }; customerAddress?: string; customerCityArea?: string; courierServiceName?: string; goodsAddaName?: string; customFields?: { label: string; value: string; show?: boolean; sizePt?: number }[] } | null;
   created_at: string;
   items: { name: string; sku: string | null; unit: string | null; qty: number; rate: number; discount: number; tax_percent: number; line_total: number; note: string | null }[];
   payments: { method: string; amount: number; kind: string }[];
@@ -67,6 +67,7 @@ function saleToDoc(s: SaleRow): PrintDoc {
     paid: Number(s.paid_total),
     balance: Number(s.balance),
     notes: s.notes ?? undefined,
+    customFields: delivery?.customFields,
   };
 }
 
