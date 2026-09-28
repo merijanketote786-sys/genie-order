@@ -17,3 +17,4 @@
 - Invoice typography overrides live in POS printing config and are applied in the shared HTML print renderer; this keeps preview, print, and PDF consistent without changing historical transaction data.
 - Custom invoice charges are opt-in per field, stored in each sale payload, and included in the saved grand total; this preserves reprints and all downstream balances/accounting.
 - “All stores” is a read-only combined-stock view; stock-moving actions require one concrete store so inventory remains attributable and atomic.
+- Manufacturing runs through the atomic pos_manufacture database function (per-store stock check, raw-material out + finished-goods in, unit cost set as purchase price); this keeps stock moves attributable and consistent.

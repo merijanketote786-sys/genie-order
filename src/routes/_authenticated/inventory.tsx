@@ -6,7 +6,9 @@ import { adjustStock, getStockLedger, listInventory, updateProductDetails, type 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { NewPosProduct } from "@/components/new-pos-product";
-import { AlertTriangle, Download, Plus, Search, Table2 } from "lucide-react";
+import { AlertTriangle, Download, Factory, Plus, Search, Table2 } from "lucide-react";
+import { listRecipes, manufactureProduct } from "@/lib/manufacturing.functions";
+import { Link } from "@tanstack/react-router";
 import { BulkUpdateProducts } from "@/components/bulk-update-products";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -25,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/inventory")({
   component: InventoryPage,
 });
 
-const KIND: Record<string, string> = { opening: "Opening", sale: "Sale", sale_return: "Sale return", purchase: "Purchase", purchase_return: "Purchase return", adjust_in: "Stock in", adjust_out: "Stock out", damage: "Damage", transfer_in: "Transfer in", transfer_out: "Transfer out", cancel: "Cancel" };
+const KIND: Record<string, string> = { opening: "Opening", sale: "Sale", sale_return: "Sale return", purchase: "Purchase", purchase_return: "Purchase return", adjust_in: "Stock in", adjust_out: "Stock out", damage: "Damage", transfer_in: "Transfer in", transfer_out: "Transfer out", cancel: "Cancel", manufacture_in: "Manufactured", manufacture_out: "Used in manufacturing" };
 type Edit = Record<"salePrice" | "sku" | "barcode" | "category" | "brand" | "purchasePrice" | "wholesalePrice" | "wholesaleMinQty" | "minSalePrice" | "minStock" | "taxPercent", string>;
 const toEdit = (p: InvProduct): Edit => ({ salePrice: String(p.salePrice ?? 0), sku: p.sku, barcode: p.barcode, category: p.category, brand: p.brand, purchasePrice: p.purchasePrice?.toString() ?? "", wholesalePrice: p.wholesalePrice?.toString() ?? "", wholesaleMinQty: p.wholesaleMinQty?.toString() ?? "", minSalePrice: p.minSalePrice?.toString() ?? "", minStock: p.minStock?.toString() ?? "", taxPercent: p.taxPercent?.toString() ?? "" });
 const n = (s: string) => (s.trim() === "" ? null : Number(s) || 0);
@@ -41,6 +43,9 @@ function InventoryPage() {
   const [adj, setAdj] = useState({ qty: "", kind: "adjust_in", note: "" });
   const [adding, setAdding] = useState(false);
   const [bulk, setBulk] = useState(false);
+  const [mfgQty, setMfgQty] = useState("");
+  const { data: rec } = useQuery({ queryKey: ["recipes"], queryFn: () => listRecipes() });
+  const hasRecipe = useMemo(() => new Set((rec?.recipes ?? []).map((r) => r.productId)), [rec]);
   const { data: led } = useQuery({ queryKey: ["stock-ledger", sel], queryFn: () => getStockLedger({ data: { id: sel! } }), enabled: !!sel });
 
   const activeStore = useActiveStore();
@@ -77,6 +82,15 @@ function InventoryPage() {
       await adjustStock({ data: { id: cur.id, qty, kind: adj.kind as "adjust_in", note: adj.note } });
       toast.success("Stock updated"); setAdj({ qty: "", kind: adj.kind, note: "" }); refresh();
     } catch (e) { toast.error(e instanceof Error ? e.message : "Could not complete"); }
+  };
+  const doManufacture = async () => {
+    if (activeStore.isAllStores) return toast.error("Select a specific store before manufacturing");
+    const qty = Number(mfgQty);
+    if (!cur || !(qty > 0)) return toast.error("Enter quantity to manufacture");
+    try {
+      const r = await manufactureProduct({ data: { productId: cur.id, qty, note: "" } });
+      toast.success(`Manufactured ${r.qty} — unit cost ${rs(r.unitCost)}`); setMfgQty(""); refresh();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Manufacturing failed"); }
   };
   const exportCsv = () => {
     const head = ["Name", "SKU", "Barcode", "Category", "Unit", "Stock", "Min stock", "Purchase price", "Sale price", "Stock value"];
@@ -119,7 +133,7 @@ function InventoryPage() {
             </div>
             <div className="max-h-[32rem] overflow-auto">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-card"><tr className="text-left text-xs text-muted-foreground"><th>Product</th><th>Category</th><th className="text-right">Stock</th><th className="text-right">Cost</th><th className="text-right">Value</th></tr></thead>
+                <thead className="sticky top-0 bg-card"><tr className="text-left text-xs text-muted-foreground"><th>Product</th><th>Category</th><th className="text-right">Stock</th><th className="text-right">Cost</th><th className="text-right">Value</th><th></th></tr></thead>
                 <tbody>
                   {list.slice(0, 500).map((p) => (
                     <tr key={p.id} onClick={() => { setSel(p.id); setEdit(toEdit(p)); }} className={`cursor-pointer border-t border-border hover:bg-accent ${sel === p.id ? "bg-accent" : ""}`}>
@@ -128,6 +142,7 @@ function InventoryPage() {
                       <td className={`text-right ${p.stock <= 0 ? "text-destructive" : ""}`}>{p.stock} <span className="text-xs text-muted-foreground">{p.unit}</span></td>
                       <td className="text-right">{p.purchasePrice ?? "—"}</td>
                       <td className="text-right">{rs(Math.max(0, p.stock) * (p.purchasePrice ?? 0))}</td>
+                      <td className="pl-1 text-right"><Button size="sm" variant={hasRecipe.has(p.id) ? "outline" : "ghost"} className="h-7 px-2" title="Manufacture" aria-label={`Manufacture ${p.name}`} onClick={(e) => { e.stopPropagation(); setSel(p.id); setEdit(toEdit(p)); setMfgQty(""); setTimeout(() => document.getElementById("mfg-box")?.scrollIntoView({ block: "center" }), 50); }}><Factory className="size-3.5" /></Button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -146,6 +161,18 @@ function InventoryPage() {
                   <F k="minStock" label="Min stock (alert)" dec /><F k="taxPercent" label="Tax %" dec />
                 </div>
                 <Button onClick={saveEdit}>Details save</Button>
+                <div id="mfg-box" className="space-y-2 rounded-lg border border-primary/40 p-2">
+                  <p className="flex items-center gap-2 text-sm font-semibold text-foreground"><Factory className="size-4 text-primary" /> Manufacture</p>
+                  {hasRecipe.has(cur.id) ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input className={`${posInput} w-36`} inputMode="decimal" placeholder={`Qty (${cur.unit})`} value={mfgQty} onChange={(e) => setMfgQty(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void doManufacture(); }} aria-label="Quantity to manufacture" />
+                      <Button onClick={doManufacture}><Factory /> Manufacture</Button>
+                      <Link to="/item-manufacturing" search={{ product: cur.id }} className="text-xs text-primary underline">Edit setup</Link>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">No raw materials set. <Link to="/item-manufacturing" search={{ product: cur.id }} className="text-primary underline">Set up in Item Manufacturing</Link></p>
+                  )}
+                </div>
                 <div className="grid gap-2 rounded-lg border border-border p-2 sm:grid-cols-[auto_1fr_1fr_auto]">
                   <select className={posInput} value={adj.kind} onChange={(e) => setAdj({ ...adj, kind: e.target.value })} aria-label="Adjustment type"><option value="adjust_in">Stock in (+)</option><option value="adjust_out">Stock out (−)</option><option value="damage">Damage (−)</option><option value="opening">Opening (+)</option></select>
                   <input className={posInput} value={adj.qty} inputMode="decimal" onChange={(e) => setAdj({ ...adj, qty: e.target.value })} placeholder={`Qty (${cur.unit})`} aria-label="Adjust qty" />

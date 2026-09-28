@@ -676,6 +676,47 @@ export type Database = {
           },
         ]
       }
+      pos_recipes: {
+        Row: {
+          expenses: Json
+          id: string
+          materials: Json
+          output_qty: number
+          product_id: string
+          updated_at: string
+          updated_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          expenses?: Json
+          id?: string
+          materials?: Json
+          output_qty?: number
+          product_id: string
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          expenses?: Json
+          id?: string
+          materials?: Json
+          output_qty?: number
+          product_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_recipes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pos_sale_items: {
         Row: {
           cost: number
@@ -1571,6 +1612,7 @@ export type Database = {
       pos_default_store: { Args: { _ws: string }; Returns: string }
       pos_delete_doc: { Args: { _id: string }; Returns: undefined }
       pos_delete_products: { Args: { _ids: string[] }; Returns: number }
+      pos_delete_recipe: { Args: { _product: string }; Returns: undefined }
       pos_find_customer: {
         Args: { _phone: string; _ws: string }
         Returns: string
@@ -1584,6 +1626,10 @@ export type Database = {
           _entity_id: string
         }
         Returns: undefined
+      }
+      pos_manufacture: {
+        Args: { _note: string; _product: string; _qty: number }
+        Returns: Json
       }
       pos_move_stock: {
         Args: {
@@ -1616,6 +1662,7 @@ export type Database = {
         Returns: undefined
       }
       pos_save_purchase: { Args: { _p: Json }; Returns: Json }
+      pos_save_recipe: { Args: { _p: Json }; Returns: string }
       pos_save_sale: { Args: { _p: Json }; Returns: Json }
       pos_save_settings: {
         Args: { _config: Json; _pin: string }
