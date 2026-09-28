@@ -20,7 +20,8 @@ export type CustomerBal = { id: string; name: string; phone: string; city: strin
 
 export const listCustomerBalances = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d: unknown) => z.object({ posOnly: z.boolean().optional() }).parse(d ?? {}))
+  .handler(async ({ data, context }) => {
     const sb = context.supabase as Sb;
     const [{ data: custs }, flows] = await Promise.all([
       sb.from("customers").select("id, name, phone, city, opening_balance, credit_limit").order("name").limit(5000),
@@ -30,7 +31,9 @@ export const listCustomerBalances = createServerFn({ method: "GET" })
     const g = (id: string) => agg.get(id) ?? (agg.set(id, { sales: 0, paid: 0, bal: 0 }), agg.get(id)!);
     for (const s of flows.sales) { const a = g(s.customer_id); const v = Number(s.grand_total); if (s.doc_type === "sale") { a.sales += v; a.bal += v; } else a.bal -= v; }
     for (const p of flows.pays) { const a = g(p.customer_id); const v = Number(p.amount); if (p.direction === "in") { a.paid += v; a.bal -= v; } else a.bal += v; }
-    const customers: CustomerBal[] = ((custs ?? []) as any[]).map((c) => {
+    // posOnly: sirf woh customers jo POS mein use hue (sale/return/payment) — baqi workspace customers chhupa do.
+    const posIds = data.posOnly ? new Set<string>([...flows.sales.map((s) => s.customer_id), ...flows.pays.map((p) => p.customer_id)]) : null;
+    const customers: CustomerBal[] = ((custs ?? []) as any[]).filter((c) => !posIds || posIds.has(c.id)).map((c) => {
       const a = agg.get(c.id) ?? { sales: 0, paid: 0, bal: 0 };
       return { id: c.id, name: c.name ?? "", phone: c.phone ?? "", city: c.city ?? "", opening: Number(c.opening_balance ?? 0), creditLimit: c.credit_limit == null ? null : Number(c.credit_limit), sales: r2(a.sales), paid: r2(a.paid), balance: r2(Number(c.opening_balance ?? 0) + a.bal) };
     });
