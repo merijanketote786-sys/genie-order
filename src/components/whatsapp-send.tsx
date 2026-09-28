@@ -12,6 +12,15 @@ export function waNumber(raw?: string) {
   return d;
 }
 
+/** Open the installed WhatsApp app: mobile uses the whatsapp:// deep link, desktop wa.me (opens the installed app if present). */
+export function openWhatsAppApp(num: string, text: string) {
+  const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+  const url = mobile
+    ? `whatsapp://send?phone=${num}&text=${encodeURIComponent(text)}`
+    : `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
+  window.open(url, "_blank", "noopener");
+}
+
 export function waMessage(doc: PrintDoc, business: string) {
   const money = (n: number) => `Rs ${(Math.round((Number(n) || 0) * 100) / 100).toLocaleString("en-PK")}`;
   const date = new Date(doc.date);
@@ -69,7 +78,7 @@ export function WhatsAppSendDialog({ doc, business, onClose }: { doc: PrintDoc; 
         </div>
         <div className="mt-3 flex flex-wrap justify-end gap-2">
           <Button variant="outline" onClick={() => navigator.clipboard?.writeText(text)}>Copy message</Button>
-          <Button disabled={!valid} onClick={() => window.open(link, "_blank", "noopener")}><MessageCircle /> Open WhatsApp</Button>
+          <Button disabled={!valid} onClick={() => openWhatsAppApp(num, text)}><MessageCircle /> Open WhatsApp</Button>
         </div>
       </div>
     </div>
