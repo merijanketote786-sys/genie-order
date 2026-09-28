@@ -1,6 +1,12 @@
 import { sampleDoc } from "@/components/settings/sections";
 import { Button } from "@/components/ui/button";
 import { FORMAT_LABEL, INVOICE_FONTS, INVOICE_TEXT_FIELDS, resolveCfg, type InvoiceFont, type InvoiceTextField, type PaperFormat, type PosConfig, type TemplateId } from "@/lib/pos-config";
+
+// Invoice-text fields that can be hidden: business/header fields map to
+// printing.fields, table columns map to printing.columns. Item/amount/meta/
+// tableHeader are structural and always shown.
+const FIELD_HIDEABLE = ["logo", "businessName", "address", "phone", "email", "website", "taxId", "title", "number", "dateTime", "customer", "customerPhone", "customerAddress", "subtotal", "totals", "grandTotal", "paid", "balance", "paymentMethod", "notes", "terms", "footer", "signature"] as const;
+const COL_HIDEABLE = ["sku", "barcode", "unit", "qty", "rate", "discount", "tax"] as const;
 import { renderPrint } from "@/lib/print/render";
 import { Check, Save } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -88,11 +94,24 @@ export function PrintTemplatesPicker({ draft, upd, disabled, dirty = false, savi
           </select>
         </label>
         <div>
-          <p className="mb-2 text-xs font-medium text-muted-foreground">Font size for each invoice field (pt) · leave blank to use template size</p>
+          <p className="mb-2 text-xs font-medium text-muted-foreground">Font size for each invoice field (pt) · leave blank to use template size · untick to hide the field from the invoice</p>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {(Object.entries(INVOICE_TEXT_FIELDS) as [InvoiceTextField, string][]).map(([key, label]) => (
+            {(Object.entries(INVOICE_TEXT_FIELDS) as [InvoiceTextField, string][]).map(([key, label]) => {
+              const resolved = resolveCfg(draft);
+              const fieldKey = (FIELD_HIDEABLE as readonly string[]).includes(key) ? key : null;
+              const colKey = (COL_HIDEABLE as readonly string[]).includes(key) ? key : null;
+              const hidePath = fieldKey ? `printing.fields.${fieldKey}` : colKey ? `printing.columns.${colKey}` : null;
+              const shown = fieldKey ? resolved.printing.fields[fieldKey as never] : colKey ? resolved.printing.columns[colKey as never] : true;
+              return (
               <label key={key} className="flex min-w-0 items-center justify-between gap-2 text-xs text-foreground">
-                <span className="min-w-0">{label}</span>
+                <span className="flex min-w-0 items-center gap-1.5">
+                  {hidePath ? (
+                    <input type="checkbox" className="size-3.5 shrink-0" disabled={disabled} checked={!!shown}
+                      aria-label={`Show ${label} on invoice`}
+                      onChange={(e) => upd(hidePath, e.target.checked)} />
+                  ) : <span className="inline-block size-3.5 shrink-0" aria-hidden="true" />}
+                  <span className="min-w-0">{label}</span>
+                </span>
                 <input className="h-9 w-20 shrink-0 rounded-md border border-border bg-background px-2 text-sm text-foreground" type="number" inputMode="decimal"
                   min={5} max={36} step={0.5} disabled={disabled} value={draft.printing?.fontSizes?.[key] ?? ""} placeholder="Auto"
                   aria-label={`${label} font size (pt)`}
@@ -104,7 +123,8 @@ export function PrintTemplatesPicker({ draft, upd, disabled, dirty = false, savi
                     if (e.target.value !== "") upd(`printing.fontSizes.${key}`, Math.min(36, Math.max(5, Number(e.target.value) || 5)));
                   }} />
               </label>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
