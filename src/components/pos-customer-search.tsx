@@ -1,8 +1,10 @@
-import { listCustomers } from "@/lib/records.functions";
+import { listCustomers, saveParty } from "@/lib/records.functions";
+import { listSuppliers } from "@/lib/business.functions";
+import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
-type Cust = { id: string; name: string | null; phone: string; city: string | null; address: string | null; courierServiceName: string | null; goodsAddaName: string | null };
+type Cust = { supplier?: boolean; id: string; name: string | null; phone: string; city: string | null; address: string | null; courierServiceName: string | null; goodsAddaName: string | null };
 
 export function PosCustomerSearch({
   value,
@@ -38,13 +40,22 @@ export function PosCustomerSearch({
     enabled: open,
     staleTime: 30_000,
   });
-  const list = ((data?.customers ?? []) as Cust[]).slice(0, 8);
+  const { data: sup } = useQuery({ queryKey: ["suppliers"], queryFn: () => listSuppliers(), enabled: open, staleTime: 30_000 });
+  const custs = (data?.customers ?? []) as Cust[];
+  const phones = new Set(custs.map((c) => c.phone.replace(/\D/g, "").slice(-10)));
+  const ql = q.toLowerCase();
+  // Suppliers bhi party ke tor par dikhte hain (jo pehle se customer na hon).
+  const sups: Cust[] = (sup?.suppliers ?? [])
+    .filter((s) => !s.phone || !phones.has(s.phone.replace(/\D/g, "").slice(-10)))
+    .filter((s) => !ql || s.name.toLowerCase().includes(ql) || (s.phone ?? "").includes(q))
+    .map((s) => ({ supplier: true, id: s.id, name: s.name, phone: s.phone ?? "", city: null, address: s.address || null, courierServiceName: null, goodsAddaName: null }));
+  const list = [...custs.slice(0, 8), ...sups.slice(0, 5)];
   useEffect(() => setIdx(0), [q]);
 
   // A complete, unambiguous saved name/number fills the address without requiring a click.
   useEffect(() => {
     if (!open || !q || q !== value.trim()) return;
-    const matches = list.filter((c) => field === "phone"
+    const matches = custs.filter((c) => field === "phone"
       ? c.phone.replace(/\D/g, "") === q.replace(/\D/g, "")
       : c.name?.trim().toLowerCase() === q.toLowerCase());
     if (matches.length === 1) onPick(matches[0]);
@@ -52,9 +63,15 @@ export function PosCustomerSearch({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, q, open, field]);
 
-  const pick = (c: Cust) => {
-    onPick(c);
+  const pick = async (c: Cust) => {
     setOpen(false);
+    if (!c.supplier) return onPick(c);
+    if (!c.phone || c.phone.replace(/\D/g, "").length < 7) return toast.error("Add a phone number to this supplier first");
+    try {
+      // Supplier ko party (customer) record se link karte hain taake bill aur ledger save hon.
+      const res = await saveParty({ data: { name: c.name || "Supplier", phone: c.phone, address: c.address || undefined } });
+      onPick(res.customer);
+    } catch (e) { toast.error((e as Error).message || "Could not use supplier"); }
   };
 
   return (
@@ -83,14 +100,14 @@ export function PosCustomerSearch({
       {open && list.length > 0 ? (
         <ul ref={listRef} className="absolute left-0 right-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-xl border border-border bg-popover p-1 shadow-lg">
           {list.map((c, i) => (
-            <li key={c.id} role="option" aria-selected={i === idx}>
+            <li key={(c.supplier ? "s" : "c") + c.id} role="option" aria-selected={i === idx}>
               <button
                 type="button"
                 onMouseDown={(e) => { e.preventDefault(); pick(c); }}
                 onMouseEnter={() => setIdx(i)}
                 className={`w-full rounded-lg px-2.5 py-1.5 text-left ${i === idx ? "bg-accent text-accent-foreground" : "text-popover-foreground"}`}
               >
-                 <p className="truncate text-sm font-semibold">{c.name || "No name"}</p>
+                 <p className="truncate text-sm font-semibold">{c.name || "No name"}{c.supplier ? <span className="ml-1.5 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-bold uppercase text-secondary-foreground">Supplier</span> : null}</p>
                 <p className="truncate text-xs text-muted-foreground">{c.phone}{c.city ? ` · ${c.city}` : ""}</p>
                  {c.address ? <p className="truncate text-xs text-muted-foreground">{c.address}</p> : null}
               </button>
