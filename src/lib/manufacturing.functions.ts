@@ -4,7 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
 type Sb = any;
-export type RecipeMaterial = { product_id: string; qty: number };
+export type RecipeMaterial = { product_id: string; qty: number; cost?: number | null };
 export type RecipeExpense = { name: string; amount: number };
 export type Recipe = { productId: string; outputQty: number; materials: RecipeMaterial[]; expenses: RecipeExpense[] };
 
@@ -21,7 +21,7 @@ export const saveRecipe = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({
     productId: z.string().uuid(), outputQty: z.number().positive().max(1e7),
-    materials: z.array(z.object({ product_id: z.string().uuid(), qty: z.number().positive().max(1e7) })).max(100),
+    materials: z.array(z.object({ product_id: z.string().uuid(), qty: z.number().positive().max(1e7), cost: z.number().min(0).max(1e9).nullish() })).max(100),
     expenses: z.array(z.object({ name: z.string().max(100), amount: z.number().min(0).max(1e9) })).max(50),
   }).parse(d))
   .handler(async ({ data, context }) => {
