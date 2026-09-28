@@ -60,7 +60,23 @@ export function PartiesDialog({ open, onOpenChange }: { open: boolean; onOpenCha
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle>Parties</DialogTitle></DialogHeader>
-        <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search party name or phone" className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
+        <div className="flex gap-2">
+          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search party name or phone" className={inputCls} />
+          <Button type="button" variant="outline" className="h-10 shrink-0 gap-1" onClick={() => setAddOpen((o) => !o)}><UserPlus className="size-4" /> Add party</Button>
+        </div>
+        {addOpen ? (
+          <div className="space-y-2 rounded-lg border border-border bg-muted/40 p-3">
+            <div className="flex gap-2">
+              <Button type="button" size="sm" variant={addKind === "customer" ? "default" : "outline"} onClick={() => setAddKind("customer")}>Customer</Button>
+              <Button type="button" size="sm" variant={addKind === "supplier" ? "default" : "outline"} onClick={() => setAddKind("supplier")}>Supplier</Button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <input className={inputCls} placeholder="Name *" value={addName} onChange={(e) => setAddName(e.target.value)} />
+              <input className={inputCls} placeholder="Phone *" inputMode="tel" value={addPhone} onChange={(e) => setAddPhone(e.target.value.replace(/[^\d+\s-]/g, ""))} />
+            </div>
+            <Button type="button" className="w-full" disabled={saving} onClick={addParty}>{saving ? "Saving…" : "Save party"}</Button>
+          </div>
+        ) : null}
         <div className="flex justify-between text-xs text-muted-foreground"><span>{list.length} parties</span><span><span className="text-success">Green</span> = to receive · <span className="text-destructive">Red</span> = to pay / zero</span></div>
         <ul className="max-h-[60vh] divide-y divide-border overflow-y-auto rounded-lg border border-border">
           {loading ? <li className="p-4 text-center text-sm text-muted-foreground">Loading parties…</li> : null}
