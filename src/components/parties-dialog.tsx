@@ -1,18 +1,42 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { UserPlus } from "lucide-react";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { listCustomerBalances } from "@/lib/ledger.functions";
-import { listSuppliers } from "@/lib/business.functions";
+import { listSuppliers, saveSupplier } from "@/lib/business.functions";
+import { saveParty } from "@/lib/records.functions";
 import { rs } from "@/components/pos-subnav";
 
 type Party = { key: string; name: string; phone: string; kind: string; balance: number };
 
 const tail = (p: string) => p.replace(/\D/g, "").slice(-10);
+const inputCls = "h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
 
 export function PartiesDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const [q, setQ] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
+  const [addKind, setAddKind] = useState<"customer" | "supplier">("customer");
+  const [addName, setAddName] = useState("");
+  const [addPhone, setAddPhone] = useState("");
+  const [saving, setSaving] = useState(false);
+  const qc = useQueryClient();
   const c = useQuery({ queryKey: ["customer-balances", "pos"], queryFn: () => listCustomerBalances({ data: { posOnly: true } }), enabled: open });
   const s = useQuery({ queryKey: ["suppliers"], queryFn: () => listSuppliers(), enabled: open });
+
+  const addParty = async () => {
+    if (!addName.trim() || !addPhone.trim()) { toast.error("Name aur phone zaroori hain"); return; }
+    setSaving(true);
+    try {
+      if (addKind === "customer") await saveParty({ data: { name: addName.trim(), phone: addPhone.trim() } });
+      else await saveSupplier({ data: { name: addName.trim(), phone: addPhone.trim() } });
+      toast.success("Party add ho gayi");
+      setAddName(""); setAddPhone(""); setAddOpen(false);
+      await Promise.all([qc.invalidateQueries({ queryKey: ["customer-balances"] }), qc.invalidateQueries({ queryKey: ["suppliers"] })]);
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Party add nahi hui"); }
+    setSaving(false);
+  };
 
   // Balance: positive = hum ne lene hain (receivable), negative = dene hain (payable).
   const map = new Map<string, Party>();
