@@ -11,7 +11,7 @@ const tail = (p: string) => p.replace(/\D/g, "").slice(-10);
 
 export function PartiesDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const [q, setQ] = useState("");
-  const c = useQuery({ queryKey: ["customer-balances"], queryFn: () => listCustomerBalances(), enabled: open });
+  const c = useQuery({ queryKey: ["customer-balances", "pos"], queryFn: () => listCustomerBalances({ data: { posOnly: true } }), enabled: open });
   const s = useQuery({ queryKey: ["suppliers"], queryFn: () => listSuppliers(), enabled: open });
 
   // Balance: positive = hum ne lene hain (receivable), negative = dene hain (payable).
