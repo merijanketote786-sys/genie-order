@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { waNumber } from "@/components/whatsapp-send";
+import { openWhatsAppApp, waNumber } from "@/components/whatsapp-send";
 import { FileDown, Mail, MessageCircle, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
