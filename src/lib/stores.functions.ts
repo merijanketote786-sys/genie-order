@@ -69,3 +69,35 @@ export const getStoreStock = createServerFn({ method: "GET" })
     const visibleNames = ((prods ?? []) as any[]).filter((p) => visibleIds.includes(p.id)).map((p) => p.name as string);
     return { byId, byName, visibleIds, visibleNames };
   });
+
+/** Combined stock across every active store/godown. This is a read-only overview. */
+export const getAllStoresStock = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sb = context.supabase as Sb;
+    const [{ data: stores, error: storesError }, { data: prods, error: productsError }] = await Promise.all([
+      sb.from("pos_stores").select("id").eq("is_active", true).limit(1000),
+      sb.from("products").select("id, name").eq("scope", "pos").eq("is_active", true).limit(10000),
+    ]);
+    if (storesError || productsError) throw new Error("Failed to load all-store stock");
+    const storeIds = ((stores ?? []) as Array<{ id: string }>).map((store) => store.id);
+    const { data: rows, error: stockError } = storeIds.length
+      ? await sb.from("pos_store_stock").select("product_id, qty").in("store_id", storeIds).limit(50000)
+      : { data: [], error: null };
+    if (stockError) throw new Error("Failed to load all-store stock");
+    const byId: Record<string, number> = {};
+    for (const row of (rows ?? []) as Array<{ product_id: string; qty: number | string }>) {
+      byId[row.product_id] = (byId[row.product_id] ?? 0) + Number(row.qty ?? 0);
+    }
+    const byName: Record<string, number> = {};
+    const visibleIds: string[] = [];
+    const visibleNames: string[] = [];
+    for (const product of (prods ?? []) as Array<{ id: string; name: string }>) {
+      const qty = byId[product.id] ?? 0;
+      byId[product.id] = qty;
+      byName[product.name] = (byName[product.name] ?? 0) + qty;
+      visibleIds.push(product.id);
+      visibleNames.push(product.name);
+    }
+    return { byId, byName, visibleIds, visibleNames };
+  });

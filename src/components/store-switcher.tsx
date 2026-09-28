@@ -5,9 +5,9 @@ import { ArrowRightLeft, Plus, Settings2, Store, Trash2, Warehouse } from "lucid
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { getStoreStock, listStores, saveStore, setCommonProducts, transferStock, type PosStore } from "@/lib/stores.functions";
+import { getAllStoresStock, getStoreStock, listStores, saveStore, setCommonProducts, transferStock, type PosStore } from "@/lib/stores.functions";
 import { listInventory } from "@/lib/inventory.functions";
-import { setSelectedStoreId, useSelectedStoreId } from "@/lib/pos-store-client";
+import { ALL_STORES_ID, setSelectedStoreId, useSelectedStoreId } from "@/lib/pos-store-client";
 
 const inp = "h-9 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground";
 
@@ -20,9 +20,14 @@ export function useActiveStore() {
   const { data } = useStores();
   const sel = useSelectedStoreId();
   const stores = data?.stores ?? [];
+  const isAllStores = sel === ALL_STORES_ID;
   const store = stores.find((s) => s.id === sel && s.isActive) ?? stores.find((s) => s.isDefault) ?? null;
-  const stock = useQuery({ queryKey: ["store-stock", store?.id], queryFn: () => getStoreStock({ data: { storeId: store!.id } }), enabled: !!store });
-  return { store, stores, commonProducts: data?.commonProducts ?? true, stock: stock.data ?? null };
+  const stock = useQuery({
+    queryKey: ["store-stock", isAllStores ? ALL_STORES_ID : store?.id],
+    queryFn: () => isAllStores ? getAllStoresStock() : getStoreStock({ data: { storeId: store?.id ?? "" } }),
+    enabled: isAllStores || !!store,
+  });
+  return { store, stores, isAllStores, commonProducts: data?.commonProducts ?? true, stock: stock.data ?? null };
 }
 
 export function StoreSwitcher() {
@@ -31,7 +36,7 @@ export function StoreSwitcher() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   // keep saved selection valid
-  useEffect(() => { if (store && sel !== store.id) setSelectedStoreId(store.id); }, [store, sel]);
+  useEffect(() => { if (store && sel !== ALL_STORES_ID && sel !== store.id) setSelectedStoreId(store.id); }, [store, sel]);
   const change = (id: string) => {
     setSelectedStoreId(id);
     qc.invalidateQueries({ queryKey: ["store-stock"] });
@@ -40,8 +45,9 @@ export function StoreSwitcher() {
     <div className="flex items-center gap-1.5">
       <label className="sr-only" htmlFor="pos-store-select">Store</label>
       <div className="flex items-center gap-1 rounded-md border border-border bg-card px-2">
-        {store?.kind === "godown" ? <Warehouse className="size-4 text-muted-foreground" /> : <Store className="size-4 text-muted-foreground" />}
-        <select id="pos-store-select" aria-label="Store" className="h-9 max-w-48 bg-transparent text-sm font-semibold text-foreground outline-none" value={store?.id ?? ""} onChange={(e) => change(e.target.value)}>
+        {sel === ALL_STORES_ID ? <Warehouse className="size-4 text-muted-foreground" /> : store?.kind === "godown" ? <Warehouse className="size-4 text-muted-foreground" /> : <Store className="size-4 text-muted-foreground" />}
+        <select id="pos-store-select" aria-label="Store" className="h-9 max-w-48 bg-transparent text-sm font-semibold text-foreground outline-none" value={sel === ALL_STORES_ID ? ALL_STORES_ID : store?.id ?? ""} onChange={(e) => change(e.target.value)}>
+          <option value={ALL_STORES_ID}>All stores</option>
           {stores.filter((s) => s.isActive).map((s) => <option key={s.id} value={s.id}>{s.name}{s.kind === "godown" ? " (Godown)" : ""}</option>)}
         </select>
       </div>

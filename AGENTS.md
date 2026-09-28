@@ -16,3 +16,4 @@
 - Billing entry strips use the shared `entry-bar` / `entry-add` utilities in src/styles.css instead of per-screen background classes; this keeps the most-used row on every POS billing screen visually identical and clearly the primary control.
 - Invoice typography overrides live in POS printing config and are applied in the shared HTML print renderer; this keeps preview, print, and PDF consistent without changing historical transaction data.
 - Custom invoice charges are opt-in per field, stored in each sale payload, and included in the saved grand total; this preserves reprints and all downstream balances/accounting.
+- “All stores” is a read-only combined-stock view; stock-moving actions require one concrete store so inventory remains attributable and atomic.

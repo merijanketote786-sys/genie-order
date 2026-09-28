@@ -562,6 +562,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
   const checkout = async (rawKind: "sale" | "held" | "quotation", print: boolean) => {
     const kind = estimate && rawKind === "sale" ? "quotation" : rawKind;
     if (!cart.length || saving || submitLock.current) return;
+    if (activeStore.isAllStores) return toast.error("Select a specific store before saving this bill");
     if (kind === "sale" && paidNum < total && !customerName.trim() && !customerPhone.trim()) {
       toast.error("Enter customer name or phone for credit / outstanding balance");
       return;
