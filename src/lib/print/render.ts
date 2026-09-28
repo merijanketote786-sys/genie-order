@@ -213,18 +213,16 @@ function thermalHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, ex: E
   const font = narrow ? Math.min(t.fontPt, 8) : t.fontPt;
   const b = cfg.business;
   const date = typeof doc.date === "string" ? doc.date : formatDate(doc.date, cfg, f.dateTime);
-  const kv = (a: string, v: string, cls = "") => `<div class="kv ${cls}"><span>${a}</span><span>${v}</span></div>`;
+  const kv = (a: string, v: string, cls = "", field?: InvoiceTextField) => `<div class="kv ${cls} ${field ? `fs-${field}` : ""}"><span>${a}</span><span>${v}</span></div>`;
   const lines = (doc.lines ?? [])
-    .map((l, i) => `<div class=it><div class=nm>${i + 1}. ${esc(l.name)}${l.unit && !narrow ? ` <small>${esc(l.unit)}</small>` : ""}</div>${
-      t.showQtyRate ? kv(`${qtyFmt(l.qty)} × ${m(l.rate)}${l.discount ? ` -${m(l.discount)}` : ""}${l.taxPct ? ` +${l.taxPct}%` : ""}`, m(l.total)) : kv(`x${qtyFmt(l.qty)}`, m(l.total))
-    }${l.note ? `<div class=note>${esc(l.note)}</div>` : ""}</div>`)
+    .map((l, i) => `<div class=it><div class="nm fs-item">${i + 1}. ${esc(l.name)}${l.unit && !narrow ? ` <small class=fs-unit>${esc(l.unit)}</small>` : ""}</div><div class=kv><span><span class=fs-qty>${t.showQtyRate ? qtyFmt(l.qty) : `x${qtyFmt(l.qty)}`}</span>${t.showQtyRate ? ` × <span class=fs-rate>${m(l.rate)}</span>${l.discount ? ` <span class=fs-discount>-${m(l.discount)}</span>` : ""}${l.taxPct ? ` <span class=fs-tax>+${l.taxPct}%</span>` : ""}` : ""}</span><span class=fs-amount>${m(l.total)}</span></div>${l.note ? `<div class="note fs-notes">${esc(l.note)}</div>` : ""}</div>`)
     .join("");
-  const table = doc.table ? doc.table.rows.map((r) => `<div class=it>${r.map((v, i) => (i === 0 ? `<div class=nm>${esc(v)}</div>` : "")).join("")}${kv(doc.table!.head.slice(1).map((h, i) => `${h}: ${typeof r[i + 1] === "number" ? m(r[i + 1] as number) : esc(r[i + 1])}`).join(" · "), "")}</div>`).join("") : "";
-  const totals = (doc.totals ?? []).map((x) => kv(esc(x.label), `${x.neg ? "-" : ""}${cur} ${m(x.value)}`, x.bold && t.boldTotal ? "grand" : "")).join("");
+  const table = doc.table ? doc.table.rows.map((r) => `<div class=it>${r.map((v, i) => (i === 0 ? `<div class="nm fs-item">${esc(v)}</div>` : "")).join("")}${kv(doc.table!.head.slice(1).map((h, i) => `${h}: ${typeof r[i + 1] === "number" ? m(r[i + 1] as number) : esc(r[i + 1])}`).join(" · "), "", "", "amount")}</div>`).join("") : "";
+  const totals = (doc.totals ?? []).map((x) => kv(esc(x.label), `${x.neg ? "-" : ""}${cur} ${m(x.value)}`, x.bold && t.boldTotal ? "grand" : "", x.bold ? "grandTotal" : /^sub/i.test(x.label) ? "subtotal" : "totals")).join("");
   const pays = [
-    f.paymentMethod && doc.payments?.length ? kv("Payment", esc(doc.payments.filter((x) => x.amount > 0).map((x) => `${x.method} ${m(x.amount)}`).join(", "))) : "",
-    f.paid && doc.paid != null ? kv("Paid", `${cur} ${m(doc.paid)}`) : "",
-    f.balance && doc.balance ? kv("Balance", `${cur} ${m(doc.balance)}`, "grand") : "",
+    f.paymentMethod && doc.payments?.length ? kv("Payment", esc(doc.payments.filter((x) => x.amount > 0).map((x) => `${x.method} ${m(x.amount)}`).join(", ")), "", "paymentMethod") : "",
+    f.paid && doc.paid != null ? kv("Paid", `${cur} ${m(doc.paid)}`, "", "paid") : "",
+    f.balance && doc.balance ? kv("Balance", `${cur} ${m(doc.balance)}`, "grand", "balance") : "",
   ].join("");
   const footer = t.footer || cfg.footer;
   const css = `
@@ -239,17 +237,18 @@ function thermalHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, ex: E
   small{font-size:${font - 1}pt}.grand{font-weight:800;font-size:${font + 2}pt}
   .code{text-align:center;margin-top:1.5mm}.code svg{max-width:100%;height:${narrow ? 10 : 12}mm}.code img{width:${narrow ? 22 : 28}mm}
   .feed{height:${Math.max(0, t.feedLines) * font * 0.5}mm}
-  .copy{page-break-after:always;break-after:page}.copy:last-child{page-break-after:auto}`;
-  const inner = `<div class=c>${f.logo && b.logo ? `<img class=logo src="${esc(b.logo)}" alt="">` : ""}${f.businessName ? `<div class=bn>${esc(b.name || "HB Chemicals Pakistan")}</div>` : ""}
-    ${f.address && b.address ? `<div>${esc(b.address)}</div>` : ""}${f.phone && b.phone ? `<div>${esc(b.phone)}</div>` : ""}${f.taxId && b.taxId ? `<div>NTN/GST: ${esc(b.taxId)}</div>` : ""}
-    ${f.title ? `<div><b>${esc(doc.title)}</b></div>` : ""}</div><hr>
-    ${f.number ? kv("No.", esc(doc.number)) : ""}${kv("Date", esc(date))}
-    ${t.showCustomer && doc.party?.name && f.customer ? kv(esc(doc.party.label), esc(doc.party.name)) : ""}${t.showCustomer && doc.party?.phone && f.customerPhone ? kv("Phone", esc(doc.party.phone)) : ""}
-    ${(doc.meta ?? []).map(([k, v]) => kv(esc(k), esc(v))).join("")}<hr>
+   .copy{page-break-after:always;break-after:page}.copy:last-child{page-break-after:auto}
+   ${typographyCss(cfg)}`;
+   const inner = `<div class=c>${f.logo && b.logo ? `<img class=logo src="${esc(b.logo)}" alt="">` : ""}${f.businessName ? `<div class="bn fs-businessName">${esc(b.name || "HB Chemicals Pakistan")}</div>` : ""}
+    ${f.address && b.address ? `<div class=fs-address>${esc(b.address)}</div>` : ""}${f.phone && b.phone ? `<div class=fs-phone>${esc(b.phone)}</div>` : ""}${f.email && b.email ? `<div class=fs-email>${esc(b.email)}</div>` : ""}${f.website && b.website ? `<div class=fs-website>${esc(b.website)}</div>` : ""}${f.taxId && b.taxId ? `<div class=fs-taxId>NTN/GST: ${esc(b.taxId)}</div>` : ""}
+    ${f.title ? `<div class=fs-title><b>${esc(doc.title)}</b></div>` : ""}</div><hr>
+    ${f.number ? kv("No.", esc(doc.number), "", "number") : ""}${kv("Date", esc(date), "", "dateTime")}
+    ${t.showCustomer && doc.party?.name && f.customer ? kv(esc(doc.party.label), esc(doc.party.name), "", "customer") : ""}${t.showCustomer && doc.party?.phone && f.customerPhone ? kv("Phone", esc(doc.party.phone), "", "customerPhone") : ""}${t.showCustomer && doc.party?.address && f.customerAddress ? kv("Address", esc(doc.party.address), "", "customerAddress") : ""}
+    ${(doc.meta ?? []).map(([k, v]) => kv(esc(k), esc(v), "", "meta")).join("")}<hr>
     ${lines}${table}${totals || pays ? `<hr>${totals}${pays}` : ""}
-    ${f.notes && doc.notes ? `<hr><div>Note: ${esc(doc.notes)}</div>` : ""}${f.terms && cfg.terms ? `<div><small>${esc(cfg.terms)}</small></div>` : ""}
+    ${f.notes && doc.notes ? `<hr><div class=fs-notes>Note: ${esc(doc.notes)}</div>` : ""}${f.terms && cfg.terms ? `<div class=fs-terms><small>${esc(cfg.terms)}</small></div>` : ""}
     ${ex.barcodeSvg ? `<div class=code>${ex.barcodeSvg}</div>` : ""}${ex.qrDataUrl ? `<div class=code><img src="${ex.qrDataUrl}" alt=""></div>` : ""}
-    ${f.footer && footer ? `<hr><div class=c>${esc(footer)}</div>` : ""}<div class=feed></div>`;
+    ${f.footer && footer ? `<hr><div class="c fs-footer">${esc(footer)}</div>` : ""}<div class=feed></div>`;
   return { css, inner };
 }
 
