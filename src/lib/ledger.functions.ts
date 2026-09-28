@@ -8,8 +8,15 @@ const r2 = (x: number) => Math.round(x * 100) / 100;
 
 /* --------------------------- Customer balances --------------------------- */
 
+/** Invoice ke custom charges (shipping waghera) ka total — statement/balance mein shamil nahi hote. */
+function payloadCharges(payload: unknown): number {
+  const fields = (payload as { customFields?: { addToTotal?: boolean; value?: string }[] } | null)?.customFields;
+  if (!Array.isArray(fields)) return 0;
+  return fields.reduce((s, f) => { if (!f?.addToTotal) return s; const v = Number(String(f.value ?? "").replace(/,/g, "").trim()); return Number.isFinite(v) && v > 0 ? s + v : s; }, 0);
+}
+
 async function customerFlows(sb: Sb, customerId?: string) {
-  let s = sb.from("pos_sales").select("id, customer_id, doc_type, doc_number, grand_total, created_at").in("doc_type", ["sale", "return"]).neq("status", "cancelled").not("customer_id", "is", null);
+  let s = sb.from("pos_sales").select("id, customer_id, doc_type, doc_number, grand_total, payload, created_at").in("doc_type", ["sale", "return"]).neq("status", "cancelled").not("customer_id", "is", null);
   let p = sb.from("pos_payments").select("customer_id, kind, direction, method, amount, note, created_at").eq("status", "completed").not("customer_id", "is", null);
   if (customerId) { s = s.eq("customer_id", customerId); p = p.eq("customer_id", customerId); }
   const [{ data: sales }, { data: pays }] = await Promise.all([s.limit(20000), p.limit(20000)]);
