@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import type { PaperFormat, PosConfig, TemplateId } from "@/lib/pos-config";
+import { INVOICE_FONTS, INVOICE_TEXT_FIELDS, type InvoiceFont, type InvoiceTextField, type PaperFormat, type PosConfig, type TemplateId } from "@/lib/pos-config";
 import { Check, Save } from "lucide-react";
 
 type Upd = (path: string, v: unknown) => void;
@@ -72,6 +72,33 @@ export function PrintTemplatesPicker({ draft, upd, disabled, dirty = false, savi
             </button>
           );
         })}
+      </div>
+
+      <div className="space-y-3 border-t border-border pt-4">
+        <h3 className="text-sm font-semibold text-foreground">Invoice typography</h3>
+        <label className="block max-w-xs text-xs font-medium text-muted-foreground">Font style — entire invoice
+          <select className="mt-1 h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground" disabled={disabled}
+            value={draft.printing?.fontFamily ?? "default"} onChange={(e) => upd("printing.fontFamily", e.target.value as InvoiceFont)}>
+            {(Object.entries(INVOICE_FONTS) as [InvoiceFont, string][]).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+          </select>
+        </label>
+        <div>
+          <p className="mb-2 text-xs font-medium text-muted-foreground">Font size for each invoice field (pt) · leave blank to use template size</p>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {(Object.entries(INVOICE_TEXT_FIELDS) as [InvoiceTextField, string][]).map(([key, label]) => (
+              <label key={key} className="flex min-w-0 items-center justify-between gap-2 text-xs text-foreground">
+                <span className="min-w-0">{label}</span>
+                <input className="h-9 w-20 shrink-0 rounded-md border border-border bg-background px-2 text-sm text-foreground" type="number" inputMode="decimal"
+                  min={5} max={36} step={0.5} disabled={disabled} value={draft.printing?.fontSizes?.[key] ?? ""} placeholder="Auto"
+                  aria-label={`${label} font size (pt)`}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    upd(`printing.fontSizes.${key}`, raw === "" ? undefined : Number.isFinite(Number(raw)) ? Math.min(36, Math.max(5, Number(raw))) : undefined);
+                  }} />
+              </label>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
