@@ -13,6 +13,22 @@ export type FieldKey =
   | "title" | "number" | "dateTime" | "customer" | "customerPhone" | "customerAddress"
   | "subtotal" | "paid" | "balance" | "paymentMethod" | "notes" | "terms" | "footer" | "signature";
 
+export const INVOICE_FONTS = {
+  default: "Template default", arial: "Arial", georgia: "Georgia", times: "Times New Roman",
+  courier: "Courier New", verdana: "Verdana", tahoma: "Tahoma", trebuchet: "Trebuchet MS",
+} as const;
+export type InvoiceFont = keyof typeof INVOICE_FONTS;
+export const INVOICE_TEXT_FIELDS = {
+  businessName: "Business name", address: "Business address", phone: "Business phone", email: "Business email",
+  website: "Website", taxId: "NTN/GST", title: "Invoice title", number: "Invoice number", dateTime: "Date & time",
+  customer: "Customer name", customerPhone: "Customer phone", customerAddress: "Customer address", meta: "Other details",
+  tableHeader: "Item table headings", item: "Product name", sku: "SKU", barcode: "Barcode", unit: "Unit",
+  qty: "Quantity", rate: "Rate", discount: "Discount", tax: "Tax", amount: "Item amount",
+  subtotal: "Subtotal", totals: "Other totals", grandTotal: "Grand total", paid: "Paid", balance: "Balance",
+  paymentMethod: "Payment method", notes: "Notes", terms: "Terms", footer: "Footer", signature: "Signature",
+} as const;
+export type InvoiceTextField = keyof typeof INVOICE_TEXT_FIELDS;
+
 export type PrinterCfg = {
   id: string;
   name: string;
@@ -76,6 +92,8 @@ export type PosConfig = {
     custom?: { widthMm?: number; heightMm?: number | null };
     signatureLabel?: string;
     preset?: string;
+    fontFamily?: InvoiceFont;
+    fontSizes?: Partial<Record<InvoiceTextField, number>>;
   };
   printers?: PrinterCfg[];
   printerDefaults?: Partial<Record<PrinterRole, string>>;
@@ -137,6 +155,8 @@ export function resolveCfg(c: PosConfig = {}) {
       thermal: { fontPt: 8.5, showQtyRate: true, boldTotal: true, showBarcode: false, showQr: false, showCustomer: true, footer: "", feedLines: 3, marginMm: 2, ...(pr.thermal ?? {}) },
       custom: { widthMm: 100, heightMm: null as number | null, ...(pr.custom ?? {}) },
       signatureLabel: pr.signatureLabel ?? "Authorized signature",
+      fontFamily: pr.fontFamily ?? "default",
+      fontSizes: pr.fontSizes ?? {},
     },
     printers: c.printers ?? [],
     printerDefaults: c.printerDefaults ?? {},
