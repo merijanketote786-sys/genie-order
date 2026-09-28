@@ -23,7 +23,7 @@ export function ShareDialog({
 
   const openWhatsApp = () => {
     if (!waValid) return toast.error("Enter a valid WhatsApp number");
-    window.open(`https://wa.me/${num}?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+    openWhatsAppApp(num, text);
   };
 
   const openEmail = () => {
