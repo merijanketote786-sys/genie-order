@@ -88,6 +88,29 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
   };
 
   const allPicked = list.length > 0 && list.every((p) => picked.has(p.id));
+
+  // Arrow keys move the cursor between editable fields (up/down/left/right)
+  const gridKeys = (e: React.KeyboardEvent) => {
+    const k = e.key;
+    if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(k)) return;
+    const t = e.target as HTMLElement;
+    if (t.tagName !== "INPUT" && t.tagName !== "SELECT") return;
+    const td = t.closest("td"), tr = t.closest("tr"), body = tr?.parentElement;
+    if (!td || !tr || !body) return;
+    // In text inputs, left/right should still edit text unless the cursor is at the edge
+    if (t.tagName === "INPUT" && (t as HTMLInputElement).type !== "checkbox") {
+      const inp = t as HTMLInputElement;
+      const atStart = inp.selectionStart === 0, atEnd = inp.selectionEnd === inp.value.length;
+      if (k === "ArrowLeft" && !atStart) return;
+      if (k === "ArrowRight" && !atEnd) return;
+    }
+    const rows = [...body.querySelectorAll(":scope > tr")];
+    const ri = rows.indexOf(tr), ci = [...tr.children].indexOf(td);
+    const nri = k === "ArrowUp" ? ri - 1 : k === "ArrowDown" ? ri + 1 : ri;
+    const nci = k === "ArrowLeft" ? ci - 1 : k === "ArrowRight" ? ci + 1 : ci;
+    const target = rows[nri]?.children[nci]?.querySelector<HTMLElement>("input, select, button");
+    if (target) { e.preventDefault(); target.focus(); if (target.tagName === "INPUT") (target as HTMLInputElement).select(); }
+  };
   return (
     <section className="space-y-2 rounded-xl border border-border bg-card p-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -119,7 +142,7 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
             {COLS.map((c) => <th key={c.k} className={`truncate px-2 py-2 ${c.k === "name" ? "sticky left-12 z-20 border-r border-border bg-card" : ""}`} title={c.label}>{c.label}</th>)}
             <th className="px-2 py-2">Delete</th>
           </tr></thead>
-          <tbody>
+          <tbody onKeyDown={gridKeys}>
             {list.slice(0, 1000).map((p) => { const r = rowOf(p.id); return (
               <tr key={p.id} className={`border-t border-border ${dirtyIds.includes(p.id) ? "bg-accent" : ""}`}>
                 <td className={`sticky left-0 z-10 px-2 py-1 ${dirtyIds.includes(p.id) ? "bg-accent" : "bg-card"}`}><input type="checkbox" checked={picked.has(p.id)} onChange={() => setPicked((s) => { const n = new Set(s); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; })} aria-label={`Select ${p.name}`} /></td>
