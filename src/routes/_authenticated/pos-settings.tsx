@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { savePosSettings } from "@/lib/pos-access.functions";
 import { getPath, resolveCfg, setPath, type PaperFormat, type PosConfig } from "@/lib/pos-config";
 import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, Eye, Save, Search } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
@@ -167,6 +167,7 @@ function SettingsHub() {
             {SECTIONS.map((s) => (
               <button key={s.id} type="button" onClick={() => { setSection(s.id); setQ(""); }} className={`whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm ${!sectionHits && section === s.id ? "bg-primary text-primary-foreground" : sectionHits?.includes(s.id) ? "bg-accent text-accent-foreground" : "text-foreground hover:bg-muted"}`}>{s.label}</button>
             ))}
+            <Link to="/item-manufacturing" search={{}} className="whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm text-foreground hover:bg-muted">Item Manufacturing</Link>
           </nav>
           <div className="min-w-0 flex-1 space-y-3">
             {sectionHits && !sectionHits.length ? <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">No setting found for "{q}"</p> : null}
