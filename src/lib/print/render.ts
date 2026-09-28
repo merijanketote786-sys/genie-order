@@ -2,7 +2,7 @@
  * Central print renderer. Har paper format ka apna layout (A4, A5, 58mm, 80mm, custom) —
  * ek layout ko scale nahi kiya jata. Output: mukammal HTML document (@page ke saath).
  */
-import type { ColKey, DocKind, InvoiceTextField, PaperFormat, ResolvedCfg, TemplateId } from "@/lib/pos-config";
+import type { ColKey, DocKind, InvoiceCustomField, InvoiceTextField, PaperFormat, ResolvedCfg, TemplateId } from "@/lib/pos-config";
 import { formatDate, INVOICE_TEXT_FIELDS } from "@/lib/pos-config";
 
 export type PrintLine = { name: string; sku?: string; barcode?: string; unit?: string; qty: number; rate: number; discount?: number; taxPct?: number; total: number; note?: string };
@@ -22,7 +22,7 @@ export type PrintDoc = {
   notes?: string;
   meta?: [string, string][];
   /** Values entered for this bill; when absent, saved template custom fields are used. */
-  customFields?: { label: string; value: string; show?: boolean; sizePt?: number }[];
+  customFields?: InvoiceCustomField[];
   /** Statements / reports ke liye free table */
   table?: { head: string[]; rows: (string | number)[][]; align?: ("l" | "r")[] };
   currency?: string;
@@ -294,9 +294,9 @@ export async function renderPrint(doc: PrintDoc, cfg: ResolvedCfg, o: RenderOpts
   return { html, spec };
 }
 
-function customRows(doc: Pick<PrintDoc, "customFields">, cfg: { printing: { customFields?: { label: string; value: string; show?: boolean; sizePt?: number }[] } }, thermal: boolean): string {
+function customRows(doc: Pick<PrintDoc, "customFields">, cfg: { printing: { customFields?: InvoiceCustomField[] } }, thermal: boolean): string {
   return (doc.customFields ?? cfg.printing.customFields ?? [])
-    .filter((c) => c.show !== false && (c.label?.trim() || c.value?.trim()))
+    .filter((c) => c.show !== false && !c.addToTotal && (c.label?.trim() || c.value?.trim()))
     .map((c) => {
       const fs = c.sizePt && c.sizePt >= 5 && c.sizePt <= 36 ? `font-size:${c.sizePt}pt!important;` : "";
       const sz = ` style="${fs}${thermal ? "" : "margin-bottom:1mm"}"`;

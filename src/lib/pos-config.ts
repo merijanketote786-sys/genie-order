@@ -18,6 +18,7 @@ export const INVOICE_FONTS = {
   courier: "Courier New", verdana: "Verdana", tahoma: "Tahoma", trebuchet: "Trebuchet MS",
 } as const;
 export type InvoiceFont = keyof typeof INVOICE_FONTS;
+export type InvoiceCustomField = { label: string; value: string; show?: boolean; sizePt?: number; addToTotal?: boolean };
 export const INVOICE_TEXT_FIELDS = {
   businessName: "Business name", address: "Business address", phone: "Business phone", email: "Business email",
   website: "Website", taxId: "NTN/GST", title: "Invoice title", number: "Invoice number", dateTime: "Date & time",
@@ -94,7 +95,7 @@ export type PosConfig = {
     preset?: string;
     fontFamily?: InvoiceFont;
     fontSizes?: Partial<Record<InvoiceTextField, number>>;
-    customFields?: { label: string; value: string; show?: boolean; sizePt?: number }[];
+    customFields?: InvoiceCustomField[];
   };
   printers?: PrinterCfg[];
   printerDefaults?: Partial<Record<PrinterRole, string>>;

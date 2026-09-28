@@ -39,7 +39,7 @@ type SaleRow = {
   paid_total: number;
   balance: number;
   notes: string | null;
-  payload: { ui?: { customerAddress?: string; customerCityArea?: string; courierServiceName?: string; goodsAddaName?: string; customFields?: { label: string; value: string; show?: boolean; sizePt?: number }[] }; customerAddress?: string; customerCityArea?: string; courierServiceName?: string; goodsAddaName?: string; customFields?: { label: string; value: string; show?: boolean; sizePt?: number }[] } | null;
+  payload: { ui?: { customerAddress?: string; customerCityArea?: string; courierServiceName?: string; goodsAddaName?: string; customFields?: { label: string; value: string; show?: boolean; sizePt?: number; addToTotal?: boolean }[] }; customerAddress?: string; customerCityArea?: string; courierServiceName?: string; goodsAddaName?: string; customFields?: { label: string; value: string; show?: boolean; sizePt?: number; addToTotal?: boolean }[] } | null;
   created_at: string;
   items: { name: string; sku: string | null; unit: string | null; qty: number; rate: number; discount: number; tax_percent: number; line_total: number; note: string | null }[];
   payments: { method: string; amount: number; kind: string }[];
@@ -52,6 +52,11 @@ function saleToDoc(s: SaleRow): PrintDoc {
   if (Number(s.tax_total)) totals!.push({ label: "Tax", value: Number(s.tax_total) });
   if (Number(s.discount_total)) totals!.push({ label: "Discount", value: Number(s.discount_total), neg: true });
   if (Number(s.delivery)) totals!.push({ label: "Delivery", value: Number(s.delivery) });
+  for (const field of delivery?.customFields ?? []) {
+    if (field.show === false || !field.addToTotal) continue;
+    const amount = Number(String(field.value ?? "").replace(/,/g, "").trim());
+    if (Number.isFinite(amount) && amount > 0) totals!.push({ label: field.label.trim() || "Custom charge", value: amount });
+  }
   totals!.push({ label: "Grand Total", value: Number(s.grand_total), bold: true });
   return {
     kind: "pos",
