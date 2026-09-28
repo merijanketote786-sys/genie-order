@@ -1,5 +1,5 @@
 # Roadmap — Vyapar-style POS
-- [ ] Printing templates: individual invoice field font sizes and whole-invoice font style
+- [x] Printing templates: individual invoice field font sizes and whole-invoice font style
 - [x] Match POS billing page to the supplied full-width sale-invoice layout without changing billing behavior
 - [x] Phase 1–6: POS business system
 - [x] Production audit: idempotency, change/overpayment fix, return/cancel guards, locked direct writes, indexes, friendly errors
