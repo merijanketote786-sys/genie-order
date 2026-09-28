@@ -237,7 +237,7 @@ ${r.address ? `<div class=c>${esc(r.address)}</div>` : ""}${r.phone ? `<div clas
 <div class=c><b>${esc(r.title || "Invoice")}</b></div>
  <hr><table>${line("No.", esc(r.invoiceNumber))}${line("Date", esc(r.date))}${r.customerName ? line("Customer", esc(r.customerName)) : ""}${r.customerPhone ? line("Phone", esc(r.customerPhone)) : ""}${r.customerAddress ? line("Address", esc(r.customerAddress)) : ""}${r.customerCityArea ? line("City/Area", esc(r.customerCityArea)) : ""}${r.courierServiceName ? line("Courier service", esc(r.courierServiceName)) : ""}${r.goodsAddaName ? line("Goods adda", esc(r.goodsAddaName)) : ""}</table><hr>
 <table class=items><tr><th>Item</th><th class=r>Qty</th>${wide ? "<th class=r>Rate</th>" : ""}<th class=r>Amount</th></tr>${rows}</table><hr>
-<table>${line("Subtotal", `${c} ${money(subtotal)}`)}${taxTotal ? line("Tax", `${c} ${money(taxTotal)}`) : ""}${r.billDiscount ? line("Discount", `- ${c} ${money(r.billDiscount)}`) : ""}${r.delivery ? line("Delivery", `${c} ${money(r.delivery)}`) : ""}${line("Grand Total", `${c} ${money(total)}`, true)}${
+  <table>${line("Subtotal", `${c} ${money(subtotal)}`)}${taxTotal ? line("Tax", `${c} ${money(taxTotal)}`) : ""}${r.billDiscount ? line("Discount", `- ${c} ${money(r.billDiscount)}`) : ""}${r.delivery ? line("Delivery", `${c} ${money(r.delivery)}`) : ""}${(r.customFields ?? []).filter((field) => field.show !== false && field.addToTotal).map((field) => { const amount = Number(String(field.value ?? "").replace(/,/g, "").trim()); return Number.isFinite(amount) && amount > 0 ? line(esc(field.label.trim() || "Custom charge"), `${c} ${money(amount)}`) : ""; }).join("")}${line("Grand Total", `${c} ${money(total)}`, true)}${
     quote
       ? ""
       : `${line("Payment", esc(payLabel(r)))}${line("Paid", `${c} ${money(Math.min(r.paid, total))}`)}${r.paid > total ? line("Change", `${c} ${money(r.paid - total)}`) : ""}${r.paid < total ? line("Balance", `${c} ${money(total - r.paid)}`, true) : ""}${r.previousBalance ? line("Previous balance", `${c} ${money(r.previousBalance)}`) : ""}`
@@ -265,7 +265,7 @@ export function printReceipt(html: string) {
 export async function downloadReceiptPdf(r: ReceiptInput) {
   const { jsPDF } = await import("jspdf");
   const { default: autoTable } = await import("jspdf-autotable");
-  const { subtotal, taxTotal, total } = totals(r.lines, r.billDiscount, r.delivery);
+  const { subtotal, taxTotal, total } = totals(r.lines, r.billDiscount, r.delivery, customChargesTotal(r.customFields));
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const c = r.currency;
   doc.setFont("helvetica", "bold").setFontSize(16).text(r.business || "Invoice", 14, 18);
@@ -290,6 +290,11 @@ export async function downloadReceiptPdf(r: ReceiptInput) {
   if (taxTotal) rows.push(["Tax", `${c} ${money(taxTotal)}`]);
   if (r.billDiscount) rows.push(["Discount", `- ${c} ${money(r.billDiscount)}`]);
   if (r.delivery) rows.push(["Delivery", `${c} ${money(r.delivery)}`]);
+  for (const field of r.customFields ?? []) {
+    if (field.show === false || !field.addToTotal) continue;
+    const amount = Number(String(field.value ?? "").replace(/,/g, "").trim());
+    if (Number.isFinite(amount) && amount > 0) rows.push([field.label.trim() || "Custom charge", `${c} ${money(amount)}`]);
+  }
   rows.push(["Grand Total", `${c} ${money(total)}`]);
   if (r.title !== "Quotation") {
     rows.push(["Payment", payLabel(r)], ["Paid", `${c} ${money(Math.min(r.paid, total))}`]);
@@ -304,7 +309,7 @@ export async function downloadReceiptPdf(r: ReceiptInput) {
 
 /** POS receipt -> central PrintDoc. */
 export function receiptToDoc(r: ReceiptInput, o: { kind?: import("@/lib/pos-config").DocKind; id?: string; date?: Date } = {}): import("@/lib/print/render").PrintDoc {
-  const { subtotal, taxTotal, total } = totals(r.lines, r.billDiscount, r.delivery);
+  const { subtotal, taxTotal, total } = totals(r.lines, r.billDiscount, r.delivery, customChargesTotal(r.customFields));
   const quote = r.title === "Quotation";
   const t: import("@/lib/print/render").PrintTotal[] = [{ label: "Subtotal", value: subtotal }];
   if (taxTotal) t.push({ label: "Tax", value: taxTotal });
