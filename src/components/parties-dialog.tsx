@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { FileText, UserPlus } from "lucide-react";
 import { usePrintCenter } from "@/components/print-center";
-import { getCustomerLedger } from "@/lib/ledger.functions";
+import { getCustomerLedger, getPartyStatementItems } from "@/lib/ledger.functions";
 import { getSupplierLedger } from "@/lib/business.functions";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -32,15 +32,35 @@ export function PartiesDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   const [from, setFrom] = useState(monthStart);
   const [to, setTo] = useState(today);
   const [stBusy, setStBusy] = useState(false);
+  const OPTS = [
+    ["sale", "Sales"], ["saleReturn", "Sale returns"], ["purchase", "Purchases"], ["purchaseReturn", "Purchase returns"],
+    ["received", "Amount received"], ["paid", "Amount paid"], ["items", "Item details"], ["qty", "Quantity"], ["unit", "Unit"], ["rate", "Price per unit"], ["lineTotal", "Item amount"],
+  ] as const;
+  type Opt = (typeof OPTS)[number][0];
+  const [inc, setInc] = useState<Record<Opt, boolean>>({ sale: true, saleReturn: true, purchase: true, purchaseReturn: true, received: true, paid: true, items: true, qty: true, unit: true, rate: true, lineTotal: true });
+  const cat = (kind: string): Opt => {
+    if (kind === "Sale invoice") return "sale";
+    if (kind === "Sale return") return "saleReturn";
+    if (kind === "Purchase") return "purchase";
+    if (kind === "Purchase return") return "purchaseReturn";
+    if (/^(Payment mili|Bill par paid|Refund mila)/.test(kind)) return "received";
+    return "paid";
+  };
+  const label = (kind: string, c: Opt) => {
+    const m = kind.match(/\(([^)]*)\)/)?.[1];
+    const base = c === "received" ? (kind.startsWith("Refund") ? "Refund received" : "Amount received") : c === "paid" ? (kind.startsWith("Refund") ? "Refund paid" : "Amount paid") : kind;
+    return m ? `${base} (${m})` : base;
+  };
 
   const openStatement = async () => {
     const p = stParty; if (!p) return;
     if (from > to) { toast.error("From date must be before To date"); return; }
     setStBusy(true);
     try {
-      const [cl, sl] = await Promise.all([
+      const [cl, sl, itm] = await Promise.all([
         p.customerId ? getCustomerLedger({ data: { id: p.customerId } }) : null,
         p.supplierId ? getSupplierLedger({ data: { id: p.supplierId } }) : null,
+        inc.items ? getPartyStatementItems({ data: { customerId: p.customerId, supplierId: p.supplierId } }) : null,
       ]);
       // Our view: debit increases receivable, credit reduces it.
       type R = { date: string; kind: string; ref: string; debit: number; credit: number };
@@ -56,7 +76,17 @@ export function PartiesDialog({ open, onOpenChange }: { open: boolean; onOpenCha
         run = Math.round((run + r.debit - r.credit) * 100) / 100;
         if (day < from) continue;
         dr += r.debit; cr += r.credit;
-        inRange.push([new Date(r.date).toLocaleDateString("en-PK"), r.kind, r.ref, r.debit || "", r.credit || "", run]);
+        const c = cat(r.kind);
+        if (!inc[c]) continue;
+        inRange.push([new Date(r.date).toLocaleDateString("en-PK"), label(r.kind, c), r.ref, r.debit || "", r.credit || "", run]);
+        for (const it of (inc.items ? itm?.items[r.ref] : null) ?? []) {
+          const parts = [`• ${it.name}`];
+          if (inc.qty) parts.push(`${it.qty}${inc.unit && it.unit ? " " + it.unit : ""}`);
+          else if (inc.unit && it.unit) parts.push(it.unit);
+          if (inc.rate) parts.push(`@ Rs ${it.rate.toLocaleString("en-PK")}`);
+          if (inc.lineTotal) parts.push(`= Rs ${it.total.toLocaleString("en-PK")}`);
+          inRange.push(["", parts.join("  "), "", "", "", ""]);
+        }
       }
       const opening = Math.round((run - dr + cr) * 100) / 100;
       const fmt = (x: string) => new Date(x).toLocaleDateString("en-PK");
@@ -152,6 +182,14 @@ export function PartiesDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                   <div className="grid grid-cols-2 gap-2">
                     <label className="text-xs text-muted-foreground">From<input type="date" className={inputCls} value={from} max={to} onChange={(e) => setFrom(e.target.value)} /></label>
                     <label className="text-xs text-muted-foreground">To<input type="date" className={inputCls} value={to} min={from} onChange={(e) => setTo(e.target.value)} /></label>
+                  </div>
+                  <p className="text-xs font-semibold text-muted-foreground">Include in statement</p>
+                  <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
+                    {OPTS.map(([k, l]) => (
+                      <label key={k} className={`flex items-center gap-2 text-xs ${["qty", "unit", "rate", "lineTotal"].includes(k) && !inc.items ? "opacity-50" : ""}`}>
+                        <input type="checkbox" className="size-4 accent-primary" checked={inc[k]} disabled={["qty", "unit", "rate", "lineTotal"].includes(k) && !inc.items} onChange={(e) => setInc({ ...inc, [k]: e.target.checked })} />{l}
+                      </label>
+                    ))}
                   </div>
                   <Button type="button" className="w-full" disabled={stBusy} onClick={openStatement}>{stBusy ? "Loading…" : "Preview statement · Print / PDF / Share"}</Button>
                 </div>
