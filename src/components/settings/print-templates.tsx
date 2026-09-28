@@ -93,7 +93,10 @@ export function PrintTemplatesPicker({ draft, upd, disabled, dirty = false, savi
                   aria-label={`${label} font size (pt)`}
                   onChange={(e) => {
                     const raw = e.target.value;
-                    upd(`printing.fontSizes.${key}`, raw === "" ? undefined : Number.isFinite(Number(raw)) ? Math.min(36, Math.max(5, Number(raw))) : undefined);
+                    upd(`printing.fontSizes.${key}`, raw === "" ? undefined : Number.isFinite(Number(raw)) ? Math.min(36, Math.max(0, Number(raw))) : undefined);
+                  }}
+                  onBlur={(e) => {
+                    if (e.target.value !== "") upd(`printing.fontSizes.${key}`, Math.min(36, Math.max(5, Number(e.target.value) || 5)));
                   }} />
               </label>
             ))}
