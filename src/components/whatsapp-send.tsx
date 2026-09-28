@@ -12,6 +12,15 @@ export function waNumber(raw?: string) {
   return d;
 }
 
+/** Open the installed WhatsApp app: mobile uses the whatsapp:// deep link, desktop wa.me (opens the installed app if present). */
+export function openWhatsAppApp(num: string, text: string) {
+  const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+  const url = mobile
+    ? `whatsapp://send?phone=${num}&text=${encodeURIComponent(text)}`
+    : `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
+  window.open(url, "_blank", "noopener");
+}
+
 export function waMessage(doc: PrintDoc, business: string) {
   const money = (n: number) => `Rs ${(Math.round((Number(n) || 0) * 100) / 100).toLocaleString("en-PK")}`;
   const date = new Date(doc.date);
