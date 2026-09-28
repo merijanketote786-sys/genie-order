@@ -117,7 +117,8 @@ export function PrintTemplatesPicker({ draft, upd, disabled, dirty = false, savi
                     if (e.target.value !== "") upd(`printing.fontSizes.${key}`, Math.min(36, Math.max(5, Number(e.target.value) || 5)));
                   }} />
               </label>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
