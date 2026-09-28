@@ -154,6 +154,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
   const [pays, setPays] = useState<{ method: PayMethod; amount: string }[]>([{ method: "Cash", amount: "" }]);
   const [notes, setNotes] = useState("");
   const [customFieldValues, setCustomFieldValues] = useState<Record<number, string>>({});
+  const [customFieldTotals, setCustomFieldTotals] = useState<Record<number, boolean>>({});
   const [editing, setEditing] = useState<{ id: string; number: string } | null>(null);
   const [manualNumber, setManualNumber] = useState("");
   const [docsOpen, setDocsOpen] = useState<"held" | "quotation" | null>(null);
@@ -474,7 +475,11 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
 
   const pre = totals(cart, 0, 0);
   const discAmt = discType === "pct" ? Math.round(((pre.subtotal + pre.taxTotal) * Math.min(100, n(billDiscount))) / 100 * 100) / 100 : n(billDiscount);
-  const billCustomFields = cfg.printing.customFields.map((field, index) => ({ ...field, value: customFieldValues[index] ?? field.value ?? "" }));
+  const billCustomFields = cfg.printing.customFields.map((field, index) => ({
+    ...field,
+    value: customFieldValues[index] ?? field.value ?? "",
+    addToTotal: customFieldTotals[index] ?? field.addToTotal ?? false,
+  }));
   const customCharges = customChargesTotal(billCustomFields);
   const { subtotal, taxTotal, itemDiscount, total } = totals(cart, discAmt, n(delivery), customCharges);
   const qtyTotal = Math.round(cart.reduce((s, l) => s + (l.qty || 0), 0) * 1000) / 1000;
@@ -539,6 +544,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
     setPays([{ method: cfg.defaultPay as PayMethod, amount: "" }]);
     setNotes("");
     setCustomFieldValues({});
+    setCustomFieldTotals({});
     if (!cfg.sales.keepCustomerAfterSale) {
       setCustomerName("");
       setCustomerPhone("");
@@ -650,6 +656,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
       setCourierServiceName(ui.courierServiceName ?? "");
       setGoodsAddaName(ui.goodsAddaName ?? "");
       setCustomFieldValues(Object.fromEntries((ui.customFields ?? []).map((field, index) => [index, field.value ?? ""])));
+      setCustomFieldTotals(Object.fromEntries((ui.customFields ?? []).map((field, index) => [index, field.addToTotal ?? false])));
       setPays([{ method: "Cash", amount: "" }]);
       setManualNumber("");
       setEditing(asInvoice ? { id: d.id, number: d.doc_number } : null);
@@ -1105,13 +1112,25 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
                 <p className="text-xs font-bold text-foreground">Custom invoice fields</p>
                 {cfg.printing.customFields.map((field, index) => field.show === false ? null : (
                   <label key={`${field.label}-${index}`} className="block text-xs text-muted-foreground">
-                    {field.label.trim() || `Custom field ${index + 1}`}
+                    <span className="mb-1 flex items-center justify-between gap-3">
+                      <span>{field.label.trim() || `Custom field ${index + 1}`}</span>
+                      <span className="flex items-center gap-1.5 whitespace-nowrap font-medium text-foreground">
+                        <input
+                          type="checkbox"
+                          className="size-3.5"
+                          checked={customFieldTotals[index] ?? field.addToTotal ?? false}
+                          onChange={(e) => setCustomFieldTotals((values) => ({ ...values, [index]: e.target.checked }))}
+                          aria-label={`Add ${field.label.trim() || `custom field ${index + 1}`} to total`}
+                        />
+                        Add to total
+                      </span>
+                    </span>
                     <input
                       className={inputCls}
                       value={customFieldValues[index] ?? field.value ?? ""}
                       onChange={(e) => setCustomFieldValues((values) => ({ ...values, [index]: e.target.value }))}
-                      placeholder={field.addToTotal ? "Enter amount" : "Enter value for this invoice"}
-                      inputMode={field.addToTotal ? "decimal" : "text"}
+                      placeholder={(customFieldTotals[index] ?? field.addToTotal) ? "Enter amount" : "Enter value for this invoice"}
+                      inputMode={(customFieldTotals[index] ?? field.addToTotal) ? "decimal" : "text"}
                       maxLength={200}
                     />
                   </label>
