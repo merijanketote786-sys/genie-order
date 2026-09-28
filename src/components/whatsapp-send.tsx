@@ -78,7 +78,7 @@ export function WhatsAppSendDialog({ doc, business, onClose }: { doc: PrintDoc; 
         </div>
         <div className="mt-3 flex flex-wrap justify-end gap-2">
           <Button variant="outline" onClick={() => navigator.clipboard?.writeText(text)}>Copy message</Button>
-          <Button disabled={!valid} onClick={() => window.open(link, "_blank", "noopener")}><MessageCircle /> Open WhatsApp</Button>
+          <Button disabled={!valid} onClick={() => openWhatsAppApp(num, text)}><MessageCircle /> Open WhatsApp</Button>
         </div>
       </div>
     </div>
