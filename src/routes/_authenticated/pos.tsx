@@ -152,6 +152,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
   const [delivery, setDelivery] = useState("");
   const [pays, setPays] = useState<{ method: PayMethod; amount: string }[]>([{ method: "Cash", amount: "" }]);
   const [notes, setNotes] = useState("");
+  const [customFieldValues, setCustomFieldValues] = useState<Record<number, string>>({});
   const [editing, setEditing] = useState<{ id: string; number: string } | null>(null);
   const [manualNumber, setManualNumber] = useState("");
   const [docsOpen, setDocsOpen] = useState<"held" | "quotation" | null>(null);
@@ -516,6 +517,10 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
     paid: paidNum,
     previousBalance: balance?.found && balance.balance > 0 ? balance.balance : undefined,
     notes: notes.trim() || undefined,
+    customFields: cfg.printing.customFields.map((field, index) => ({
+      ...field,
+      value: customFieldValues[index] ?? field.value ?? "",
+    })),
     currency: cfg.business.currencySymbol || ws?.currency || "Rs",
   });
 
@@ -533,6 +538,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
     setUnlocked(false);
     setPays([{ method: cfg.defaultPay as PayMethod, amount: "" }]);
     setNotes("");
+    setCustomFieldValues({});
     if (!cfg.sales.keepCustomerAfterSale) {
       setCustomerName("");
       setCustomerPhone("");
@@ -597,7 +603,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
             lineTotal: lineTotal(l),
             note: [l.note, l.weight?.trim() ? `Wt: ${l.weight.trim()}` : "", l.size?.trim() ? `Size: ${l.size.trim()}` : ""].filter(Boolean).join(" · ") || undefined,
           })),
-           ui: { cart, billDiscount, discType, delivery, notes, customerName, customerPhone, customerAddress, customerCityArea, courierServiceName, goodsAddaName },
+           ui: { cart, billDiscount, discType, delivery, notes, customerName, customerPhone, customerAddress, customerCityArea, courierServiceName, goodsAddaName, customFields: r.customFields },
           clientRef: docRef.current,
         },
       });
@@ -631,7 +637,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
 
   const openDoc = (d: PosDocRow, asInvoice: boolean) => {
     try {
-      const ui = d.payload ? (JSON.parse(d.payload) as Partial<{ cart: CartLine[]; billDiscount: string; discType: "amt" | "pct"; delivery: string; notes: string; customerName: string; customerPhone: string; customerAddress: string; customerCityArea: string; courierServiceName: string; goodsAddaName: string }>) : {};
+      const ui = d.payload ? (JSON.parse(d.payload) as Partial<{ cart: CartLine[]; billDiscount: string; discType: "amt" | "pct"; delivery: string; notes: string; customerName: string; customerPhone: string; customerAddress: string; customerCityArea: string; courierServiceName: string; goodsAddaName: string; customFields: { label: string; value: string; show?: boolean; sizePt?: number }[] }>) : {};
       setCart(ui.cart ?? []);
       setBillDiscount(ui.billDiscount ?? "");
       setDiscType(ui.discType ?? "amt");
@@ -643,6 +649,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
       setCustomerCityArea(ui.customerCityArea ?? "");
       setCourierServiceName(ui.courierServiceName ?? "");
       setGoodsAddaName(ui.goodsAddaName ?? "");
+      setCustomFieldValues(Object.fromEntries((ui.customFields ?? []).map((field, index) => [index, field.value ?? ""])));
       setPays([{ method: "Cash", amount: "" }]);
       setManualNumber("");
       setEditing(asInvoice ? { id: d.id, number: d.doc_number } : null);
@@ -1091,6 +1098,24 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
               {paidNum > total ? <Row a="Change due" b={`Rs ${money(paidNum - total)}`} /> : null}
               {paidNum < total ? <Row a="Outstanding (credit)" b={`Rs ${money(total - paidNum)}`} /> : null}
             </div>
+
+            {cfg.printing.customFields.some((field) => field.show !== false) ? (
+              <div className="space-y-2 border-t border-border pt-4">
+                <p className="text-xs font-bold text-foreground">Custom invoice fields</p>
+                {cfg.printing.customFields.map((field, index) => field.show === false ? null : (
+                  <label key={`${field.label}-${index}`} className="block text-xs text-muted-foreground">
+                    {field.label.trim() || `Custom field ${index + 1}`}
+                    <input
+                      className={inputCls}
+                      value={customFieldValues[index] ?? field.value ?? ""}
+                      onChange={(e) => setCustomFieldValues((values) => ({ ...values, [index]: e.target.value }))}
+                      placeholder="Enter value for this invoice"
+                      maxLength={200}
+                    />
+                  </label>
+                ))}
+              </div>
+            ) : null}
 
             {editing ? <p className="rounded-lg bg-accent p-2 text-xs text-accent-foreground">Open: <b>{editing.number}</b> — this will close when saved. <button className="underline" onClick={() => setEditing(null)}>Detach</button></p> : null}
 

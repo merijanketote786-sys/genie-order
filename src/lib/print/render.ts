@@ -21,6 +21,8 @@ export type PrintDoc = {
   balance?: number;
   notes?: string;
   meta?: [string, string][];
+  /** Values entered for this bill; when absent, saved template custom fields are used. */
+  customFields?: { label: string; value: string; show?: boolean; sizePt?: number }[];
   /** Statements / reports ke liye free table */
   table?: { head: string[]; rows: (string | number)[][]; align?: ("l" | "r")[] };
   currency?: string;
@@ -167,7 +169,7 @@ function pageHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, tpl: Tem
 
   const footerText = a5 ? p.a5.footer || cfg.footer : cfg.footer;
   const showSig = a5 ? p.a5.signature && f.signature : f.signature;
-  const custom = customRows(cfg, false);
+  const custom = customRows(doc, cfg, false);
   const end = `<div class=end>
     <div class=endl>${custom}${f.notes && doc.notes ? `<div class=fs-notes><b>Note:</b> ${esc(doc.notes)}</div>` : ""}${f.terms && cfg.terms ? `<div class="terms fs-terms">${esc(cfg.terms)}</div>` : ""}</div>
     <div class=endr>${qr}${showSig ? `<div class="sig fs-signature">${esc(p.signatureLabel)}</div>` : ""}</div>
@@ -245,7 +247,7 @@ function thermalHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, ex: E
     ${f.title ? `<div class=fs-title><b>${esc(doc.title)}</b></div>` : ""}</div><hr>
     ${f.number ? kv("No.", esc(doc.number), "", "number") : ""}${kv("Date", esc(date), "", "dateTime")}
     ${t.showCustomer && doc.party?.name && f.customer ? kv(esc(doc.party.label), esc(doc.party.name), "", "customer") : ""}${t.showCustomer && doc.party?.phone && f.customerPhone ? kv("Phone", esc(doc.party.phone), "", "customerPhone") : ""}${t.showCustomer && doc.party?.address && f.customerAddress ? kv("Address", esc(doc.party.address), "", "customerAddress") : ""}
-    ${(doc.meta ?? []).map(([k, v]) => kv(esc(k), esc(v), "", "meta")).join("")}${customRows(cfg, true)}<hr>
+    ${(doc.meta ?? []).map(([k, v]) => kv(esc(k), esc(v), "", "meta")).join("")}${customRows(doc, cfg, true)}<hr>
     ${lines}${table}${totals || pays ? `<hr>${totals}${pays}` : ""}
     ${f.notes && doc.notes ? `<hr><div class=fs-notes>Note: ${esc(doc.notes)}</div>` : ""}${f.terms && cfg.terms ? `<div class=fs-terms><small>${esc(cfg.terms)}</small></div>` : ""}
     ${ex.barcodeSvg ? `<div class=code>${ex.barcodeSvg}</div>` : ""}${ex.qrDataUrl ? `<div class=code><img src="${ex.qrDataUrl}" alt=""></div>` : ""}
@@ -292,8 +294,8 @@ export async function renderPrint(doc: PrintDoc, cfg: ResolvedCfg, o: RenderOpts
   return { html, spec };
 }
 
-function customRows(cfg: { printing: { customFields?: { label: string; value: string; show?: boolean; sizePt?: number }[] } }, thermal: boolean): string {
-  return (cfg.printing.customFields ?? [])
+function customRows(doc: Pick<PrintDoc, "customFields">, cfg: { printing: { customFields?: { label: string; value: string; show?: boolean; sizePt?: number }[] } }, thermal: boolean): string {
+  return (doc.customFields ?? cfg.printing.customFields ?? [])
     .filter((c) => c.show !== false && (c.label?.trim() || c.value?.trim()))
     .map((c) => {
       const fs = c.sizePt && c.sizePt >= 5 && c.sizePt <= 36 ? `font-size:${c.sizePt}pt!important;` : "";

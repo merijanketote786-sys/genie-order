@@ -126,6 +126,7 @@ export type ReceiptInput = {
   notes?: string;
   terms?: string;
   footer?: string;
+  customFields?: { label: string; value: string; show?: boolean; sizePt?: number }[];
   currency: string;
 };
 
@@ -162,6 +163,9 @@ export function receiptText(r: ReceiptInput) {
     if (r.previousBalance) out.push(`Previous balance: ${r.currency} ${money(r.previousBalance)}`);
   }
   if (r.notes) out.push("", `Note: ${r.notes}`);
+  for (const field of r.customFields ?? []) {
+    if (field.show !== false && (field.label.trim() || field.value.trim())) out.push(`${field.label.trim()}${field.label.trim() ? ": " : ""}${field.value.trim()}`);
+  }
   return out.join("\n");
 }
 
@@ -309,5 +313,6 @@ export function receiptToDoc(r: ReceiptInput, o: { kind?: import("@/lib/pos-conf
     paid: quote ? undefined : Math.min(r.paid, total),
     balance: quote ? undefined : Math.max(0, r2(total - r.paid)),
     notes: [r.notes, !quote && r.paid > total ? `Change: ${money(r.paid - total)}` : ""].filter(Boolean).join(" · ") || undefined,
+    customFields: r.customFields,
   };
 }
