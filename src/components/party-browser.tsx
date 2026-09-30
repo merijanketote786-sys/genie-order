@@ -1,7 +1,7 @@
 // Combined parties browser: customers (parties) and suppliers shown together —
 // suppliers section and the Parties dialog both render this component.
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { FileText, Pencil, UserPlus, Wallet } from "lucide-react";
 import { usePrintCenter } from "@/components/print-center";
 import { getCustomerLedger, getPartyStatementItems, listCustomerBalances } from "@/lib/ledger.functions";
@@ -77,7 +77,6 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
 
   const cl = useQuery({ queryKey: ["party-ledger-c", sel?.customerId], queryFn: () => getCustomerLedger({ data: { id: sel!.customerId! } }), enabled: enabled && !!sel?.customerId });
   const sl = useQuery({ queryKey: ["party-ledger-s", sel?.supplierId], queryFn: () => getSupplierLedger({ data: { id: sel!.supplierId! } }), enabled: enabled && !!sel?.supplierId });
-  const itm = useQuery({ queryKey: ["party-items", sel?.customerId, sel?.supplierId], queryFn: () => getPartyStatementItems({ data: { customerId: sel!.customerId, supplierId: sel!.supplierId } }), enabled: enabled && !!sel && !!sel.customerId && !!sel.supplierId, staleTime: 30_000 });
 
   // Combined balance: positive = hum ne lene hain (receivable), negative = dene hain (payable).
   const map = new Map<string, Party>();
