@@ -8,7 +8,18 @@ import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 export function usePosAccess() {
-  const { data } = useQuery({ queryKey: ["pos-access"], queryFn: () => getPosAccess(), staleTime: 60_000 });
+  const { data } = useQuery({
+    queryKey: ["pos-access"],
+    queryFn: async () => {
+      try { return await getPosAccess(); }
+      catch (e) {
+        // Signed out mid-flight: don't crash the screen, the auth gate will redirect
+        if (e instanceof Error && /Unauthorized/i.test(e.message)) return null;
+        throw e;
+      }
+    },
+    staleTime: 60_000,
+  });
   const can = useCallback((p: PosPerm) => (data ? data.perms.includes(p) : true), [data]);
   const config = data?.config ?? {};
   const cfg = useMemo(() => {
