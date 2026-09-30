@@ -15,6 +15,8 @@ import {
   FileSignature,
   History,
   LayoutDashboard,
+  PanelLeftClose,
+  PanelLeftOpen,
   QrCode,
   ReceiptText,
   RefreshCw,
@@ -29,7 +31,9 @@ import { useQuery } from "@tanstack/react-query";
 import { getMyAccess } from "@/lib/admin.functions";
 import { getMySettings } from "@/lib/settings.functions";
 import { isSectionAllowed } from "@/lib/settings";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+
+const NAV_HIDDEN_KEY = "workspace-nav-hidden";
 
 const TABS = [
   { to: "/dashboard", label: "Dashboard", description: "Full progress at a glance", icon: LayoutDashboard },
@@ -96,6 +100,25 @@ export function AppShell({
   children,
   wide,
 }: AppShellProps & { wide?: boolean }) {
+  const [navHidden, setNavHidden] = useState(false);
+  useEffect(() => {
+    try {
+      setNavHidden(window.localStorage.getItem(NAV_HIDDEN_KEY) === "1");
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
+  const toggleNav = () => {
+    setNavHidden((v) => {
+      const next = !v;
+      try {
+        window.localStorage.setItem(NAV_HIDDEN_KEY, next ? "1" : "0");
+      } catch {
+        /* storage unavailable */
+      }
+      return next;
+    });
+  };
   const access = useQuery({
     queryKey: ["my-access"],
     queryFn: () => getMyAccess(),
@@ -115,7 +138,12 @@ export function AppShell({
   const primaryTabs = visibleTabs.slice(0, 4);
 
   return (
-    <div className="grid h-[100dvh] min-h-0 overflow-hidden bg-background xl:grid-cols-[244px_minmax(0,1fr)]">
+    <div
+      className={cn(
+        "grid h-[100dvh] min-h-0 overflow-hidden bg-background",
+        navHidden ? "xl:grid-cols-[minmax(0,1fr)]" : "xl:grid-cols-[244px_minmax(0,1fr)]",
+      )}
+    >
       <aside className="hidden min-h-0 flex-col border-r border-border bg-sidebar xl:flex">
         <div className="flex h-20 shrink-0 items-center gap-3 border-b border-sidebar-border px-5">
           <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg border border-sidebar-border bg-card">
