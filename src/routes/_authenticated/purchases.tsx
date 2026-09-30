@@ -278,7 +278,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   );
   if (embedded) return <>{pc.node}{body}</>;
   return (
-    <AppShell title="Purchases" subtitle="Stock purchases and supplier credit" active="/pos">
+    <AppShell title="Purchases" subtitle="Stock purchases and supplier credit" active="/pos" wide>
       {pc.node}
       {body}
     </AppShell>

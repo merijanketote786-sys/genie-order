@@ -262,7 +262,7 @@ function LabelsPage() {
   };
 
   return (
-    <AppShell title="Labels" subtitle="Design your label and print" active="/labels">
+    <AppShell title="Labels" subtitle="Design your label and print" active="/labels" wide>
       <style>{`
         #label-sheet { position: fixed; left: -10000px; top: 0; }
       `}</style>

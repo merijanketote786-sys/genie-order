@@ -39,6 +39,7 @@ function SyncPage() {
       title="Vyapar Sync"
       subtitle="Update rates and stock from Vyapar's Excel"
       active="/sync"
+      wide
     >
       <div className="shrink-0 pt-3 sm:pt-4">
         <WorkspaceHeader

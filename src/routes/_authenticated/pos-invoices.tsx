@@ -186,7 +186,7 @@ function PosInvoicesPage() {
   );
 
   return (
-    <AppShell title="POS Invoices" subtitle="POS billing record — reprint, PDF, share" active="/pos">
+    <AppShell title="POS Invoices" subtitle="POS billing record — reprint, PDF, share" active="/pos" wide>
       <div className="space-y-3">
         <PosSubnav />
         <div className="inline-flex rounded-lg border border-border bg-muted p-1">

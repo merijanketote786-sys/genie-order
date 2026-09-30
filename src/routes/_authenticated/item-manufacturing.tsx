@@ -145,7 +145,7 @@ function ManufacturingPage() {
   };
 
   return (
-    <AppShell title="Item Manufacturing" subtitle="Raw materials, expenses and cost" active="/pos">
+    <AppShell title="Item Manufacturing" subtitle="Raw materials, expenses and cost" active="/pos" wide>
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-10 pt-3">
         <PosSubnav />
         <div className="flex flex-wrap items-center gap-2">

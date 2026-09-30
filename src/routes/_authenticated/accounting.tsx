@@ -83,11 +83,11 @@ function AccountingPage() {
   const ex = useExport();
 
   if (!can("view_accounting")) {
-    return <AppShell title="Accounting" subtitle="Double-entry books" active="/accounting"><p className="p-6 text-sm text-muted-foreground">You don't have permission to view accounting.</p></AppShell>;
+    return <AppShell title="Accounting" subtitle="Double-entry books" active="/accounting" wide><p className="p-6 text-sm text-muted-foreground">You don't have permission to view accounting.</p></AppShell>;
   }
   const accounts = base.data?.accounts ?? [];
   return (
-    <AppShell title="Accounting" subtitle="Double-entry books linked to POS" active="/accounting">
+    <AppShell title="Accounting" subtitle="Double-entry books linked to POS" active="/accounting" wide>
       {ex.node}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <nav className="flex gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1">

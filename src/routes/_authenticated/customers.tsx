@@ -39,7 +39,7 @@ function CustomersPage() {
   const rows = customers.data?.customers ?? [];
 
   return (
-    <AppShell title="Customers" subtitle="Customer record" active="/customers">
+    <AppShell title="Customers" subtitle="Customer record" active="/customers" wide>
       <WorkspaceHeader
         icon={Users}
         eyebrow="Records"

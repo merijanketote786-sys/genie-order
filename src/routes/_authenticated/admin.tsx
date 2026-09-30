@@ -91,7 +91,7 @@ function AdminPage() {
   ];
 
   return (
-    <AppShell title="Admin Panel" subtitle="Users, records and access control" active="/admin">
+    <AppShell title="Admin Panel" subtitle="Users, records and access control" active="/admin" wide>
       <div className="shrink-0 pt-3 sm:pt-4">
         <WorkspaceHeader
           icon={Users}

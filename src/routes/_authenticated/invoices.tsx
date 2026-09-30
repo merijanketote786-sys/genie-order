@@ -74,7 +74,7 @@ function InvoicesPage() {
     .reduce((s: number, r: InvoiceRow) => s + (r.total ?? 0), 0);
 
   return (
-    <AppShell title="Invoices" subtitle="Invoice record and payment status" active="/invoices">
+    <AppShell title="Invoices" subtitle="Invoice record and payment status" active="/invoices" wide>
       <WorkspaceHeader
         icon={FileCheck2}
         eyebrow="Records"
