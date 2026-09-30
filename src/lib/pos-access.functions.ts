@@ -11,7 +11,7 @@ export type PosPerm =
   | "edit_stock" | "edit_products" | "view_balances" | "manage_expenses" | "manage_purchases" | "manage_users" | "settings"
   | "edit_sale" | "return_sale" | "manage_customers" | "manage_suppliers" | "manage_printers"
   | "view_accounting" | "create_journal" | "post_journal" | "view_ledger" | "view_trial_balance" | "view_pnl"
-  | "view_balance_sheet" | "view_ar_ap" | "manage_accounts" | "close_period";
+  | "view_balance_sheet" | "view_ar_ap" | "manage_accounts" | "close_period" | "manufacture" | "mfg_settings";
 
 export type { PosConfig } from "./pos-config";
 import type { PosConfig } from "./pos-config";
@@ -92,6 +92,9 @@ export const POS_PERM_GROUPS: { title: string; items: { key: PosPerm; label: str
   ] },
   { title: "Stock and products", items: [
     { key: "edit_stock", label: "Adjust stock / transfer" }, { key: "edit_products", label: "Add / edit products" }, { key: "manage_purchases", label: "Purchases" },
+  ] },
+  { title: "Manufacturing", items: [
+    { key: "manufacture", label: "Manufacture items (icon on items)" }, { key: "mfg_settings", label: "Manufacturing settings and raw material details" },
   ] },
   { title: "Parties and money", items: [
     { key: "manage_customers", label: "Customers" }, { key: "manage_suppliers", label: "Suppliers" }, { key: "view_balances", label: "See party balances" },

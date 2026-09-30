@@ -288,6 +288,20 @@
       "when": 1790792743325,
       "tag": "0040_pos_member_custom_perms",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1790793443207,
+      "tag": "0041_pos_mfg_user_perms",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1790793458064,
+      "tag": "0042_pos_mfg_fn_perms",
+      "breakpoints": true
     }
   ]
 }

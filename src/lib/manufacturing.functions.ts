@@ -11,9 +11,14 @@ export type Recipe = { productId: string; outputQty: number; materials: RecipeMa
 export const listRecipes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await (context.supabase as Sb).from("pos_recipes").select("product_id, output_qty, materials, expenses");
+    const sb = context.supabase as Sb;
+    const [{ data, error }, { data: st }] = await Promise.all([
+      sb.from("pos_recipes").select("product_id, output_qty, materials, expenses"),
+      sb.rpc("pos_mfg_status"),
+    ]);
     if (error) throw new Error("Could not load manufacturing setups");
-    const recipes: Recipe[] = ((data ?? []) as any[]).map((r) => ({ productId: r.product_id, outputQty: Number(r.output_qty), materials: r.materials ?? [], expenses: r.expenses ?? [] }));
+    const full = !!(st as any)?.canSettings;
+    const recipes: Recipe[] = ((data ?? []) as any[]).map((r) => ({ productId: r.product_id, outputQty: Number(r.output_qty), materials: full ? r.materials ?? [] : [], expenses: full ? r.expenses ?? [] : [] }));
     return { recipes };
   });
 
@@ -45,15 +50,17 @@ export const manufactureProduct = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: res, error } = await withStore((context.supabase as Sb).rpc("pos_manufacture", { _product: data.productId, _qty: data.qty, _note: data.note }));
     if (error) throw new Error(error.message || "Manufacturing failed");
-    return res as { qty: number; materialCost: number; expenses: number; unitCost: number };
+    const { data: st } = await (context.supabase as Sb).rpc("pos_mfg_status");
+    if (!(st as any)?.canSettings) return { ...(res as any), materialCost: 0, expenses: 0, unitCost: 0, hidden: true } as { qty: number; materialCost: number; expenses: number; unitCost: number; hidden?: boolean };
+    return res as { qty: number; materialCost: number; expenses: number; unitCost: number; hidden?: boolean };
   });
 
 export const getMfgStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data } = await (context.supabase as Sb).rpc("pos_mfg_status");
-    const d = (data ?? {}) as { isAdmin?: boolean; hasPin?: boolean };
-    return { isAdmin: !!d.isAdmin, hasPin: !!d.hasPin };
+    const d = (data ?? {}) as { isAdmin?: boolean; hasPin?: boolean; canManufacture?: boolean; canSettings?: boolean };
+    return { isAdmin: !!d.isAdmin, hasPin: !!d.hasPin, canManufacture: !!d.canManufacture, canSettings: !!d.canSettings };
   });
 
 export const verifyMfgPin = createServerFn({ method: "POST" })
