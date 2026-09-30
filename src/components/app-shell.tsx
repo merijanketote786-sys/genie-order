@@ -4,11 +4,14 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Button } from "@/components/ui/button";
 import { WorkspaceNavDialog } from "@/components/workspace-nav-dialog";
+import { PosSidebar } from "@/components/pos-subnav";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import {
   Calculator,
   Landmark,
+  Menu,
+  X,
   ClipboardList,
   FileCheck2,
   FileScan,
@@ -101,6 +104,14 @@ export function AppShell({
   wide,
 }: AppShellProps & { wide?: boolean }) {
   const [navHidden, setNavHidden] = useState(false);
+  const [posMenuOpen, setPosMenuOpen] = useState(false);
+  const isPos = active === "/pos" || active === "/accounting";
+  useEffect(() => {
+    if (!posMenuOpen) return;
+    const close = (event: KeyboardEvent) => { if (event.key === "Escape") setPosMenuOpen(false); };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [posMenuOpen]);
   useEffect(() => {
     try {
       setNavHidden(window.localStorage.getItem(NAV_HIDDEN_KEY) === "1");
@@ -165,12 +176,12 @@ export function AppShell({
             <img src={logoUrl} alt="HB Chemicals Pakistan" width={40} height={40} className="size-full object-contain" />
           </span>
           <div className="min-w-0">
-            <p className="truncate text-[10px] font-bold uppercase text-sidebar-muted">Workspace</p>
+            <p className="truncate text-[10px] font-bold uppercase text-sidebar-muted">{isPos ? "POS" : "Workspace"}</p>
             <p className="truncate font-display text-base font-bold text-sidebar-foreground">HB Chemicals Pakistan</p>
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4" aria-label="Main navigation">
+        {isPos ? <PosSidebar /> : <><nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4" aria-label="Main navigation">
           <p className="mb-3 px-3 text-[10px] font-bold uppercase text-sidebar-muted">Operations</p>
           {tabs.map((tab) => {
             const isActive = tab.to === active;
@@ -207,7 +218,7 @@ export function AppShell({
               <p className="truncate text-[10px] text-sidebar-muted">Ready for operations</p>
             </div>
           </div>
-        </div>
+        </div></>}
       </aside>
       ) : null}
 
@@ -236,6 +247,10 @@ export function AppShell({
               <p className="truncate text-sm text-muted-foreground">{subtitle}</p>
             </div>
             <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+              {isPos && <Button variant="outline" size="icon" onClick={() => setPosMenuOpen(true)}
+                className="size-10 shrink-0 border-border bg-card xl:hidden" title="Open POS menu" aria-label="Open POS menu">
+                <Menu className="size-4" />
+              </Button>}
               <Button
                 variant="outline"
                 size="icon"
@@ -280,6 +295,17 @@ export function AppShell({
 
         </header>
 
+        {isPos && posMenuOpen && <div className="fixed inset-0 z-50 xl:hidden" role="dialog" aria-modal="true" aria-label="POS menu">
+          <div className="absolute inset-0 bg-foreground/40" onClick={() => setPosMenuOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 flex w-[min(300px,85vw)] flex-col border-r border-sidebar-border bg-sidebar shadow-xl">
+            <div className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
+              <span className="font-display text-base font-bold text-sidebar-foreground">POS</span>
+              <Button variant="ghost" size="icon" onClick={() => setPosMenuOpen(false)} aria-label="Close POS menu" className="text-sidebar-foreground"><X /></Button>
+            </div>
+            <PosSidebar onNavigate={() => setPosMenuOpen(false)} />
+          </aside>
+        </div>}
+
         <main className={`mx-auto flex min-h-0 w-full ${wide ? "max-w-[1600px]" : "max-w-[1180px]"} flex-1 flex-col overflow-y-auto px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:px-5 xl:px-8 xl:pb-0`}>
           {access.data && access.data.isActive === false ? (
             <div className="glass-panel my-6 rounded-3xl px-4 py-10 text-center">
@@ -292,7 +318,7 @@ export function AppShell({
             children
           )}
         </main>
-        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg xl:hidden" aria-label="Mobile navigation">
+        {!isPos && <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg xl:hidden" aria-label="Mobile navigation">
           <div className="mx-auto grid max-w-lg grid-cols-5 gap-1 p-1.5">
             {primaryTabs.map((tab) => {
               const isActive = tab.to === active;
@@ -314,7 +340,7 @@ export function AppShell({
             })}
             <WorkspaceNavDialog tabs={tabs} active={active} />
           </div>
-        </nav>
+        </nav>}
       </section>
     </div>
   );
