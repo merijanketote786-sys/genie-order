@@ -21,6 +21,7 @@ import { ProductPickerBody } from "@/components/product-picker";
 import { WorkspaceTool, WorkspaceToolDock } from "@/components/workspace-tool";
 import { PaymentModeField, paymentLine, stripPaymentLines, upsertPaymentLine, type PaymentMethod } from "@/components/payment-mode-field";
 import { DEFAULT_ORDER_TEMPLATE } from "@/lib/order-template";
+import { detectInvoicePayment } from "@/lib/confirmation";
 import { saveOrder } from "@/lib/records.functions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -57,6 +58,22 @@ function messageText(msg: UIMessage): string {
 }
 
 const STORAGE_KEY = "order-format-bot:messages:v1";
+
+/**
+ * COD/CC status detect karta hai — pehle explicit "Payment Status:" /
+ * "COD Amount:" lines (Confirm section ka performa), warna keywords.
+ */
+function detectOrderPayment(text: string): { method: "COD" | "CC" | null; codAmount: string } {
+  const codAmt = text.match(/cod\s*amount\s*[:\-]?\s*([\d,]+(?:\.\d+)?)/i)?.[1]?.replace(/,/g, "") ?? "";
+  if (/payment\s*status\s*[:\-]?\s*(cod|cash on delivery)/i.test(text) || /\bcod\b/i.test(text)) {
+    return { method: "COD", codAmount: codAmt || detectInvoicePayment(text).codAmount };
+  }
+  if (/payment\s*status\s*[:\-]?\s*(cc|credit card|card|paid)/i.test(text) || /\bC\.?C\.?\b/.test(text)) {
+    return { method: "CC", codAmount: "0" };
+  }
+  const d = detectInvoicePayment(text);
+  return d.method ? { method: d.method, codAmount: d.method === "COD" ? d.codAmount : "0" } : { method: null, codAmount: "" };
+}
 
 function OrderChat() {
   const navigate = useNavigate();
@@ -111,6 +128,16 @@ function OrderChat() {
   }, [setMessages]);
 
 
+  // Composer text me COD/CC likha ho (Confirm se transfer ya khud) to Payment
+  // tool khud us status par set ho jata hai — save sahi payment ke saath hota hai.
+  useEffect(() => {
+    const d = detectOrderPayment(composerText);
+    if (!d.method) return;
+    setPaymentEnabled(true);
+    setPaymentMethod(d.method);
+    setCodAmount((prev) => (d.method === "CC" ? "" : d.codAmount || prev));
+  }, [composerText]);
+
   useEffect(() => {
     if (!hydratedRef.current) return;
     if (status === "streaming" || status === "submitted") return;
@@ -133,16 +160,28 @@ function OrderChat() {
     const text = messageText(last);
     if (text.length < 10 || savedRef.current.has(text)) return;
     savedRef.current.add(text);
+    // Pehle formatted order text se COD/CC detect karo, warna Payment tool ki manual state.
+    const detected = detectOrderPayment(text);
     const pay = paymentRef.current;
     const amount = Number(pay.cod.replace(/[^\d.]/g, ""));
+    const method = detected.method ?? (pay.enabled ? pay.method : undefined);
+    const detectedAmount =
+      method === "COD" && detected.method === "COD" && detected.codAmount
+        ? Number(detected.codAmount)
+        : 0;
+    const codAmount =
+      method === "COD"
+        ? detectedAmount > 0
+          ? detectedAmount
+          : pay.method === "COD" && pay.enabled && Number.isFinite(amount) && amount > 0
+            ? amount
+            : undefined
+        : undefined;
     saveOrder({
       data: {
         orderText: text,
-        paymentMethod: pay.enabled ? pay.method : undefined,
-        codAmount:
-          pay.enabled && pay.method === "COD" && Number.isFinite(amount) && amount > 0
-            ? amount
-            : undefined,
+        paymentMethod: method,
+        codAmount,
       },
     }).catch(() => {
       savedRef.current.delete(text);
