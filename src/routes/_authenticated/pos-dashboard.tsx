@@ -10,8 +10,9 @@ import {
   ShoppingCart, TrendingUp, Truck, Undo2, Users, Wallet,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { Factory, Users as PartiesIcon } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Factory, Users as PartiesIcon } from "lucide-react";
 import { PartiesDialog } from "@/components/parties-dialog";
+import { PaymentInOutDialog } from "@/components/payment-in-out-dialog";
 import { ManufactureDialog } from "@/components/manufacture-dialog";
 
 export const Route = createFileRoute("/_authenticated/pos-dashboard")({
@@ -79,6 +80,8 @@ function PosDashboardPage() {
   const { can } = usePosAccess();
   const [mfgOpen, setMfgOpen] = useState(false);
   const [partiesOpen, setPartiesOpen] = useState(false);
+  const [payOpen, setPayOpen] = useState(false);
+  const [payDir, setPayDir] = useState<"in" | "out">("in");
   const q = useQuery({ queryKey: ["pos-dashboard"], queryFn: () => getPosDashboard(), staleTime: 30_000 });
   const d = q.data;
   const maxBar = d ? Math.max(1, ...d.series.map((p) => Math.max(p.sales, p.purchases))) : 1;
@@ -95,6 +98,9 @@ function PosDashboardPage() {
           <ManufactureDialog open={mfgOpen} onOpenChange={setMfgOpen} />
           <Button variant="outline" size="sm" onClick={() => setPartiesOpen(true)}><PartiesIcon className="size-4" /> Parties</Button>
           <PartiesDialog open={partiesOpen} onOpenChange={setPartiesOpen} />
+          <Button variant="outline" size="sm" onClick={() => { setPayDir("in"); setPayOpen(true); }}><ArrowDownLeft className="size-4" /> Payment In</Button>
+          <Button variant="outline" size="sm" onClick={() => { setPayDir("out"); setPayOpen(true); }}><ArrowUpRight className="size-4" /> Payment Out</Button>
+          <PaymentInOutDialog open={payOpen} onOpenChange={setPayOpen} dir={payDir} onDirChange={setPayDir} />
           <Button variant="ghost" size="sm" onClick={() => q.refetch()} disabled={q.isFetching} className="ml-auto"><RefreshCw className={`size-4 ${q.isFetching ? "animate-spin" : ""}`} /> Refresh</Button>
         </div>
 
