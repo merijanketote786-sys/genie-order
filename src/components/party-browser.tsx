@@ -134,10 +134,11 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
     // Current opening balance pre-fill: customer = receivable, supplier = payable
     const cust = (c.data?.customers ?? []).find((x) => x.id === sel.customerId);
     const sup = (s.data?.suppliers ?? []).find((x) => x.id === sel.supplierId);
-    if (sel.customerId && (!sel.supplierId || Number(cust?.opening ?? 0) !== 0)) {
-      setAdjDir("receive"); setAdjAmt(String(Number(cust?.opening ?? 0) || ""));
+    const co = Number(cust?.opening ?? 0), so = Number(sup?.openingBalance ?? 0);
+    if (sel.customerId && (!sel.supplierId || co !== 0)) {
+      setAdjDir(co < 0 ? "pay" : "receive"); setAdjAmt(String(Math.abs(co) || ""));
     } else {
-      setAdjDir("pay"); setAdjAmt(String(Number(sup?.openingBalance ?? 0) || ""));
+      setAdjDir(so < 0 ? "receive" : "pay"); setAdjAmt(String(Math.abs(so) || ""));
     }
     setAdjOpen(true);
   };
@@ -148,14 +149,22 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
     if (!Number.isFinite(amt) || amt < 0) { toast.error("Sahi amount likhein"); return; }
     setAdjBusy(true);
     try {
-      if (adjDir === "receive") {
-        if (!sel.customerId) throw new Error("Is party ka customer record nahi — pehle customer ke tor par add karein");
-        await saveCustomerAccount({ data: { id: sel.customerId, openingBalance: amt, creditLimit: cl.data?.customer?.creditLimit ?? null } });
-      } else {
-        if (!sel.supplierId) throw new Error("Is party ka supplier record nahi — pehle supplier ke tor par add karein");
+      // Customer record: +receivable / -payable. Supplier record: +payable / -receivable.
+      const useCustomer = sel.customerId && (adjDir === "receive" || !sel.supplierId);
+      if (useCustomer) {
+        await saveCustomerAccount({ data: { id: sel.customerId!, openingBalance: adjDir === "receive" ? amt : -amt, creditLimit: cl.data?.customer?.creditLimit ?? null } });
+        if (sel.supplierId) {
+          const sup = (s.data?.suppliers ?? []).find((x) => x.id === sel.supplierId);
+          if (Number(sup?.openingBalance ?? 0) !== 0) await saveSupplier({ data: { id: sel.supplierId, name: sup?.name ?? sel.name, phone: sup?.phone ?? sel.phone, address: sup?.address ?? "", openingBalance: 0 } });
+        }
+      } else if (sel.supplierId) {
         const sup = (s.data?.suppliers ?? []).find((x) => x.id === sel.supplierId);
-        await saveSupplier({ data: { id: sel.supplierId, name: sup?.name ?? sel.name, phone: sup?.phone ?? sel.phone, address: sup?.address ?? "", openingBalance: amt } });
-      }
+        await saveSupplier({ data: { id: sel.supplierId, name: sup?.name ?? sel.name, phone: sup?.phone ?? sel.phone, address: sup?.address ?? "", openingBalance: adjDir === "pay" ? amt : -amt } });
+        if (sel.customerId) {
+          const cust = (c.data?.customers ?? []).find((x) => x.id === sel.customerId);
+          if (Number(cust?.opening ?? 0) !== 0) await saveCustomerAccount({ data: { id: sel.customerId, openingBalance: 0, creditLimit: cl.data?.customer?.creditLimit ?? null } });
+        }
+      } else throw new Error("Party record nahi mila");
       toast.success("Opening balance save ho gaya");
       setAdjOpen(false);
       await Promise.all(["customer-balances", "suppliers", "party-ledger-c", "party-ledger-s", "pos-dashboard"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
