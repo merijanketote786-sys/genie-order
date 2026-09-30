@@ -674,7 +674,9 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
       const raw = sessionStorage.getItem("pos-open-doc");
       if (!raw) return;
       sessionStorage.removeItem("pos-open-doc");
-      openDoc(JSON.parse(raw) as PosDocRow, true);
+      const d = JSON.parse(raw) as PosDocRow & { doc_type?: string };
+      openDoc(d, true);
+      if (d.doc_type === "quotation") setEstimate(true);
     } catch { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
