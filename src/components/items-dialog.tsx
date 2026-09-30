@@ -153,7 +153,6 @@ function AdjustStockDialog({ item, stores, defaultStore, onClose }: { item: InvP
           <button type="button" disabled={busy} onClick={save} className="h-11 rounded-lg bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-60">{busy ? "Saving…" : "Save"}</button>
         </div>
       </DialogContent>
-      <AdjustStockDialog item={adjOpen ? item : null} stores={stores} defaultStore={storeSel} onClose={() => setAdjOpen(false)} />
     </Dialog>
   );
 }
