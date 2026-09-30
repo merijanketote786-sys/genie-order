@@ -61,7 +61,7 @@ export const getCustomerLedger = createServerFn({ method: "GET" })
     for (const s of flows.sales) { const v = r2(Number(s.grand_total) - payloadCharges(s.payload)); rows.push(s.doc_type === "sale" ? { date: s.created_at, kind: "Sale invoice", ref: s.doc_number, debit: v, credit: 0 } : { date: s.created_at, kind: "Sale return", ref: s.doc_number, debit: 0, credit: v }); }
     for (const p of flows.pays) {
       const v = Number(p.amount);
-      if (p.direction === "in") rows.push({ date: p.created_at, kind: p.kind === "receipt" ? `Payment mili (${p.method})` : `Bill par paid (${p.method})`, ref: p.note ?? "", debit: 0, credit: v });
+      if (p.direction === "in") rows.push({ date: p.created_at, kind: p.kind === "receipt" ? `Payment received (${p.method})` : `Paid on bill (${p.method})`, ref: p.note ?? "", debit: 0, credit: v });
       else rows.push({ date: p.created_at, kind: `Payment out (${p.method})`, ref: p.note ?? "", debit: v, credit: 0 });
     }
     rows.sort((a, b) => a.date.localeCompare(b.date));
