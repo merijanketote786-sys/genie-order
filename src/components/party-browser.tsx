@@ -2,9 +2,9 @@
 // suppliers section and the Parties dialog both render this component.
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import { FileText, MoreVertical, Pencil, Trash2, UserPlus, Wallet, X } from "lucide-react";
+import { FileText, MoreVertical, Pencil, Scale, Trash2, UserPlus, Wallet, X } from "lucide-react";
 import { usePrintCenter } from "@/components/print-center";
-import { getCustomerLedger, getPartyStatementItems, listCustomerBalances } from "@/lib/ledger.functions";
+import { getCustomerLedger, getPartyStatementItems, listCustomerBalances, saveCustomerAccount } from "@/lib/ledger.functions";
 import { cancelDoc, deletePartyPayment, getPurchaseItems, getSupplierLedger, listSuppliers, partyPayment, saveSupplier } from "@/lib/business.functions";
 import { getSaleForEdit } from "@/lib/pos.functions";
 import { saveParty } from "@/lib/records.functions";
@@ -74,6 +74,12 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   const [stBusy, setStBusy] = useState(false);
   const [inc, setInc] = useState<Record<Opt, boolean>>(DEFAULT_INC);
 
+  // Adjust balance (opening balance set karna)
+  const [adjOpen, setAdjOpen] = useState(false);
+  const [adjDir, setAdjDir] = useState<"receive" | "pay">("receive");
+  const [adjAmt, setAdjAmt] = useState("");
+  const [adjBusy, setAdjBusy] = useState(false);
+
   const c = useQuery({ queryKey: ["customer-balances", "pos"], queryFn: () => listCustomerBalances({ data: { posOnly: true } }), enabled, staleTime: 15_000 });
   const s = useQuery({ queryKey: ["suppliers"], queryFn: () => listSuppliers(), enabled, staleTime: 15_000 });
 
@@ -121,6 +127,40 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
       setForm(null);
       await Promise.all([qc.invalidateQueries({ queryKey: ["suppliers"] }), qc.invalidateQueries({ queryKey: ["party-ledger-s"] })]);
     } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+  };
+
+  const openAdjust = () => {
+    if (!sel) return;
+    // Current opening balance pre-fill: customer = receivable, supplier = payable
+    const cust = (c.data?.customers ?? []).find((x) => x.id === sel.customerId);
+    const sup = (s.data?.suppliers ?? []).find((x) => x.id === sel.supplierId);
+    if (sel.customerId && (!sel.supplierId || Number(cust?.opening ?? 0) !== 0)) {
+      setAdjDir("receive"); setAdjAmt(String(Number(cust?.opening ?? 0) || ""));
+    } else {
+      setAdjDir("pay"); setAdjAmt(String(Number(sup?.openingBalance ?? 0) || ""));
+    }
+    setAdjOpen(true);
+  };
+
+  const saveAdjust = async () => {
+    if (!sel) return;
+    const amt = Number(adjAmt);
+    if (!Number.isFinite(amt) || amt < 0) { toast.error("Sahi amount likhein"); return; }
+    setAdjBusy(true);
+    try {
+      if (adjDir === "receive") {
+        if (!sel.customerId) throw new Error("Is party ka customer record nahi — pehle customer ke tor par add karein");
+        await saveCustomerAccount({ data: { id: sel.customerId, openingBalance: amt, creditLimit: cl.data?.customer?.creditLimit ?? null } });
+      } else {
+        if (!sel.supplierId) throw new Error("Is party ka supplier record nahi — pehle supplier ke tor par add karein");
+        const sup = (s.data?.suppliers ?? []).find((x) => x.id === sel.supplierId);
+        await saveSupplier({ data: { id: sel.supplierId, name: sup?.name ?? sel.name, phone: sup?.phone ?? sel.phone, address: sup?.address ?? "", openingBalance: amt } });
+      }
+      toast.success("Opening balance save ho gaya");
+      setAdjOpen(false);
+      await Promise.all(["customer-balances", "suppliers", "party-ledger-c", "party-ledger-s", "pos-dashboard"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Save nahi hua"); }
+    setAdjBusy(false);
   };
 
   const payNow = async () => {
@@ -332,9 +372,25 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
                 <div className="flex items-center gap-2">
                   <span className={`text-sm font-bold ${sel.balance > 0 ? "text-success" : "text-destructive"}`}>{sel.balance > 0 ? "To receive" : "To pay"} {rs(Math.abs(sel.balance))}</span>
                   {sel.supplierId ? <Button size="sm" variant="outline" onClick={() => { const sup = (s.data?.suppliers ?? []).find((x) => x.id === sel.supplierId); setForm({ name: sup?.name ?? sel.name, phone: sup?.phone ?? sel.phone, address: sup?.address ?? "", opening: String(sup?.openingBalance ?? 0) }); }}><Pencil className="size-4" /> Edit</Button> : null}
+                  <Button size="sm" variant="outline" onClick={openAdjust}><Scale className="size-4" /> Adjust balance</Button>
                   <Button size="sm" variant="outline" onClick={() => setStOpen((o) => !o)}><FileText className="size-4" /> Statement</Button>
                 </div>
               </div>
+
+              {adjOpen ? (
+                <div className="space-y-2 rounded-lg border border-primary p-2">
+                  <p className="text-xs font-semibold text-muted-foreground">Adjust balance — party ka opening / previous balance set karein (ledger ki shuruaat isi se hogi)</p>
+                  <div className="flex gap-2">
+                    <Button type="button" size="sm" variant={adjDir === "receive" ? "default" : "outline"} disabled={!sel.customerId} onClick={() => setAdjDir("receive")}>To receive (humein lene hain)</Button>
+                    <Button type="button" size="sm" variant={adjDir === "pay" ? "default" : "outline"} disabled={!sel.supplierId} onClick={() => setAdjDir("pay")}>To pay (humein dene hain)</Button>
+                  </div>
+                  <div className="flex gap-2">
+                    <input className={inputCls} inputMode="decimal" value={adjAmt} onChange={(e) => setAdjAmt(e.target.value.replace(/[^\d.]/g, ""))} placeholder="Amount (0 = koi opening balance nahi)" aria-label="Opening balance" />
+                    <Button type="button" size="sm" disabled={adjBusy} onClick={saveAdjust}>{adjBusy ? "Saving…" : "Save"}</Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setAdjOpen(false)}>Cancel</Button>
+                  </div>
+                </div>
+              ) : null}
 
               {form ? (
                 <div className="grid gap-2 rounded-lg border border-primary p-2 sm:grid-cols-2">
