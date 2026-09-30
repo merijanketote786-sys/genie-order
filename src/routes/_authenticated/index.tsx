@@ -64,7 +64,7 @@ const STORAGE_KEY = "order-format-bot:messages:v1";
  * "COD Amount:" lines (Confirm section ka performa), warna keywords.
  */
 function detectOrderPayment(text: string): { method: "COD" | "CC" | null; codAmount: string } {
-  const codAmt = text.match(/cod\s*amount\s*[:\-]?\s*([\d,]+(?:\.\d+)?)/i)?.[1]?.replace(/,/g, "") ?? "";
+  const codAmt = text.match(/cod\s*amount\s*[:\-=]?\s*(?:rs\.?|pkr)?\s*([\d,]+(?:\.\d+)?)/i)?.[1]?.replace(/,/g, "") ?? "";
   if (/payment\s*status\s*[:\-]?\s*(cod|cash on delivery)/i.test(text) || /\bcod\b/i.test(text)) {
     return { method: "COD", codAmount: codAmt || detectInvoicePayment(text).codAmount };
   }

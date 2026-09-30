@@ -111,7 +111,7 @@ function HistoryPage() {
                 </span>
                 <span className="shrink-0 text-right">
                   <span className="block font-display text-base font-bold text-foreground">
-                    {money(o.total)}
+                    {money(o.paymentMethod === "COD" && !o.total && o.codAmount ? o.codAmount : o.total)}
                   </span>
                   {o.paymentMethod ? (
                     <span
