@@ -162,7 +162,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
     setStBusy(true);
     try {
       const items = inc.items && (p.customerId || p.supplierId)
-        ? await (itm.data ? Promise.resolve(itm.data) : getPartyStatementItems({ data: { customerId: p.customerId, supplierId: p.supplierId } }))
+        ? await getPartyStatementItems({ data: { customerId: p.customerId, supplierId: p.supplierId } })
         : null;
       type R = { date: string; kind: string; ref: string; debit: number; credit: number };
       const rows: R[] = [...(cl.data?.rows ?? []), ...(sl.data?.rows ?? [])];
@@ -193,7 +193,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
       const fmt = (x: string) => new Date(x).toLocaleDateString("en-PK");
       pc.preview({
         kind: "statement", title: "Party Statement", number: p.name, date: new Date(),
-        party: { label: p.kind, name: p.name, phone: p.phone, address: p.address ?? (sl.data ? "" : "") },
+        party: { label: p.kind, name: p.name, phone: p.phone, address: p.address ?? "" },
         meta: [["Period", `${fmt(from)} to ${fmt(to)}`]],
         table: { head: ["Date", "Detail", "Ref", "Debit", "Credit", "Balance"], align: ["l", "l", "l", "r", "r", "r"], rows: [["", "Opening balance", "", "", "", opening], ...inRange] },
         totals: [
