@@ -155,7 +155,7 @@ function PosInvoicesPage() {
     }
   };
 
-  const openInBilling = (s: SaleRow) => {
+  const openInBilling = (s: SaleRow, navigateAway: boolean) => {
     const cart = s.items.map((i, idx) => ({
       key: `conv-${s.id}-${idx}`,
       name: i.name,
@@ -170,7 +170,8 @@ function PosInvoicesPage() {
     }));
     const payload = JSON.stringify({ cart, notes: s.notes ?? "", customerName: s.customer_name ?? "", customerPhone: s.customer_phone ?? "", delivery: String(Number(s.delivery) || "") });
     sessionStorage.setItem("pos-open-doc", JSON.stringify({ id: s.id, doc_number: s.doc_number, doc_type: s.doc_type, customer_name: s.customer_name, customer_phone: s.customer_phone, grand_total: s.grand_total, created_at: s.created_at, payload, status: s.status }));
-    navigate({ to: "/pos" });
+    if (navigateAway) navigate({ to: "/pos" });
+    else setEditSale(s);
   };
 
   const item = (s: SaleRow, icon: React.ReactNode, label: string, onClick: () => void, danger = false) => (
@@ -252,8 +253,8 @@ function PosInvoicesPage() {
                         {item(s, <Printer className="size-4" />, "Reprint", () => pc.print(doc, { reprint: true }))}
                         {item(s, <Download className="size-4" />, "PDF", () => pc.pdf(doc))}
                         {item(s, <Share2 className="size-4" />, "Share", () => setShare(s))}
-                        {item(s, <Pencil className="size-4" />, "Edit", () => openInBilling(s))}
-                        {isEstimate ? item(s, <FileInput className="size-4" />, "Convert to Invoice", () => openInBilling(s)) : null}
+                        {item(s, <Pencil className="size-4" />, "Edit", () => openInBilling(s, false))}
+                        {isEstimate ? item(s, <FileInput className="size-4" />, "Convert to Invoice", () => openInBilling(s, true)) : null}
                         {isEstimate ? item(s, <Truck className="size-4" />, "Convert to Delivery Challan", () => pc.preview(challanDoc(s), false)) : null}
                         {!isEstimate ? item(s, <Ban className="size-4" />, "Cancel", () => void doCancel(s), true) : null}
                         {isEstimate ? item(s, <Trash2 className="size-4" />, "Delete", () => void doDelete(s), true) : null}
