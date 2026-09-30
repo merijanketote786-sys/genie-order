@@ -1,8 +1,10 @@
+import { useState } from "react";
+import { ItemsDialog } from "@/components/items-dialog";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { usePosAccess } from "@/components/pos-access";
 import { Button } from "@/components/ui/button";
 import type { PosPerm } from "@/lib/pos-access.functions";
-import { LayoutDashboard, Landmark, Settings2, BarChart3, Boxes, BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users, FileCheck2, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, Landmark, Settings2, BarChart3, Boxes, BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users, FileCheck2, ArrowLeft, Package } from "lucide-react";
 
 const ITEMS = [
   { to: "/pos-dashboard", label: "Dashboard", icon: LayoutDashboard, perm: "view_pos" },
@@ -24,6 +26,7 @@ const ITEMS = [
 export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { can } = usePosAccess();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const [itemsOpen, setItemsOpen] = useState(false);
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-4" aria-label="POS navigation">
@@ -37,6 +40,13 @@ export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
             </Link>
           );
         })}
+        {can("view_pos") ? (
+          <button type="button" onClick={() => setItemsOpen(true)}
+            className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-sm font-semibold text-sidebar-muted transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-foreground">
+            <Package className="size-4 shrink-0" /> Items
+          </button>
+        ) : null}
+        <ItemsDialog open={itemsOpen} onOpenChange={setItemsOpen} />
       </nav>
       <div className="border-t border-sidebar-border p-3">
         <Button asChild variant="ghost" className="w-full justify-start text-sidebar-foreground">

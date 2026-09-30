@@ -184,3 +184,42 @@ export const deletePosProducts = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message || "Failed to delete");
     return { deleted: Number(n) };
   });
+
+export type ItemHistoryRow = {
+  date: string; kind: string; label: string; qty: number; rate: number | null; party: string; doc: string; store: string;
+};
+
+/** Date-wise history of one item: sales, estimates, returns, purchases, manufacturing and stock moves. */
+export const getItemHistory = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ productId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as Sb;
+    const [sales, purch, moves, stores] = await Promise.all([
+      sb.from("pos_sale_items").select("qty, rate, pos_sales!inner(doc_type, doc_number, status, customer_name, created_at)").eq("product_id", data.productId).limit(2000),
+      sb.from("purchase_items").select("qty, rate, purchases!inner(doc_type, doc_number, status, supplier_name, created_at)").eq("product_id", data.productId).limit(2000),
+      sb.from("stock_movements").select("kind, qty, note, created_at, store_id").eq("product_id", data.productId).not("kind", "in", "(sale,purchase,sale_return,purchase_return,return,cancel,sale_cancel,purchase_cancel)").limit(2000),
+      sb.from("pos_stores").select("id, name").limit(500),
+    ]);
+    const storeName = new Map<string, string>(((stores.data ?? []) as any[]).map((s) => [s.id, s.name]));
+    const rows: ItemHistoryRow[] = [];
+    const saleLabel: Record<string, string> = { sale: "Sale invoice", quotation: "Estimate", return: "Sale return" };
+    for (const r of (sales.data ?? []) as any[]) {
+      const s = r.pos_sales;
+      rows.push({ date: s.created_at, kind: s.doc_type, label: (saleLabel[s.doc_type] ?? s.doc_type) + (s.status === "cancelled" ? " (cancelled)" : ""),
+        qty: Number(r.qty), rate: Number(r.rate), party: s.customer_name ?? "Walk-in", doc: s.doc_number, store: "" });
+    }
+    for (const r of (purch.data ?? []) as any[]) {
+      const p = r.purchases;
+      rows.push({ date: p.created_at, kind: p.doc_type === "return" ? "purchase_return" : "purchase",
+        label: (p.doc_type === "return" ? "Purchase return" : "Purchase") + (p.status === "cancelled" ? " (cancelled)" : ""),
+        qty: Number(r.qty), rate: Number(r.rate), party: p.supplier_name ?? "", doc: p.doc_number, store: "" });
+    }
+    const moveLabel: Record<string, string> = { manufacture_in: "Manufactured", manufacture_out: "Used in manufacturing", transfer_in: "Transfer in", transfer_out: "Transfer out", adjust: "Stock adjustment", adjust_in: "Stock added", adjust_out: "Stock removed", opening: "Opening stock" };
+    for (const m of (moves.data ?? []) as any[]) {
+      rows.push({ date: m.created_at, kind: m.kind, label: moveLabel[m.kind] ?? m.kind.replace(/_/g, " "), qty: Number(m.qty), rate: null,
+        party: m.note ?? "", doc: "", store: m.store_id ? storeName.get(m.store_id) ?? "" : "" });
+    }
+    rows.sort((a, b) => b.date.localeCompare(a.date));
+    return { rows };
+  });
