@@ -451,31 +451,6 @@ export const createAppUser = createServerFn({ method: "POST" })
     };
   });
 
-export const deleteAppUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => z.object({ userId: z.string().uuid() }).parse(data))
-  .handler(async ({ data, context }) => {
-    if (!(await isAdminUser(context.supabase, context.userId))) {
-      return { ok: false as const, message: "Sirf admin user delete kar sakta hai." };
-    }
-    if (data.userId === context.userId) {
-      return { ok: false as const, message: "You cannot delete your own account." };
-    }
-    const email = (context.claims as Record<string, unknown>)["email"];
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: target } = await supabaseAdmin.auth.admin.getUserById(data.userId);
-    if (target.user?.email?.toLowerCase() === OWNER_EMAIL) {
-      return { ok: false as const, message: "The owner account cannot be deleted." };
-    }
-    if (typeof email === "string" && email.toLowerCase() !== OWNER_EMAIL) {
-      return { ok: false as const, message: "User delete sirf owner account kar sakta hai." };
-    }
-
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
-    if (error) return { ok: false as const, message: error.message };
-    return { ok: true as const, message: "User deleted successfully" };
-  });
-
 /* ------------------------------ CSV export ------------------------------ */
 
 function toCsv(rows: Record<string, unknown>[]) {
