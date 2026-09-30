@@ -104,7 +104,7 @@ function InventoryPage() {
   );
 
   return (
-    <AppShell title="Inventory" subtitle="Stock and products" active="/pos">
+    <AppShell title="Inventory" subtitle="Stock and products" active="/pos" wide>
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
