@@ -169,6 +169,32 @@ export const updateUserAccess = createServerFn({ method: "POST" })
     return { ok: true as const, message: "Updated successfully" };
   });
 
+/** Admin removes a user: access ends immediately and they only see the sign-in page. */
+export const deleteAppUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ userId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    if (!(await isAdminUser(context.supabase, context.userId))) {
+      return { ok: false as const, message: "Only an admin can delete users." };
+    }
+    if (data.userId === context.userId) return { ok: false as const, message: "You cannot delete your own account." };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [{ data: me }, { data: target }, { data: authUser }] = await Promise.all([
+      supabaseAdmin.from("profiles").select("workspace_id").eq("id", context.userId).maybeSingle(),
+      supabaseAdmin.from("profiles").select("workspace_id").eq("id", data.userId).maybeSingle(),
+      supabaseAdmin.auth.admin.getUserById(data.userId),
+    ]);
+    if (!target || target.workspace_id !== me?.workspace_id) return { ok: false as const, message: "User not found in your workspace." };
+    if ((authUser?.user?.email ?? "").toLowerCase() === OWNER_EMAIL) return { ok: false as const, message: "The owner account cannot be deleted." };
+    await supabaseAdmin.from("profiles").update({ is_active: false }).eq("id", data.userId);
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
+    await (supabaseAdmin as any).from("pos_member_roles").delete().eq("user_id", data.userId);
+    // Soft delete keeps their past bills/orders linked, but the login is gone and sessions stop working.
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId, true);
+    if (error) return { ok: false as const, message: error.message };
+    return { ok: true as const, message: "User deleted" };
+  });
+
 /** Admin sets a new password for a user. Existing passwords are hashed and can never be read back. */
 export const setUserPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -423,31 +449,6 @@ export const createAppUser = createServerFn({ method: "POST" })
       ok: true as const,
       message: data.invite ? "Invite email bhej diya" : "Naya user ban gaya",
     };
-  });
-
-export const deleteAppUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => z.object({ userId: z.string().uuid() }).parse(data))
-  .handler(async ({ data, context }) => {
-    if (!(await isAdminUser(context.supabase, context.userId))) {
-      return { ok: false as const, message: "Sirf admin user delete kar sakta hai." };
-    }
-    if (data.userId === context.userId) {
-      return { ok: false as const, message: "You cannot delete your own account." };
-    }
-    const email = (context.claims as Record<string, unknown>)["email"];
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: target } = await supabaseAdmin.auth.admin.getUserById(data.userId);
-    if (target.user?.email?.toLowerCase() === OWNER_EMAIL) {
-      return { ok: false as const, message: "The owner account cannot be deleted." };
-    }
-    if (typeof email === "string" && email.toLowerCase() !== OWNER_EMAIL) {
-      return { ok: false as const, message: "User delete sirf owner account kar sakta hai." };
-    }
-
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
-    if (error) return { ok: false as const, message: error.message };
-    return { ok: true as const, message: "User deleted successfully" };
   });
 
 /* ------------------------------ CSV export ------------------------------ */

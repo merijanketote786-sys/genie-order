@@ -8,10 +8,10 @@ import {
   saveMemberSections,
   saveWorkspaceSettings,
 } from "@/lib/settings.functions";
-import { listAppUsers } from "@/lib/admin.functions";
+import { listAppUsers, deleteAppUser } from "@/lib/admin.functions";
 import { listPosMembers, setPosMemberRole, setPosMemberPerms, POS_ROLES, POS_PERM_GROUPS, ROLE_PERMS } from "@/lib/pos-access.functions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Loader2, Save, SlidersHorizontal, UserPlus } from "lucide-react";
+import { Building2, Loader2, Save, SlidersHorizontal, Trash2, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -22,6 +22,15 @@ export function AdminWorkspaceSettings({ onAddUser, usersOnly }: { onAddUser?: (
   const members = useQuery({ queryKey: ["member-sections"], queryFn: () => listMemberSections() });
   const posMembers = useQuery({ queryKey: ["pos-members"], queryFn: () => listPosMembers() });
   const posRoleOf = (id: string) => posMembers.data?.members.find((m) => m.id === id)?.role;
+  const delUser = useMutation({
+    mutationFn: (userId: string) => deleteAppUser({ data: { userId } }),
+    onSuccess: (r) => {
+      if (!r.ok) return toast.error(r.message);
+      toast.success("User deleted");
+      ["admin-users", "pos-members", "member-sections", "admin-stats"].forEach((k) => void qc.invalidateQueries({ queryKey: [k] }));
+    },
+    onError: () => toast.error("Could not delete user"),
+  });
   const posPermsOf = (id: string): string[] => {
     const m = posMembers.data?.members.find((x) => x.id === id);
     return m?.perms ?? ROLE_PERMS[m?.role ?? "manager"] ?? [];
@@ -235,6 +244,13 @@ export function AdminWorkspaceSettings({ onAddUser, usersOnly }: { onAddUser?: (
                       <p className="truncate text-sm font-semibold">{u.fullName || u.email}</p>
                       <p className="truncate text-[11px] text-muted-foreground">{u.email}</p>
                     </div>
+                    {posRole !== "admin" ? (
+                      <Button type="button" size="sm" variant="outline" className="h-8 gap-1 text-destructive" disabled={delUser.isPending}
+                        onClick={() => { if (window.confirm(`Delete ${u.email}? They will lose all access and only see the sign-in page.`)) delUser.mutate(u.id); }}
+                        aria-label={`Delete ${u.email}`}>
+                        <Trash2 className="size-3.5" /> Delete
+                      </Button>
+                    ) : null}
                     {posRole === "admin" ? (
                       <span className="rounded-md bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">POS: Admin (full access)</span>
                     ) : (
