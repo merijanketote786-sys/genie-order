@@ -83,6 +83,8 @@ export async function listOrders(arg?: Arg<{ search?: string; limit?: number }>)
         qty: r.qty,
         total: r.product_total == null ? null : Number(r.product_total),
         status: r.status,
+        paymentMethod: r.payment_method ?? null,
+        codAmount: r.cod_amount == null ? null : Number(r.cod_amount),
         orderText: r.order_text,
         createdBy: null,
         createdAt: r.created_at,
