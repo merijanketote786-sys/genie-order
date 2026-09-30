@@ -302,6 +302,13 @@
       "when": 1790793458064,
       "tag": "0042_pos_mfg_fn_perms",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1790794101281,
+      "tag": "0043_allow_negative_stock",
+      "breakpoints": true
     }
   ]
 }

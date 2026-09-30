@@ -281,7 +281,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
       return [...prev, withAutoRate({ key, name: p.name, unit: p.unit, unitOverride, rateType: useRate, price, basePrice: price, wholesalePrice, wholesaleMinQty, minSalePrice: p.minSalePrice ?? null, qty, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode, size: ov?.size || undefined, weight: ov?.weight || undefined, priceManual: ov?.price != null ? true : undefined })];
     });
     if (cfg.inventory.trackStock && cfg.inventory.warnOutOfStock && p.stock != null && p.stock <= 0) {
-      toast.warning(`${p.name}: out of stock (${p.stock})${cfg.inventory.allowNegativeStock ? "" : " — bill will not save"}`);
+      toast.warning(`${p.name}: out of stock (${p.stock}) — stock will go negative`);
     } else toast.success(`${p.name} added to cart`, { duration: 1200 });
   };
 
@@ -845,7 +845,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
                     >
                       <p className="line-clamp-2 text-sm font-semibold text-foreground">{p.name}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {price != null ? `Rs ${money(price)}` : "No rate"} · stock {p.stock ?? "-"}
+                        {price != null ? `Rs ${money(price)}` : "No rate"} · stock <span className={p.stock != null && p.stock < 0 ? "font-bold text-destructive" : ""}>{p.stock ?? "-"}</span>
                       </p>
                       {pendingCode ? <p className="mt-1 text-xs font-bold text-primary">Link</p> : null}
                     </Button>
@@ -1029,9 +1029,9 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
                       className={`cursor-pointer rounded-sm border-b border-border px-3 py-2 text-sm last:border-b-0 ${i === hi ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"}`}
                     >
                       <span className="block font-semibold text-foreground">{p.name}</span>
-                      <span className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 sm:grid-cols-3 lg:grid-cols-6">
-                        {detail.map(([label, value]) => <span key={label} className="min-w-0 text-xs"><span className="block text-[10px] text-muted-foreground">{label}</span><span className="block break-words font-medium tabular-nums text-foreground">{value}</span></span>)}
-                      </span>
+                       <span className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 sm:grid-cols-3 lg:grid-cols-6">
+                         {detail.map(([label, value]) => <span key={label} className="min-w-0 text-xs"><span className="block text-[10px] text-muted-foreground">{label}</span><span className={`block break-words font-medium tabular-nums ${label === "Stock qty" && p.stock != null && p.stock < 0 ? "font-bold text-destructive" : "text-foreground"}`}>{value}</span></span>)}
+                       </span>
                     </li>
                   );
                 })}

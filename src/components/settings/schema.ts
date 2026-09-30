@@ -80,7 +80,7 @@ export const FIELDS: Field[] = [
 
   // Inventory
   { s: "inventory", path: "inventory.trackStock", label: "Stock tracking", type: "bool", def: true, danger: "Turning off stock tracking means stock will NOT increase/decrease on sale/purchase until you turn it back on. Current stock will not change." },
-  { s: "inventory", path: "inventory.allowNegativeStock", label: "Allow negative stock (sell more than in stock)", type: "bool", def: true, help: "Off = 'Insufficient stock' when stock is low — server check", danger: "Turning off negative stock will block bills for products whose system stock is low, until stock is corrected via purchase/adjustment." },
+  { s: "inventory", path: "inventory.allowNegativeStock", label: "Allow negative stock (sell more than in stock)", type: "bool", def: true, help: "Stock 0 hone par bhi sale/manufacturing nahi rukti — stock minus mein jata hai aur red mein dikhta hai" },
   { s: "inventory", path: "inventory.warnOutOfStock", label: "Show warning on out-of-stock", type: "bool", def: true },
   { s: "inventory", path: "inventory.lowStockThreshold", label: "Low-stock level (default)", type: "number", min: 0, max: 1e6, def: 5 },
   { s: "inventory", path: "inventory.defaultUnit", label: "Default unit", type: "text", placeholder: "kg" },
