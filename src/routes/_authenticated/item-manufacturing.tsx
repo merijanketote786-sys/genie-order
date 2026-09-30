@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/app-shell";
+import { MfgGate } from "@/components/mfg-gate";
 import { usePosAccess } from "@/components/pos-access";
 import { PosSubnav, posInput, rs } from "@/components/pos-subnav";
 import { StoreSwitcher, useActiveStore } from "@/components/store-switcher";
@@ -153,7 +154,7 @@ function ManufacturingPage() {
           <h1 className="mr-auto flex items-center gap-2 text-lg font-bold text-foreground"><Factory className="size-5 text-primary" /> Item Manufacturing</h1>
           <StoreSwitcher />
         </div>
-        {!canEdit ? <p className="rounded-lg border border-border bg-muted/40 p-2 text-xs text-muted-foreground">You can view setups; only Admin/Manager can change them.</p> : null}
+        <MfgGate>
 
         <section className="space-y-2 rounded-xl border border-border bg-card p-3">
           <p className="text-sm font-semibold text-foreground">Product to manufacture</p>
@@ -232,6 +233,7 @@ function ManufacturingPage() {
             </section>
           </>
         ) : null}
+        </MfgGate>
       </div>
     </AppShell>
   );
