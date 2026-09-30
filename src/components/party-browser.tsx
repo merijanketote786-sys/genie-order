@@ -269,6 +269,20 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   return (
     <>
       {pc.node}
+      {editSale ? (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-background">
+          <button
+            type="button"
+            aria-label="Close edit"
+            title="Close"
+            onClick={() => { setEditSale(false); void refreshLedger(); }}
+            className="fixed right-4 top-4 z-[60] rounded-full border border-border bg-card p-2 shadow-lg transition-transform hover:scale-110 hover:bg-accent"
+          >
+            <X className="size-5" />
+          </button>
+          <PosPage onSaved={() => { setEditSale(false); void refreshLedger(); }} />
+        </div>
+      ) : null}
       <div className="grid gap-3 lg:grid-cols-[1fr_1.4fr]">
         <section className="space-y-2 rounded-xl border border-border bg-card p-3">
           <div className="flex items-center justify-between gap-2">
@@ -365,17 +379,39 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
 
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead><tr className="text-left text-xs text-muted-foreground"><th>Date</th><th>Detail</th><th>Ref</th><th className="text-right">Debit (to receive)</th><th className="text-right">Credit (to pay)</th><th className="text-right">Balance</th></tr></thead>
+                  <thead><tr className="text-left text-xs text-muted-foreground"><th>Date</th><th>Detail</th><th>Ref</th><th className="text-right">Debit (to receive)</th><th className="text-right">Credit (to pay)</th><th className="text-right">Balance</th><th className="w-8" /></tr></thead>
                   <tbody>
-                    <tr className="border-t border-border"><td colSpan={5} className="py-1.5">Opening balance</td><td className="text-right">{rs(ledgerOpening)}</td></tr>
-                    {ledgerLoading ? <tr className="border-t border-border"><td colSpan={6} className="py-2 text-center text-xs text-muted-foreground">Loading ledger…</td></tr> : null}
+                    <tr className="border-t border-border"><td colSpan={5} className="py-1.5">Opening balance</td><td className="text-right">{rs(ledgerOpening)}</td><td /></tr>
+                    {ledgerLoading ? <tr className="border-t border-border"><td colSpan={7} className="py-2 text-center text-xs text-muted-foreground">Loading ledger…</td></tr> : null}
                     {ledgerRows.map((r, i) => (
-                      <tr key={i} className="border-t border-border">
+                      <tr key={`${r.entity}-${r.id}-${i}`} className={`border-t border-border ${r.entity !== "payment" ? "cursor-pointer hover:bg-accent/60" : ""}`} onClick={() => openRow(r)} title={r.entity === "sale" ? "Click to open / edit" : r.entity === "purchase" ? "Click to preview" : undefined}>
                         <td className="py-1.5 text-xs">{new Date(r.date).toLocaleDateString("en-PK")}</td><td>{r.kind}</td><td className="text-xs">{r.ref}</td>
                         <td className="text-right">{r.debit ? rs(r.debit) : ""}</td><td className="text-right">{r.credit ? rs(r.credit) : ""}</td><td className="text-right font-semibold">{rs(r.balance)}</td>
+                        <td className="relative text-right" onClick={(e) => e.stopPropagation()}>
+                          {r.entity === "sale" || (r.entity === "payment" && r.standalone) ? (
+                            <>
+                              <button type="button" aria-label={`Actions for ${r.ref || r.kind}`} disabled={txBusy} onClick={() => setMenuFor(menuFor === r.id ? null : r.id)} className="rounded-md border border-border p-1 hover:bg-accent disabled:opacity-50"><MoreVertical className="size-3.5" /></button>
+                              {menuFor === r.id ? (
+                                <>
+                                  <div className="fixed inset-0 z-40" onClick={() => setMenuFor(null)} />
+                                  <div className="absolute right-0 z-50 mt-1 w-40 overflow-hidden rounded-xl border border-border bg-popover py-1 text-left shadow-xl">
+                                    {r.entity === "sale" ? (
+                                      <>
+                                        <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent" onClick={() => { setMenuFor(null); void openEditSale(r); }}><Pencil className="size-4" /> Edit</button>
+                                        <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-accent" onClick={() => { setMenuFor(null); void deleteSale(r); }}><Trash2 className="size-4" /> Delete</button>
+                                      </>
+                                    ) : (
+                                      <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-accent" onClick={() => { setMenuFor(null); void deletePayment(r); }}><Trash2 className="size-4" /> Delete</button>
+                                    )}
+                                  </div>
+                                </>
+                              ) : null}
+                            </>
+                          ) : null}
+                        </td>
                       </tr>
                     ))}
-                    {!ledgerLoading && !ledgerRows.length ? <tr className="border-t border-border"><td colSpan={6} className="py-2 text-center text-xs text-muted-foreground">No entries yet.</td></tr> : null}
+                    {!ledgerLoading && !ledgerRows.length ? <tr className="border-t border-border"><td colSpan={7} className="py-2 text-center text-xs text-muted-foreground">No entries yet.</td></tr> : null}
                   </tbody>
                 </table>
               </div>
