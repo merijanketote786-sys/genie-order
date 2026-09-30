@@ -15,6 +15,8 @@ import {
   FileSignature,
   History,
   LayoutDashboard,
+  PanelLeftClose,
+  PanelLeftOpen,
   QrCode,
   ReceiptText,
   RefreshCw,
@@ -29,7 +31,9 @@ import { useQuery } from "@tanstack/react-query";
 import { getMyAccess } from "@/lib/admin.functions";
 import { getMySettings } from "@/lib/settings.functions";
 import { isSectionAllowed } from "@/lib/settings";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+
+const NAV_HIDDEN_KEY = "workspace-nav-hidden";
 
 const TABS = [
   { to: "/dashboard", label: "Dashboard", description: "Full progress at a glance", icon: LayoutDashboard },
@@ -96,6 +100,25 @@ export function AppShell({
   children,
   wide,
 }: AppShellProps & { wide?: boolean }) {
+  const [navHidden, setNavHidden] = useState(false);
+  useEffect(() => {
+    try {
+      setNavHidden(window.localStorage.getItem(NAV_HIDDEN_KEY) === "1");
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
+  const toggleNav = () => {
+    setNavHidden((v) => {
+      const next = !v;
+      try {
+        window.localStorage.setItem(NAV_HIDDEN_KEY, next ? "1" : "0");
+      } catch {
+        /* storage unavailable */
+      }
+      return next;
+    });
+  };
   const access = useQuery({
     queryKey: ["my-access"],
     queryFn: () => getMyAccess(),
@@ -115,7 +138,13 @@ export function AppShell({
   const primaryTabs = visibleTabs.slice(0, 4);
 
   return (
-    <div className="grid h-[100dvh] min-h-0 overflow-hidden bg-background xl:grid-cols-[244px_minmax(0,1fr)]">
+    <div
+      className={cn(
+        "grid h-[100dvh] min-h-0 overflow-hidden bg-background",
+        navHidden ? "xl:grid-cols-[minmax(0,1fr)]" : "xl:grid-cols-[244px_minmax(0,1fr)]",
+      )}
+    >
+      {!navHidden ? (
       <aside className="hidden min-h-0 flex-col border-r border-border bg-sidebar xl:flex">
         <div className="flex h-20 shrink-0 items-center gap-3 border-b border-sidebar-border px-5">
           <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg border border-sidebar-border bg-card">
@@ -166,11 +195,12 @@ export function AppShell({
           </div>
         </div>
       </aside>
+      ) : null}
 
       <section className="flex min-h-0 min-w-0 flex-col">
         <header className="shrink-0 border-b border-border bg-surface/95 backdrop-blur-sm">
           <div className="grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 sm:min-h-16 sm:gap-3 sm:px-6 lg:px-8">
-            <div className="flex min-w-0 items-center gap-2.5 xl:hidden">
+            <div className={cn("flex min-w-0 items-center gap-2.5", navHidden ? "" : "xl:hidden")}>
               <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-card">
                 <img
                   src={logoUrl}
@@ -192,6 +222,16 @@ export function AppShell({
               <p className="truncate text-sm text-muted-foreground">{subtitle}</p>
             </div>
             <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleNav}
+                className="hidden size-10 shrink-0 border-border bg-card xl:inline-flex"
+                title={navHidden ? "Show menu" : "Hide menu"}
+                aria-label={navHidden ? "Show navigation menu" : "Hide navigation menu"}
+              >
+                {navHidden ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+              </Button>
               <FontSizeControl />
               <Button
                 variant="outline"
