@@ -390,8 +390,8 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
                 <div className="space-y-2 rounded-lg border border-primary p-2">
                   <p className="text-xs font-semibold text-muted-foreground">Adjust balance — party ka opening / previous balance set karein (ledger ki shuruaat isi se hogi)</p>
                   <div className="flex gap-2">
-                    <Button type="button" size="sm" variant={adjDir === "receive" ? "default" : "outline"} disabled={!sel.customerId} onClick={() => setAdjDir("receive")}>To receive (humein lene hain)</Button>
-                    <Button type="button" size="sm" variant={adjDir === "pay" ? "default" : "outline"} disabled={!sel.supplierId} onClick={() => setAdjDir("pay")}>To pay (humein dene hain)</Button>
+                    <Button type="button" size="sm" variant={adjDir === "receive" ? "default" : "outline"} onClick={() => setAdjDir("receive")}>To receive</Button>
+                    <Button type="button" size="sm" variant={adjDir === "pay" ? "default" : "outline"} onClick={() => setAdjDir("pay")}>To pay</Button>
                   </div>
                   <div className="flex gap-2">
                     <input className={inputCls} inputMode="decimal" value={adjAmt} onChange={(e) => setAdjAmt(e.target.value.replace(/[^\d.]/g, ""))} placeholder="Amount (0 = koi opening balance nahi)" aria-label="Opening balance" />
