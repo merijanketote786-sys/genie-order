@@ -110,7 +110,7 @@ const n = (v: string) => {
 /** Quantity badalte hi rate khud sale/wholesale me switch ho jati hai. */
 const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
 
- function PosPage() {
+ export function PosPage({ onSaved }: { onSaved?: () => void } = {}) {
    // Phone-width hint: field placeholders shorten so they stay readable on a narrow bill card.
    const [phone, setPhone] = useState(false);
    useEffect(() => {
@@ -634,6 +634,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
       qc.invalidateQueries({ queryKey: ["pos-docs"] });
       qc.invalidateQueries({ queryKey: ["pos-balance"] });
       reset();
+      if (kind !== "held") onSaved?.();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Unable to save invoice. Please try again.");
     } finally {
