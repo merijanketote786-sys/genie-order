@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { listInventory, getItemHistory, type InvProduct } from "@/lib/inventory.functions";
+import { listInventory, getItemHistory, adjustStock, type InvProduct } from "@/lib/inventory.functions";
 import { getAllStoresStock, getStoreStock, listStores } from "@/lib/stores.functions";
 import { ALL_STORES_ID, useSelectedStoreId } from "@/lib/pos-store-client";
 import { rs } from "@/components/pos-subnav";
-import { Search, Store } from "lucide-react";
+import { Search, Store, SlidersHorizontal } from "lucide-react";
+
+type StoreOpt = { id: string; name: string; kind: string };
 
 /** Items list with stock + search; clicking an item opens its date-wise history. */
 export function ItemsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
@@ -81,12 +84,82 @@ export function ItemsDialog({ open, onOpenChange }: { open: boolean; onOpenChang
           </p>
         </DialogContent>
       </Dialog>
-      <ItemHistoryDialog item={item} onClose={() => setItem(null)} />
+      <ItemHistoryDialog item={item} onClose={() => setItem(null)} storeSel={storeSel} setStoreSel={setStoreSel} stores={stores} stockOf={stockOf} />
     </>
   );
 }
 
-function ItemHistoryDialog({ item, onClose }: { item: InvProduct | null; onClose: () => void }) {
+function StoreSelect({ value, onChange, stores, all = true, id }: { value: string; onChange: (v: string) => void; stores: StoreOpt[]; all?: boolean; id: string }) {
+  return (
+    <div className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2">
+      <Store className="size-4 shrink-0 text-muted-foreground" />
+      <label className="sr-only" htmlFor={id}>Store</label>
+      <select id={id} aria-label="Store" className="h-10 max-w-44 bg-transparent text-sm font-semibold text-foreground outline-none" value={value} onChange={(e) => onChange(e.target.value)}>
+        {all ? <option value={ALL_STORES_ID}>All stores</option> : <option value="">Select store</option>}
+        {stores.map((s) => <option key={s.id} value={s.id}>{s.name}{s.kind === "godown" ? " (Godown)" : ""}</option>)}
+      </select>
+    </div>
+  );
+}
+
+function AdjustStockDialog({ item, stores, defaultStore, onClose }: { item: InvProduct | null; stores: StoreOpt[]; defaultStore: string; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [store, setStore] = useState("");
+  const [mode, setMode] = useState<"adjust_in" | "adjust_out">("adjust_in");
+  const [qty, setQty] = useState("");
+  const [price, setPrice] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (item) { setStore(defaultStore === ALL_STORES_ID ? "" : defaultStore); setQty(""); setPrice(item.purchasePrice ? String(item.purchasePrice) : ""); setNote(""); setMode("adjust_in"); }
+  }, [item, defaultStore]);
+  const save = async () => {
+    if (!item) return;
+    if (!store) return toast.error("Select a store");
+    const q = Number(qty);
+    if (!(q > 0)) return toast.error("Enter a quantity");
+    const p = price.trim() === "" ? null : Number(price);
+    if (p != null && !(p >= 0)) return toast.error("Enter a valid price");
+    const full = [p != null ? `@ Rs ${p}/${item.unit} (total Rs ${Math.round(p * q * 100) / 100})` : "", note.trim()].filter(Boolean).join(" — ").slice(0, 300);
+    setBusy(true);
+    try {
+      await adjustStock({ data: { id: item.id, qty: q, kind: mode, note: full, storeId: store } });
+      toast.success(mode === "adjust_in" ? "Stock added" : "Stock reduced");
+      void qc.invalidateQueries({ queryKey: ["items-dialog"] });
+      void qc.invalidateQueries({ queryKey: ["items-dialog-stock"] });
+      void qc.invalidateQueries({ queryKey: ["item-history", item.id] });
+      onClose();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not adjust stock"); } finally { setBusy(false); }
+  };
+  const inp = "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus:border-ring";
+  return (
+    <Dialog open={!!item} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle>Adjust stock — {item?.name}</DialogTitle></DialogHeader>
+        <div className="grid gap-3">
+          <StoreSelect id="adj-store" value={store} onChange={setStore} stores={stores} all={false} />
+          <div className="grid grid-cols-2 gap-2">
+            {(["adjust_in", "adjust_out"] as const).map((m) => (
+              <button key={m} type="button" onClick={() => setMode(m)}
+                className={`h-10 rounded-lg border text-sm font-semibold ${mode === m ? (m === "adjust_in" ? "border-success bg-success text-success-foreground" : "border-destructive bg-destructive text-destructive-foreground") : "border-border bg-card text-foreground"}`}>
+                {m === "adjust_in" ? "Add stock" : "Reduce stock"}
+              </button>
+            ))}
+          </div>
+          <label className="grid gap-1 text-xs text-muted-foreground">Quantity ({item?.unit})<input className={inp} inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} placeholder="0" /></label>
+          <label className="grid gap-1 text-xs text-muted-foreground">Price per unit (Rs)<input className={inp} inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0" /></label>
+          <label className="grid gap-1 text-xs text-muted-foreground">Note (optional)<input className={inp} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Reason" /></label>
+          {Number(qty) > 0 && Number(price) > 0 ? <p className="text-sm text-muted-foreground">Total value: <b className="text-foreground">{rs(Number(qty) * Number(price))}</b></p> : null}
+          <button type="button" disabled={busy} onClick={save} className="h-11 rounded-lg bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-60">{busy ? "Saving…" : "Save"}</button>
+        </div>
+      </DialogContent>
+      <AdjustStockDialog item={adjOpen ? item : null} stores={stores} defaultStore={storeSel} onClose={() => setAdjOpen(false)} />
+    </Dialog>
+  );
+}
+
+function ItemHistoryDialog({ item, onClose, storeSel, setStoreSel, stores, stockOf }: { item: InvProduct | null; onClose: () => void; storeSel: string; setStoreSel: (v: string) => void; stores: StoreOpt[]; stockOf: (p: InvProduct) => number }) {
+  const [adjOpen, setAdjOpen] = useState(false);
   const q = useQuery({ queryKey: ["item-history", item?.id], queryFn: () => getItemHistory({ data: { productId: item!.id } }), enabled: !!item });
   const rows = q.data?.rows ?? [];
   const sum = (k: (r: (typeof rows)[number]) => boolean) => rows.filter((r) => k(r) && !r.label.includes("cancelled")).reduce((a, r) => a + r.qty, 0);
@@ -94,9 +167,15 @@ function ItemHistoryDialog({ item, onClose }: { item: InvProduct | null; onClose
     <Dialog open={!!item} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="flex max-h-[92vh] max-w-4xl flex-col">
         <DialogHeader><DialogTitle>{item?.name} — history</DialogTitle></DialogHeader>
+        <div className="flex flex-wrap items-center gap-2">
+          <StoreSelect id="hist-store" value={storeSel} onChange={setStoreSel} stores={stores} />
+          <button type="button" onClick={() => setAdjOpen(true)} className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground">
+            <SlidersHorizontal className="size-4" /> Adjust stock
+          </button>
+        </div>
         {item ? (
           <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-5">
-            {[["In stock", item.stock], ["Sold", sum((r) => r.kind === "sale")], ["Purchased", sum((r) => r.kind === "purchase")],
+            {[["In stock", stockOf(item)], ["Sold", sum((r) => r.kind === "sale")], ["Purchased", sum((r) => r.kind === "purchase")],
               ["Manufactured", sum((r) => r.kind === "manufacture_in")], ["In estimates", sum((r) => r.kind === "quotation")]].map(([l, v]) => (
               <div key={l as string} className="rounded-lg border border-border bg-card p-2"><p className="text-[11px] text-muted-foreground">{l}</p><p className={`font-bold ${Number(v) < 0 ? "text-destructive" : ""}`}>{v} {item.unit}</p></div>
             ))}
@@ -125,6 +204,7 @@ function ItemHistoryDialog({ item, onClose }: { item: InvProduct | null; onClose
           </table>
         </div>
       </DialogContent>
+      <AdjustStockDialog item={adjOpen ? item : null} stores={stores} defaultStore={storeSel} onClose={() => setAdjOpen(false)} />
     </Dialog>
   );
 }
