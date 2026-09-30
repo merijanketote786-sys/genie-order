@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { listInventory, getItemHistory, type InvProduct } from "@/lib/inventory.functions";
@@ -14,9 +14,14 @@ export function ItemsDialog({ open, onOpenChange }: { open: boolean; onOpenChang
   const [item, setItem] = useState<InvProduct | null>(null);
   // Store selection lives only inside this popup; defaults to the store already chosen in POS.
   const [storeSel, setStoreSel] = useState<string>(initialStore || ALL_STORES_ID);
-  const q = useQuery({ queryKey: ["items-dialog"], queryFn: () => listInventory(), enabled: open, staleTime: 30_000 });
   const storesQ = useQuery({ queryKey: ["pos-stores"], queryFn: () => listStores(), enabled: open, staleTime: 60_000 });
+  const q = useQuery({ queryKey: ["items-dialog"], queryFn: () => listInventory(), enabled: open, staleTime: 30_000 });
   const isAll = storeSel === ALL_STORES_ID;
+  // Snap to All stores if the saved selection is no longer an active store.
+  useEffect(() => {
+    const stores = storesQ.data?.stores ?? [];
+    if (!isAll && stores.length && !stores.some((s) => s.id === storeSel && s.isActive)) setStoreSel(ALL_STORES_ID);
+  }, [storesQ.data, isAll, storeSel]);
   const stockQ = useQuery({
     queryKey: ["items-dialog-stock", isAll ? ALL_STORES_ID : storeSel],
     queryFn: () => (isAll ? getAllStoresStock() : getStoreStock({ data: { storeId: storeSel } })),
