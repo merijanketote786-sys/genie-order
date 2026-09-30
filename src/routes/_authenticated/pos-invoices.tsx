@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Printer, ReceiptText, Download, Share2, Search, RotateCcw, MoreVertical, Ban, Trash2, FileInput, Truck } from "lucide-react";
+import { Printer, ReceiptText, Download, Share2, Search, RotateCcw, MoreVertical, Ban, Trash2, FileInput, Truck, Pencil } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { PosSubnav, rs } from "@/components/pos-subnav";
 import { usePrintCenter } from "@/components/print-center";
@@ -155,7 +155,7 @@ function PosInvoicesPage() {
     }
   };
 
-  const convertToInvoice = (s: SaleRow) => {
+  const openInBilling = (s: SaleRow) => {
     const cart = s.items.map((i, idx) => ({
       key: `conv-${s.id}-${idx}`,
       name: i.name,
@@ -169,7 +169,7 @@ function PosInvoicesPage() {
       note: i.note ?? undefined,
     }));
     const payload = JSON.stringify({ cart, notes: s.notes ?? "", customerName: s.customer_name ?? "", customerPhone: s.customer_phone ?? "", delivery: String(Number(s.delivery) || "") });
-    sessionStorage.setItem("pos-open-doc", JSON.stringify({ id: s.id, doc_number: s.doc_number, customer_name: s.customer_name, customer_phone: s.customer_phone, grand_total: s.grand_total, created_at: s.created_at, payload, status: s.status }));
+    sessionStorage.setItem("pos-open-doc", JSON.stringify({ id: s.id, doc_number: s.doc_number, doc_type: s.doc_type, customer_name: s.customer_name, customer_phone: s.customer_phone, grand_total: s.grand_total, created_at: s.created_at, payload, status: s.status }));
     navigate({ to: "/pos" });
   };
 
@@ -252,7 +252,8 @@ function PosInvoicesPage() {
                         {item(s, <Printer className="size-4" />, "Reprint", () => pc.print(doc, { reprint: true }))}
                         {item(s, <Download className="size-4" />, "PDF", () => pc.pdf(doc))}
                         {item(s, <Share2 className="size-4" />, "Share", () => setShare(s))}
-                        {isEstimate ? item(s, <FileInput className="size-4" />, "Convert to Invoice", () => convertToInvoice(s)) : null}
+                        {item(s, <Pencil className="size-4" />, "Edit", () => openInBilling(s))}
+                        {isEstimate ? item(s, <FileInput className="size-4" />, "Convert to Invoice", () => openInBilling(s)) : null}
                         {isEstimate ? item(s, <Truck className="size-4" />, "Convert to Delivery Challan", () => pc.preview(challanDoc(s), false)) : null}
                         {!isEstimate ? item(s, <Ban className="size-4" />, "Cancel", () => void doCancel(s), true) : null}
                         {isEstimate ? item(s, <Trash2 className="size-4" />, "Delete", () => void doDelete(s), true) : null}
