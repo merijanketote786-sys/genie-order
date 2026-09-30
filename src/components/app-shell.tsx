@@ -5,6 +5,7 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { Button } from "@/components/ui/button";
 import { WorkspaceNavDialog } from "@/components/workspace-nav-dialog";
 import { PosSidebar } from "@/components/pos-subnav";
+import { FeatureAccessMenu } from "@/components/feature-access-menu";
 import { cn } from "@/lib/utils";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
@@ -270,6 +271,7 @@ export function AppShell({
               >
                 {navHidden ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
               </Button>
+              {access.data?.isOwner ? <FeatureAccessMenu /> : null}
               <FontSizeControl />
               <Button
                 variant="outline"

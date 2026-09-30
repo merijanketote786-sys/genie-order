@@ -577,18 +577,21 @@ export type Database = {
       }
       pos_member_roles: {
         Row: {
+          perms: string[] | null
           role: string
           updated_at: string
           user_id: string
           workspace_id: string
         }
         Insert: {
+          perms?: string[] | null
           role: string
           updated_at?: string
           user_id: string
           workspace_id?: string
         }
         Update: {
+          perms?: string[] | null
           role?: string
           updated_at?: string
           user_id?: string
@@ -1682,6 +1685,10 @@ export type Database = {
       }
       pos_save_unlinked_return: { Args: { _p: Json }; Returns: Json }
       pos_set_common_products: { Args: { _on: boolean }; Returns: undefined }
+      pos_set_member_perms: {
+        Args: { _perms: string[]; _user: string }
+        Returns: undefined
+      }
       pos_set_member_role: {
         Args: { _role: string; _user: string }
         Returns: undefined
@@ -1695,6 +1702,7 @@ export type Database = {
         Args: { _id: string; _p: Json }
         Returns: undefined
       }
+      pos_user_perms: { Args: { _uid: string }; Returns: string[] }
       pos_verify_mfg_pin: { Args: { _pin: string }; Returns: boolean }
       pos_verify_pin: { Args: { _pin: string }; Returns: boolean }
       set_order_number_start: { Args: { _start: number }; Returns: undefined }

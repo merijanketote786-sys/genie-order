@@ -9,19 +9,32 @@ import {
   saveWorkspaceSettings,
 } from "@/lib/settings.functions";
 import { listAppUsers } from "@/lib/admin.functions";
-import { listPosMembers, setPosMemberRole, POS_ROLES } from "@/lib/pos-access.functions";
+import { listPosMembers, setPosMemberRole, setPosMemberPerms, POS_ROLES, POS_PERM_GROUPS, ROLE_PERMS } from "@/lib/pos-access.functions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Loader2, Save, SlidersHorizontal, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-export function AdminWorkspaceSettings({ onAddUser }: { onAddUser?: () => void } = {}) {
+export function AdminWorkspaceSettings({ onAddUser, usersOnly }: { onAddUser?: () => void; usersOnly?: boolean } = {}) {
   const qc = useQueryClient();
   const ws = useQuery({ queryKey: ["workspace-settings"], queryFn: () => getWorkspaceSettings() });
   const users = useQuery({ queryKey: ["admin-users"], queryFn: () => listAppUsers() });
   const members = useQuery({ queryKey: ["member-sections"], queryFn: () => listMemberSections() });
   const posMembers = useQuery({ queryKey: ["pos-members"], queryFn: () => listPosMembers() });
   const posRoleOf = (id: string) => posMembers.data?.members.find((m) => m.id === id)?.role;
+  const posPermsOf = (id: string): string[] => {
+    const m = posMembers.data?.members.find((x) => x.id === id);
+    return m?.perms ?? ROLE_PERMS[m?.role ?? "manager"] ?? [];
+  };
+  const setPerms = useMutation({
+    mutationFn: (v: { userId: string; perms: string[] }) => setPosMemberPerms({ data: v }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["pos-members"] }),
+    onError: () => toast.error("Could not save POS access"),
+  });
+  const togglePerm = (userId: string, key: string) => {
+    const cur = posPermsOf(userId);
+    setPerms.mutate({ userId, perms: cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key] });
+  };
   const setRole = useMutation({
     mutationFn: (v: { userId: string; role: (typeof POS_ROLES)[number] }) => setPosMemberRole({ data: v }),
     onSuccess: () => {
@@ -103,7 +116,7 @@ export function AdminWorkspaceSettings({ onAddUser }: { onAddUser?: () => void }
 
   return (
     <section className="space-y-4">
-      <div className="glass-panel space-y-4 rounded-2xl p-4">
+      <div className={usersOnly ? "hidden" : "glass-panel space-y-4 rounded-2xl p-4"}>
         <div className="flex items-center gap-2">
           <Building2 className="size-4 text-primary" />
           <h3 className="font-display text-sm font-bold">Business and workspace defaults</h3>
@@ -257,6 +270,32 @@ export function AdminWorkspaceSettings({ onAddUser }: { onAddUser?: () => void }
                       );
                     })}
                   </div>
+                  {posRole && posRole !== "admin" ? (
+                    <details className="mt-3 rounded-lg border border-border bg-background/50 p-2">
+                      <summary className="cursor-pointer text-xs font-semibold">POS features ({posPermsOf(u.id).length} on)</summary>
+                      <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {POS_PERM_GROUPS.map((g) => (
+                          <div key={g.title}>
+                            <p className="mb-1 text-[11px] font-bold uppercase text-muted-foreground">{g.title}</p>
+                            <ul className="space-y-1">
+                              {g.items.map((it) => (
+                                <li key={it.key}>
+                                  <label className="flex cursor-pointer items-center gap-2 text-xs">
+                                    <input type="checkbox" className="size-4 accent-primary"
+                                      checked={posPermsOf(u.id).includes(it.key)}
+                                      disabled={setPerms.isPending}
+                                      onChange={() => togglePerm(u.id, it.key)} />
+                                    {it.label}
+                                  </label>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="mt-2 text-[10px] text-muted-foreground">Changing the POS role resets these ticks to that role's defaults.</p>
+                    </details>
+                  ) : null}
                 </div>
               );
             })}

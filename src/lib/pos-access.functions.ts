@@ -55,13 +55,59 @@ export const listPosMembers = createServerFn({ method: "GET" })
     const sb = context.supabase as Sb;
     const [{ data: profs }, { data: roles }, { data: admins }] = await Promise.all([
       sb.from("profiles").select("id, full_name, is_active"),
-      sb.from("pos_member_roles").select("user_id, role"),
+      sb.from("pos_member_roles").select("user_id, role, perms"),
       sb.from("user_roles").select("user_id, role").eq("role", "admin"),
     ]);
-    const rm = new Map<string, string>(((roles ?? []) as any[]).map((r) => [r.user_id, r.role]));
+    const rm = new Map<string, any>(((roles ?? []) as any[]).map((r) => [r.user_id, r]));
     const am = new Set(((admins ?? []) as any[]).map((r) => r.user_id));
-    return { members: ((profs ?? []) as any[]).map((p) => ({ id: p.id as string, name: (p.full_name || "User") as string, active: !!p.is_active, role: am.has(p.id) ? "admin" : rm.get(p.id) ?? "manager" })) };
+    return { members: ((profs ?? []) as any[]).map((p) => {
+      const r = rm.get(p.id);
+      const role = am.has(p.id) ? "admin" : (r?.role ?? "manager");
+      return { id: p.id as string, name: (p.full_name || "User") as string, active: !!p.is_active, role, perms: (am.has(p.id) ? null : (r?.perms ?? null)) as string[] | null };
+    }) };
   });
+
+export const setPosMemberPerms = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ userId: z.string().uuid(), perms: z.array(z.string().max(40)).max(60) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await (context.supabase as Sb).rpc("pos_set_member_perms", { _user: data.userId, _perms: data.perms });
+    if (error) throw new Error("Could not save POS access");
+    return { ok: true };
+  });
+
+/** Default permissions per POS role (mirrors database pos_perms). */
+export const ROLE_PERMS: Record<string, PosPerm[]> = {
+  manager: ["view_pos","create_sale","edit_sale","return_sale","edit_price","apply_discount","cancel_invoice","view_reports","view_profit","edit_stock","edit_products","view_balances","manage_customers","manage_suppliers","manage_expenses","manage_purchases","manage_printers","view_accounting","create_journal","view_ledger","view_trial_balance","view_pnl","view_balance_sheet","view_ar_ap"],
+  salesman: ["view_pos","create_sale","return_sale","apply_discount","view_balances","manage_customers"],
+  cashier: ["view_pos","create_sale","return_sale","view_balances","manage_expenses","manage_customers"],
+  staff: ["view_pos","create_sale"],
+};
+
+export const POS_PERM_GROUPS: { title: string; items: { key: PosPerm; label: string }[] }[] = [
+  { title: "Billing", items: [
+    { key: "view_pos", label: "Open POS" }, { key: "create_sale", label: "Create sale / estimate" }, { key: "edit_sale", label: "Edit saved bills" },
+    { key: "return_sale", label: "Sale returns" }, { key: "edit_price", label: "Change item price" }, { key: "apply_discount", label: "Give discount" },
+    { key: "cancel_invoice", label: "Cancel invoices" },
+  ] },
+  { title: "Stock and products", items: [
+    { key: "edit_stock", label: "Adjust stock / transfer" }, { key: "edit_products", label: "Add / edit products" }, { key: "manage_purchases", label: "Purchases" },
+  ] },
+  { title: "Parties and money", items: [
+    { key: "manage_customers", label: "Customers" }, { key: "manage_suppliers", label: "Suppliers" }, { key: "view_balances", label: "See party balances" },
+    { key: "manage_expenses", label: "Expenses" },
+  ] },
+  { title: "Reports", items: [ { key: "view_reports", label: "Reports and Day Book" }, { key: "view_profit", label: "See profit" } ] },
+  { title: "Accounting", items: [
+    { key: "view_accounting", label: "Open accounting" }, { key: "create_journal", label: "Create journals" }, { key: "post_journal", label: "Post journals" },
+    { key: "view_ledger", label: "General ledger" }, { key: "view_trial_balance", label: "Trial balance" }, { key: "view_pnl", label: "Profit and loss" },
+    { key: "view_balance_sheet", label: "Balance sheet" }, { key: "view_ar_ap", label: "Receivable / payable" }, { key: "manage_accounts", label: "Chart of accounts" },
+    { key: "close_period", label: "Lock periods" },
+  ] },
+  { title: "Settings", items: [
+    { key: "manage_printers", label: "Printers" }, { key: "settings", label: "POS settings" }, { key: "manage_users", label: "Manage user roles" },
+  ] },
+];
 
 export const setPosMemberRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
