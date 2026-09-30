@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/app-shell";
+import { MfgGate, useMfgStatus } from "@/components/mfg-gate";
 import { PosSubnav, posInput, rs } from "@/components/pos-subnav";
 import { StoreSwitcher, useActiveStore } from "@/components/store-switcher";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,8 @@ function InventoryPage() {
   const [adding, setAdding] = useState(false);
   const [bulk, setBulk] = useState(false);
   const [mfgQty, setMfgQty] = useState("");
+  const { data: mfg } = useMfgStatus();
+  const mfgAdmin = !!mfg?.isAdmin;
   const { data: rec } = useQuery({ queryKey: ["recipes"], queryFn: () => listRecipes() });
   const hasRecipe = useMemo(() => new Set((rec?.recipes ?? []).map((r) => r.productId)), [rec]);
   const { data: led } = useQuery({ queryKey: ["stock-ledger", sel], queryFn: () => getStockLedger({ data: { id: sel! } }), enabled: !!sel });
@@ -142,7 +145,7 @@ function InventoryPage() {
                       <td className={`text-right ${p.stock <= 0 ? "text-destructive" : ""}`}>{p.stock} <span className="text-xs text-muted-foreground">{p.unit}</span></td>
                       <td className="text-right">{p.purchasePrice ?? "—"}</td>
                       <td className="text-right">{rs(Math.max(0, p.stock) * (p.purchasePrice ?? 0))}</td>
-                      <td className="pl-1 text-right"><Button size="sm" variant={hasRecipe.has(p.id) ? "outline" : "ghost"} className="h-7 px-2" title="Manufacture" aria-label={`Manufacture ${p.name}`} onClick={(e) => { e.stopPropagation(); setSel(p.id); setEdit(toEdit(p)); setMfgQty(""); setTimeout(() => document.getElementById("mfg-box")?.scrollIntoView({ block: "center" }), 50); }}><Factory className="size-3.5" /></Button></td>
+                      <td className="pl-1 text-right">{mfgAdmin ? <Button size="sm" variant={hasRecipe.has(p.id) ? "outline" : "ghost"} className="h-7 px-2" title="Manufacture" aria-label={`Manufacture ${p.name}`} onClick={(e) => { e.stopPropagation(); setSel(p.id); setEdit(toEdit(p)); setMfgQty(""); setTimeout(() => document.getElementById("mfg-box")?.scrollIntoView({ block: "center" }), 50); }}><Factory className="size-3.5" /></Button> : null}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -161,7 +164,7 @@ function InventoryPage() {
                   <F k="minStock" label="Min stock (alert)" dec /><F k="taxPercent" label="Tax %" dec />
                 </div>
                 <Button onClick={saveEdit}>Details save</Button>
-                <div id="mfg-box" className="space-y-2 rounded-lg border border-primary/40 p-2">
+                {mfgAdmin ? <MfgGate><div id="mfg-box" className="space-y-2 rounded-lg border border-primary/40 p-2">
                   <p className="flex items-center gap-2 text-sm font-semibold text-foreground"><Factory className="size-4 text-primary" /> Manufacture</p>
                   {hasRecipe.has(cur.id) ? (
                     <div className="flex flex-wrap items-center gap-2">
@@ -172,7 +175,7 @@ function InventoryPage() {
                   ) : (
                     <p className="text-xs text-muted-foreground">No raw materials set. <Link to="/item-manufacturing" search={{ product: cur.id }} className="text-primary underline">Set up in Item Manufacturing</Link></p>
                   )}
-                </div>
+                </div></MfgGate> : null}
                 <div className="grid gap-2 rounded-lg border border-border p-2 sm:grid-cols-[auto_1fr_1fr_auto]">
                   <select className={posInput} value={adj.kind} onChange={(e) => setAdj({ ...adj, kind: e.target.value })} aria-label="Adjustment type"><option value="adjust_in">Stock in (+)</option><option value="adjust_out">Stock out (−)</option><option value="damage">Damage (−)</option><option value="opening">Opening (+)</option></select>
                   <input className={posInput} value={adj.qty} inputMode="decimal" onChange={(e) => setAdj({ ...adj, qty: e.target.value })} placeholder={`Qty (${cur.unit})`} aria-label="Adjust qty" />

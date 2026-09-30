@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { AdminWorkspaceSettings } from "@/components/admin-workspace-settings";
+import { MfgPinSettings } from "@/components/mfg-pin-settings";
 import { Settings2 } from "lucide-react";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { Button } from "@/components/ui/button";
@@ -129,7 +130,7 @@ function AdminPage() {
             </div>
             {section === "dashboard" ? <StatsSection /> : null}
             {section === "users" ? <UsersSection /> : null}
-            {section === "settings" ? <AdminWorkspaceSettings /> : null}
+            {section === "settings" ? <><MfgPinSettings /><AdminWorkspaceSettings /></> : null}
             {section === "records" ? <RecordsSection /> : null}
             {section === "export" ? <ExportSection /> : null}
           </>
