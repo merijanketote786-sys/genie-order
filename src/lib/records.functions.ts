@@ -165,6 +165,8 @@ export type OrderRow = {
   qty: string | null;
   total: number | null;
   status: string | null;
+  paymentMethod: string | null;
+  codAmount: number | null;
   orderText: string;
   createdBy: string | null;
   createdAt: string;
@@ -184,7 +186,7 @@ export const listOrders = createServerFn({ method: "GET" })
     let query = supabase
       .from("orders")
       .select(
-        "id, order_number, customer_name, phone, city, product, qty, product_total, status, order_text, created_by, created_at",
+        "id, order_number, customer_name, phone, city, product, qty, product_total, status, payment_method, cod_amount, order_text, created_by, created_at",
       )
       .order("created_at", { ascending: false })
       .limit(data.limit ?? 200);
@@ -213,6 +215,8 @@ export const listOrders = createServerFn({ method: "GET" })
         qty: r.qty,
         total: r.product_total == null ? null : Number(r.product_total),
         status: r.status,
+        paymentMethod: r.payment_method ?? null,
+        codAmount: r.cod_amount == null ? null : Number(r.cod_amount),
         orderText: r.order_text,
         createdBy: r.created_by,
         createdAt: r.created_at,
