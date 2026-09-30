@@ -388,13 +388,13 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
 
               {adjOpen ? (
                 <div className="space-y-2 rounded-lg border border-primary p-2">
-                  <p className="text-xs font-semibold text-muted-foreground">Adjust balance — party ka opening / previous balance set karein (ledger ki shuruaat isi se hogi)</p>
+                  <p className="text-xs font-semibold text-muted-foreground">Adjust balance — set this party's opening / previous balance (the ledger starts from it)</p>
                   <div className="flex gap-2">
                     <Button type="button" size="sm" variant={adjDir === "receive" ? "default" : "outline"} onClick={() => setAdjDir("receive")}>To receive</Button>
                     <Button type="button" size="sm" variant={adjDir === "pay" ? "default" : "outline"} onClick={() => setAdjDir("pay")}>To pay</Button>
                   </div>
                   <div className="flex gap-2">
-                    <input className={inputCls} inputMode="decimal" value={adjAmt} onChange={(e) => setAdjAmt(e.target.value.replace(/[^\d.]/g, ""))} placeholder="Amount (0 = koi opening balance nahi)" aria-label="Opening balance" />
+                    <input className={inputCls} inputMode="decimal" value={adjAmt} onChange={(e) => setAdjAmt(e.target.value.replace(/[^\d.]/g, ""))} placeholder="Amount (0 = no opening balance)" aria-label="Opening balance" />
                     <Button type="button" size="sm" disabled={adjBusy} onClick={saveAdjust}>{adjBusy ? "Saving…" : "Save"}</Button>
                     <Button type="button" size="sm" variant="ghost" onClick={() => setAdjOpen(false)}>Cancel</Button>
                   </div>
