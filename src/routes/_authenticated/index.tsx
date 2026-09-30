@@ -128,6 +128,16 @@ function OrderChat() {
   }, [setMessages]);
 
 
+  // Composer text me COD/CC likha ho (Confirm se transfer ya khud) to Payment
+  // tool khud us status par set ho jata hai — save sahi payment ke saath hota hai.
+  useEffect(() => {
+    const d = detectOrderPayment(composerText);
+    if (!d.method) return;
+    setPaymentEnabled(true);
+    setPaymentMethod(d.method);
+    setCodAmount((prev) => (d.method === "CC" ? "" : d.codAmount || prev));
+  }, [composerText]);
+
   useEffect(() => {
     if (!hydratedRef.current) return;
     if (status === "streaming" || status === "submitted") return;
@@ -150,16 +160,28 @@ function OrderChat() {
     const text = messageText(last);
     if (text.length < 10 || savedRef.current.has(text)) return;
     savedRef.current.add(text);
+    // Pehle formatted order text se COD/CC detect karo, warna Payment tool ki manual state.
+    const detected = detectOrderPayment(text);
     const pay = paymentRef.current;
     const amount = Number(pay.cod.replace(/[^\d.]/g, ""));
+    const method = detected.method ?? (pay.enabled ? pay.method : undefined);
+    const detectedAmount =
+      method === "COD" && detected.method === "COD" && detected.codAmount
+        ? Number(detected.codAmount)
+        : 0;
+    const codAmount =
+      method === "COD"
+        ? detectedAmount > 0
+          ? detectedAmount
+          : pay.method === "COD" && pay.enabled && Number.isFinite(amount) && amount > 0
+            ? amount
+            : undefined
+        : undefined;
     saveOrder({
       data: {
         orderText: text,
-        paymentMethod: pay.enabled ? pay.method : undefined,
-        codAmount:
-          pay.enabled && pay.method === "COD" && Number.isFinite(amount) && amount > 0
-            ? amount
-            : undefined,
+        paymentMethod: method,
+        codAmount,
       },
     }).catch(() => {
       savedRef.current.delete(text);
