@@ -2,9 +2,9 @@
 // suppliers section and the Parties dialog both render this component.
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import { FileText, MoreVertical, Pencil, Trash2, UserPlus, Wallet, X } from "lucide-react";
+import { FileText, MoreVertical, Pencil, Scale, Trash2, UserPlus, Wallet, X } from "lucide-react";
 import { usePrintCenter } from "@/components/print-center";
-import { getCustomerLedger, getPartyStatementItems, listCustomerBalances } from "@/lib/ledger.functions";
+import { getCustomerLedger, getPartyStatementItems, listCustomerBalances, saveCustomerAccount } from "@/lib/ledger.functions";
 import { cancelDoc, deletePartyPayment, getPurchaseItems, getSupplierLedger, listSuppliers, partyPayment, saveSupplier } from "@/lib/business.functions";
 import { getSaleForEdit } from "@/lib/pos.functions";
 import { saveParty } from "@/lib/records.functions";
@@ -73,6 +73,12 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   const [to, setTo] = useState(today);
   const [stBusy, setStBusy] = useState(false);
   const [inc, setInc] = useState<Record<Opt, boolean>>(DEFAULT_INC);
+
+  // Adjust balance (opening balance set karna)
+  const [adjOpen, setAdjOpen] = useState(false);
+  const [adjDir, setAdjDir] = useState<"receive" | "pay">("receive");
+  const [adjAmt, setAdjAmt] = useState("");
+  const [adjBusy, setAdjBusy] = useState(false);
 
   const c = useQuery({ queryKey: ["customer-balances", "pos"], queryFn: () => listCustomerBalances({ data: { posOnly: true } }), enabled, staleTime: 15_000 });
   const s = useQuery({ queryKey: ["suppliers"], queryFn: () => listSuppliers(), enabled, staleTime: 15_000 });
