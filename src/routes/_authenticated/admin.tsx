@@ -130,7 +130,7 @@ function AdminPage() {
             </div>
             {section === "dashboard" ? <StatsSection /> : null}
             {section === "users" ? <UsersSection /> : null}
-            {section === "settings" ? <><MfgPinSettings /><AdminWorkspaceSettings /></> : null}
+            {section === "settings" ? <SettingsSection /> : null}
             {section === "records" ? <RecordsSection /> : null}
             {section === "export" ? <ExportSection /> : null}
           </>
@@ -347,6 +347,17 @@ function UsersSection() {
       <PasswordDialog user={pwUser} onClose={() => setPwUser(null)} />
       <CreateUserDialog open={showCreate} onClose={() => setShowCreate(false)} />
     </section>
+  );
+}
+
+function SettingsSection() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <MfgPinSettings />
+      <AdminWorkspaceSettings onAddUser={() => setOpen(true)} />
+      <CreateUserDialog open={open} onClose={() => setOpen(false)} />
+    </>
   );
 }
 
