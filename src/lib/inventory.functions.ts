@@ -215,7 +215,7 @@ export const getItemHistory = createServerFn({ method: "GET" })
         label: (p.doc_type === "return" ? "Purchase return" : "Purchase") + (p.status === "cancelled" ? " (cancelled)" : ""),
         qty: Number(r.qty), rate: Number(r.rate), party: p.supplier_name ?? "", doc: p.doc_number, store: "" });
     }
-    const moveLabel: Record<string, string> = { manufacture_in: "Manufactured", manufacture_out: "Used in manufacturing", transfer_in: "Transfer in", transfer_out: "Transfer out", adjust: "Stock adjustment", opening: "Opening stock" };
+    const moveLabel: Record<string, string> = { manufacture_in: "Manufactured", manufacture_out: "Used in manufacturing", transfer_in: "Transfer in", transfer_out: "Transfer out", adjust: "Stock adjustment", adjust_in: "Stock added", adjust_out: "Stock removed", opening: "Opening stock" };
     for (const m of (moves.data ?? []) as any[]) {
       rows.push({ date: m.created_at, kind: m.kind, label: moveLabel[m.kind] ?? m.kind.replace(/_/g, " "), qty: Number(m.qty), rate: null,
         party: m.note ?? "", doc: "", store: m.store_id ? storeName.get(m.store_id) ?? "" : "" });
