@@ -57,9 +57,11 @@ export const bulkUpdateProducts = createServerFn({ method: "POST" })
 
 export const adjustStock = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), qty: z.number().positive().max(1e7), kind: z.enum(["adjust_in", "adjust_out", "damage", "opening"]), note: z.string().max(300) }).parse(d))
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), qty: z.number().positive().max(1e7), kind: z.enum(["adjust_in", "adjust_out", "damage", "opening"]), note: z.string().max(300), storeId: z.string().uuid().optional() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await withStore((context.supabase as Sb).rpc("pos_adjust_stock", { _id: data.id, _qty: data.qty, _kind: data.kind, _note: data.note }));
+    const rpc = (context.supabase as Sb).rpc("pos_adjust_stock", { _id: data.id, _qty: data.qty, _kind: data.kind, _note: data.note });
+    const b = rpc as unknown as { setHeader?: (k: string, v: string) => typeof rpc };
+    const { error } = await (data.storeId && typeof b.setHeader === "function" ? b.setHeader("x-pos-store", data.storeId) : withStore(rpc));
     if (error) throw new Error("Failed to adjust stock");
     return { ok: true };
   });
