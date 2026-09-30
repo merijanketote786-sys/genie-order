@@ -156,6 +156,25 @@ export const listPosSales = createServerFn({ method: "GET" })
     };
   });
 
+/** Ek sale/return ka poora record (items + payments) — edit popup ke liye. */
+export const getSaleForEdit = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const { data: r, error } = await supabase
+      .from("pos_sales")
+      .select("id, doc_number, doc_type, status, payment_status, customer_name, customer_phone, subtotal, discount_total, tax_total, delivery, grand_total, paid_total, balance, notes, created_at, payload")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error || !r) throw new Error("Invoice not found");
+    const [{ data: items }, { data: pays }] = await Promise.all([
+      supabase.from("pos_sale_items").select("sale_id, name, sku, unit, qty, rate, discount, tax_percent, line_total, note").eq("sale_id", data.id),
+      supabase.from("pos_payments").select("sale_id, method, amount, kind, status").eq("sale_id", data.id).eq("status", "completed"),
+    ]);
+    return { sale: { ...r, items: items ?? [], payments: pays ?? [] } };
+  });
+
 /** Held bill wapas kholne par band (converted) mark karein. */
 export const closePosDoc = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

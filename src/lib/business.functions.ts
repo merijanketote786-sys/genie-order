@@ -76,19 +76,20 @@ export const getSupplierLedger = createServerFn({ method: "GET" })
     const [{ data: s }, { data: purs }, { data: pays }] = await Promise.all([
       sb.from("suppliers").select("name, opening_balance").eq("id", data.id).maybeSingle(),
       sb.from("purchases").select("id, doc_number, doc_type, status, grand_total, paid_total, created_at").eq("supplier_id", data.id).order("created_at"),
-      sb.from("pos_payments").select("amount, method, kind, note, created_at, status").eq("supplier_id", data.id).order("created_at"),
+      sb.from("pos_payments").select("id, amount, method, kind, note, created_at, status, purchase_id").eq("supplier_id", data.id).order("created_at"),
     ]);
-    type E = { date: string; ref: string; kind: string; debit: number; credit: number };
+    type E = { date: string; ref: string; kind: string; debit: number; credit: number; id: string; entity: "purchase" | "payment"; standalone: boolean };
     const rows: E[] = [];
     for (const p of purs ?? []) {
       if (p.status === "cancelled") continue;
-      if (p.doc_type === "purchase") rows.push({ date: p.created_at, ref: p.doc_number, kind: "Purchase", debit: 0, credit: Number(p.grand_total) });
-      else rows.push({ date: p.created_at, ref: p.doc_number, kind: "Purchase return", debit: Number(p.grand_total), credit: 0 });
+      if (p.doc_type === "purchase") rows.push({ date: p.created_at, ref: p.doc_number, kind: "Purchase", debit: 0, credit: Number(p.grand_total), id: p.id, entity: "purchase", standalone: true });
+      else rows.push({ date: p.created_at, ref: p.doc_number, kind: "Purchase return", debit: Number(p.grand_total), credit: 0, id: p.id, entity: "purchase", standalone: true });
     }
     for (const p of pays ?? []) {
       if (p.status !== "completed") continue;
-      if (p.kind === "purchase" || p.kind === "supplier_payment") rows.push({ date: p.created_at, ref: p.note || p.method, kind: p.kind === "purchase" ? `Paid (${p.method})` : `Payment (${p.method})`, debit: Number(p.amount), credit: 0 });
-      if (p.kind === "purchase_refund") rows.push({ date: p.created_at, ref: p.method, kind: "Refund received", debit: 0, credit: Number(p.amount) });
+      const standalone = !p.purchase_id;
+      if (p.kind === "purchase" || p.kind === "supplier_payment") rows.push({ date: p.created_at, ref: p.note || p.method, kind: p.kind === "purchase" ? `Paid (${p.method})` : `Payment (${p.method})`, debit: Number(p.amount), credit: 0, id: p.id, entity: "payment", standalone });
+      if (p.kind === "purchase_refund") rows.push({ date: p.created_at, ref: p.method, kind: "Refund received", debit: 0, credit: Number(p.amount), id: p.id, entity: "payment", standalone });
     }
     rows.sort((a, b) => a.date.localeCompare(b.date));
     let run = Number(s?.opening_balance ?? 0);
@@ -269,5 +270,24 @@ export const cancelDoc = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { error } = await withStore((context.supabase as Sb).rpc("pos_cancel_sale", { _id: data.id, _reason: data.reason }));
     if (error) throw new Error(friendlyDbError(error, "Failed to cancel."));
+    return { ok: true };
+  });
+
+/** Standalone party payment (receipt / payment out) delete — sirf admin. Bill se juri payments nahi. */
+export const deletePartyPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as Sb;
+    const { data: isAdmin } = await sb.rpc("pos_is_admin");
+    if (!isAdmin) throw new Error("Sirf admin payment delete kar sakta hai");
+    const { data: pay } = await sb.from("pos_payments").select("id, kind, sale_id, purchase_id").eq("id", data.id).maybeSingle();
+    if (!pay) throw new Error("Payment not found");
+    if (pay.sale_id || pay.purchase_id) throw new Error("Bill se juri payment delete nahi ho sakti — bill cancel karein");
+    if (!["receipt", "customer_payment_out", "supplier_payment", "supplier_receipt"].includes(pay.kind)) throw new Error("Ye payment delete nahi ho sakti");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("pos_payments").delete().eq("id", data.id);
+    if (error) throw new Error(friendlyDbError(error, "Failed to delete payment."));
+    await supabaseAdmin.from("audit_log").insert({ action: "delete", entity: "pos_payment", entity_id: data.id, details: { kind: pay.kind } }).then(() => null, () => null);
     return { ok: true };
   });
