@@ -27,7 +27,7 @@ export function MfgGate({ children, mode = "settings" }: { children: ReactNode; 
       <p className="text-sm text-muted-foreground">Ask the admin to enable manufacturing for your account.</p>
     </div>
   );
-  if (!data.hasPin || unlocked) return <>{children}</>;
+  if (!data?.hasPin || unlocked) return <>{children}</>;
   const submit = async () => {
     setBusy(true);
     try {

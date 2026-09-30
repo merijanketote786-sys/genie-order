@@ -52,7 +52,7 @@ export const manufactureProduct = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message || "Manufacturing failed");
     const { data: st } = await (context.supabase as Sb).rpc("pos_mfg_status");
     if (!(st as any)?.canSettings) return { ...(res as any), materialCost: 0, expenses: 0, unitCost: 0, hidden: true } as { qty: number; materialCost: number; expenses: number; unitCost: number; hidden?: boolean };
-    return res as { qty: number; materialCost: number; expenses: number; unitCost: number };
+    return res as { qty: number; materialCost: number; expenses: number; unitCost: number; hidden?: boolean };
   });
 
 export const getMfgStatus = createServerFn({ method: "GET" })

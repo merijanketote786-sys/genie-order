@@ -93,7 +93,7 @@ function InventoryPage() {
     if (!cur || !(qty > 0)) return toast.error("Enter quantity to manufacture");
     try {
       const r = await manufactureProduct({ data: { productId: cur.id, qty, note: "" } });
-      toast.success(`Manufactured ${r.qty} — unit cost ${rs(r.unitCost)}`); setMfgQty(""); refresh();
+      toast.success(r.hidden ? `Manufactured ${r.qty}` : `Manufactured ${r.qty} — unit cost ${rs(r.unitCost)}`); setMfgQty(""); refresh();
     } catch (e) { toast.error(e instanceof Error ? e.message : "Manufacturing failed"); }
   };
   const exportCsv = () => {
