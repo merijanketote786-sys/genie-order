@@ -14,7 +14,10 @@ Rules:
 - Order Number agar user ne diya ho to wahi use karo. Agar user ne na diya ho to neeche diya gaya AUTO ORDER NUMBER use karo; agar auto number available na ho to blank chhor do.
 - Phone number ko Pakistani local format me likho: 03000000000 (11 digits, 0 se start). Agar user ne country code ke sath diya ho (jaise +923001234567 ya 923001234567 ya +92 300 1234567), to country code (+92 ya 92) hata do aur uski jagah 0 laga do. Spaces, dashes ya koi bhi separator hatao — sirf 11 continuous digits.
 - Numbers (Product Total, Delivery, Advance) me sirf digits/currency rakho jaisa user ne diya.
-- Agar user ne payment status "cc" (cash on delivery / COD wali cc) mention ki ho, to Product Total, Delivery, aur Advance teeno fields me sirf "0" likho (chahe user ne koi bhi amount di ho).
+- Payment status sirf do qism ki hai: "CC" (credit card / prepaid / paid parcel) aur "COD" (cash on delivery). Dono ko kabhi mix na karo.
+- Sirf jab payment status "CC" ho, to Product Total, Delivery, aur Advance teeno fields me "0" likho.
+- Jab payment status "COD" ho to amounts BILKUL waisi hi rakho jaisi user ne di hain, kabhi 0 na karo. Agar Product Total na diya ho lekin "COD Amount" diya ho to Product Total me COD Amount likho.
+- Agar input me "Payment Status: ..." ya "COD Amount: ..." lines hon to unhein output ke aakhir me waisi hi alag lines me likh do (agar template me payment field na ho tab bhi).
 - Template variables ko extracted values se replace karo: {{order_number}}, {{name}}, {{phone}}, {{city}}, {{address}}, {{product}}, {{qty}}, {{product_total}}, {{delivery}}, {{advance}}, {{status}}. Variable token output mein kabhi na chhorna; missing value ho to uski jagah blank rakho.
 - Variables template mein kisi bhi text ya line ke andar ho sakte hain. Baqi text, labels, line order aur punctuation bilkul template jaisi rakho.
 - Response template ki pehli line se seedha start karo.`;

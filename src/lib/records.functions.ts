@@ -138,7 +138,10 @@ export const saveOrder = createServerFn({ method: "POST" })
         address: p.address || null,
         product: p.product || null,
         qty: p.qty || null,
-        product_total: p.productTotal,
+        product_total:
+          data.paymentMethod === "COD" && !Number(p.productTotal) && data.codAmount
+            ? data.codAmount
+            : p.productTotal,
         delivery: p.delivery || null,
         advance: p.advance || null,
         status: p.status || null,
