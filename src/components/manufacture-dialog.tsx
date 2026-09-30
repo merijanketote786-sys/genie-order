@@ -44,7 +44,7 @@ export function ManufactureDialog({ open, onOpenChange }: { open: boolean; onOpe
     setBusy(true);
     try {
       const r = await manufactureProduct({ data: { productId: pid, qty: n, note: "" } });
-      toast.success(`Manufactured ${r.qty} ${sel?.name ?? ""} — unit cost ${rs(r.unitCost)}`);
+      toast.success(r.hidden ? `Manufactured ${r.qty} ${sel?.name ?? ""}` : `Manufactured ${r.qty} ${sel?.name ?? ""} — unit cost ${rs(r.unitCost)}`);
       ["store-stock", "inventory", "stock-ledger", "products", "pos-products", "products-lite", "pos-dashboard"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
       setQty(""); setPid(null); setQ(""); onOpenChange(false);
     } catch (e) { toast.error(e instanceof Error ? e.message : "Manufacturing failed"); } finally { setBusy(false); }
@@ -57,7 +57,7 @@ export function ManufactureDialog({ open, onOpenChange }: { open: boolean; onOpe
           <DialogTitle className="flex items-center gap-2"><Factory className="size-5" /> Manufacture product</DialogTitle>
           <DialogDescription>Only products with a manufacturing setup are listed. Stock is added to the selected store.</DialogDescription>
         </DialogHeader>
-        <MfgGate>
+        <MfgGate mode="use">
         <div className="flex items-center justify-between gap-2 text-sm"><span className="text-muted-foreground">Store</span><StoreSwitcher /></div>
         {!sel ? (
           <div className="space-y-2">
@@ -88,7 +88,7 @@ export function ManufactureDialog({ open, onOpenChange }: { open: boolean; onOpe
             <div className="flex items-center justify-between rounded-md border border-border p-3">
               <div>
                 <p className="font-semibold">{sel.name}</p>
-                <p className="text-xs text-muted-foreground">Setup makes {recipe?.outputQty} {sel.unit} · {recipe?.materials.length ?? 0} raw materials · Stock {storeStock(sel.id) ?? sel.stock}</p>
+                <p className="text-xs text-muted-foreground">Setup makes {recipe?.outputQty} {sel.unit}{recipe?.materials.length ? ` · ${recipe.materials.length} raw materials` : ""} · Stock {storeStock(sel.id) ?? sel.stock}</p>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setPid(null)}>Change</Button>
             </div>

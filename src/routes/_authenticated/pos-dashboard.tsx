@@ -96,7 +96,7 @@ function PosDashboardPage() {
           {QUICK.filter((x) => can(x.perm)).map((x) => (
             <Button key={x.to} asChild variant="outline" size="sm"><Link to={x.to}><x.icon className="size-4" /> {x.label}</Link></Button>
           ))}
-          {mfg?.isAdmin ? <Button variant="outline" size="sm" onClick={() => setMfgOpen(true)}><Factory className="size-4" /> Manufacture</Button> : null}
+          {mfg?.canManufacture ? <Button variant="outline" size="sm" onClick={() => setMfgOpen(true)}><Factory className="size-4" /> Manufacture</Button> : null}
           <ManufactureDialog open={mfgOpen} onOpenChange={setMfgOpen} />
           <Button variant="outline" size="sm" onClick={() => setPartiesOpen(true)}><PartiesIcon className="size-4" /> Parties</Button>
           <PartiesDialog open={partiesOpen} onOpenChange={setPartiesOpen} />

@@ -46,7 +46,8 @@ function InventoryPage() {
   const [bulk, setBulk] = useState(false);
   const [mfgQty, setMfgQty] = useState("");
   const { data: mfg } = useMfgStatus();
-  const mfgAdmin = !!mfg?.isAdmin;
+  const mfgAdmin = !!mfg?.canManufacture;
+  const mfgSetup = !!mfg?.canSettings;
   const { data: rec } = useQuery({ queryKey: ["recipes"], queryFn: () => listRecipes() });
   const hasRecipe = useMemo(() => new Set((rec?.recipes ?? []).map((r) => r.productId)), [rec]);
   const { data: led } = useQuery({ queryKey: ["stock-ledger", sel], queryFn: () => getStockLedger({ data: { id: sel! } }), enabled: !!sel });
@@ -164,16 +165,16 @@ function InventoryPage() {
                   <F k="minStock" label="Min stock (alert)" dec /><F k="taxPercent" label="Tax %" dec />
                 </div>
                 <Button onClick={saveEdit}>Details save</Button>
-                {mfgAdmin ? <MfgGate><div id="mfg-box" className="space-y-2 rounded-lg border border-primary/40 p-2">
+                {mfgAdmin ? <MfgGate mode="use"><div id="mfg-box" className="space-y-2 rounded-lg border border-primary/40 p-2">
                   <p className="flex items-center gap-2 text-sm font-semibold text-foreground"><Factory className="size-4 text-primary" /> Manufacture</p>
                   {hasRecipe.has(cur.id) ? (
                     <div className="flex flex-wrap items-center gap-2">
                       <input className={`${posInput} w-36`} inputMode="decimal" placeholder={`Qty (${cur.unit})`} value={mfgQty} onChange={(e) => setMfgQty(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void doManufacture(); }} aria-label="Quantity to manufacture" />
                       <Button onClick={doManufacture}><Factory /> Manufacture</Button>
-                      <Link to="/item-manufacturing" search={{ product: cur.id }} className="text-xs text-primary underline">Edit setup</Link>
+                      {mfgSetup ? <Link to="/item-manufacturing" search={{ product: cur.id }} className="text-xs text-primary underline">Edit setup</Link> : null}
                     </div>
                   ) : (
-                    <p className="text-xs text-muted-foreground">No raw materials set. <Link to="/item-manufacturing" search={{ product: cur.id }} className="text-primary underline">Set up in Item Manufacturing</Link></p>
+                    <p className="text-xs text-muted-foreground">No manufacturing setup for this item yet.{mfgSetup ? <> <Link to="/item-manufacturing" search={{ product: cur.id }} className="text-primary underline">Set up in Item Manufacturing</Link></> : " Ask the admin to set it up."}</p>
                   )}
                 </div></MfgGate> : null}
                 <div className="grid gap-2 rounded-lg border border-border p-2 sm:grid-cols-[auto_1fr_1fr_auto]">
