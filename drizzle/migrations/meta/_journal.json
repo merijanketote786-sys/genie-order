@@ -260,6 +260,13 @@
       "when": 1790602626319,
       "tag": "0036_customers_pos_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1790774808160,
+      "tag": "0037_party_payment_in_out",
+      "breakpoints": true
     }
   ]
 }
