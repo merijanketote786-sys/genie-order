@@ -17,7 +17,7 @@ export const listSuppliers = createServerFn({ method: "GET" })
     const [{ data: sups }, { data: purs }, { data: pays }] = await Promise.all([
       sb.from("suppliers").select("id, name, phone, address, opening_balance, is_active").eq("is_active", true).order("name"),
       sb.from("purchases").select("supplier_id, doc_type, grand_total, paid_total").neq("status", "cancelled"),
-      sb.from("pos_payments").select("supplier_id, amount").eq("kind", "supplier_payment").eq("status", "completed"),
+      sb.from("pos_payments").select("supplier_id, amount, kind, purchase_id").in("kind", ["supplier_payment", "purchase_refund"]).eq("status", "completed"),
     ]);
     const bal = new Map<string, number>();
     for (const p of purs ?? []) {
@@ -25,7 +25,11 @@ export const listSuppliers = createServerFn({ method: "GET" })
       const due = Number(p.grand_total) - Number(p.paid_total);
       bal.set(p.supplier_id, (bal.get(p.supplier_id) ?? 0) + (p.doc_type === "purchase" ? due : -due));
     }
-    for (const p of pays ?? []) if (p.supplier_id) bal.set(p.supplier_id, (bal.get(p.supplier_id) ?? 0) - Number(p.amount));
+    for (const p of (pays ?? []) as any[]) {
+      if (!p.supplier_id) continue;
+      if (p.kind === "supplier_payment") bal.set(p.supplier_id, (bal.get(p.supplier_id) ?? 0) - Number(p.amount));
+      else if (!p.purchase_id) bal.set(p.supplier_id, (bal.get(p.supplier_id) ?? 0) + Number(p.amount));
+    }
     type Sup = { id: string; name: string; phone: string; address: string; openingBalance: number; balance: number };
     return {
       suppliers: ((sups ?? []) as any[]).map((s: any): Sup => ({
@@ -56,7 +60,7 @@ export const saveSupplier = createServerFn({ method: "POST" })
 export const partyPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ kind: z.enum(["supplier_payment", "receipt"]), partyId: z.string().uuid(), amount: z.number().positive().max(1e9), method: z.string().max(30), note: z.string().max(300).optional(), clientRef: z.string().uuid().optional() }).parse(d),
+    z.object({ kind: z.enum(["supplier_payment", "receipt", "customer_payment_out", "supplier_receipt"]), partyId: z.string().uuid(), amount: z.number().positive().max(1e9), method: z.string().max(30), note: z.string().max(300).optional(), clientRef: z.string().uuid().optional() }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const { error } = await (context.supabase as Sb).rpc("pos_party_payment", { _kind: data.kind, _party: data.partyId, _amount: data.amount, _method: data.method, _note: data.note ?? "", _ref: data.clientRef ?? null });
