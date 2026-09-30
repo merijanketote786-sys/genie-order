@@ -2,15 +2,17 @@
 // suppliers section and the Parties dialog both render this component.
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import { FileText, Pencil, UserPlus, Wallet } from "lucide-react";
+import { FileText, MoreVertical, Pencil, Trash2, UserPlus, Wallet, X } from "lucide-react";
 import { usePrintCenter } from "@/components/print-center";
 import { getCustomerLedger, getPartyStatementItems, listCustomerBalances } from "@/lib/ledger.functions";
-import { getSupplierLedger, listSuppliers, partyPayment, saveSupplier } from "@/lib/business.functions";
+import { cancelDoc, deletePartyPayment, getPurchaseItems, getSupplierLedger, listSuppliers, partyPayment, saveSupplier } from "@/lib/business.functions";
+import { getSaleForEdit } from "@/lib/pos.functions";
 import { saveParty } from "@/lib/records.functions";
 import { usePosAccess } from "@/components/pos-access";
 import { rs } from "@/components/pos-subnav";
 import { newRef } from "@/lib/pos-errors";
 import { Button } from "@/components/ui/button";
+import { PosPage } from "@/routes/_authenticated/pos";
 import { toast } from "sonner";
 
 export type Party = { key: string; name: string; phone: string; kind: string; balance: number; customerId?: string; supplierId?: string; address?: string };
@@ -147,7 +149,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   };
 
   // Combined ledger: customer rows (receivable) minus supplier rows (payable).
-  type Row = { date: string; kind: string; ref: string; debit: number; credit: number; balance: number };
+  type Row = { date: string; kind: string; ref: string; debit: number; credit: number; balance: number; id: string; entity: "sale" | "purchase" | "payment"; standalone: boolean };
   const ledgerRows: Row[] = (() => {
     const all = [...(cl.data?.rows ?? []), ...(sl.data?.rows ?? [])].sort((a, b) => a.date.localeCompare(b.date));
     let run = r2(Number(cl.data?.opening ?? 0) - Number(sl.data?.opening ?? 0));
@@ -155,6 +157,63 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   })();
   const ledgerOpening = r2(Number(cl.data?.opening ?? 0) - Number(sl.data?.opening ?? 0));
   const ledgerLoading = (sel?.customerId && cl.isLoading) || (sel?.supplierId && sl.isLoading);
+
+  // Transaction open / edit / delete
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [txBusy, setTxBusy] = useState(false);
+  const [editSale, setEditSale] = useState(false);
+
+  const refreshLedger = () =>
+    Promise.all(["customer-balances", "suppliers", "party-ledger-c", "party-ledger-s", "pos-dashboard", "pos-sales"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
+
+  const openEditSale = async (r: Row) => {
+    setTxBusy(true);
+    try {
+      const { sale: s } = await getSaleForEdit({ data: { id: r.id } });
+      const cart = s.items.map((i: any, idx: number) => ({ key: `conv-${s.id}-${idx}`, name: i.name, unit: i.unit ?? "pcs", rateType: "custom", price: Number(i.rate), qty: Number(i.qty), discount: Number(i.discount), taxPercent: Number(i.tax_percent), sku: i.sku ?? undefined, note: i.note ?? undefined }));
+      const payload = JSON.stringify({ cart, notes: s.notes ?? "", customerName: s.customer_name ?? "", customerPhone: s.customer_phone ?? "", delivery: String(Number(s.delivery) || "") });
+      sessionStorage.setItem("pos-open-doc", JSON.stringify({ id: s.id, doc_number: s.doc_number, doc_type: s.doc_type, customer_name: s.customer_name, customer_phone: s.customer_phone, grand_total: s.grand_total, created_at: s.created_at, payload, status: s.status }));
+      setEditSale(true);
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Invoice could not be opened"); }
+    setTxBusy(false);
+  };
+
+  const previewPurchase = async (r: Row) => {
+    setTxBusy(true);
+    try {
+      const { purchase, items } = await getPurchaseItems({ data: { id: r.id } });
+      pc.preview({
+        kind: "pos", title: r.kind, number: purchase?.doc_number ?? r.ref, date: new Date(r.date),
+        party: { label: "Supplier", name: purchase?.supplier_name ?? sel?.name ?? "", phone: sel?.phone ?? "" },
+        lines: items.map((i) => ({ name: i.name, unit: i.unit || undefined, qty: i.qty, rate: i.rate, discount: i.discount, taxPct: i.taxPercent, total: r2(i.qty * i.rate - i.discount) })),
+        totals: [{ label: "Grand Total", value: r.debit || r.credit, bold: true }],
+      }, true);
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not be opened"); }
+    setTxBusy(false);
+  };
+
+  const deleteSale = async (r: Row) => {
+    const reason = window.prompt(`Cancel ${r.ref}? Reason (optional):`);
+    if (reason === null) return;
+    setTxBusy(true);
+    try { await cancelDoc({ data: { id: r.id, reason } }); toast.success(`${r.ref} cancelled`); await refreshLedger(); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Cancel failed"); }
+    setTxBusy(false);
+  };
+
+  const deletePayment = async (r: Row) => {
+    if (!window.confirm(`Delete this payment of ${rs(r.debit || r.credit)}? This cannot be undone.`)) return;
+    setTxBusy(true);
+    try { await deletePartyPayment({ data: { id: r.id } }); toast.success("Payment deleted"); await refreshLedger(); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Delete failed"); }
+    setTxBusy(false);
+  };
+
+  const openRow = (r: Row) => {
+    if (txBusy) return;
+    if (r.entity === "sale") void openEditSale(r);
+    else if (r.entity === "purchase") void previewPurchase(r);
+  };
 
   const openStatement = async () => {
     const p = sel; if (!p) return;
