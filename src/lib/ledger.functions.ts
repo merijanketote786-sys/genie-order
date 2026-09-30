@@ -62,7 +62,7 @@ export const getCustomerLedger = createServerFn({ method: "GET" })
     for (const p of flows.pays) {
       const v = Number(p.amount);
       if (p.direction === "in") rows.push({ date: p.created_at, kind: p.kind === "receipt" ? `Payment mili (${p.method})` : `Bill par paid (${p.method})`, ref: p.note ?? "", debit: 0, credit: v });
-      else rows.push({ date: p.created_at, kind: `Refund diya (${p.method})`, ref: p.note ?? "", debit: v, credit: 0 });
+      else rows.push({ date: p.created_at, kind: `Payment out (${p.method})`, ref: p.note ?? "", debit: v, credit: 0 });
     }
     rows.sort((a, b) => a.date.localeCompare(b.date));
     let run = Number(c?.opening_balance ?? 0);
