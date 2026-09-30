@@ -113,6 +113,22 @@ function HistoryPage() {
                   <span className="block font-display text-base font-bold text-foreground">
                     {money(o.total)}
                   </span>
+                  {o.paymentMethod ? (
+                    <span
+                      className={`mt-0.5 inline-block rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                        o.paymentMethod === "CC"
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                          : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                      }`}
+                    >
+                      {o.paymentMethod}
+                      {o.paymentMethod === "COD" && o.codAmount
+                        ? ` · ${money(o.codAmount)}`
+                        : o.paymentMethod === "CC"
+                          ? " · Paid"
+                          : ""}
+                    </span>
+                  ) : null}
                   <span className="block text-[11px] text-muted-foreground">{o.status || ""}</span>
                 </span>
               </button>
