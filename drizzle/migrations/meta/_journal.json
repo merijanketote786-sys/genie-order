@@ -281,6 +281,13 @@
       "when": 1790791463970,
       "tag": "0039_mfg_admin_pin",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1790792743325,
+      "tag": "0040_pos_member_custom_perms",
+      "breakpoints": true
     }
   ]
 }
