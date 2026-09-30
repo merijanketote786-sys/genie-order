@@ -10,9 +10,10 @@ export function SignOutButton() {
 
   const signOut = async () => {
     await queryClient.cancelQueries();
-    queryClient.clear();
+    // Leave protected screens first so no mounted query refetches without a session
+    await navigate({ to: "/auth", replace: true });
     await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
+    queryClient.clear();
   };
 
   if (import.meta.env.VITE_OFFLINE === "1") return null;
