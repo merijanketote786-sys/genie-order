@@ -1,7 +1,8 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { usePosAccess } from "@/components/pos-access";
+import { Button } from "@/components/ui/button";
 import type { PosPerm } from "@/lib/pos-access.functions";
-import { LayoutDashboard, Landmark, Settings2, BarChart3, Boxes, BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users, FileCheck2 } from "lucide-react";
+import { LayoutDashboard, Landmark, Settings2, BarChart3, Boxes, BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users, FileCheck2, ArrowLeft } from "lucide-react";
 
 const ITEMS = [
   { to: "/pos-dashboard", label: "Dashboard", icon: LayoutDashboard, perm: "view_pos" },
@@ -19,24 +20,35 @@ const ITEMS = [
   { to: "/pos-settings", label: "POS Settings", icon: Settings2, perm: "view_pos" },
 ] as const satisfies ReadonlyArray<{ to: string; label: string; icon: unknown; perm: PosPerm }>;
 
-/** Quick navigation within the POS module. */
-export function PosSubnav() {
+/** Shared POS navigation, displayed in the app shell rather than on every page. */
+export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { can } = usePosAccess();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   return (
-    <nav className="flex gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1">
-      {ITEMS.filter((i) => can(i.perm)).map((i) => (
-        <Link
-          key={i.to}
-          to={i.to}
-          className="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-          activeProps={{ className: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground" }}
-        >
-          <i.icon className="size-4" /> {i.label}
-        </Link>
-      ))}
-    </nav>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-4" aria-label="POS navigation">
+        <p className="mb-3 px-3 text-[10px] font-bold uppercase text-sidebar-muted">POS</p>
+        {ITEMS.filter((i) => can(i.perm)).map((i) => {
+          const active = pathname === i.to;
+          return (
+            <Link key={i.to} to={i.to} onClick={onNavigate} aria-current={active ? "page" : undefined}
+              className={`flex min-h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold transition-colors ${active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-muted hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"}`}>
+              <i.icon className="size-4 shrink-0" /> {i.label}
+            </Link>
+          );
+        })}
+      </nav>
+      <div className="border-t border-sidebar-border p-3">
+        <Button asChild variant="ghost" className="w-full justify-start text-sidebar-foreground">
+          <Link to="/dashboard" onClick={onNavigate}><ArrowLeft className="size-4" /> Workspace</Link>
+        </Button>
+      </div>
+    </div>
   );
 }
+
+/** Kept for existing POS pages; the shell now renders their navigation once. */
+export function PosSubnav() { return null; }
 
 export const posInput = "h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
 export const PAY_OPTS = ["Cash", "Bank", "JazzCash", "Easypaisa", "Card", "Other"];

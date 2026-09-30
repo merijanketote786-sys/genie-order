@@ -11,3 +11,4 @@
 - [x] Sale Return: optional original bill, POS product dropdown and staged entry, atomic bill-free refund/stock posting
 - [x] Item Manufacturing: per-product raw materials + expenses setup, cost per unit, Manufacture button deducts raw stock
 - [x] COD/CC payment status correctly saved when order confirmed and transferred to Orders (auto-detect on Order page + History shows COD/CC badge)
+- [x] Move POS section links into a dedicated POS side menu on desktop and mobile
