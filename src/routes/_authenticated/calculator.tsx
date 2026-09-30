@@ -73,6 +73,7 @@ function CalculatorPage() {
       title="Courier Rate Calculator"
       subtitle="Full breakdown of parcel charges"
       active="/calculator"
+      wide
     >
       <div className="min-h-0 flex-1 overflow-y-auto pb-6">
         <WorkspaceHeader

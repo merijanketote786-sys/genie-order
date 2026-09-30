@@ -83,7 +83,7 @@ function AccountingPage() {
   const ex = useExport();
 
   if (!can("view_accounting")) {
-    return <AppShell title="Accounting" subtitle="Double-entry books" active="/accounting"><p className="p-6 text-sm text-muted-foreground">You don't have permission to view accounting.</p></AppShell>;
+    return <AppShell title="Accounting" subtitle="Double-entry books" active="/accounting" wide><p className="p-6 text-sm text-muted-foreground">You don't have permission to view accounting.</p></AppShell>;
   }
   const accounts = base.data?.accounts ?? [];
   return (

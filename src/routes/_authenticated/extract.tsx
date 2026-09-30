@@ -221,6 +221,7 @@ function ExtractChat() {
       active="/extract"
       onClear={handleClear}
       showClear={messages.length > 0}
+      wide
     >
       <WorkspaceHeader
         icon={FileText}

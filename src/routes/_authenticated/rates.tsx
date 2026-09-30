@@ -127,6 +127,7 @@ function RatesPage() {
       title="Staff Rate List"
       subtitle="Type the item name → rate + quantity"
       active="/rates"
+      wide
     >
       <WorkspaceHeader
         icon={Tag}
