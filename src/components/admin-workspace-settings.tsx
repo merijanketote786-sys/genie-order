@@ -9,16 +9,27 @@ import {
   saveWorkspaceSettings,
 } from "@/lib/settings.functions";
 import { listAppUsers } from "@/lib/admin.functions";
+import { listPosMembers, setPosMemberRole, POS_ROLES } from "@/lib/pos-access.functions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Loader2, Save, SlidersHorizontal } from "lucide-react";
+import { Building2, Loader2, Save, SlidersHorizontal, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-export function AdminWorkspaceSettings() {
+export function AdminWorkspaceSettings({ onAddUser }: { onAddUser?: () => void } = {}) {
   const qc = useQueryClient();
   const ws = useQuery({ queryKey: ["workspace-settings"], queryFn: () => getWorkspaceSettings() });
   const users = useQuery({ queryKey: ["admin-users"], queryFn: () => listAppUsers() });
   const members = useQuery({ queryKey: ["member-sections"], queryFn: () => listMemberSections() });
+  const posMembers = useQuery({ queryKey: ["pos-members"], queryFn: () => listPosMembers() });
+  const posRoleOf = (id: string) => posMembers.data?.members.find((m) => m.id === id)?.role;
+  const setRole = useMutation({
+    mutationFn: (v: { userId: string; role: (typeof POS_ROLES)[number] }) => setPosMemberRole({ data: v }),
+    onSuccess: () => {
+      toast.success("POS role saved");
+      void qc.invalidateQueries({ queryKey: ["pos-members"] });
+    },
+    onError: () => toast.error("Could not save POS role"),
+  });
 
   const [form, setForm] = useState({
     businessName: "",
@@ -179,13 +190,20 @@ export function AdminWorkspaceSettings() {
       </div>
 
       <div className="glass-panel space-y-3 rounded-2xl p-4">
-        <div className="flex items-center gap-2">
-          <SlidersHorizontal className="size-4 text-primary" />
-          <h3 className="font-display text-sm font-bold">Which sections each user can see</h3>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal className="size-4 text-primary" />
+            <h3 className="font-display text-sm font-bold">Users and feature access</h3>
+          </div>
+          {onAddUser ? (
+            <Button size="sm" className="gap-1.5" onClick={onAddUser}>
+              <UserPlus className="size-4" /> Add user
+            </Button>
+          ) : null}
         </div>
         <p className="text-xs text-muted-foreground">
-          When all buttons are on, the user sees the whole app. Any section you turn off
-          will be hidden from that user.
+          Add as many users as you need. Turn sections on or off for each user, and choose their POS
+          role to control what they can do inside POS.
         </p>
 
         {users.isLoading ? (
@@ -196,10 +214,32 @@ export function AdminWorkspaceSettings() {
           <div className="space-y-3">
             {(users.data?.users ?? []).map((u) => {
               const allowed = sectionsFor(u.id);
+              const posRole = posRoleOf(u.id);
               return (
                 <div key={u.id} className="rounded-xl border border-border bg-card p-3">
-                  <p className="truncate text-sm font-semibold">{u.fullName || u.email}</p>
-                  <p className="truncate text-[11px] text-muted-foreground">{u.email}</p>
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{u.fullName || u.email}</p>
+                      <p className="truncate text-[11px] text-muted-foreground">{u.email}</p>
+                    </div>
+                    {posRole === "admin" ? (
+                      <span className="rounded-md bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">POS: Admin (full access)</span>
+                    ) : (
+                      <label className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
+                        POS role
+                        <select
+                          value={posRole ?? "manager"}
+                          onChange={(e) => setRole.mutate({ userId: u.id, role: e.target.value as (typeof POS_ROLES)[number] })}
+                          className="h-8 rounded-md border border-border bg-background px-2 text-xs capitalize text-foreground"
+                          aria-label={`POS role for ${u.email}`}
+                        >
+                          {POS_ROLES.map((r) => (
+                            <option key={r} value={r} className="capitalize">{r}</option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                  </div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {APP_SECTIONS.map((s) => {
                       const on = allowed.length === 0 || allowed.includes(s.key);
