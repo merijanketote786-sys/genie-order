@@ -88,7 +88,7 @@ export const getSupplierLedger = createServerFn({ method: "GET" })
     for (const p of pays ?? []) {
       if (p.status !== "completed") continue;
       if (p.kind === "purchase" || p.kind === "supplier_payment") rows.push({ date: p.created_at, ref: p.note || p.method, kind: p.kind === "purchase" ? `Paid (${p.method})` : `Payment (${p.method})`, debit: Number(p.amount), credit: 0 });
-      if (p.kind === "purchase_refund") rows.push({ date: p.created_at, ref: p.method, kind: "Refund mila", debit: 0, credit: Number(p.amount) });
+      if (p.kind === "purchase_refund") rows.push({ date: p.created_at, ref: p.method, kind: "Refund received", debit: 0, credit: Number(p.amount) });
     }
     rows.sort((a, b) => a.date.localeCompare(b.date));
     let run = Number(s?.opening_balance ?? 0);
