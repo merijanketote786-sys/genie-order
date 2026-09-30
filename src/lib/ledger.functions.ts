@@ -17,7 +17,7 @@ function payloadCharges(payload: unknown): number {
 
 async function customerFlows(sb: Sb, customerId?: string) {
   let s = sb.from("pos_sales").select("id, customer_id, doc_type, doc_number, grand_total, payload, created_at").in("doc_type", ["sale", "return"]).neq("status", "cancelled").not("customer_id", "is", null);
-  let p = sb.from("pos_payments").select("customer_id, kind, direction, method, amount, note, created_at").eq("status", "completed").not("customer_id", "is", null);
+  let p = sb.from("pos_payments").select("id, customer_id, kind, direction, method, amount, note, created_at, sale_id").eq("status", "completed").not("customer_id", "is", null);
   if (customerId) { s = s.eq("customer_id", customerId); p = p.eq("customer_id", customerId); }
   const [{ data: sales }, { data: pays }] = await Promise.all([s.limit(20000), p.limit(20000)]);
   return { sales: (sales ?? []) as any[], pays: (pays ?? []) as any[] };
@@ -56,13 +56,14 @@ export const getCustomerLedger = createServerFn({ method: "GET" })
       sb.from("customers").select("name, phone, city, address, opening_balance, credit_limit").eq("id", data.id).maybeSingle(),
       customerFlows(sb, data.id),
     ]);
-    type Row = { date: string; kind: string; ref: string; debit: number; credit: number };
+    type Row = { date: string; kind: string; ref: string; debit: number; credit: number; id: string; entity: "sale" | "payment"; standalone: boolean };
     const rows: Row[] = [];
-    for (const s of flows.sales) { const v = r2(Number(s.grand_total) - payloadCharges(s.payload)); rows.push(s.doc_type === "sale" ? { date: s.created_at, kind: "Sale invoice", ref: s.doc_number, debit: v, credit: 0 } : { date: s.created_at, kind: "Sale return", ref: s.doc_number, debit: 0, credit: v }); }
+    for (const s of flows.sales) { const v = r2(Number(s.grand_total) - payloadCharges(s.payload)); rows.push(s.doc_type === "sale" ? { date: s.created_at, kind: "Sale invoice", ref: s.doc_number, debit: v, credit: 0, id: s.id, entity: "sale", standalone: true } : { date: s.created_at, kind: "Sale return", ref: s.doc_number, debit: 0, credit: v, id: s.id, entity: "sale", standalone: true }); }
     for (const p of flows.pays) {
       const v = Number(p.amount);
-      if (p.direction === "in") rows.push({ date: p.created_at, kind: p.kind === "receipt" ? `Payment received (${p.method})` : `Paid on bill (${p.method})`, ref: p.note ?? "", debit: 0, credit: v });
-      else rows.push({ date: p.created_at, kind: `Payment out (${p.method})`, ref: p.note ?? "", debit: v, credit: 0 });
+      const standalone = !p.sale_id;
+      if (p.direction === "in") rows.push({ date: p.created_at, kind: p.kind === "receipt" ? `Payment received (${p.method})` : `Paid on bill (${p.method})`, ref: p.note ?? "", debit: 0, credit: v, id: p.id, entity: "payment", standalone });
+      else rows.push({ date: p.created_at, kind: `Payment out (${p.method})`, ref: p.note ?? "", debit: v, credit: 0, id: p.id, entity: "payment", standalone });
     }
     rows.sort((a, b) => a.date.localeCompare(b.date));
     let run = Number(c?.opening_balance ?? 0);

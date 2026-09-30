@@ -2,15 +2,17 @@
 // suppliers section and the Parties dialog both render this component.
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import { FileText, Pencil, UserPlus, Wallet } from "lucide-react";
+import { FileText, MoreVertical, Pencil, Trash2, UserPlus, Wallet, X } from "lucide-react";
 import { usePrintCenter } from "@/components/print-center";
 import { getCustomerLedger, getPartyStatementItems, listCustomerBalances } from "@/lib/ledger.functions";
-import { getSupplierLedger, listSuppliers, partyPayment, saveSupplier } from "@/lib/business.functions";
+import { cancelDoc, deletePartyPayment, getPurchaseItems, getSupplierLedger, listSuppliers, partyPayment, saveSupplier } from "@/lib/business.functions";
+import { getSaleForEdit } from "@/lib/pos.functions";
 import { saveParty } from "@/lib/records.functions";
 import { usePosAccess } from "@/components/pos-access";
 import { rs } from "@/components/pos-subnav";
 import { newRef } from "@/lib/pos-errors";
 import { Button } from "@/components/ui/button";
+import { PosPage } from "@/routes/_authenticated/pos";
 import { toast } from "sonner";
 
 export type Party = { key: string; name: string; phone: string; kind: string; balance: number; customerId?: string; supplierId?: string; address?: string };
@@ -147,7 +149,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   };
 
   // Combined ledger: customer rows (receivable) minus supplier rows (payable).
-  type Row = { date: string; kind: string; ref: string; debit: number; credit: number; balance: number };
+  type Row = { date: string; kind: string; ref: string; debit: number; credit: number; balance: number; id: string; entity: "sale" | "purchase" | "payment"; standalone: boolean };
   const ledgerRows: Row[] = (() => {
     const all = [...(cl.data?.rows ?? []), ...(sl.data?.rows ?? [])].sort((a, b) => a.date.localeCompare(b.date));
     let run = r2(Number(cl.data?.opening ?? 0) - Number(sl.data?.opening ?? 0));
@@ -155,6 +157,63 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   })();
   const ledgerOpening = r2(Number(cl.data?.opening ?? 0) - Number(sl.data?.opening ?? 0));
   const ledgerLoading = (sel?.customerId && cl.isLoading) || (sel?.supplierId && sl.isLoading);
+
+  // Transaction open / edit / delete
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [txBusy, setTxBusy] = useState(false);
+  const [editSale, setEditSale] = useState(false);
+
+  const refreshLedger = () =>
+    Promise.all(["customer-balances", "suppliers", "party-ledger-c", "party-ledger-s", "pos-dashboard", "pos-sales"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
+
+  const openEditSale = async (r: Row) => {
+    setTxBusy(true);
+    try {
+      const { sale: s } = await getSaleForEdit({ data: { id: r.id } });
+      const cart = s.items.map((i: any, idx: number) => ({ key: `conv-${s.id}-${idx}`, name: i.name, unit: i.unit ?? "pcs", rateType: "custom", price: Number(i.rate), qty: Number(i.qty), discount: Number(i.discount), taxPercent: Number(i.tax_percent), sku: i.sku ?? undefined, note: i.note ?? undefined }));
+      const payload = JSON.stringify({ cart, notes: s.notes ?? "", customerName: s.customer_name ?? "", customerPhone: s.customer_phone ?? "", delivery: String(Number(s.delivery) || "") });
+      sessionStorage.setItem("pos-open-doc", JSON.stringify({ id: s.id, doc_number: s.doc_number, doc_type: s.doc_type, customer_name: s.customer_name, customer_phone: s.customer_phone, grand_total: s.grand_total, created_at: s.created_at, payload, status: s.status }));
+      setEditSale(true);
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Invoice could not be opened"); }
+    setTxBusy(false);
+  };
+
+  const previewPurchase = async (r: Row) => {
+    setTxBusy(true);
+    try {
+      const { purchase, items } = await getPurchaseItems({ data: { id: r.id } });
+      pc.preview({
+        kind: "pos", title: r.kind, number: purchase?.doc_number ?? r.ref, date: new Date(r.date),
+        party: { label: "Supplier", name: purchase?.supplier_name ?? sel?.name ?? "", phone: sel?.phone ?? "" },
+        lines: items.map((i) => ({ name: i.name, unit: i.unit || undefined, qty: i.qty, rate: i.rate, discount: i.discount, taxPct: i.taxPercent, total: r2(i.qty * i.rate - i.discount) })),
+        totals: [{ label: "Grand Total", value: r.debit || r.credit, bold: true }],
+      }, true);
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not be opened"); }
+    setTxBusy(false);
+  };
+
+  const deleteSale = async (r: Row) => {
+    const reason = window.prompt(`Cancel ${r.ref}? Reason (optional):`);
+    if (reason === null) return;
+    setTxBusy(true);
+    try { await cancelDoc({ data: { id: r.id, reason } }); toast.success(`${r.ref} cancelled`); await refreshLedger(); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Cancel failed"); }
+    setTxBusy(false);
+  };
+
+  const deletePayment = async (r: Row) => {
+    if (!window.confirm(`Delete this payment of ${rs(r.debit || r.credit)}? This cannot be undone.`)) return;
+    setTxBusy(true);
+    try { await deletePartyPayment({ data: { id: r.id } }); toast.success("Payment deleted"); await refreshLedger(); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Delete failed"); }
+    setTxBusy(false);
+  };
+
+  const openRow = (r: Row) => {
+    if (txBusy) return;
+    if (r.entity === "sale") void openEditSale(r);
+    else if (r.entity === "purchase") void previewPurchase(r);
+  };
 
   const openStatement = async () => {
     const p = sel; if (!p) return;
@@ -210,6 +269,20 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   return (
     <>
       {pc.node}
+      {editSale ? (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-background">
+          <button
+            type="button"
+            aria-label="Close edit"
+            title="Close"
+            onClick={() => { setEditSale(false); void refreshLedger(); }}
+            className="fixed right-4 top-4 z-[60] rounded-full border border-border bg-card p-2 shadow-lg transition-transform hover:scale-110 hover:bg-accent"
+          >
+            <X className="size-5" />
+          </button>
+          <PosPage onSaved={() => { setEditSale(false); void refreshLedger(); }} />
+        </div>
+      ) : null}
       <div className="grid gap-3 lg:grid-cols-[1fr_1.4fr]">
         <section className="space-y-2 rounded-xl border border-border bg-card p-3">
           <div className="flex items-center justify-between gap-2">
@@ -306,17 +379,39 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
 
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead><tr className="text-left text-xs text-muted-foreground"><th>Date</th><th>Detail</th><th>Ref</th><th className="text-right">Debit (to receive)</th><th className="text-right">Credit (to pay)</th><th className="text-right">Balance</th></tr></thead>
+                  <thead><tr className="text-left text-xs text-muted-foreground"><th>Date</th><th>Detail</th><th>Ref</th><th className="text-right">Debit (to receive)</th><th className="text-right">Credit (to pay)</th><th className="text-right">Balance</th><th className="w-8" /></tr></thead>
                   <tbody>
-                    <tr className="border-t border-border"><td colSpan={5} className="py-1.5">Opening balance</td><td className="text-right">{rs(ledgerOpening)}</td></tr>
-                    {ledgerLoading ? <tr className="border-t border-border"><td colSpan={6} className="py-2 text-center text-xs text-muted-foreground">Loading ledger…</td></tr> : null}
+                    <tr className="border-t border-border"><td colSpan={5} className="py-1.5">Opening balance</td><td className="text-right">{rs(ledgerOpening)}</td><td /></tr>
+                    {ledgerLoading ? <tr className="border-t border-border"><td colSpan={7} className="py-2 text-center text-xs text-muted-foreground">Loading ledger…</td></tr> : null}
                     {ledgerRows.map((r, i) => (
-                      <tr key={i} className="border-t border-border">
+                      <tr key={`${r.entity}-${r.id}-${i}`} className={`border-t border-border ${r.entity !== "payment" ? "cursor-pointer hover:bg-accent/60" : ""}`} onClick={() => openRow(r)} title={r.entity === "sale" ? "Click to open / edit" : r.entity === "purchase" ? "Click to preview" : undefined}>
                         <td className="py-1.5 text-xs">{new Date(r.date).toLocaleDateString("en-PK")}</td><td>{r.kind}</td><td className="text-xs">{r.ref}</td>
                         <td className="text-right">{r.debit ? rs(r.debit) : ""}</td><td className="text-right">{r.credit ? rs(r.credit) : ""}</td><td className="text-right font-semibold">{rs(r.balance)}</td>
+                        <td className="relative text-right" onClick={(e) => e.stopPropagation()}>
+                          {r.entity === "sale" || (r.entity === "payment" && r.standalone) ? (
+                            <>
+                              <button type="button" aria-label={`Actions for ${r.ref || r.kind}`} disabled={txBusy} onClick={() => setMenuFor(menuFor === r.id ? null : r.id)} className="rounded-md border border-border p-1 hover:bg-accent disabled:opacity-50"><MoreVertical className="size-3.5" /></button>
+                              {menuFor === r.id ? (
+                                <>
+                                  <div className="fixed inset-0 z-40" onClick={() => setMenuFor(null)} />
+                                  <div className="absolute right-0 z-50 mt-1 w-40 overflow-hidden rounded-xl border border-border bg-popover py-1 text-left shadow-xl">
+                                    {r.entity === "sale" ? (
+                                      <>
+                                        <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent" onClick={() => { setMenuFor(null); void openEditSale(r); }}><Pencil className="size-4" /> Edit</button>
+                                        <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-accent" onClick={() => { setMenuFor(null); void deleteSale(r); }}><Trash2 className="size-4" /> Delete</button>
+                                      </>
+                                    ) : (
+                                      <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-accent" onClick={() => { setMenuFor(null); void deletePayment(r); }}><Trash2 className="size-4" /> Delete</button>
+                                    )}
+                                  </div>
+                                </>
+                              ) : null}
+                            </>
+                          ) : null}
+                        </td>
                       </tr>
                     ))}
-                    {!ledgerLoading && !ledgerRows.length ? <tr className="border-t border-border"><td colSpan={6} className="py-2 text-center text-xs text-muted-foreground">No entries yet.</td></tr> : null}
+                    {!ledgerLoading && !ledgerRows.length ? <tr className="border-t border-border"><td colSpan={7} className="py-2 text-center text-xs text-muted-foreground">No entries yet.</td></tr> : null}
                   </tbody>
                 </table>
               </div>
