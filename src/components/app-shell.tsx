@@ -31,7 +31,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getMyAccess } from "@/lib/admin.functions";
 import { getMySettings } from "@/lib/settings.functions";
 import { isSectionAllowed } from "@/lib/settings";
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 const NAV_HIDDEN_KEY = "workspace-nav-hidden";
 
@@ -108,7 +108,7 @@ export function AppShell({
       /* storage unavailable */
     }
   }, []);
-  const toggleNav = () => {
+  const toggleNav = useCallback(() => {
     setNavHidden((v) => {
       const next = !v;
       try {
@@ -118,7 +118,21 @@ export function AppShell({
       }
       return next;
     });
-  };
+  }, []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+      if (e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleNav();
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [toggleNav]);
   const access = useQuery({
     queryKey: ["my-access"],
     queryFn: () => getMyAccess(),
@@ -227,8 +241,8 @@ export function AppShell({
                 size="icon"
                 onClick={toggleNav}
                 className="hidden size-10 shrink-0 border-border bg-card xl:inline-flex"
-                title={navHidden ? "Show menu" : "Hide menu"}
-                aria-label={navHidden ? "Show navigation menu" : "Hide navigation menu"}
+                title={navHidden ? "Show menu (press B)" : "Hide menu (press B)"}
+                aria-label={navHidden ? "Show navigation menu (press B)" : "Hide navigation menu (press B)"}
               >
                 {navHidden ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
               </Button>

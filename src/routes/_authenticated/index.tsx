@@ -21,6 +21,7 @@ import { ProductPickerBody } from "@/components/product-picker";
 import { WorkspaceTool, WorkspaceToolDock } from "@/components/workspace-tool";
 import { PaymentModeField, paymentLine, stripPaymentLines, upsertPaymentLine, type PaymentMethod } from "@/components/payment-mode-field";
 import { DEFAULT_ORDER_TEMPLATE } from "@/lib/order-template";
+import { detectInvoicePayment } from "@/lib/confirmation";
 import { saveOrder } from "@/lib/records.functions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -57,6 +58,22 @@ function messageText(msg: UIMessage): string {
 }
 
 const STORAGE_KEY = "order-format-bot:messages:v1";
+
+/**
+ * COD/CC status detect karta hai — pehle explicit "Payment Status:" /
+ * "COD Amount:" lines (Confirm section ka performa), warna keywords.
+ */
+function detectOrderPayment(text: string): { method: "COD" | "CC" | null; codAmount: string } {
+  const codAmt = text.match(/cod\s*amount\s*[:\-]?\s*([\d,]+(?:\.\d+)?)/i)?.[1]?.replace(/,/g, "") ?? "";
+  if (/payment\s*status\s*[:\-]?\s*(cod|cash on delivery)/i.test(text) || /\bcod\b/i.test(text)) {
+    return { method: "COD", codAmount: codAmt || detectInvoicePayment(text).codAmount };
+  }
+  if (/payment\s*status\s*[:\-]?\s*(cc|credit card|card|paid)/i.test(text) || /\bC\.?C\.?\b/.test(text)) {
+    return { method: "CC", codAmount: "0" };
+  }
+  const d = detectInvoicePayment(text);
+  return d.method ? { method: d.method, codAmount: d.method === "COD" ? d.codAmount : "0" } : { method: null, codAmount: "" };
+}
 
 function OrderChat() {
   const navigate = useNavigate();
