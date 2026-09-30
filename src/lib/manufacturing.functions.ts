@@ -47,3 +47,28 @@ export const manufactureProduct = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message || "Manufacturing failed");
     return res as { qty: number; materialCost: number; expenses: number; unitCost: number };
   });
+
+export const getMfgStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data } = await (context.supabase as Sb).rpc("pos_mfg_status");
+    const d = (data ?? {}) as { isAdmin?: boolean; hasPin?: boolean };
+    return { isAdmin: !!d.isAdmin, hasPin: !!d.hasPin };
+  });
+
+export const verifyMfgPin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ pin: z.string().max(8) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: ok } = await (context.supabase as Sb).rpc("pos_verify_mfg_pin", { _pin: data.pin });
+    return { ok: !!ok };
+  });
+
+export const setMfgPin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ pin: z.string().regex(/^\d{4,8}$/).nullable() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await (context.supabase as Sb).rpc("pos_set_mfg_pin", { _pin: data.pin });
+    if (error) throw new Error(error.message.includes("admin") ? "Only admin can change the manufacturing PIN" : "Could not save PIN");
+    return { ok: true };
+  });

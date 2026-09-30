@@ -904,6 +904,7 @@ export type Database = {
       pos_settings: {
         Row: {
           config: Json
+          mfg_pin_hash: string | null
           pin_hash: string | null
           updated_at: string
           updated_by: string | null
@@ -911,6 +912,7 @@ export type Database = {
         }
         Insert: {
           config?: Json
+          mfg_pin_hash?: string | null
           pin_hash?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -918,6 +920,7 @@ export type Database = {
         }
         Update: {
           config?: Json
+          mfg_pin_hash?: string | null
           pin_hash?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -1620,6 +1623,7 @@ export type Database = {
         Args: { _phone: string; _ws: string }
         Returns: string
       }
+      pos_is_admin: { Args: never; Returns: boolean }
       pos_list_stores: { Args: never; Returns: Json }
       pos_log_event: {
         Args: {
@@ -1634,6 +1638,7 @@ export type Database = {
         Args: { _note: string; _product: string; _qty: number }
         Returns: Json
       }
+      pos_mfg_status: { Args: never; Returns: Json }
       pos_move_stock: {
         Args: {
           _kind: string
@@ -1681,6 +1686,7 @@ export type Database = {
         Args: { _role: string; _user: string }
         Returns: undefined
       }
+      pos_set_mfg_pin: { Args: { _pin: string }; Returns: undefined }
       pos_transfer_stock: {
         Args: { _from: string; _items: Json; _note: string; _to: string }
         Returns: number
@@ -1689,6 +1695,7 @@ export type Database = {
         Args: { _id: string; _p: Json }
         Returns: undefined
       }
+      pos_verify_mfg_pin: { Args: { _pin: string }; Returns: boolean }
       pos_verify_pin: { Args: { _pin: string }; Returns: boolean }
       set_order_number_start: { Args: { _start: number }; Returns: undefined }
     }

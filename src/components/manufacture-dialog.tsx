@@ -8,6 +8,7 @@ import { StoreSwitcher, useActiveStore } from "@/components/store-switcher";
 import { listInventory } from "@/lib/inventory.functions";
 import { listRecipes, manufactureProduct } from "@/lib/manufacturing.functions";
 import { rs } from "@/components/pos-subnav";
+import { MfgGate } from "@/components/mfg-gate";
 
 export function ManufactureDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const qc = useQueryClient();
@@ -56,6 +57,7 @@ export function ManufactureDialog({ open, onOpenChange }: { open: boolean; onOpe
           <DialogTitle className="flex items-center gap-2"><Factory className="size-5" /> Manufacture product</DialogTitle>
           <DialogDescription>Only products with a manufacturing setup are listed. Stock is added to the selected store.</DialogDescription>
         </DialogHeader>
+        <MfgGate>
         <div className="flex items-center justify-between gap-2 text-sm"><span className="text-muted-foreground">Store</span><StoreSwitcher /></div>
         {!sel ? (
           <div className="space-y-2">
@@ -100,6 +102,7 @@ export function ManufactureDialog({ open, onOpenChange }: { open: boolean; onOpe
             {activeStore.isAllStores ? <p className="text-xs text-destructive">Select a specific store before manufacturing.</p> : null}
           </div>
         )}
+        </MfgGate>
       </DialogContent>
     </Dialog>
   );

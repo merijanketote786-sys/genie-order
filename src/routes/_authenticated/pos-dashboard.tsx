@@ -14,6 +14,7 @@ import { ArrowDownLeft, ArrowUpRight, Factory, Users as PartiesIcon } from "luci
 import { PartiesDialog } from "@/components/parties-dialog";
 import { PaymentInOutDialog } from "@/components/payment-in-out-dialog";
 import { ManufactureDialog } from "@/components/manufacture-dialog";
+import { useMfgStatus } from "@/components/mfg-gate";
 
 export const Route = createFileRoute("/_authenticated/pos-dashboard")({
   head: () => ({
@@ -79,6 +80,7 @@ const QUICK = [
 function PosDashboardPage() {
   const { can } = usePosAccess();
   const [mfgOpen, setMfgOpen] = useState(false);
+  const { data: mfg } = useMfgStatus();
   const [partiesOpen, setPartiesOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [payDir, setPayDir] = useState<"in" | "out">("in");
@@ -94,7 +96,7 @@ function PosDashboardPage() {
           {QUICK.filter((x) => can(x.perm)).map((x) => (
             <Button key={x.to} asChild variant="outline" size="sm"><Link to={x.to}><x.icon className="size-4" /> {x.label}</Link></Button>
           ))}
-          {can("edit_stock") ? <Button variant="outline" size="sm" onClick={() => setMfgOpen(true)}><Factory className="size-4" /> Manufacture</Button> : null}
+          {mfg?.isAdmin ? <Button variant="outline" size="sm" onClick={() => setMfgOpen(true)}><Factory className="size-4" /> Manufacture</Button> : null}
           <ManufactureDialog open={mfgOpen} onOpenChange={setMfgOpen} />
           <Button variant="outline" size="sm" onClick={() => setPartiesOpen(true)}><PartiesIcon className="size-4" /> Parties</Button>
           <PartiesDialog open={partiesOpen} onOpenChange={setPartiesOpen} />

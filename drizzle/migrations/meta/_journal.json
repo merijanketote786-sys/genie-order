@@ -274,6 +274,13 @@
       "when": 1790783057883,
       "tag": "0038_rls_initplan_speedup",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1790791463970,
+      "tag": "0039_mfg_admin_pin",
+      "breakpoints": true
     }
   ]
 }
