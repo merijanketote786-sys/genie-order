@@ -88,7 +88,7 @@ function LedgerPage() {
   };
 
   return (
-    <AppShell title="Customer Ledger" subtitle="Credit and payments" active="/pos">
+    <AppShell title="Customer Ledger" subtitle="Credit and payments" active="/pos" wide>
       {pc.node}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />

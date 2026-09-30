@@ -72,7 +72,7 @@ function ReportsPage() {
   const maxDay = Math.max(1, ...(data?.daily ?? []).map((d) => Math.abs(d.sales)));
 
   return (
-    <AppShell title="Reports" subtitle="Sales, profit, stock" active="/pos">
+    <AppShell title="Reports" subtitle="Sales, profit, stock" active="/pos" wide>
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />
         <div className="flex flex-wrap items-center gap-2">

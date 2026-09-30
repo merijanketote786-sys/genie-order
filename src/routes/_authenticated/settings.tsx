@@ -65,7 +65,7 @@ function SettingsPage() {
   ];
 
   return (
-    <AppShell title="Settings" subtitle="Controls for your account" active="/settings">
+    <AppShell title="Settings" subtitle="Controls for your account" active="/settings" wide>
       <div className="shrink-0 pt-3 sm:pt-4">
         <WorkspaceHeader
           icon={Settings2}

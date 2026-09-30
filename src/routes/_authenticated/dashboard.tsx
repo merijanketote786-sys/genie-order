@@ -110,7 +110,7 @@ function DashboardPage() {
   const maxOrders = Math.max(1, ...series.map((p) => p.orders));
 
   return (
-    <AppShell title="Dashboard" subtitle="Full workspace progress" active="/dashboard">
+    <AppShell title="Dashboard" subtitle="Full workspace progress" active="/dashboard" wide>
       <WorkspaceHeader
         icon={LayoutDashboard}
         eyebrow="Overview"

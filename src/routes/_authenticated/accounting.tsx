@@ -87,7 +87,7 @@ function AccountingPage() {
   }
   const accounts = base.data?.accounts ?? [];
   return (
-    <AppShell title="Accounting" subtitle="Double-entry books linked to POS" active="/accounting">
+    <AppShell title="Accounting" subtitle="Double-entry books linked to POS" active="/accounting" wide>
       {ex.node}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <nav className="flex gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1">

@@ -64,7 +64,7 @@ function SuppliersPage() {
   };
 
   return (
-    <AppShell title="Suppliers" subtitle="Ledger aur payments" active="/pos">
+    <AppShell title="Suppliers" subtitle="Ledger aur payments" active="/pos" wide>
       {pc.node}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />

@@ -55,7 +55,7 @@ function HistoryPage() {
   const rows = orders.data?.orders ?? [];
 
   return (
-    <AppShell title="Order History" subtitle="Record of saved orders" active="/history">
+    <AppShell title="Order History" subtitle="Record of saved orders" active="/history" wide>
       <WorkspaceHeader
         icon={History}
         eyebrow="Records"

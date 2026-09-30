@@ -37,7 +37,7 @@ function DayBookPage() {
   );
 
   return (
-    <AppShell title="Cash Day Book" subtitle="Daily cash accounting" active="/pos">
+    <AppShell title="Cash Day Book" subtitle="Daily cash accounting" active="/pos" wide>
       {pc.node}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />

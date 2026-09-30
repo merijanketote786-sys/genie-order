@@ -154,7 +154,7 @@ function SettingsHub() {
   const visible = sectionHits ?? [section];
 
   return (
-    <AppShell title="POS Settings" subtitle="Business, POS, printing, staff" active="/pos">
+    <AppShell title="POS Settings" subtitle="Business, POS, printing, staff" active="/pos" wide>
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-24 pt-3">
         <PosSubnav />
         <div className="relative">
