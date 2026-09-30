@@ -12,18 +12,19 @@ export function useMfgStatus() {
 }
 
 /** Manufacturing sirf admin ke liye; PIN set ho to pehle unlock. */
-export function MfgGate({ children }: { children: ReactNode }) {
+export function MfgGate({ children, mode = "settings" }: { children: ReactNode; mode?: "settings" | "use" }) {
   const { data, isLoading } = useMfgStatus();
   const qc = useQueryClient();
   const [unlocked, setUnlocked] = useState(() => typeof window !== "undefined" && sessionStorage.getItem(KEY) === "1");
   const [pin, setPin] = useState("");
   const [busy, setBusy] = useState(false);
   if (isLoading) return <p className="p-4 text-sm text-muted-foreground">Checking access…</p>;
-  if (!data?.isAdmin) return (
+  if (mode === "use" && data?.canManufacture) return <>{children}</>;
+  if (!(mode === "use" ? data?.canManufacture : data?.canSettings)) return (
     <div className="rounded-xl border border-border bg-card p-6 text-center">
       <ShieldOff className="mx-auto size-8 text-muted-foreground" />
-      <p className="mt-2 font-semibold text-foreground">Admin only</p>
-      <p className="text-sm text-muted-foreground">Item manufacturing is available to the admin account only.</p>
+      <p className="mt-2 font-semibold text-foreground">No access</p>
+      <p className="text-sm text-muted-foreground">Ask the admin to enable manufacturing for your account.</p>
     </div>
   );
   if (!data.hasPin || unlocked) return <>{children}</>;
