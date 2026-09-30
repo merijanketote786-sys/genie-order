@@ -1259,7 +1259,7 @@ function K({ children }: { children: string }) {
 }
 
 const SHORTCUTS: { group: string; items: [string, string][] }[] = [
-  { group: "Navigation", items: [["Tab / Shift+Tab", "Move to next / previous field or button"], ["Enter / Space", "Press the focused button"], ["Alt+C", "Customer name"], ["Alt+S or F4", "Item search"], ["Alt+M or F8", "Payment"], ["B", "Hide / show side menu (whole workspace)"], ["Esc", "Close popup / search list"]] },
+  { group: "Navigation", items: [["Tab / Shift+Tab", "Move to next / previous field or button"], ["Enter / Space", "Press the focused button"], ["Alt+C", "Customer name"], ["Alt+S or F4", "Item search"], ["Alt+M or F8", "Payment"], ["B", "Hide / show side menu (whole workspace)"], ["P", "Switch Workspace ↔ POS"], ["Esc", "Close popup / search list"]] },
   { group: "Items", items: [["↑ / ↓", "Move in search results"], ["Enter", "Select item — lands in search bar"], ["Enter again / ⚡", "Add selected item to bill"], ["Enter (in qty)", "Back to search"], ["Ctrl+Shift+Backspace", "Remove last item"]] },
   { group: "Bill", items: [["Alt+E", "Switch Invoice / Estimate"], ["Alt+P", "Add new party"], ["Ctrl+S or F9", "Save + Print"], ["Ctrl+Enter", "Save without print"], ["Ctrl+Shift+H or F10", "Hold bill"], ["Alt+N or F2", "New bill"]] },
   { group: "Lists & help", items: [["Alt+H", "Held bills"], ["Alt+Q", "Quotations / estimates"], ["F1, Alt+K or Ctrl+/", "Open / close this guide"]] },

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { WorkspaceNavDialog } from "@/components/workspace-nav-dialog";
 import { PosSidebar } from "@/components/pos-subnav";
 import { cn } from "@/lib/utils";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Calculator,
   Landmark,
@@ -106,6 +106,7 @@ export function AppShell({
   const [navHidden, setNavHidden] = useState(false);
   const [posMenuOpen, setPosMenuOpen] = useState(false);
   const isPos = active === "/pos" || active === "/accounting";
+  const navigate = useNavigate();
   useEffect(() => {
     if (!posMenuOpen) return;
     const close = (event: KeyboardEvent) => { if (event.key === "Escape") setPosMenuOpen(false); };
@@ -139,11 +140,15 @@ export function AppShell({
         e.preventDefault();
         e.stopPropagation();
         toggleNav();
+      } else if (e.key.toLowerCase() === "p") {
+        e.preventDefault();
+        e.stopPropagation();
+        void navigate({ to: isPos ? "/dashboard" : "/pos-dashboard" });
       }
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [toggleNav]);
+  }, [toggleNav, navigate, isPos]);
   const access = useQuery({
     queryKey: ["my-access"],
     queryFn: () => getMyAccess(),
@@ -247,6 +252,10 @@ export function AppShell({
               <p className="truncate text-sm text-muted-foreground">{subtitle}</p>
             </div>
             <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+              <Button variant="outline" size="sm" asChild className="h-10 shrink-0 border-border bg-card font-semibold"
+                title={isPos ? "Switch to Workspace (press P)" : "Switch to POS (press P)"}>
+                <Link to={isPos ? "/dashboard" : "/pos-dashboard"}>{isPos ? "Workspace" : "POS"}</Link>
+              </Button>
               {isPos && <Button variant="outline" size="icon" onClick={() => setPosMenuOpen(true)}
                 className="size-10 shrink-0 border-border bg-card xl:hidden" title="Open POS menu" aria-label="Open POS menu">
                 <Menu className="size-4" />
