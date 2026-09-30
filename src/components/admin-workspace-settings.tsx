@@ -270,6 +270,32 @@ export function AdminWorkspaceSettings({ onAddUser, usersOnly }: { onAddUser?: (
                       );
                     })}
                   </div>
+                  {posRole && posRole !== "admin" ? (
+                    <details className="mt-3 rounded-lg border border-border bg-background/50 p-2">
+                      <summary className="cursor-pointer text-xs font-semibold">POS features ({posPermsOf(u.id).length} on)</summary>
+                      <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {POS_PERM_GROUPS.map((g) => (
+                          <div key={g.title}>
+                            <p className="mb-1 text-[11px] font-bold uppercase text-muted-foreground">{g.title}</p>
+                            <ul className="space-y-1">
+                              {g.items.map((it) => (
+                                <li key={it.key}>
+                                  <label className="flex cursor-pointer items-center gap-2 text-xs">
+                                    <input type="checkbox" className="size-4 accent-primary"
+                                      checked={posPermsOf(u.id).includes(it.key)}
+                                      disabled={setPerms.isPending}
+                                      onChange={() => togglePerm(u.id, it.key)} />
+                                    {it.label}
+                                  </label>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="mt-2 text-[10px] text-muted-foreground">Changing the POS role resets these ticks to that role's defaults.</p>
+                    </details>
+                  ) : null}
                 </div>
               );
             })}
