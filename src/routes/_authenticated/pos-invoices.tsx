@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Printer, ReceiptText, Download, Share2, Search, RotateCcw, MoreVertical, Ban, Trash2, FileInput, Truck, Pencil } from "lucide-react";
+import { Printer, ReceiptText, Download, Share2, Search, RotateCcw, MoreVertical, Ban, Trash2, FileInput, Truck, Pencil, X } from "lucide-react";
+import { PosPage } from "./pos";
 import { AppShell } from "@/components/app-shell";
 import { PosSubnav, rs } from "@/components/pos-subnav";
 import { usePrintCenter } from "@/components/print-center";
@@ -121,6 +122,7 @@ function PosInvoicesPage() {
   const [estimates, setEstimates] = useState(false);
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [editSale, setEditSale] = useState<SaleRow | null>(null);
   const q = useQuery({ queryKey: ["pos-sales", search, estimates], queryFn: () => listPosSales({ data: { search, estimates } }) });
   const sales = ((q.data?.sales ?? []) as SaleRow[]).filter((s) => s.status !== "cancelled");
 
@@ -268,6 +270,20 @@ function PosInvoicesPage() {
         </div>
       </div>
       {share ? <ShareDialog title={share.doc_number} text={shareText(share)} phone={share.customer_phone ?? undefined} onClose={() => setShare(null)} /> : null}
+      {editSale ? (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-background">
+          <button
+            type="button"
+            aria-label="Close edit"
+            title="Close"
+            onClick={() => { setEditSale(null); refresh(); }}
+            className="fixed right-4 top-4 z-[60] rounded-full border border-border bg-card p-2 shadow-lg transition-transform hover:scale-110 hover:bg-accent"
+          >
+            <X className="size-5" />
+          </button>
+          <PosPage onSaved={() => { setEditSale(null); refresh(); }} />
+        </div>
+      ) : null}
       {pc.node}
     </AppShell>
   );
