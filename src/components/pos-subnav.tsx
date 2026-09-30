@@ -8,7 +8,7 @@ const ITEMS = [
   { to: "/pos", label: "Billing", icon: ShoppingCart, perm: "view_pos" },
   { to: "/returns", label: "Returns", icon: Undo2, perm: "create_sale" },
   { to: "/purchases", label: "Purchases", icon: Truck, perm: "manage_purchases" },
-  { to: "/suppliers", label: "Suppliers", icon: Users, perm: "manage_purchases" },
+  { to: "/suppliers", label: "Parties", icon: Users, perm: "manage_purchases" },
   { to: "/ledger", label: "Credit", icon: BookOpen, perm: "view_balances" },
   { to: "/expenses", label: "Expenses", icon: Receipt, perm: "manage_expenses" },
   { to: "/daybook", label: "Day Book", icon: Notebook, perm: "view_reports" },
