@@ -1,6 +1,7 @@
 import { PrintTemplatesPicker } from "@/components/settings/print-templates";
 import { AppShell } from "@/components/app-shell";
 import { usePosAccess } from "@/components/pos-access";
+import { useMfgStatus } from "@/components/mfg-gate";
 import { usePrintCenter } from "@/components/print-center";
 import { PosSubnav } from "@/components/pos-subnav";
 import { FIELDS, SECTIONS, type Field, type SectionId } from "@/components/settings/schema";
@@ -49,6 +50,7 @@ const norm = (s: string) => s.toLowerCase();
 function SettingsHub() {
   const qc = useQueryClient();
   const { access, can } = usePosAccess();
+  const { data: mfg } = useMfgStatus();
   const pc = usePrintCenter();
   const admin = can("settings");
   const [draft, setDraft] = useState<PosConfig>({});
@@ -167,7 +169,7 @@ function SettingsHub() {
             {SECTIONS.map((s) => (
               <button key={s.id} type="button" onClick={() => { setSection(s.id); setQ(""); }} className={`whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm ${!sectionHits && section === s.id ? "bg-primary text-primary-foreground" : sectionHits?.includes(s.id) ? "bg-accent text-accent-foreground" : "text-foreground hover:bg-muted"}`}>{s.label}</button>
             ))}
-            <Link to="/item-manufacturing" search={{}} className="whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm text-foreground hover:bg-muted">Item Manufacturing</Link>
+            {mfg?.isAdmin ? <Link to="/item-manufacturing" search={{}} className="whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm text-foreground hover:bg-muted">Item Manufacturing</Link> : null}
           </nav>
           <div className="min-w-0 flex-1 space-y-3">
             {sectionHits && !sectionHits.length ? <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">No setting found for "{q}"</p> : null}
