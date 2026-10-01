@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { ItemsDialog } from "@/components/items-dialog";
+import { AttendanceDialog } from "@/components/attendance";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { usePosAccess } from "@/components/pos-access";
 import { Button } from "@/components/ui/button";
 import type { PosPerm } from "@/lib/pos-access.functions";
-import { LayoutDashboard, Landmark, Settings2, BarChart3, Boxes, BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users, FileCheck2, ArrowLeft, Package } from "lucide-react";
+import { LayoutDashboard, Landmark, Settings2, BarChart3, Boxes, BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users, FileCheck2, ArrowLeft, Package, CalendarCheck, ClipboardList } from "lucide-react";
 
 const ITEMS = [
   { to: "/pos-dashboard", label: "Dashboard", icon: LayoutDashboard, perm: "view_pos" },
@@ -14,6 +15,7 @@ const ITEMS = [
   { to: "/suppliers", label: "Parties", icon: Users, perm: "manage_purchases" },
   { to: "/ledger", label: "Credit", icon: BookOpen, perm: "view_balances" },
   { to: "/expenses", label: "Expenses", icon: Receipt, perm: "manage_expenses" },
+  { to: "/attendance", label: "Attendance", icon: ClipboardList, perm: "manage_expenses" },
   { to: "/daybook", label: "Day Book", icon: Notebook, perm: "view_reports" },
   { to: "/inventory", label: "Inventory", icon: Boxes, perm: "edit_stock" },
   { to: "/reports", label: "Reports", icon: BarChart3, perm: "view_reports" },
@@ -24,14 +26,16 @@ const ITEMS = [
 
 /** Shared POS navigation, displayed in the app shell rather than on every page. */
 export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
-  const { can } = usePosAccess();
+  const { can, cfg } = usePosAccess();
+  const attOn = (cfg as unknown as { attendance?: { enabled?: boolean } }).attendance?.enabled !== false;
+  const [attOpen, setAttOpen] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [itemsOpen, setItemsOpen] = useState(false);
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-4" aria-label="POS navigation">
         <p className="mb-3 px-3 text-[10px] font-bold uppercase text-sidebar-muted">POS</p>
-        {ITEMS.filter((i) => can(i.perm)).map((i) => {
+        {ITEMS.filter((i) => can(i.perm) && (i.to !== "/attendance" || attOn)).map((i) => {
           const active = pathname === i.to;
           return (
             <Link key={i.to} to={i.to} onClick={onNavigate} aria-current={active ? "page" : undefined}
@@ -47,6 +51,13 @@ export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
           </button>
         ) : null}
         <ItemsDialog open={itemsOpen} onOpenChange={setItemsOpen} />
+        {attOn && can("manage_expenses") ? (
+          <button type="button" onClick={() => setAttOpen(true)}
+            className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-sm font-semibold text-sidebar-muted transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-foreground">
+            <CalendarCheck className="size-4 shrink-0" /> Mark attendance
+          </button>
+        ) : null}
+        <AttendanceDialog open={attOpen} onOpenChange={setAttOpen} />
       </nav>
       <div className="border-t border-sidebar-border p-3">
         <Button asChild variant="ghost" className="w-full justify-start text-sidebar-foreground">

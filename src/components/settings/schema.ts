@@ -2,7 +2,7 @@ import { DOC_LABEL, FORMAT_LABEL, TEMPLATE_LABEL, type DocKind, type PaperFormat
 
 export type SectionId =
   | "business" | "pos" | "sales" | "purchases" | "inventory" | "customers" | "suppliers" | "payments" | "taxes"
-  | "invoices" | "printing" | "printers" | "users" | "notifications" | "backup" | "vyapar" | "audit" | "advanced";
+  | "invoices" | "printing" | "printers" | "users" | "notifications" | "backup" | "vyapar" | "audit" | "attendance" | "advanced";
 
 export const SECTIONS: { id: SectionId; label: string; keywords: string }[] = [
   { id: "business", label: "Business", keywords: "business name logo address phone email website ntn gst tax id currency" },
@@ -22,6 +22,7 @@ export const SECTIONS: { id: SectionId; label: string; keywords: string }[] = [
   { id: "backup", label: "Backup & Data", keywords: "backup export csv excel data import products customers sales" },
   { id: "vyapar", label: "Vyapar Sync", keywords: "vyapar sync products history error retry automatic manual" },
   { id: "audit", label: "Audit Logs", keywords: "audit log history reprint cancellation settings change price discount" },
+  { id: "attendance", label: "Attendance & Salary", keywords: "attendance biometric machine zkteco fingerprint face labour staff salary wages daily weekly monthly half day leave usb wifi expense" },
   { id: "advanced", label: "Advanced", keywords: "advanced decimal precision timezone date format time currency formatting api session" },
 ];
 
@@ -111,6 +112,8 @@ export const FIELDS: Field[] = [
   { s: "notifications", path: "notify.paymentReminders", label: "Payment reminder button (in ledger)", type: "bool", def: true },
 
   // Advanced
+  { s: "attendance", path: "attendance.enabled", label: "Enable attendance system", type: "bool", def: true, help: "Shows Attendance in the POS menu and dashboard" },
+  { s: "attendance", path: "attendance.postExpenses", label: "Connect salary to Expenses", type: "bool", def: true, help: "Salary and advance payments are added to POS Expenses (category Salary) automatically" },
   { s: "advanced", path: "decimals", label: "Amount decimal places", type: "number", min: 0, max: 3, def: 2, danger: "Decimal places only affect display/print. Amounts are stored in the database with up to 2 decimal places." },
   { s: "advanced", path: "business.dateFormat", label: "Date format", type: "select", options: [{ v: "dd/mm/yyyy", l: "DD/MM/YYYY" }, { v: "mm/dd/yyyy", l: "MM/DD/YYYY" }, { v: "yyyy-mm-dd", l: "YYYY-MM-DD" }], def: "dd/mm/yyyy" },
   { s: "advanced", path: "business.timeFormat", label: "Time format", type: "select", options: [{ v: "12", l: "12 hour" }, { v: "24", l: "24 hour" }], def: "12" },

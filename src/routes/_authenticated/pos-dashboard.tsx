@@ -12,6 +12,8 @@ import {
 import { useState, type ReactNode } from "react";
 import { ArrowDownLeft, ArrowUpRight, Factory, Users as PartiesIcon } from "lucide-react";
 import { ItemsDialog } from "@/components/items-dialog";
+import { AttendanceDialog } from "@/components/attendance";
+import { CalendarCheck } from "lucide-react";
 import { Package } from "lucide-react";
 import { PartiesDialog } from "@/components/parties-dialog";
 import { PaymentInOutDialog } from "@/components/payment-in-out-dialog";
@@ -85,6 +87,7 @@ function PosDashboardPage() {
   const { data: mfg } = useMfgStatus();
   const [partiesOpen, setPartiesOpen] = useState(false);
   const [itemsOpen, setItemsOpen] = useState(false);
+  const [attOpen, setAttOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [payDir, setPayDir] = useState<"in" | "out">("in");
   const q = useQuery({ queryKey: ["pos-dashboard"], queryFn: () => getPosDashboard(), staleTime: 30_000 });
@@ -103,6 +106,8 @@ function PosDashboardPage() {
           <ManufactureDialog open={mfgOpen} onOpenChange={setMfgOpen} />
           <Button variant="outline" size="sm" onClick={() => setItemsOpen(true)}><Package className="size-4" /> Items</Button>
           <ItemsDialog open={itemsOpen} onOpenChange={setItemsOpen} />
+          {can("manage_expenses") && (cfg as unknown as { attendance?: { enabled?: boolean } }).attendance?.enabled !== false ? <Button variant="outline" size="sm" onClick={() => setAttOpen(true)}><CalendarCheck className="size-4" /> Attendance</Button> : null}
+          <AttendanceDialog open={attOpen} onOpenChange={setAttOpen} />
           <Button variant="outline" size="sm" onClick={() => setPartiesOpen(true)}><PartiesIcon className="size-4" /> Parties</Button>
           <PartiesDialog open={partiesOpen} onOpenChange={setPartiesOpen} />
           <Button variant="outline" size="sm" onClick={() => { setPayDir("in"); setPayOpen(true); }}><ArrowDownLeft className="size-4" /> Payment In</Button>
