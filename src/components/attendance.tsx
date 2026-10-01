@@ -19,7 +19,7 @@ const STATUS: { v: DayStatus | "none"; l: string }[] = [
 const errMsg = (e: unknown, d: string) => (e instanceof Error ? e.message : d);
 
 export function useLabour() {
-  return useQuery({ queryKey: ["att-labour"], queryFn: () => listLabour() });
+  return useQuery({ queryKey: ["att-labour"], queryFn: async () => (await listLabour()) as { labour: Labour[] } });
 }
 
 /* --------------------------- Mark attendance popup --------------------------- */
