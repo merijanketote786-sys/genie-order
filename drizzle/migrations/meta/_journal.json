@@ -309,6 +309,13 @@
       "when": 1790794101281,
       "tag": "0043_allow_negative_stock",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1790843445285,
+      "tag": "0044_attendance_labour_salary",
+      "breakpoints": true
     }
   ]
 }
