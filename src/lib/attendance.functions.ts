@@ -25,7 +25,7 @@ export const listLabour = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await (context.supabase as Sb).from("att_labour").select("*").order("name");
     if (error) throw new Error("Could not load labour list");
-    return { labour: (data ?? []).map(mapLabour) };
+    return { labour: ((data ?? []) as any[]).map(mapLabour) as Labour[] };
   });
 
 const labourSchema = z.object({
