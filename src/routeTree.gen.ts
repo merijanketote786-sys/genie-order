@@ -14,6 +14,9 @@ import { Route as McpRouteImport } from './routes/mcp'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as IclockGetrequestRouteImport } from './routes/iclock/getrequest'
+import { Route as IclockDevicecmdRouteImport } from './routes/iclock/devicecmd'
+import { Route as IclockCdataRouteImport } from './routes/iclock/cdata'
 import { Route as ApiInvoiceRouteImport } from './routes/api/invoice'
 import { Route as ApiExtractRouteImport } from './routes/api/extract'
 import { Route as ApiConfirmParseRouteImport } from './routes/api/confirm-parse'
@@ -43,10 +46,12 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedConfirmationRouteImport } from './routes/_authenticated/confirmation'
 import { Route as AuthenticatedCalculatorRouteImport } from './routes/_authenticated/calculator'
+import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authenticated/attendance'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAccountingRouteImport } from './routes/_authenticated/accounting'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as ApiSyncProductsRouteImport } from './routes/api/sync/products'
+import { Route as ApiPublicAttendanceRouteImport } from './routes/api/public/attendance'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicSyncProductsRouteImport } from './routes/api/public/sync/products'
 
@@ -73,6 +78,21 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const IclockGetrequestRoute = IclockGetrequestRouteImport.update({
+  id: '/iclock/getrequest',
+  path: '/iclock/getrequest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IclockDevicecmdRoute = IclockDevicecmdRouteImport.update({
+  id: '/iclock/devicecmd',
+  path: '/iclock/devicecmd',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IclockCdataRoute = IclockCdataRouteImport.update({
+  id: '/iclock/cdata',
+  path: '/iclock/cdata',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiInvoiceRoute = ApiInvoiceRouteImport.update({
   id: '/api/invoice',
@@ -224,6 +244,11 @@ const AuthenticatedCalculatorRoute = AuthenticatedCalculatorRouteImport.update({
   path: '/calculator',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAttendanceRoute = AuthenticatedAttendanceRouteImport.update({
+  id: '/attendance',
+  path: '/attendance',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -245,6 +270,11 @@ const ApiSyncProductsRoute = ApiSyncProductsRouteImport.update({
   path: '/api/sync/products',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAttendanceRoute = ApiPublicAttendanceRouteImport.update({
+  id: '/api/public/attendance',
+  path: '/api/public/attendance',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   id: '/.lovable/oauth/consent',
   path: '/.lovable/oauth/consent',
@@ -264,6 +294,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/accounting': typeof AuthenticatedAccountingRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/attendance': typeof AuthenticatedAttendanceRoute
   '/calculator': typeof AuthenticatedCalculatorRoute
   '/confirmation': typeof AuthenticatedConfirmationRoute
   '/customers': typeof AuthenticatedCustomersRoute
@@ -293,7 +324,11 @@ export interface FileRoutesByFullPath {
   '/api/confirm-parse': typeof ApiConfirmParseRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
+  '/iclock/cdata': typeof IclockCdataRoute
+  '/iclock/devicecmd': typeof IclockDevicecmdRoute
+  '/iclock/getrequest': typeof IclockGetrequestRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/api/public/attendance': typeof ApiPublicAttendanceRoute
   '/api/sync/products': typeof ApiSyncProductsRoute
   '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
 }
@@ -304,6 +339,7 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/accounting': typeof AuthenticatedAccountingRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/attendance': typeof AuthenticatedAttendanceRoute
   '/calculator': typeof AuthenticatedCalculatorRoute
   '/confirmation': typeof AuthenticatedConfirmationRoute
   '/customers': typeof AuthenticatedCustomersRoute
@@ -333,8 +369,12 @@ export interface FileRoutesByTo {
   '/api/confirm-parse': typeof ApiConfirmParseRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
+  '/iclock/cdata': typeof IclockCdataRoute
+  '/iclock/devicecmd': typeof IclockDevicecmdRoute
+  '/iclock/getrequest': typeof IclockGetrequestRoute
   '/': typeof AuthenticatedIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/api/public/attendance': typeof ApiPublicAttendanceRoute
   '/api/sync/products': typeof ApiSyncProductsRoute
   '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
 }
@@ -347,6 +387,7 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/accounting': typeof AuthenticatedAccountingRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/attendance': typeof AuthenticatedAttendanceRoute
   '/_authenticated/calculator': typeof AuthenticatedCalculatorRoute
   '/_authenticated/confirmation': typeof AuthenticatedConfirmationRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
@@ -376,8 +417,12 @@ export interface FileRoutesById {
   '/api/confirm-parse': typeof ApiConfirmParseRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
+  '/iclock/cdata': typeof IclockCdataRoute
+  '/iclock/devicecmd': typeof IclockDevicecmdRoute
+  '/iclock/getrequest': typeof IclockGetrequestRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/api/public/attendance': typeof ApiPublicAttendanceRoute
   '/api/sync/products': typeof ApiSyncProductsRoute
   '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
 }
@@ -391,6 +436,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/accounting'
     | '/admin'
+    | '/attendance'
     | '/calculator'
     | '/confirmation'
     | '/customers'
@@ -420,7 +466,11 @@ export interface FileRouteTypes {
     | '/api/confirm-parse'
     | '/api/extract'
     | '/api/invoice'
+    | '/iclock/cdata'
+    | '/iclock/devicecmd'
+    | '/iclock/getrequest'
     | '/.lovable/oauth/consent'
+    | '/api/public/attendance'
     | '/api/sync/products'
     | '/api/public/sync/products'
   fileRoutesByTo: FileRoutesByTo
@@ -431,6 +481,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/accounting'
     | '/admin'
+    | '/attendance'
     | '/calculator'
     | '/confirmation'
     | '/customers'
@@ -460,8 +511,12 @@ export interface FileRouteTypes {
     | '/api/confirm-parse'
     | '/api/extract'
     | '/api/invoice'
+    | '/iclock/cdata'
+    | '/iclock/devicecmd'
+    | '/iclock/getrequest'
     | '/'
     | '/.lovable/oauth/consent'
+    | '/api/public/attendance'
     | '/api/sync/products'
     | '/api/public/sync/products'
   id:
@@ -473,6 +528,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/accounting'
     | '/_authenticated/admin'
+    | '/_authenticated/attendance'
     | '/_authenticated/calculator'
     | '/_authenticated/confirmation'
     | '/_authenticated/customers'
@@ -502,8 +558,12 @@ export interface FileRouteTypes {
     | '/api/confirm-parse'
     | '/api/extract'
     | '/api/invoice'
+    | '/iclock/cdata'
+    | '/iclock/devicecmd'
+    | '/iclock/getrequest'
     | '/_authenticated/'
     | '/.lovable/oauth/consent'
+    | '/api/public/attendance'
     | '/api/sync/products'
     | '/api/public/sync/products'
   fileRoutesById: FileRoutesById
@@ -518,7 +578,11 @@ export interface RootRouteChildren {
   ApiConfirmParseRoute: typeof ApiConfirmParseRoute
   ApiExtractRoute: typeof ApiExtractRoute
   ApiInvoiceRoute: typeof ApiInvoiceRoute
+  IclockCdataRoute: typeof IclockCdataRoute
+  IclockDevicecmdRoute: typeof IclockDevicecmdRoute
+  IclockGetrequestRoute: typeof IclockGetrequestRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
+  ApiPublicAttendanceRoute: typeof ApiPublicAttendanceRoute
   ApiSyncProductsRoute: typeof ApiSyncProductsRoute
   ApiPublicSyncProductsRoute: typeof ApiPublicSyncProductsRoute
 }
@@ -559,6 +623,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/iclock/getrequest': {
+      id: '/iclock/getrequest'
+      path: '/iclock/getrequest'
+      fullPath: '/iclock/getrequest'
+      preLoaderRoute: typeof IclockGetrequestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/iclock/devicecmd': {
+      id: '/iclock/devicecmd'
+      path: '/iclock/devicecmd'
+      fullPath: '/iclock/devicecmd'
+      preLoaderRoute: typeof IclockDevicecmdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/iclock/cdata': {
+      id: '/iclock/cdata'
+      path: '/iclock/cdata'
+      fullPath: '/iclock/cdata'
+      preLoaderRoute: typeof IclockCdataRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/invoice': {
       id: '/api/invoice'
@@ -763,6 +848,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCalculatorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/attendance': {
+      id: '/_authenticated/attendance'
+      path: '/attendance'
+      fullPath: '/attendance'
+      preLoaderRoute: typeof AuthenticatedAttendanceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -791,6 +883,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSyncProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/attendance': {
+      id: '/api/public/attendance'
+      path: '/api/public/attendance'
+      fullPath: '/api/public/attendance'
+      preLoaderRoute: typeof ApiPublicAttendanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.lovable/oauth/consent': {
       id: '/.lovable/oauth/consent'
       path: '/.lovable/oauth/consent'
@@ -811,6 +910,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountingRoute: typeof AuthenticatedAccountingRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAttendanceRoute: typeof AuthenticatedAttendanceRoute
   AuthenticatedCalculatorRoute: typeof AuthenticatedCalculatorRoute
   AuthenticatedConfirmationRoute: typeof AuthenticatedConfirmationRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
@@ -842,6 +942,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountingRoute: AuthenticatedAccountingRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAttendanceRoute: AuthenticatedAttendanceRoute,
   AuthenticatedCalculatorRoute: AuthenticatedCalculatorRoute,
   AuthenticatedConfirmationRoute: AuthenticatedConfirmationRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
@@ -884,7 +985,11 @@ const rootRouteChildren: RootRouteChildren = {
   ApiConfirmParseRoute: ApiConfirmParseRoute,
   ApiExtractRoute: ApiExtractRoute,
   ApiInvoiceRoute: ApiInvoiceRoute,
+  IclockCdataRoute: IclockCdataRoute,
+  IclockDevicecmdRoute: IclockDevicecmdRoute,
+  IclockGetrequestRoute: IclockGetrequestRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
+  ApiPublicAttendanceRoute: ApiPublicAttendanceRoute,
   ApiSyncProductsRoute: ApiSyncProductsRoute,
   ApiPublicSyncProductsRoute: ApiPublicSyncProductsRoute,
 }

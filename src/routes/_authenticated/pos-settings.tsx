@@ -1,3 +1,4 @@
+import { DevicesManager, LabourManager } from "@/components/attendance";
 import { PrintTemplatesPicker } from "@/components/settings/print-templates";
 import { AppShell } from "@/components/app-shell";
 import { usePosAccess } from "@/components/pos-access";
@@ -42,6 +43,7 @@ const CUSTOM: Partial<Record<SectionId, { keywords: string; render: (p: { draft:
   vyapar: [{ keywords: "vyapar sync history error manual automatic retry", render: () => <VyaparSection /> }],
   audit: [{ keywords: "audit log history reprint", render: () => <AuditSection /> }],
   suppliers: [{ keywords: "supplier payable", render: () => <SuppliersInfo /> }],
+  attendance: [{ keywords: "biometric machine device usb wifi import file labour salary", render: (p) => <div className="space-y-4"><DevicesManager disabled={p.disabled} /><LabourManager /><Link to="/attendance" className="text-sm font-semibold text-primary underline">Open Attendance & Salary sheet</Link></div> }],
   advanced: [{ keywords: "api status session cache numbering", render: () => <AdvancedStatus /> }],
 };
 

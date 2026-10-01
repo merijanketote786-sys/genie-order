@@ -217,6 +217,240 @@ export type Database = {
         }
         Relationships: []
       }
+      att_days: {
+        Row: {
+          day: string
+          id: string
+          in_time: string | null
+          labour_id: string
+          ot_hours: number
+          out_time: string | null
+          source: string
+          status: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          day: string
+          id?: string
+          in_time?: string | null
+          labour_id: string
+          ot_hours?: number
+          out_time?: string | null
+          source?: string
+          status: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Update: {
+          day?: string
+          id?: string
+          in_time?: string | null
+          labour_id?: string
+          ot_hours?: number
+          out_time?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "att_days_labour_id_fkey"
+            columns: ["labour_id"]
+            isOneToOne: false
+            referencedRelation: "att_labour"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      att_devices: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          last_seen: string | null
+          name: string
+          serial: string | null
+          token: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          last_seen?: string | null
+          name: string
+          serial?: string | null
+          token?: string
+          workspace_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          last_seen?: string | null
+          name?: string
+          serial?: string | null
+          token?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
+      att_labour: {
+        Row: {
+          bio_id: string | null
+          created_at: string
+          full_hours: number
+          half_hours: number
+          id: string
+          is_active: boolean
+          name: string
+          ot_rate: number
+          paid_leaves: number
+          phone: string | null
+          post_expense: boolean
+          rate: number
+          salary_type: string
+          work_days: number
+          workspace_id: string
+        }
+        Insert: {
+          bio_id?: string | null
+          created_at?: string
+          full_hours?: number
+          half_hours?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          ot_rate?: number
+          paid_leaves?: number
+          phone?: string | null
+          post_expense?: boolean
+          rate?: number
+          salary_type?: string
+          work_days?: number
+          workspace_id?: string
+        }
+        Update: {
+          bio_id?: string | null
+          created_at?: string
+          full_hours?: number
+          half_hours?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          ot_rate?: number
+          paid_leaves?: number
+          phone?: string | null
+          post_expense?: boolean
+          rate?: number
+          salary_type?: string
+          work_days?: number
+          workspace_id?: string
+        }
+        Relationships: []
+      }
+      att_payments: {
+        Row: {
+          amount: number
+          client_ref: string | null
+          created_at: string
+          created_by: string | null
+          expense_posted: boolean
+          id: string
+          kind: string
+          labour_id: string
+          method: string
+          note: string | null
+          pay_date: string
+          period_from: string | null
+          period_to: string | null
+          workspace_id: string
+        }
+        Insert: {
+          amount: number
+          client_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          expense_posted?: boolean
+          id?: string
+          kind: string
+          labour_id: string
+          method?: string
+          note?: string | null
+          pay_date?: string
+          period_from?: string | null
+          period_to?: string | null
+          workspace_id?: string
+        }
+        Update: {
+          amount?: number
+          client_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          expense_posted?: boolean
+          id?: string
+          kind?: string
+          labour_id?: string
+          method?: string
+          note?: string | null
+          pay_date?: string
+          period_from?: string | null
+          period_to?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "att_payments_labour_id_fkey"
+            columns: ["labour_id"]
+            isOneToOne: false
+            referencedRelation: "att_labour"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      att_punches: {
+        Row: {
+          bio_id: string
+          created_at: string
+          day: string
+          device_id: string | null
+          id: string
+          source: string
+          tm: string
+          workspace_id: string
+        }
+        Insert: {
+          bio_id: string
+          created_at?: string
+          day: string
+          device_id?: string | null
+          id?: string
+          source?: string
+          tm: string
+          workspace_id?: string
+        }
+        Update: {
+          bio_id?: string
+          created_at?: string
+          day?: string
+          device_id?: string | null
+          id?: string
+          source?: string
+          tm?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "att_punches_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "att_devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -1583,6 +1817,10 @@ export type Database = {
       acc_save_settings: { Args: { _p: Json }; Returns: undefined }
       acc_sync_all: { Args: never; Returns: number }
       acc_sys: { Args: { _key: string; _ws: string }; Returns: string }
+      att_recalc_day: {
+        Args: { _bio: string; _day: string; _ws: string }
+        Returns: undefined
+      }
       current_workspace: { Args: never; Returns: string }
       has_role: {
         Args: {
