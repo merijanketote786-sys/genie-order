@@ -26,8 +26,8 @@ const ITEMS = [
 
 /** Shared POS navigation, displayed in the app shell rather than on every page. */
 export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
-  const { can, cfg } = usePosAccess();
-  const attOn = (cfg as unknown as { attendance?: { enabled?: boolean } }).attendance?.enabled !== false;
+  const { can, config } = usePosAccess();
+  const attOn = (config as unknown as { attendance?: { enabled?: boolean } }).attendance?.enabled !== false;
   const [attOpen, setAttOpen] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [itemsOpen, setItemsOpen] = useState(false);

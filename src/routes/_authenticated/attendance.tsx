@@ -30,7 +30,7 @@ function weekStart(d: string) { const x = new Date(`${d}T00:00:00`); x.setDate(x
 
 function AttendancePage() {
   const today = localDate();
-  const { cfg, can } = usePosAccess();
+  const { cfg, can, config } = usePosAccess();
   const [from, setFrom] = useState(today.slice(0, 8) + "01");
   const [to, setTo] = useState(today);
   const [markOpen, setMarkOpen] = useState(false);
@@ -52,7 +52,7 @@ function AttendancePage() {
           <input type="date" className={`${posInput} w-40`} value={to} onChange={(e) => setTo(e.target.value)} aria-label="To" />
           {can("settings") ? <Button asChild variant="ghost" size="sm" className="ml-auto"><Link to="/pos-settings"><Settings2 /> Machines & settings</Link></Button> : null}
         </div>
-        {cfg && (cfg as unknown as { attendance?: { postExpenses?: boolean } }).attendance?.postExpenses === false ? <p className="rounded-lg border border-border bg-muted/40 p-2 text-xs text-muted-foreground">Expenses link is OFF — salary payments are recorded here only.</p> : null}
+        {(config as unknown as { attendance?: { postExpenses?: boolean } }).attendance?.postExpenses === false ? <p className="rounded-lg border border-border bg-muted/40 p-2 text-xs text-muted-foreground">Expenses link is OFF — salary payments are recorded here only.</p> : null}
 
         <section className="space-y-2 rounded-xl border border-border bg-card p-3">
           <div className="flex flex-wrap gap-3 text-sm">

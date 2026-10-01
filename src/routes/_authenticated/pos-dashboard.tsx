@@ -82,7 +82,7 @@ const QUICK = [
 ] as const;
 
 function PosDashboardPage() {
-  const { can } = usePosAccess();
+  const { can, config } = usePosAccess();
   const [mfgOpen, setMfgOpen] = useState(false);
   const { data: mfg } = useMfgStatus();
   const [partiesOpen, setPartiesOpen] = useState(false);
@@ -106,7 +106,7 @@ function PosDashboardPage() {
           <ManufactureDialog open={mfgOpen} onOpenChange={setMfgOpen} />
           <Button variant="outline" size="sm" onClick={() => setItemsOpen(true)}><Package className="size-4" /> Items</Button>
           <ItemsDialog open={itemsOpen} onOpenChange={setItemsOpen} />
-          {can("manage_expenses") && (cfg as unknown as { attendance?: { enabled?: boolean } }).attendance?.enabled !== false ? <Button variant="outline" size="sm" onClick={() => setAttOpen(true)}><CalendarCheck className="size-4" /> Attendance</Button> : null}
+          {can("manage_expenses") && (config as unknown as { attendance?: { enabled?: boolean } }).attendance?.enabled !== false ? <Button variant="outline" size="sm" onClick={() => setAttOpen(true)}><CalendarCheck className="size-4" /> Attendance</Button> : null}
           <AttendanceDialog open={attOpen} onOpenChange={setAttOpen} />
           <Button variant="outline" size="sm" onClick={() => setPartiesOpen(true)}><PartiesIcon className="size-4" /> Parties</Button>
           <PartiesDialog open={partiesOpen} onOpenChange={setPartiesOpen} />
