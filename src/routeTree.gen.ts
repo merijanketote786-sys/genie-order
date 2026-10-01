@@ -14,6 +14,9 @@ import { Route as McpRouteImport } from './routes/mcp'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as IclockGetrequestRouteImport } from './routes/iclock/getrequest'
+import { Route as IclockDevicecmdRouteImport } from './routes/iclock/devicecmd'
+import { Route as IclockCdataRouteImport } from './routes/iclock/cdata'
 import { Route as ApiInvoiceRouteImport } from './routes/api/invoice'
 import { Route as ApiExtractRouteImport } from './routes/api/extract'
 import { Route as ApiConfirmParseRouteImport } from './routes/api/confirm-parse'
@@ -47,6 +50,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAccountingRouteImport } from './routes/_authenticated/accounting'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as ApiSyncProductsRouteImport } from './routes/api/sync/products'
+import { Route as ApiPublicAttendanceRouteImport } from './routes/api/public/attendance'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicSyncProductsRouteImport } from './routes/api/public/sync/products'
 
@@ -73,6 +77,21 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const IclockGetrequestRoute = IclockGetrequestRouteImport.update({
+  id: '/iclock/getrequest',
+  path: '/iclock/getrequest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IclockDevicecmdRoute = IclockDevicecmdRouteImport.update({
+  id: '/iclock/devicecmd',
+  path: '/iclock/devicecmd',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IclockCdataRoute = IclockCdataRouteImport.update({
+  id: '/iclock/cdata',
+  path: '/iclock/cdata',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiInvoiceRoute = ApiInvoiceRouteImport.update({
   id: '/api/invoice',
@@ -245,6 +264,11 @@ const ApiSyncProductsRoute = ApiSyncProductsRouteImport.update({
   path: '/api/sync/products',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAttendanceRoute = ApiPublicAttendanceRouteImport.update({
+  id: '/api/public/attendance',
+  path: '/api/public/attendance',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   id: '/.lovable/oauth/consent',
   path: '/.lovable/oauth/consent',
@@ -293,7 +317,11 @@ export interface FileRoutesByFullPath {
   '/api/confirm-parse': typeof ApiConfirmParseRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
+  '/iclock/cdata': typeof IclockCdataRoute
+  '/iclock/devicecmd': typeof IclockDevicecmdRoute
+  '/iclock/getrequest': typeof IclockGetrequestRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/api/public/attendance': typeof ApiPublicAttendanceRoute
   '/api/sync/products': typeof ApiSyncProductsRoute
   '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
 }
@@ -333,8 +361,12 @@ export interface FileRoutesByTo {
   '/api/confirm-parse': typeof ApiConfirmParseRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
+  '/iclock/cdata': typeof IclockCdataRoute
+  '/iclock/devicecmd': typeof IclockDevicecmdRoute
+  '/iclock/getrequest': typeof IclockGetrequestRoute
   '/': typeof AuthenticatedIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/api/public/attendance': typeof ApiPublicAttendanceRoute
   '/api/sync/products': typeof ApiSyncProductsRoute
   '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
 }
@@ -376,8 +408,12 @@ export interface FileRoutesById {
   '/api/confirm-parse': typeof ApiConfirmParseRoute
   '/api/extract': typeof ApiExtractRoute
   '/api/invoice': typeof ApiInvoiceRoute
+  '/iclock/cdata': typeof IclockCdataRoute
+  '/iclock/devicecmd': typeof IclockDevicecmdRoute
+  '/iclock/getrequest': typeof IclockGetrequestRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/api/public/attendance': typeof ApiPublicAttendanceRoute
   '/api/sync/products': typeof ApiSyncProductsRoute
   '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
 }
@@ -420,7 +456,11 @@ export interface FileRouteTypes {
     | '/api/confirm-parse'
     | '/api/extract'
     | '/api/invoice'
+    | '/iclock/cdata'
+    | '/iclock/devicecmd'
+    | '/iclock/getrequest'
     | '/.lovable/oauth/consent'
+    | '/api/public/attendance'
     | '/api/sync/products'
     | '/api/public/sync/products'
   fileRoutesByTo: FileRoutesByTo
@@ -460,8 +500,12 @@ export interface FileRouteTypes {
     | '/api/confirm-parse'
     | '/api/extract'
     | '/api/invoice'
+    | '/iclock/cdata'
+    | '/iclock/devicecmd'
+    | '/iclock/getrequest'
     | '/'
     | '/.lovable/oauth/consent'
+    | '/api/public/attendance'
     | '/api/sync/products'
     | '/api/public/sync/products'
   id:
@@ -502,8 +546,12 @@ export interface FileRouteTypes {
     | '/api/confirm-parse'
     | '/api/extract'
     | '/api/invoice'
+    | '/iclock/cdata'
+    | '/iclock/devicecmd'
+    | '/iclock/getrequest'
     | '/_authenticated/'
     | '/.lovable/oauth/consent'
+    | '/api/public/attendance'
     | '/api/sync/products'
     | '/api/public/sync/products'
   fileRoutesById: FileRoutesById
@@ -518,7 +566,11 @@ export interface RootRouteChildren {
   ApiConfirmParseRoute: typeof ApiConfirmParseRoute
   ApiExtractRoute: typeof ApiExtractRoute
   ApiInvoiceRoute: typeof ApiInvoiceRoute
+  IclockCdataRoute: typeof IclockCdataRoute
+  IclockDevicecmdRoute: typeof IclockDevicecmdRoute
+  IclockGetrequestRoute: typeof IclockGetrequestRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
+  ApiPublicAttendanceRoute: typeof ApiPublicAttendanceRoute
   ApiSyncProductsRoute: typeof ApiSyncProductsRoute
   ApiPublicSyncProductsRoute: typeof ApiPublicSyncProductsRoute
 }
@@ -559,6 +611,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/iclock/getrequest': {
+      id: '/iclock/getrequest'
+      path: '/iclock/getrequest'
+      fullPath: '/iclock/getrequest'
+      preLoaderRoute: typeof IclockGetrequestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/iclock/devicecmd': {
+      id: '/iclock/devicecmd'
+      path: '/iclock/devicecmd'
+      fullPath: '/iclock/devicecmd'
+      preLoaderRoute: typeof IclockDevicecmdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/iclock/cdata': {
+      id: '/iclock/cdata'
+      path: '/iclock/cdata'
+      fullPath: '/iclock/cdata'
+      preLoaderRoute: typeof IclockCdataRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/invoice': {
       id: '/api/invoice'
@@ -791,6 +864,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSyncProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/attendance': {
+      id: '/api/public/attendance'
+      path: '/api/public/attendance'
+      fullPath: '/api/public/attendance'
+      preLoaderRoute: typeof ApiPublicAttendanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.lovable/oauth/consent': {
       id: '/.lovable/oauth/consent'
       path: '/.lovable/oauth/consent'
@@ -884,7 +964,11 @@ const rootRouteChildren: RootRouteChildren = {
   ApiConfirmParseRoute: ApiConfirmParseRoute,
   ApiExtractRoute: ApiExtractRoute,
   ApiInvoiceRoute: ApiInvoiceRoute,
+  IclockCdataRoute: IclockCdataRoute,
+  IclockDevicecmdRoute: IclockDevicecmdRoute,
+  IclockGetrequestRoute: IclockGetrequestRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
+  ApiPublicAttendanceRoute: ApiPublicAttendanceRoute,
   ApiSyncProductsRoute: ApiSyncProductsRoute,
   ApiPublicSyncProductsRoute: ApiPublicSyncProductsRoute,
 }
