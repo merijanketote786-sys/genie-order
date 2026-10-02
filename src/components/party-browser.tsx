@@ -12,6 +12,7 @@ import { usePosAccess } from "@/components/pos-access";
 import { rs } from "@/components/pos-subnav";
 import { newRef } from "@/lib/pos-errors";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PosPage } from "@/routes/_authenticated/pos";
 import { toast } from "sonner";
 
@@ -208,7 +209,6 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   const ledgerLoading = (sel?.customerId && cl.isLoading) || (sel?.supplierId && sl.isLoading);
 
   // Transaction open / edit / delete
-  const [menuFor, setMenuFor] = useState<string | null>(null);
   const [txBusy, setTxBusy] = useState(false);
   const [editSale, setEditSale] = useState(false);
 
@@ -262,6 +262,27 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
     if (txBusy) return;
     if (r.entity === "sale") void openEditSale(r);
     else if (r.entity === "purchase") void previewPurchase(r);
+  };
+
+  const transactionActions = (r: Row) => {
+    if (r.entity !== "sale" && !(r.entity === "payment" && r.standalone)) return null;
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button type="button" size="icon-sm" variant="ghost" aria-label={`Actions for ${r.ref || r.kind}`} disabled={txBusy} onClick={(e) => e.stopPropagation()}>
+            <MoreVertical className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" sideOffset={4} collisionPadding={12} className="min-w-36">
+          {r.entity === "sale" ? (
+            <DropdownMenuItem onSelect={() => void openEditSale(r)}><Pencil /> Edit</DropdownMenuItem>
+          ) : null}
+          <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => void (r.entity === "sale" ? deleteSale(r) : deletePayment(r))}>
+            <Trash2 /> Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
   };
 
   const openStatement = async () => {
@@ -332,11 +353,14 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
           <PosPage onSaved={() => { setEditSale(false); void refreshLedger(); }} />
         </div>
       ) : null}
-      <div className="grid gap-3 lg:grid-cols-[1fr_1.4fr]">
-        <section className="space-y-2 rounded-xl border border-border bg-card p-3">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-bold text-foreground">Parties ({list.length}) · <span className="text-success">To receive {rs(toReceive)}</span> · <span className="text-destructive">To pay {rs(toPay)}</span></p>
-            <Button size="sm" onClick={() => setAddOpen((o) => !o)}><UserPlus className="size-4" /> New</Button>
+      <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+        <section className="min-w-0 space-y-2 rounded-xl border border-border bg-card p-3">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+            <div className="min-w-0 text-sm font-bold text-foreground">
+              <p>Parties ({list.length})</p>
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs"><span className="text-success">To receive {rs(toReceive)}</span><span className="text-destructive">To pay {rs(toPay)}</span></div>
+            </div>
+            <Button size="sm" className="shrink-0" onClick={() => setAddOpen((o) => !o)}><UserPlus className="size-4" /> New</Button>
           </div>
           {addOpen ? (
             <div className="space-y-2 rounded-lg border border-primary p-2">
@@ -352,7 +376,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
             </div>
           ) : null}
           <input className={inputCls} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search party or supplier · name / phone" />
-          <ul className="max-h-[32rem] space-y-1 overflow-y-auto">
+          <ul className="max-h-[min(32rem,50vh)] space-y-1 overflow-y-auto lg:max-h-[32rem]">
             {loading ? <li className="py-4 text-center text-xs text-muted-foreground">Loading parties…</li> : null}
             {!loading && !list.length ? <li className="py-4 text-center text-xs text-muted-foreground">No parties found — press "New".</li> : null}
             {list.map((p) => (
@@ -360,7 +384,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
                 <button type="button" onClick={() => { setSel(p); setForm(null); setStOpen(false); }} className={`flex w-full items-center justify-between gap-2 rounded-lg border p-2 text-left text-sm ${sel?.key === p.key ? "border-primary bg-accent" : "border-border"}`}>
                   <span className="min-w-0">
                     <b className="block truncate text-foreground">{p.name}</b>
-                    <span className="text-xs text-muted-foreground">{p.kind}{p.phone ? ` · ${p.phone}` : ""}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{p.kind}{p.phone ? ` · ${p.phone}` : ""}</span>
                   </span>
                   <span className={`shrink-0 text-sm font-semibold ${p.balance > 0 ? "text-success" : "text-destructive"}`}>{rs(Math.abs(p.balance))}</span>
                 </button>
@@ -370,16 +394,16 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
           <p className="text-xs text-muted-foreground"><span className="text-success">Green</span> = to receive · <span className="text-destructive">Red</span> = to pay / zero</p>
         </section>
 
-        <section className="space-y-3 rounded-xl border border-border bg-card p-3">
+        <section className="min-w-0 space-y-3 rounded-xl border border-border bg-card p-3">
           {!sel ? <p className="py-10 text-center text-sm text-muted-foreground">Select a party or supplier — ledger, payments and statement will appear here.</p> : (
             <>
-              <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="grid min-w-0 gap-2">
                 <div className="min-w-0">
-                  <p className="font-bold text-foreground">{sel.name}</p>
-                  <p className="text-xs text-muted-foreground">{sel.kind}{sel.phone ? ` · ${sel.phone}` : ""}{sel.address ? ` · ${sel.address}` : ""}</p>
+                  <p className="break-words font-bold text-foreground">{sel.name}</p>
+                  <p className="break-words text-xs text-muted-foreground">{sel.kind}{sel.phone ? ` · ${sel.phone}` : ""}{sel.address ? ` · ${sel.address}` : ""}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm font-bold ${sel.balance > 0 ? "text-success" : "text-destructive"}`}>{sel.balance > 0 ? "To receive" : "To pay"} {rs(Math.abs(sel.balance))}</span>
+                <span className={`text-sm font-bold ${sel.balance > 0 ? "text-success" : "text-destructive"}`}>{sel.balance > 0 ? "To receive" : "To pay"} {rs(Math.abs(sel.balance))}</span>
+                <div className="flex flex-wrap gap-2">
                   {sel.supplierId ? <Button size="sm" variant="outline" onClick={() => { const sup = (s.data?.suppliers ?? []).find((x) => x.id === sel.supplierId); setForm({ name: sup?.name ?? sel.name, phone: sup?.phone ?? sel.phone, address: sup?.address ?? "", opening: String(sup?.openingBalance ?? 0) }); }}><Pencil className="size-4" /> Edit</Button> : null}
                   <Button size="sm" variant="outline" onClick={openAdjust}><Scale className="size-4" /> Adjust balance</Button>
                   <Button size="sm" variant="outline" onClick={() => setStOpen((o) => !o)}><FileText className="size-4" /> Statement</Button>
@@ -393,8 +417,8 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
                     <Button type="button" size="sm" variant={adjDir === "receive" ? "default" : "outline"} onClick={() => setAdjDir("receive")}>To receive</Button>
                     <Button type="button" size="sm" variant={adjDir === "pay" ? "default" : "outline"} onClick={() => setAdjDir("pay")}>To pay</Button>
                   </div>
-                  <div className="flex gap-2">
-                    <input className={inputCls} inputMode="decimal" value={adjAmt} onChange={(e) => setAdjAmt(e.target.value.replace(/[^\d.]/g, ""))} placeholder="Amount (0 = no opening balance)" aria-label="Opening balance" />
+                  <div className="flex flex-wrap gap-2">
+                    <input className={`${inputCls} min-w-0 flex-1 basis-full sm:basis-40`} inputMode="decimal" value={adjAmt} onChange={(e) => setAdjAmt(e.target.value.replace(/[^\d.]/g, ""))} placeholder="Amount (0 = no opening balance)" aria-label="Opening balance" />
                     <Button type="button" size="sm" disabled={adjBusy} onClick={saveAdjust}>{adjBusy ? "Saving…" : "Save"}</Button>
                     <Button type="button" size="sm" variant="ghost" onClick={() => setAdjOpen(false)}>Cancel</Button>
                   </div>
@@ -434,7 +458,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
                   <Button type="button" size="sm" variant={dir === "in" ? "default" : "outline"} onClick={() => setDir("in")}><Wallet className="size-4" /> Payment In</Button>
                   <Button type="button" size="sm" variant={dir === "out" ? "default" : "outline"} onClick={() => setDir("out")}><Wallet className="size-4" /> Payment Out</Button>
                 </div>
-                <div className="grid gap-2 sm:grid-cols-[1fr_auto_1fr_auto]">
+                  <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto]">
                   <input className={inputCls} inputMode="decimal" value={pay.amount} onChange={(e) => setPay({ ...pay, amount: e.target.value.replace(/[^\d.]/g, "") })} placeholder={dir === "in" ? "Amount received" : "Amount paid"} aria-label="Amount" />
                   <select className={inputCls} value={pay.method} onChange={(e) => setPay({ ...pay, method: e.target.value })} aria-label="Method">{methods.map((m) => <option key={m}>{m}</option>)}</select>
                   <input className={inputCls} value={pay.note} onChange={(e) => setPay({ ...pay, note: e.target.value })} placeholder="Note" />
@@ -442,7 +466,30 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
+              <div className="space-y-2 md:hidden" aria-label="Transactions">
+                <div className="flex items-center justify-between border-b border-border pb-2 text-sm font-semibold"><span>Transactions</span><span className="text-xs text-muted-foreground">Opening {rs(ledgerOpening)}</span></div>
+                {ledgerLoading ? <p className="py-2 text-center text-xs text-muted-foreground">Loading ledger…</p> : null}
+                {ledgerRows.map((r, i) => (
+                  <div key={`${r.entity}-${r.id}-${i}`} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-2 border-b border-border py-2">
+                    <div className="min-w-0">
+                      {r.entity === "payment" ? (
+                        <p className="break-words text-sm font-semibold">{r.kind}</p>
+                      ) : (
+                        <Button type="button" variant="link" className="h-auto max-w-full justify-start whitespace-normal p-0 text-left text-sm" onClick={() => openRow(r)}>{r.kind}</Button>
+                      )}
+                      <p className="break-all text-xs text-muted-foreground">{new Date(r.date).toLocaleDateString("en-PK")} · {r.ref}</p>
+                    </div>
+                    {transactionActions(r)}
+                    <div className="col-span-2 grid grid-cols-3 gap-1 text-xs">
+                      <div className="min-w-0"><span className="block text-muted-foreground">Debit</span><span className="break-all">{r.debit ? rs(r.debit) : "—"}</span></div>
+                      <div className="min-w-0"><span className="block text-muted-foreground">Credit</span><span className="break-all">{r.credit ? rs(r.credit) : "—"}</span></div>
+                      <div className="min-w-0 text-right"><span className="block text-muted-foreground">Balance</span><span className="break-all font-semibold">{rs(r.balance)}</span></div>
+                    </div>
+                  </div>
+                ))}
+                {!ledgerLoading && !ledgerRows.length ? <p className="py-2 text-center text-xs text-muted-foreground">No entries yet.</p> : null}
+              </div>
+              <div className="hidden max-w-full overflow-x-auto md:block">
                 <table className="w-full text-sm">
                   <thead><tr className="text-left text-xs text-muted-foreground"><th>Date</th><th>Detail</th><th>Ref</th><th className="text-right">Debit (to receive)</th><th className="text-right">Credit (to pay)</th><th className="text-right">Balance</th><th className="w-8" /></tr></thead>
                   <tbody>
@@ -452,28 +499,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
                       <tr key={`${r.entity}-${r.id}-${i}`} className={`border-t border-border ${r.entity !== "payment" ? "cursor-pointer hover:bg-accent/60" : ""}`} onClick={() => openRow(r)} title={r.entity === "sale" ? "Click to open / edit" : r.entity === "purchase" ? "Click to preview" : undefined}>
                         <td className="py-1.5 text-xs">{new Date(r.date).toLocaleDateString("en-PK")}</td><td>{r.kind}</td><td className="text-xs">{r.ref}</td>
                         <td className="text-right">{r.debit ? rs(r.debit) : ""}</td><td className="text-right">{r.credit ? rs(r.credit) : ""}</td><td className="text-right font-semibold">{rs(r.balance)}</td>
-                        <td className="relative text-right" onClick={(e) => e.stopPropagation()}>
-                          {r.entity === "sale" || (r.entity === "payment" && r.standalone) ? (
-                            <>
-                              <button type="button" aria-label={`Actions for ${r.ref || r.kind}`} disabled={txBusy} onClick={() => setMenuFor(menuFor === r.id ? null : r.id)} className="rounded-md border border-border p-1 hover:bg-accent disabled:opacity-50"><MoreVertical className="size-3.5" /></button>
-                              {menuFor === r.id ? (
-                                <>
-                                  <div className="fixed inset-0 z-40" onClick={() => setMenuFor(null)} />
-                                  <div className="absolute right-0 z-50 mt-1 w-40 overflow-hidden rounded-xl border border-border bg-popover py-1 text-left shadow-xl">
-                                    {r.entity === "sale" ? (
-                                      <>
-                                        <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent" onClick={() => { setMenuFor(null); void openEditSale(r); }}><Pencil className="size-4" /> Edit</button>
-                                        <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-accent" onClick={() => { setMenuFor(null); void deleteSale(r); }}><Trash2 className="size-4" /> Delete</button>
-                                      </>
-                                    ) : (
-                                      <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-accent" onClick={() => { setMenuFor(null); void deletePayment(r); }}><Trash2 className="size-4" /> Delete</button>
-                                    )}
-                                  </div>
-                                </>
-                              ) : null}
-                            </>
-                          ) : null}
-                        </td>
+                         <td className="text-right" onClick={(e) => e.stopPropagation()}>{transactionActions(r)}</td>
                       </tr>
                     ))}
                     {!ledgerLoading && !ledgerRows.length ? <tr className="border-t border-border"><td colSpan={7} className="py-2 text-center text-xs text-muted-foreground">No entries yet.</td></tr> : null}
