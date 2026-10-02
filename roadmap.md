@@ -1,5 +1,5 @@
 # Roadmap — Vyapar-style POS
-- [ ] Fix Parties transaction action popup and make Parties page mobile responsive
+- [x] Fix Parties transaction action popup and make Parties page mobile responsive
 - [x] Custom invoice fields: bill-level values, optional per-field Add to total, saved with invoice and included in preview/print/PDF
 - [x] Printing templates: individual invoice field font sizes and whole-invoice font style
 - [x] Match POS billing page to the supplied full-width sale-invoice layout without changing billing behavior
