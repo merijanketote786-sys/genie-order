@@ -142,7 +142,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const doShare = (p: Hist) => run(async () => {
     const d = await loadDoc(p);
     const text = [`*${d.title} ${p.doc_number}*`, new Date(p.created_at).toLocaleString("en-PK"), p.supplier_name ? `Supplier: ${p.supplier_name}` : "", "",
-      ...d.lines.map((l) => `${l.name} — ${l.qty} x ${rs(l.rate)} = ${rs(l.total)}`), "", `Total: ${rs(p.grand_total)}`, `Paid: ${rs(p.paid_total)}`, p.balance > 0 ? `Balance: ${rs(p.balance)}` : ""].filter((x) => x !== "").join("\n");
+      ...(d.lines ?? []).map((l) => `${l.name} — ${l.qty} x ${rs(l.rate)} = ${rs(l.total)}`), "", `Total: ${rs(p.grand_total)}`, `Paid: ${rs(p.paid_total)}`, p.balance > 0 ? `Balance: ${rs(p.balance)}` : ""].filter((x) => x !== "").join("\n");
     setShare({ title: p.doc_number, text });
   });
   const doEdit = (p: Hist) => run(async () => {
