@@ -316,6 +316,13 @@
       "when": 1790843445285,
       "tag": "0044_attendance_labour_salary",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1790942374423,
+      "tag": "0045_pos_cancel_purchase",
+      "breakpoints": true
     }
   ]
 }
