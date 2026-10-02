@@ -38,7 +38,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const qc = useQueryClient();
   const pc = usePrintCenter();
   const { data: sup } = useQuery({ queryKey: ["suppliers"], queryFn: () => listSuppliers() });
-   const { data: parties } = useQuery({ queryKey: ["customer-balances", "all"], queryFn: () => listCustomerBalances({ data: {} }) });
+   const { data: parties } = useQuery({ queryKey: ["customer-balances", "pos"], queryFn: () => listCustomerBalances({ data: { posOnly: true } }) });
   const { data: prod } = useQuery({ queryKey: ["products-lite"], queryFn: () => listProductsLite(), staleTime: 60_000 });
   const { data: hist } = useQuery({ queryKey: ["purchases"], queryFn: () => listPurchases() });
   const [docType, setDocType] = useState<"purchase" | "return">(startDocType ?? "purchase");

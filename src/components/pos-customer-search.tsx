@@ -36,7 +36,7 @@ export function PosCustomerSearch({
 
   const { data } = useQuery({
     queryKey: ["pos-customers", q],
-    queryFn: () => listCustomers({ data: { search: q || undefined } }),
+    queryFn: () => listCustomers({ data: { search: q || undefined, posOnly: true } }),
     enabled: open,
     staleTime: 30_000,
   });

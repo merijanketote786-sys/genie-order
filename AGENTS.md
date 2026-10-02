@@ -21,3 +21,4 @@
 - Render the shared POS navigation in AppShell's dedicated POS sidebar rather than per-page strips; this keeps every POS screen's links consistent across desktop and mobile.
 - Render Parties transaction actions through the shared portal dropdown and use compact transaction rows on phones; this prevents clipping inside scroll areas while keeping ledger amounts readable.
 - Keep historical sales and purchase party IDs in their existing records, and present same-phone contacts together in POS; this preserves transaction links and balances without destructive data migration.
+- POS party selectors must request only POS-scoped customers, while Workspace customer selectors retain their existing full list; this prevents Workspace-only contacts from appearing in POS workflows.

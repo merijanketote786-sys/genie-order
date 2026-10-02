@@ -1,4 +1,5 @@
 # Roadmap — Vyapar-style POS
+- [x] Keep Workspace-only customers out of POS Parties, billing, purchase, and payment selections
 - [x] Merge supplier and party experience across purchases, sales, navigation, and settings without losing historical transactions
 - [x] Fix Parties transaction action popup and make Parties page mobile responsive
 - [x] Custom invoice fields: bill-level values, optional per-field Add to total, saved with invoice and included in preview/print/PDF
