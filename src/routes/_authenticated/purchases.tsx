@@ -59,6 +59,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const [savingNew, setSavingNew] = useState(false);
   const [editId, setEditId] = useState<{ id: string; number: string } | undefined>();
   const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
   const [share, setShare] = useState<{ title: string; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -311,11 +312,11 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
                     <td className="py-1.5 font-semibold">{p.doc_number}</td><td>{p.doc_type === "purchase" ? "Purchase" : "Return"}</td><td>{p.supplier_name}</td>
                     <td>{rs(p.grand_total)}</td><td>{rs(p.paid_total)}</td><td>{rs(p.balance)}</td><td className="text-xs">{new Date(p.created_at).toLocaleString("en-PK")}</td>
                     <td className="relative text-right">
-                      <button type="button" title="Actions" aria-label={`Actions for ${p.doc_number}`} disabled={busy} onClick={() => setMenuFor(menuFor === p.id ? null : p.id)} className="rounded-lg border border-border p-1.5 hover:bg-accent disabled:opacity-50"><MoreVertical className="size-4" /></button>
+                      <button type="button" title="Actions" aria-label={`Actions for ${p.doc_number}`} disabled={busy} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); const h = 330; setMenuPos({ top: r.bottom + h > window.innerHeight ? Math.max(8, r.top - h) : r.bottom + 4, right: Math.max(8, window.innerWidth - r.right) }); setMenuFor(menuFor === p.id ? null : p.id); }} className="rounded-lg border border-border p-1.5 hover:bg-accent disabled:opacity-50"><MoreVertical className="size-4" /></button>
                       {menuFor === p.id ? (
                         <>
                           <div className="fixed inset-0 z-40" onClick={() => setMenuFor(null)} />
-                          <div className="absolute right-0 z-50 mt-1 w-52 overflow-hidden rounded-xl border border-border bg-popover py-1 text-left shadow-xl">
+                          <div style={{ top: menuPos.top, right: menuPos.right }} className="fixed z-50 w-52 overflow-hidden rounded-xl border border-border bg-popover py-1 text-left shadow-xl">
                             {([
                               [<ReceiptText key="a" className="size-4" />, "Preview", () => run(async () => pc.preview(await loadDoc(p), true))],
                               [<Printer key="b" className="size-4" />, "Reprint", () => run(async () => { await pc.print(await loadDoc(p), { reprint: true }); })],
