@@ -74,7 +74,8 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const lineTotal = (l: Line) => { const b = Math.max(0, num(l.qty) * num(l.rate) - num(l.discount)); return b + (b * num(l.tax)) / 100; };
   const subtotal = lines.reduce((s, l) => s + lineTotal(l), 0);
   const total = Math.max(0, subtotal - num(discount));
-  const paidNum = paid.trim() ? Math.min(num(paid), total) : total;
+  const isCredit = method === "Credit";
+  const paidNum = isCredit ? 0 : paid.trim() ? Math.min(num(paid), total) : total;
   const totalQty = lines.reduce((s, l) => s + num(l.qty), 0);
   const set = (i: number, v: Partial<Line>) => setLines((ls) => ls.map((l, j) => (j === i ? { ...l, ...v } : l)));
   const stagedAmount = (() => { const b = Math.max(0, num(sf.qty) * num(sf.rate) - num(sf.discount)); return b + (b * num(sf.tax)) / 100; })();
@@ -284,13 +285,14 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
 
           <div className="grid gap-4 p-4 md:grid-cols-2">
             <div className="space-y-2">
-              <select className={posInput} value={method} onChange={(e) => setMethod(e.target.value)} aria-label="Payment type">{PAY_OPTS.map((m) => <option key={m}>{m}</option>)}</select>
+              <select className={posInput} value={method} onChange={(e) => setMethod(e.target.value)} aria-label="Payment type">{[...PAY_OPTS, "Credit"].map((m) => <option key={m}>{m}</option>)}</select>
+              {isCredit && <p className="text-xs text-muted-foreground">Full amount will be added to the supplier's balance (payable).</p>}
               <textarea className={`${posInput} min-h-20 py-2`} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Description / note" />
             </div>
             <div className="space-y-2 text-sm">
               <label className="flex items-center justify-between gap-3"><span className="text-muted-foreground">Discount (Rs)</span><input className={`${cell} max-w-40 text-right`} value={discount} inputMode="decimal" onChange={(e) => setDiscount(e.target.value)} /></label>
               <div className="flex items-center justify-between border-t border-border pt-2 text-base"><span className="font-bold">Total</span><b className="text-foreground">{rs(total)}</b></div>
-              <label className="flex items-center justify-between gap-3"><span className="text-muted-foreground">{docType === "purchase" ? "Paid" : "Refunded"}</span><input className={`${cell} max-w-40 text-right`} value={paid} inputMode="decimal" placeholder={String(total)} onChange={(e) => setPaid(e.target.value)} /></label>
+              <label className="flex items-center justify-between gap-3"><span className="text-muted-foreground">{docType === "purchase" ? "Paid" : "Refunded"}</span><input className={`${cell} max-w-40 text-right`} value={isCredit ? "0" : paid} disabled={isCredit} inputMode="decimal" placeholder={String(total)} onChange={(e) => setPaid(e.target.value)} /></label>
               <div className="flex items-center justify-between"><span className="text-muted-foreground">Balance</span><b className={total - paidNum > 0 ? "text-destructive" : ""}>{rs(total - paidNum)}</b></div>
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={reset}>Clear</Button>
