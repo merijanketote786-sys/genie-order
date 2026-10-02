@@ -97,7 +97,7 @@ export const POS_PERM_GROUPS: { title: string; items: { key: PosPerm; label: str
     { key: "manufacture", label: "Manufacture items (icon on items)" }, { key: "mfg_settings", label: "Manufacturing settings and raw material details" },
   ] },
   { title: "Parties and money", items: [
-    { key: "manage_customers", label: "Customers" }, { key: "manage_suppliers", label: "Suppliers" }, { key: "view_balances", label: "See party balances" },
+     { key: "manage_customers", label: "Parties (sales)" }, { key: "manage_suppliers", label: "Parties (purchases)" }, { key: "view_balances", label: "See party balances" },
     { key: "manage_expenses", label: "Expenses" },
   ] },
   { title: "Reports", items: [ { key: "view_reports", label: "Reports and Day Book" }, { key: "view_profit", label: "See profit" } ] },

@@ -1,5 +1,4 @@
-// Combined parties browser: customers (parties) and suppliers shown together —
-// suppliers section and the Parties dialog both render this component.
+// Combined parties browser: sales and purchase records shown together by phone.
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { FileText, MoreVertical, Pencil, Scale, Trash2, UserPlus, Wallet, X } from "lucide-react";
@@ -41,7 +40,7 @@ const label = (kind: string, c: Opt) => {
   return m ? `${base} (${m})` : base;
 };
 
-/** Full parties + suppliers browser. Set enabled=false inside dialogs until they open. */
+/** Shared Parties browser. Set enabled=false inside dialogs until they open. */
 export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   const qc = useQueryClient();
   const pc = usePrintCenter();
@@ -52,7 +51,6 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
 
   // Add party
   const [addOpen, setAddOpen] = useState(false);
-  const [addKind, setAddKind] = useState<"customer" | "supplier">("customer");
   const [addName, setAddName] = useState("");
   const [addPhone, setAddPhone] = useState("");
   const [saving, setSaving] = useState(false);
@@ -81,7 +79,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   const [adjAmt, setAdjAmt] = useState("");
   const [adjBusy, setAdjBusy] = useState(false);
 
-  const c = useQuery({ queryKey: ["customer-balances", "pos"], queryFn: () => listCustomerBalances({ data: { posOnly: true } }), enabled, staleTime: 15_000 });
+  const c = useQuery({ queryKey: ["customer-balances", "all"], queryFn: () => listCustomerBalances({ data: {} }), enabled, staleTime: 15_000 });
   const s = useQuery({ queryKey: ["suppliers"], queryFn: () => listSuppliers(), enabled, staleTime: 15_000 });
 
   const cl = useQuery({ queryKey: ["party-ledger-c", sel?.customerId], queryFn: () => getCustomerLedger({ data: { id: sel!.customerId! } }), enabled: enabled && !!sel?.customerId });
@@ -90,11 +88,16 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   // Combined balance: positive = hum ne lene hain (receivable), negative = dene hain (payable).
   const map = new Map<string, Party>();
   for (const x of c.data?.customers ?? []) {
-    const k = x.phone ? `p${tail(x.phone)}` : `c${x.id}`;
+    const digits = x.phone.replace(/\D/g, "");
+    const k = digits.length >= 7 ? `p${tail(x.phone)}` : `c${x.id}`;
     map.set(k, { key: k, name: x.name || x.phone || "No name", phone: x.phone, kind: "Customer", balance: x.balance, customerId: x.id });
   }
+  const supplierCounts = new Map<string, number>();
+  for (const x of s.data?.suppliers ?? []) { const digits = x.phone.replace(/\D/g, ""); if (digits.length >= 7) { const k = `p${tail(x.phone)}`; supplierCounts.set(k, (supplierCounts.get(k) ?? 0) + 1); } }
   for (const x of s.data?.suppliers ?? []) {
-    const k = x.phone ? `p${tail(x.phone)}` : `s${x.id}`;
+    const digits = x.phone.replace(/\D/g, "");
+    const phoneKey = `p${tail(x.phone)}`;
+    const k = digits.length >= 7 && supplierCounts.get(phoneKey) === 1 ? phoneKey : `s${x.id}`;
     const e = map.get(k);
     if (e) { e.balance -= x.balance; e.kind = "Customer · Supplier"; e.supplierId = x.id; }
     else map.set(k, { key: k, name: x.name, phone: x.phone, kind: "Supplier", balance: -x.balance, supplierId: x.id, address: x.address ?? "" });
@@ -108,15 +111,14 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   const toPay = r2(list.reduce((a, p) => a + Math.max(0, -p.balance), 0));
 
   const addParty = async () => {
-    if (!addName.trim() || !addPhone.trim()) { toast.error("Name aur phone zaroori hain"); return; }
+    if (!addName.trim() || !addPhone.trim()) { toast.error("Name and phone are required"); return; }
     setSaving(true);
     try {
-      if (addKind === "customer") await saveParty({ data: { name: addName.trim(), phone: addPhone.trim() } });
-      else await saveSupplier({ data: { name: addName.trim(), phone: addPhone.trim() } });
-      toast.success("Party add ho gayi");
+      await saveParty({ data: { name: addName.trim(), phone: addPhone.trim() } });
+      toast.success("Party added");
       setAddName(""); setAddPhone(""); setAddOpen(false);
       await Promise.all([qc.invalidateQueries({ queryKey: ["customer-balances"] }), qc.invalidateQueries({ queryKey: ["suppliers"] })]);
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Party add nahi hui"); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not add party"); }
     setSaving(false);
   };
 
@@ -124,7 +126,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
     if (!sel?.supplierId || !form?.name.trim()) return;
     try {
       await saveSupplier({ data: { id: sel.supplierId, name: form.name, phone: form.phone, address: form.address, openingBalance: Number(form.opening) || 0 } });
-      toast.success("Supplier save");
+      toast.success("Party saved");
       setForm(null);
       await Promise.all([qc.invalidateQueries({ queryKey: ["suppliers"] }), qc.invalidateQueries({ queryKey: ["party-ledger-s"] })]);
     } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
@@ -147,7 +149,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   const saveAdjust = async () => {
     if (!sel) return;
     const amt = Number(adjAmt);
-    if (!Number.isFinite(amt) || amt < 0) { toast.error("Sahi amount likhein"); return; }
+    if (!Number.isFinite(amt) || amt < 0) { toast.error("Enter a valid amount"); return; }
     setAdjBusy(true);
     try {
       // Customer record: +receivable / -payable. Supplier record: +payable / -receivable.
@@ -165,11 +167,11 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
           const cust = (c.data?.customers ?? []).find((x) => x.id === sel.customerId);
           if (Number(cust?.opening ?? 0) !== 0) await saveCustomerAccount({ data: { id: sel.customerId, openingBalance: 0, creditLimit: cl.data?.customer?.creditLimit ?? null } });
         }
-      } else throw new Error("Party record nahi mila");
-      toast.success("Opening balance save ho gaya");
+      } else throw new Error("Party not found");
+      toast.success("Opening balance saved");
       setAdjOpen(false);
       await Promise.all(["customer-balances", "suppliers", "party-ledger-c", "party-ledger-s", "pos-dashboard"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Save nahi hua"); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not save balance"); }
     setAdjBusy(false);
   };
 
@@ -322,7 +324,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
       const fmt = (x: string) => new Date(x).toLocaleDateString("en-PK");
       pc.preview({
         kind: "statement", title: "Party Statement", number: p.name, date: new Date(),
-        party: { label: p.kind, name: p.name, phone: p.phone, address: p.address ?? "" },
+         party: { label: "Party", name: p.name, phone: p.phone, address: p.address ?? "" },
         meta: [["Period", `${fmt(from)} to ${fmt(to)}`]],
         table: { head: ["Date", "Detail", "Ref", "Debit", "Credit", "Balance"], align: ["l", "l", "l", "r", "r", "r"], rows: [["", "Opening balance", "", "", "", opening], ...inRange] },
         totals: [
@@ -364,10 +366,6 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
           </div>
           {addOpen ? (
             <div className="space-y-2 rounded-lg border border-primary p-2">
-              <div className="flex gap-2">
-                <Button type="button" size="sm" variant={addKind === "customer" ? "default" : "outline"} onClick={() => setAddKind("customer")}>Customer</Button>
-                <Button type="button" size="sm" variant={addKind === "supplier" ? "default" : "outline"} onClick={() => setAddKind("supplier")}>Supplier</Button>
-              </div>
               <div className="grid gap-2 sm:grid-cols-2">
                 <input className={inputCls} placeholder="Name *" value={addName} onChange={(e) => setAddName(e.target.value)} />
                 <input className={inputCls} placeholder="Phone *" inputMode="tel" value={addPhone} onChange={(e) => setAddPhone(e.target.value.replace(/[^\d+\s-]/g, ""))} />
@@ -375,7 +373,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
               <Button type="button" className="w-full" disabled={saving} onClick={addParty}>{saving ? "Saving…" : "Save party"}</Button>
             </div>
           ) : null}
-          <input className={inputCls} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search party or supplier · name / phone" />
+           <input className={inputCls} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search party · name / phone" />
           <ul className="max-h-[min(32rem,50vh)] space-y-1 overflow-y-auto lg:max-h-[32rem]">
             {loading ? <li className="py-4 text-center text-xs text-muted-foreground">Loading parties…</li> : null}
             {!loading && !list.length ? <li className="py-4 text-center text-xs text-muted-foreground">No parties found — press "New".</li> : null}
@@ -384,7 +382,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
                 <button type="button" onClick={() => { setSel(p); setForm(null); setStOpen(false); }} className={`flex w-full items-center justify-between gap-2 rounded-lg border p-2 text-left text-sm ${sel?.key === p.key ? "border-primary bg-accent" : "border-border"}`}>
                   <span className="min-w-0">
                     <b className="block truncate text-foreground">{p.name}</b>
-                    <span className="block truncate text-xs text-muted-foreground">{p.kind}{p.phone ? ` · ${p.phone}` : ""}</span>
+                     <span className="block truncate text-xs text-muted-foreground">{p.phone || "No phone"}</span>
                   </span>
                   <span className={`shrink-0 text-sm font-semibold ${p.balance > 0 ? "text-success" : "text-destructive"}`}>{rs(Math.abs(p.balance))}</span>
                 </button>
@@ -395,12 +393,12 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
         </section>
 
         <section className="min-w-0 space-y-3 rounded-xl border border-border bg-card p-3">
-          {!sel ? <p className="py-10 text-center text-sm text-muted-foreground">Select a party or supplier — ledger, payments and statement will appear here.</p> : (
+           {!sel ? <p className="py-10 text-center text-sm text-muted-foreground">Select a party — ledger, payments and statement will appear here.</p> : (
             <>
               <div className="grid min-w-0 gap-2">
                 <div className="min-w-0">
                   <p className="break-words font-bold text-foreground">{sel.name}</p>
-                  <p className="break-words text-xs text-muted-foreground">{sel.kind}{sel.phone ? ` · ${sel.phone}` : ""}{sel.address ? ` · ${sel.address}` : ""}</p>
+                   <p className="break-words text-xs text-muted-foreground">{[sel.phone, sel.address].filter(Boolean).join(" · ")}</p>
                 </div>
                 <span className={`text-sm font-bold ${sel.balance > 0 ? "text-success" : "text-destructive"}`}>{sel.balance > 0 ? "To receive" : "To pay"} {rs(Math.abs(sel.balance))}</span>
                 <div className="flex flex-wrap gap-2">
@@ -427,7 +425,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
 
               {form ? (
                 <div className="grid gap-2 rounded-lg border border-primary p-2 sm:grid-cols-2">
-                  <input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Supplier name *" />
+                   <input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Party name *" />
                   <input className={inputCls} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Phone" />
                   <input className={inputCls} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Address" />
                   <input className={inputCls} value={form.opening} inputMode="decimal" onChange={(e) => setForm({ ...form, opening: e.target.value })} placeholder="Opening balance (we owe)" />

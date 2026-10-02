@@ -57,6 +57,33 @@ export const saveSupplier = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Resolve a POS party to its purchase-side record without changing historical document IDs. */
+export const ensurePurchaseParty = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ customerId: z.string().uuid().optional(), supplierId: z.string().uuid().optional() }).refine((d) => !!d.customerId !== !!d.supplierId).parse(d))
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as Sb;
+    const { data: allowed, error: accessError } = await sb.rpc("pos_can", { _perm: "manage_purchases" });
+    if (accessError || !allowed) throw new Error("Not allowed to manage purchases");
+    if (data.supplierId) {
+      const { data: supplier, error } = await sb.from("suppliers").select("id, name").eq("id", data.supplierId).eq("is_active", true).maybeSingle();
+      if (error || !supplier) throw new Error("Party not found");
+      return { id: supplier.id as string, name: supplier.name as string };
+    }
+    const { data: customer, error: customerError } = await sb.from("customers").select("name, phone").eq("id", data.customerId).maybeSingle();
+    if (customerError || !customer) throw new Error("Party not found");
+    const digits = String(customer.phone ?? "").replace(/\D/g, "");
+    if (digits.length < 7) throw new Error("Add a valid phone number to this party first");
+    const { data: suppliers, error: listError } = await sb.from("suppliers").select("id, name, phone").eq("is_active", true);
+    if (listError) throw new Error("Could not check parties");
+    const matching = (suppliers ?? []).filter((s: any) => String(s.phone ?? "").replace(/\D/g, "").slice(-10) === digits.slice(-10));
+    if (matching.length > 1) throw new Error("Multiple purchase records share this phone. Please select the exact party record in Purchases.");
+    if (matching.length) return { id: matching[0].id as string, name: matching[0].name as string };
+    const { data: created, error } = await sb.from("suppliers").insert({ name: customer.name || customer.phone, phone: customer.phone }).select("id, name").single();
+    if (error || !created) throw new Error("Could not use this party for purchase");
+    return { id: created.id as string, name: created.name as string };
+  });
+
 export const partyPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>

@@ -12,7 +12,7 @@ const ITEMS = [
   { to: "/pos", label: "Billing", icon: ShoppingCart, perm: "view_pos" },
   { to: "/returns", label: "Returns", icon: Undo2, perm: "create_sale" },
   { to: "/purchases", label: "Purchases", icon: Truck, perm: "manage_purchases" },
-  { to: "/suppliers", label: "Parties", icon: Users, perm: "manage_purchases" },
+   { to: "/parties", label: "Parties", icon: Users, perm: "view_pos" },
   { to: "/ledger", label: "Credit", icon: BookOpen, perm: "view_balances" },
   { to: "/expenses", label: "Expenses", icon: Receipt, perm: "manage_expenses" },
   { to: "/attendance", label: "Attendance", icon: ClipboardList, perm: "manage_expenses" },

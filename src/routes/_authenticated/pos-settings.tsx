@@ -6,7 +6,7 @@ import { useMfgStatus } from "@/components/mfg-gate";
 import { usePrintCenter } from "@/components/print-center";
 import { PosSubnav } from "@/components/pos-subnav";
 import { FIELDS, SECTIONS, type Field, type SectionId } from "@/components/settings/schema";
-import { AdvancedStatus, AuditSection, BackupSection, InvoiceFieldsEditor, LogoField, PaymentsEditor, PrintersManager, SuppliersInfo, TaxRatesEditor, UsersSection, VyaparSection, inp, sampleDoc } from "@/components/settings/sections";
+import { AdvancedStatus, AuditSection, BackupSection, InvoiceFieldsEditor, LogoField, PaymentsEditor, PrintersManager, TaxRatesEditor, UsersSection, VyaparSection, inp, sampleDoc } from "@/components/settings/sections";
 import { Button } from "@/components/ui/button";
 import { savePosSettings } from "@/lib/pos-access.functions";
 import { getPath, resolveCfg, setPath, type PaperFormat, type PosConfig } from "@/lib/pos-config";
@@ -42,7 +42,6 @@ const CUSTOM: Partial<Record<SectionId, { keywords: string; render: (p: { draft:
   backup: [{ keywords: "backup export csv excel import data", render: () => <BackupSection /> }],
   vyapar: [{ keywords: "vyapar sync history error manual automatic retry", render: () => <VyaparSection /> }],
   audit: [{ keywords: "audit log history reprint", render: () => <AuditSection /> }],
-  suppliers: [{ keywords: "supplier payable", render: () => <SuppliersInfo /> }],
   attendance: [{ keywords: "biometric machine device usb wifi import file labour salary", render: (p) => <div className="space-y-4"><DevicesManager disabled={p.disabled} /><LabourManager /><Link to="/attendance" className="text-sm font-semibold text-primary underline">Open Attendance & Salary sheet</Link></div> }],
   advanced: [{ keywords: "api status session cache numbering", render: () => <AdvancedStatus /> }],
 };

@@ -333,7 +333,7 @@ export function PrintersManager() {
 export const PERM_LABEL: Record<string, string> = {
   view_pos: "View POS", create_sale: "Create sale", edit_sale: "Edit sale (held/quotation)", return_sale: "Return sale", edit_price: "Edit price", apply_discount: "Apply discount",
   cancel_invoice: "Cancel sale", view_reports: "View reports", view_profit: "View profit", edit_stock: "Edit stock", edit_products: "Edit products", view_balances: "Customer balances",
-  manage_customers: "Manage customers", manage_suppliers: "Manage suppliers", manage_expenses: "Manage expenses", manage_purchases: "Manage purchases", manage_printers: "Manage printers",
+   manage_customers: "Manage parties (sales)", manage_suppliers: "Manage parties (purchases)", manage_expenses: "Manage expenses", manage_purchases: "Manage purchases", manage_printers: "Manage printers",
   manage_users: "Manage users", settings: "Manage settings",
   view_accounting: "View accounting", create_journal: "Create journal", post_journal: "Post journal", view_ledger: "View general ledger",
   view_trial_balance: "View trial balance", view_pnl: "View P&L", view_balance_sheet: "View balance sheet", view_ar_ap: "View AR/AP",
@@ -409,7 +409,7 @@ async function xlsxDownload(name: string, columns: string[], rows: Record<string
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, name.slice(0, 30));
   XLSX.writeFile(wb, `${name}-${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
-const EXPORT_ITEMS = [["products", "Products"], ["customers", "Customers"], ["suppliers", "Suppliers"], ["sales", "Sales / returns / quotations"], ["purchases", "Purchases"], ["payments", "Payments (transactions)"], ["expenses", "Expenses"], ["stock", "Stock movements"]] as const;
+ const EXPORT_ITEMS = [["products", "Products"], ["customers", "Parties (sales records)"], ["suppliers", "Parties (purchase records)"], ["sales", "Sales / returns / quotations"], ["purchases", "Purchases"], ["payments", "Payments (transactions)"], ["expenses", "Expenses"], ["stock", "Stock movements"]] as const;
 export function BackupSection() {
   const { can } = usePosAccess();
   const qc = useQueryClient();
@@ -503,16 +503,6 @@ export function AuditSection() {
 }
 
 /* --------------------------- Suppliers / Advanced --------------------------- */
-export function SuppliersInfo() {
-  return (
-    <div className="space-y-2 text-sm">
-      <p>Supplier payable = opening balance + purchases − payments − purchase returns (running balance in ledger).</p>
-      <p className="text-xs text-muted-foreground">Suppliers and purchases are managed via "Manage purchases" / "Manage suppliers" permission (Users & Permissions). Purchase numbering is in the Purchases section.</p>
-      <Button asChild variant="outline" size="sm"><Link to="/suppliers">Open Suppliers</Link></Button>
-    </div>
-  );
-}
-
 export function AdvancedStatus() {
   const bridge = printBridge();
   return (
