@@ -235,7 +235,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
       const { purchase, items } = await getPurchaseItems({ data: { id: r.id } });
       pc.preview({
         kind: "pos", title: r.kind, number: purchase?.doc_number ?? r.ref, date: new Date(r.date),
-        party: { label: "Supplier", name: purchase?.supplier_name ?? sel?.name ?? "", phone: sel?.phone ?? "" },
+        party: { label: "Party", name: purchase?.supplier_name ?? sel?.name ?? "", phone: sel?.phone ?? "" },
         lines: items.map((i) => ({ name: i.name, unit: i.unit || undefined, qty: i.qty, rate: i.rate, discount: i.discount, taxPct: i.taxPercent, total: r2(i.qty * i.rate - i.discount) })),
         totals: [{ label: "Grand Total", value: r.debit || r.credit, bold: true }],
       }, true);
