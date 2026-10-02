@@ -1,7 +1,8 @@
 import { AppShell } from "@/components/app-shell";
 import { PAY_OPTS, PosSubnav, posInput, rs } from "@/components/pos-subnav";
 import { Button } from "@/components/ui/button";
-import { cancelPurchase, getPurchaseItems, listProductsLite, listPurchases, listSuppliers, savePurchase } from "@/lib/business.functions";
+import { cancelPurchase, ensurePurchaseParty, getPurchaseItems, listProductsLite, listPurchases, listSuppliers, savePurchase } from "@/lib/business.functions";
+import { listCustomerBalances } from "@/lib/ledger.functions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { PackagePlus, Trash2, Undo2, Zap, MoreVertical, ReceiptText, Printer, Download, Share2, Pencil, Ban } from "lucide-react";
@@ -37,11 +38,16 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const qc = useQueryClient();
   const pc = usePrintCenter();
   const { data: sup } = useQuery({ queryKey: ["suppliers"], queryFn: () => listSuppliers() });
+   const { data: parties } = useQuery({ queryKey: ["customer-balances", "all"], queryFn: () => listCustomerBalances({ data: {} }) });
   const { data: prod } = useQuery({ queryKey: ["products-lite"], queryFn: () => listProductsLite(), staleTime: 60_000 });
   const { data: hist } = useQuery({ queryKey: ["purchases"], queryFn: () => listPurchases() });
   const [docType, setDocType] = useState<"purchase" | "return">(startDocType ?? "purchase");
   const [refId, setRefId] = useState<string | undefined>();
-  const [supplierId, setSupplierId] = useState("");
+  const [partySearch, setPartySearch] = useState("");
+  const [partyOpen, setPartyOpen] = useState(false);
+  const [partyIndex, setPartyIndex] = useState(0);
+  const [selectedParty, setSelectedParty] = useState<{ id: string; source: "customer" | "supplier"; name: string } | null>(null);
+  const partyRef = useRef<HTMLUListElement>(null);
   const [lines, setLines] = useState<Line[]>([]);
   const [term, setTerm] = useState("");
   const [staged, setStaged] = useState<Staged | null>(null);
@@ -66,6 +72,18 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const today = new Date().toLocaleDateString("en-PK");
 
   const products = prod?.products ?? [];
+  const partyOptions = useMemo(() => {
+    const map = new Map<string, { id: string; source: "customer" | "supplier"; name: string; phone: string }>();
+    const key = (phone: string, prefix: string) => { const digits = phone.replace(/\D/g, ""); return digits.length >= 7 ? `p${digits.slice(-10)}` : prefix; };
+    for (const c of parties?.customers ?? []) map.set(key(c.phone, `c${c.id}`), { id: c.id, source: "customer", name: c.name || c.phone, phone: c.phone });
+     const counts = new Map<string, number>();
+     for (const s of sup?.suppliers ?? []) { const k = key(s.phone, `s${s.id}`); counts.set(k, (counts.get(k) ?? 0) + 1); }
+     for (const s of sup?.suppliers ?? []) { const k = key(s.phone, `s${s.id}`); if ((counts.get(k) ?? 0) > 1) map.set(`s${s.id}`, { id: s.id, source: "supplier", name: s.name, phone: s.phone }); else map.set(k, { id: s.id, source: "supplier", name: map.get(k)?.name || s.name, phone: s.phone }); }
+    const q = partySearch.trim().toLowerCase();
+    return [...map.values()].filter((p) => !q || p.name.toLowerCase().includes(q) || p.phone.includes(q)).sort((a, b) => a.name.localeCompare(b.name));
+  }, [parties, sup, partySearch]);
+  useEffect(() => { partyRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" }); }, [partyIndex]);
+  const pickParty = (p: (typeof partyOptions)[number]) => { setSelectedParty(p); setPartySearch(p.name); setPartyOpen(false); };
   const matches = useMemo(() => {
     const t = term.trim().toLowerCase();
     return t && !staged ? products.filter((p) => p.name.toLowerCase().includes(t)).slice(0, 8) : [];
@@ -118,11 +136,11 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
     } catch (e) { toast.error(e instanceof Error ? e.message : "Product could not be saved"); } finally { setSavingNew(false); }
   };
 
-  const reset = () => { setLines([]); setDiscount(""); setPaid(""); setNotes(""); setRefId(undefined); setEditId(undefined); setDocType("purchase"); clearEntry(); };
+  const reset = () => { setLines([]); setDiscount(""); setPaid(""); setNotes(""); setRefId(undefined); setEditId(undefined); setDocType("purchase"); setSelectedParty(null); setPartySearch(""); clearEntry(); };
 
   const startReturn = async (id: string) => {
     const r = await getPurchaseItems({ data: { id } });
-    setDocType("return"); setRefId(id); setSupplierId(r.purchase?.supplier_id ?? "");
+    setDocType("return"); setRefId(id); setSelectedParty(r.purchase?.supplier_id ? { id: r.purchase.supplier_id, source: "supplier", name: r.purchase.supplier_name || "Party" } : null); setPartySearch(r.purchase?.supplier_name ?? "");
     setLines(r.items.map((i) => ({ productId: i.productId ?? undefined, name: i.name, unit: i.unit, qty: String(i.qty), rate: String(i.rate), discount: "", tax: String(i.taxPercent), batch: "", expiry: "" })));
     setNotes(`Return of ${r.purchase?.doc_number ?? ""}`);
     toast.message("Adjust the quantity for the return, then save");
@@ -133,7 +151,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
     const r = await getPurchaseItems({ data: { id: p.id } });
     return {
       kind: "purchase", id: p.id, title: p.doc_type === "purchase" ? "Purchase Invoice" : "Purchase Return", number: p.doc_number, date: p.created_at,
-      party: p.supplier_name ? { label: "Supplier", name: p.supplier_name } : undefined,
+       party: p.supplier_name ? { label: "Party", name: p.supplier_name } : undefined,
       lines: r.items.map((i) => ({ name: i.name, unit: i.unit, qty: i.qty, rate: i.rate, discount: i.discount, taxPercent: i.taxPercent, total: i.lineTotal })),
       totals: [...(p.discount_total ? [{ label: "Discount", value: -p.discount_total }] : []), { label: "Grand Total", value: p.grand_total, bold: true }],
       payments: p.paid_total ? [{ method: "Paid", amount: p.paid_total }] : [], paid: p.paid_total, balance: p.balance, notes: p.notes ?? undefined,
@@ -143,13 +161,13 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const refreshAll = () => ["purchases", "suppliers", "products", "products-lite"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   const doShare = (p: Hist) => run(async () => {
     const d = await loadDoc(p);
-    const text = [`*${d.title} ${p.doc_number}*`, new Date(p.created_at).toLocaleString("en-PK"), p.supplier_name ? `Supplier: ${p.supplier_name}` : "", "",
+     const text = [`*${d.title} ${p.doc_number}*`, new Date(p.created_at).toLocaleString("en-PK"), p.supplier_name ? `Party: ${p.supplier_name}` : "", "",
       ...(d.lines ?? []).map((l) => `${l.name} — ${l.qty} x ${rs(l.rate)} = ${rs(l.total)}`), "", `Total: ${rs(p.grand_total)}`, `Paid: ${rs(p.paid_total)}`, p.balance > 0 ? `Balance: ${rs(p.balance)}` : ""].filter((x) => x !== "").join("\n");
     setShare({ title: p.doc_number, text });
   });
   const doEdit = (p: Hist) => run(async () => {
     const r = await getPurchaseItems({ data: { id: p.id } });
-    setDocType(p.doc_type === "return" ? "return" : "purchase"); setSupplierId(p.supplier_id ?? ""); setRefId(undefined);
+    setDocType(p.doc_type === "return" ? "return" : "purchase"); setSelectedParty(p.supplier_id ? { id: p.supplier_id, source: "supplier", name: p.supplier_name || "Party" } : null); setPartySearch(p.supplier_name ?? ""); setRefId(undefined);
     setLines(r.items.map((i) => ({ productId: i.productId ?? undefined, name: i.name, unit: i.unit, qty: String(i.qty), rate: String(i.rate), discount: i.discount ? String(i.discount) : "", tax: String(i.taxPercent), batch: "", expiry: "" })));
     setDiscount(p.discount_total ? String(p.discount_total) : ""); setPaid(String(p.paid_total)); setNotes(p.notes ?? "");
     setEditId({ id: p.id, number: p.doc_number });
@@ -167,13 +185,14 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const save = async () => {
     const valid = lines.filter((l) => l.name.trim() && num(l.qty) > 0);
     if (!valid.length) return toast.error("Enter at least one item");
-    if (paidNum < total && !supplierId) return toast.error("Select a supplier for a credit purchase");
+    if (paidNum < total && !selectedParty) return toast.error("Select a party for a credit purchase");
     if (lockRef.current) return;
     lockRef.current = true;
     setSaving(true);
     try {
+      const resolved = selectedParty ? await ensurePurchaseParty({ data: selectedParty.source === "customer" ? { customerId: selectedParty.id } : { supplierId: selectedParty.id } }) : null;
       const r = await savePurchase({ data: {
-        docType, supplierId: supplierId || undefined, paid: paidNum, method, discount: num(discount), notes: notes || undefined, refPurchaseId: refId, clientRef: opRef.current,
+        docType, supplierId: resolved?.id, paid: paidNum, method, discount: num(discount), notes: notes || undefined, refPurchaseId: refId, clientRef: opRef.current,
         items: valid.map((l) => ({ productId: l.productId, name: l.name, unit: l.unit, qty: num(l.qty), rate: num(l.rate), discount: num(l.discount), taxPercent: num(l.tax), batch: l.batch || undefined, expiry: l.expiry || undefined })),
       } });
       opRef.current = newRef();
@@ -182,16 +201,16 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
         catch (e) { toast.error(`New entry saved, but old ${editId.number} could not be cancelled: ${e instanceof Error ? e.message : ""}`); }
       }
       toast.success(`${docType === "purchase" ? "Purchase" : "Purchase return"} saved: ${r.number} — ${rs(r.total)}`);
-      const supName = sup?.suppliers.find((x) => x.id === supplierId)?.name;
+      const supName = selectedParty?.name ?? resolved?.name;
       pc.afterSave({
         kind: "purchase", title: docType === "purchase" ? "Purchase Invoice" : "Purchase Return", number: r.number, date: new Date(),
-        party: supName ? { label: "Supplier", name: supName } : undefined,
+         party: supName ? { label: "Party", name: supName } : undefined,
         lines: valid.map((l) => ({ name: l.name, unit: l.unit, qty: num(l.qty), rate: num(l.rate), discount: num(l.discount), taxPercent: num(l.tax), total: lineTotal(l) })),
         totals: [...(num(discount) ? [{ label: "Discount", value: -num(discount) }] : []), { label: "Grand Total", value: r.total, bold: true }],
         payments: paidNum ? [{ method, amount: paidNum }] : [], paid: paidNum, balance: Math.max(0, r.total - paidNum), notes: notes || undefined,
       }, "purchase");
       reset();
-      ["purchases", "suppliers", "products", "products-lite"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+      ["purchases", "suppliers", "customer-balances", "products", "products-lite"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
     } catch (e) { toast.error(e instanceof Error ? e.message : "Purchase could not be saved. Please try again."); } finally { lockRef.current = false; setSaving(false); }
   };
 
@@ -204,7 +223,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const body = (
       <div className={embedded ? "space-y-3" : "min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3"} onKeyDown={onKeys}>
         {embedded ? null : <PosSubnav />}
-        <section className="overflow-hidden rounded-xl border border-border bg-card">
+          <section className="rounded-xl border border-border bg-card">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
             <div className="flex items-center gap-3">
               <p className="text-lg font-bold text-foreground">{docType === "purchase" ? "Purchase" : "Purchase Return"}</p>
@@ -217,10 +236,11 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
           </div>
 
           <div className="flex flex-wrap items-center gap-2 px-4 py-3">
-            <select className={`${posInput} min-w-0 sm:min-w-[260px] flex-1`} value={supplierId} onChange={(e) => setSupplierId(e.target.value)} aria-label="Supplier">
-              <option value="">— Cash purchase (no supplier) —</option>
-              {(sup?.suppliers ?? []).map((s) => <option key={s.id} value={s.id}>{s.name} · balance {rs(s.balance)}</option>)}
-            </select>
+            <div className="relative min-w-0 flex-1 sm:min-w-[260px]">
+               <input className={posInput} value={partySearch} aria-label="Party" placeholder="Search party by name or phone (optional for cash)" autoComplete="off" onFocus={() => setPartyOpen(true)} onBlur={() => setTimeout(() => setPartyOpen(false), 150)} onChange={(e) => { setPartySearch(e.target.value); setSelectedParty(null); setPartyIndex(0); setPartyOpen(true); }} onKeyDown={(e) => { if (e.key === "ArrowDown") { e.preventDefault(); setPartyIndex((i) => Math.max(0, Math.min(i + 1, partyOptions.length - 1))); } else if (e.key === "ArrowUp") { e.preventDefault(); setPartyIndex((i) => Math.max(i - 1, 0)); } else if (e.key === "Enter" && partyOptions[partyIndex]) { e.preventDefault(); pickParty(partyOptions[partyIndex]); } else if (e.key === "Escape") setPartyOpen(false); }} />
+              {partyOpen && partyOptions.length > 0 ? <ul ref={partyRef} role="listbox" className="absolute left-0 right-0 top-full z-40 mt-1 max-h-64 overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg">{partyOptions.map((p, i) => <li key={`${p.source}-${p.id}`} role="option" aria-selected={partyIndex === i}><button type="button" className={`w-full rounded px-2 py-2 text-left text-sm ${partyIndex === i ? "bg-accent" : "hover:bg-accent"}`} onMouseDown={(e) => { e.preventDefault(); pickParty(p); }}>{p.name}{p.phone ? <span className="ml-2 text-xs text-muted-foreground">{p.phone}</span> : null}</button></li>)}</ul> : null}
+            </div>
+             {selectedParty ? <Button type="button" size="sm" variant="outline" onClick={() => { setSelectedParty(null); setPartySearch(""); }}>Clear</Button> : null}
           </div>
 
           <div className="overflow-x-auto">
@@ -286,7 +306,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
           <div className="grid gap-4 p-4 md:grid-cols-2">
             <div className="space-y-2">
               <select className={posInput} value={method} onChange={(e) => setMethod(e.target.value)} aria-label="Payment type">{[...PAY_OPTS, "Credit"].map((m) => <option key={m}>{m}</option>)}</select>
-              {isCredit && <p className="text-xs text-muted-foreground">Full amount will be added to the supplier's balance (payable).</p>}
+               {isCredit && <p className="text-xs text-muted-foreground">Full amount will be added to the party's balance (payable).</p>}
               <textarea className={`${posInput} min-h-20 py-2`} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Description / note" />
             </div>
             <div className="space-y-2 text-sm">
@@ -307,7 +327,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
           <p className="mb-2 text-sm font-bold text-foreground">Purchase history</p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="text-left text-xs text-muted-foreground"><th>No.</th><th>Type</th><th>Supplier</th><th>Total</th><th>Paid</th><th>Balance</th><th>Date</th><th /></tr></thead>
+               <thead><tr className="text-left text-xs text-muted-foreground"><th>No.</th><th>Type</th><th>Party</th><th>Total</th><th>Paid</th><th>Balance</th><th>Date</th><th /></tr></thead>
               <tbody>
                 {(hist?.purchases ?? []).map((p) => (
                   <tr key={p.id} className="border-t border-border">
@@ -346,7 +366,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const shareNode = share ? <ShareDialog title={share.title} text={share.text} onClose={() => setShare(null)} /> : null;
   if (embedded) return <>{pc.node}{shareNode}{body}</>;
   return (
-    <AppShell title="Purchases" subtitle="Stock purchases and supplier credit" active="/pos" wide>
+    <AppShell title="Purchases" subtitle="Stock purchases and party credit" active="/pos" wide>
       {pc.node}
       {shareNode}
       {body}

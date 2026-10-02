@@ -42,11 +42,11 @@ export function PosCustomerSearch({
   });
   const { data: sup } = useQuery({ queryKey: ["suppliers"], queryFn: () => listSuppliers(), enabled: open, staleTime: 30_000 });
   const custs = (data?.customers ?? []) as Cust[];
-  const phones = new Set(custs.map((c) => c.phone.replace(/\D/g, "").slice(-10)));
+  const phones = new Set(custs.map((c) => c.phone.replace(/\D/g, "")).filter((p) => p.length >= 7).map((p) => p.slice(-10)));
   const ql = q.toLowerCase();
   // Suppliers bhi party ke tor par dikhte hain (jo pehle se customer na hon).
   const sups: Cust[] = (sup?.suppliers ?? [])
-    .filter((s) => !s.phone || !phones.has(s.phone.replace(/\D/g, "").slice(-10)))
+    .filter((s) => { const digits = s.phone.replace(/\D/g, ""); return digits.length < 7 || !phones.has(digits.slice(-10)); })
     .filter((s) => !ql || s.name.toLowerCase().includes(ql) || (s.phone ?? "").includes(q))
     .map((s) => ({ supplier: true, id: s.id, name: s.name, phone: s.phone ?? "", city: null, address: s.address || null, courierServiceName: null, goodsAddaName: null }));
   const list = [...custs.slice(0, 8), ...sups.slice(0, 5)];
@@ -66,12 +66,12 @@ export function PosCustomerSearch({
   const pick = async (c: Cust) => {
     setOpen(false);
     if (!c.supplier) return onPick(c);
-    if (!c.phone || c.phone.replace(/\D/g, "").length < 7) return toast.error("Add a phone number to this supplier first");
+    if (!c.phone || c.phone.replace(/\D/g, "").length < 7) return toast.error("Add a phone number to this party first");
     try {
       // Supplier ko party (customer) record se link karte hain taake bill aur ledger save hon.
-      const res = await saveParty({ data: { name: c.name || "Supplier", phone: c.phone, address: c.address || undefined } });
+      const res = await saveParty({ data: { name: c.name || "Party", phone: c.phone, address: c.address || undefined } });
       onPick(res.customer);
-    } catch (e) { toast.error((e as Error).message || "Could not use supplier"); }
+    } catch (e) { toast.error((e as Error).message || "Could not use party"); }
   };
 
   return (
@@ -107,7 +107,7 @@ export function PosCustomerSearch({
                 onMouseEnter={() => setIdx(i)}
                 className={`w-full rounded-lg px-2.5 py-1.5 text-left ${i === idx ? "bg-accent text-accent-foreground" : "text-popover-foreground"}`}
               >
-                 <p className="truncate text-sm font-semibold">{c.name || "No name"}{c.supplier ? <span className="ml-1.5 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-bold uppercase text-secondary-foreground">Supplier</span> : null}</p>
+                 <p className="truncate text-sm font-semibold">{c.name || "No name"}</p>
                 <p className="truncate text-xs text-muted-foreground">{c.phone}{c.city ? ` · ${c.city}` : ""}</p>
                  {c.address ? <p className="truncate text-xs text-muted-foreground">{c.address}</p> : null}
               </button>

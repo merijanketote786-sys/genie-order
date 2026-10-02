@@ -136,7 +136,7 @@ function PosDashboardPage() {
               <Stat label="Purchases (30d)" value={rs(d.month.purchases)} icon={<Truck className="size-4" />} />
               <Stat label="Expenses (30d)" value={rs(d.month.expenses)} icon={<Receipt className="size-4" />} />
               <Stat label="To receive" value={rs(d.receivable)} hint={`${d.unpaidBills} unpaid bills`} icon={<Users className="size-4" />} />
-              <Stat label="To pay suppliers" value={rs(d.payable)} icon={<HandCoins className="size-4" />} />
+              <Stat label="To pay parties" value={rs(d.payable)} icon={<HandCoins className="size-4" />} />
             </div>
 
             <div className="grid gap-4 xl:grid-cols-3">

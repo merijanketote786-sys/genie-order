@@ -29,18 +29,23 @@ export function PaymentInOutDialog({ open, onOpenChange, dir, onDirChange }: { o
   const opRef = useRef(newRef());
   const listRef = useRef<HTMLUListElement>(null);
 
-  const c = useQuery({ queryKey: ["customer-balances", "pos"], queryFn: () => listCustomerBalances({ data: { posOnly: true } }), enabled: open });
+  const c = useQuery({ queryKey: ["customer-balances", "all"], queryFn: () => listCustomerBalances({ data: {} }), enabled: open });
   const s = useQuery({ queryKey: ["suppliers"], queryFn: () => listSuppliers(), enabled: open });
 
   useEffect(() => { if (!open) { setQ(""); setSel(null); setAmount(""); setNote(""); setHi(0); } }, [open]);
 
   const map = new Map<string, Party>();
   for (const x of c.data?.customers ?? []) {
-    const k = x.phone ? `p${tail(x.phone)}` : `c${x.id}`;
+    const digits = x.phone.replace(/\D/g, "");
+    const k = digits.length >= 7 ? `p${tail(x.phone)}` : `c${x.id}`;
     map.set(k, { key: k, name: x.name || x.phone || "No name", phone: x.phone, kind: "Customer", balance: x.balance, customerId: x.id });
   }
+  const supplierCounts = new Map<string, number>();
+  for (const x of s.data?.suppliers ?? []) { const digits = x.phone.replace(/\D/g, ""); if (digits.length >= 7) { const k = `p${tail(x.phone)}`; supplierCounts.set(k, (supplierCounts.get(k) ?? 0) + 1); } }
   for (const x of s.data?.suppliers ?? []) {
-    const k = x.phone ? `p${tail(x.phone)}` : `s${x.id}`;
+    const digits = x.phone.replace(/\D/g, "");
+    const phoneKey = `p${tail(x.phone)}`;
+    const k = digits.length >= 7 && supplierCounts.get(phoneKey) === 1 ? phoneKey : `s${x.id}`;
     const e = map.get(k);
     if (e) { e.balance -= x.balance; e.kind = "Customer · Supplier"; e.supplierId = x.id; }
     else map.set(k, { key: k, name: x.name, phone: x.phone, kind: "Supplier", balance: -x.balance, supplierId: x.id });
@@ -95,7 +100,7 @@ export function PaymentInOutDialog({ open, onOpenChange, dir, onDirChange }: { o
             <div className="flex items-center justify-between gap-2 rounded-lg border border-primary bg-accent p-2">
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{sel.name}</p>
-                <p className="truncate text-xs text-muted-foreground">{sel.kind}{sel.phone ? ` · ${sel.phone}` : ""}</p>
+                <p className="truncate text-xs text-muted-foreground">{sel.phone || "No phone"}</p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <span className={`text-sm font-bold ${sel.balance > 0 ? "text-success" : "text-destructive"}`}>{rs(Math.abs(sel.balance))}</span>

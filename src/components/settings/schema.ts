@@ -1,7 +1,7 @@
 import { DOC_LABEL, FORMAT_LABEL, TEMPLATE_LABEL, type DocKind, type PaperFormat, type TemplateId } from "@/lib/pos-config";
 
 export type SectionId =
-  | "business" | "pos" | "sales" | "purchases" | "inventory" | "customers" | "suppliers" | "payments" | "taxes"
+   | "business" | "pos" | "sales" | "purchases" | "inventory" | "customers" | "payments" | "taxes"
   | "invoices" | "printing" | "printers" | "users" | "notifications" | "backup" | "vyapar" | "audit" | "attendance" | "advanced";
 
 export const SECTIONS: { id: SectionId; label: string; keywords: string }[] = [
@@ -10,8 +10,7 @@ export const SECTIONS: { id: SectionId; label: string; keywords: string }[] = [
   { id: "sales", label: "Sales", keywords: "sales credit udhaar discount cashier limit invoice numbering confirmation pdf after sale customer" },
   { id: "purchases", label: "Purchases", keywords: "purchase numbering prefix supplier" },
   { id: "inventory", label: "Inventory", keywords: "inventory stock negative low stock unit fractional decimal barcode out of stock" },
-  { id: "customers", label: "Customers", keywords: "customer phone credit limit reminder opening balance" },
-  { id: "suppliers", label: "Suppliers", keywords: "supplier payable ledger" },
+   { id: "customers", label: "Parties", keywords: "customer supplier party phone credit limit reminder opening balance payable ledger" },
   { id: "payments", label: "Payments", keywords: "payment method cash card bank jazzcash easypaisa credit custom default" },
   { id: "taxes", label: "Taxes", keywords: "tax gst sales tax inclusive exclusive rate percentage" },
   { id: "invoices", label: "Invoices", keywords: "invoice template fields logo signature terms footer columns sku barcode discount tax show hide" },
