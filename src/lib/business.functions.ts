@@ -145,8 +145,8 @@ export const savePurchase = createServerFn({ method: "POST" })
 export const listPurchases = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data } = await (context.supabase as Sb).from("purchases").select("id, doc_number, doc_type, status, payment_status, supplier_name, grand_total, paid_total, balance, created_at").order("created_at", { ascending: false }).limit(100);
-    return { purchases: (data ?? []).map((p: any) => ({ ...p, grand_total: Number(p.grand_total), paid_total: Number(p.paid_total), balance: Number(p.balance) })) as Array<{ id: string; doc_number: string; doc_type: string; status: string; payment_status: string; supplier_name: string | null; grand_total: number; paid_total: number; balance: number; created_at: string }> };
+    const { data } = await (context.supabase as Sb).from("purchases").select("id, doc_number, doc_type, status, payment_status, supplier_id, supplier_name, discount_total, notes, grand_total, paid_total, balance, created_at").neq("status", "cancelled").order("created_at", { ascending: false }).limit(100);
+    return { purchases: (data ?? []).map((p: any) => ({ ...p, discount_total: Number(p.discount_total), grand_total: Number(p.grand_total), paid_total: Number(p.paid_total), balance: Number(p.balance) })) as Array<{ id: string; doc_number: string; doc_type: string; status: string; payment_status: string; supplier_id: string | null; discount_total: number; notes: string | null; supplier_name: string | null; grand_total: number; paid_total: number; balance: number; created_at: string }> };
   });
 
 export const getPurchaseItems = createServerFn({ method: "GET" })
@@ -156,9 +156,9 @@ export const getPurchaseItems = createServerFn({ method: "GET" })
     const sb = context.supabase as Sb;
     const [{ data: p }, { data: items }] = await Promise.all([
       sb.from("purchases").select("id, doc_number, supplier_id, supplier_name").eq("id", data.id).maybeSingle(),
-      sb.from("purchase_items").select("product_id, name, unit, qty, rate, discount, tax_percent").eq("purchase_id", data.id),
+      sb.from("purchase_items").select("product_id, name, unit, qty, rate, discount, tax_percent, line_total").eq("purchase_id", data.id),
     ]);
-    return { purchase: p as { id: string; doc_number: string; supplier_id: string | null; supplier_name: string | null } | null, items: ((items ?? []) as any[]).map((i: any): { productId: string | null; name: string; unit: string; qty: number; rate: number; discount: number; taxPercent: number } => ({ productId: i.product_id as string | null, name: i.name as string, unit: (i.unit ?? "") as string, qty: Number(i.qty), rate: Number(i.rate), discount: Number(i.discount), taxPercent: Number(i.tax_percent) })) };
+    return { purchase: p as { id: string; doc_number: string; supplier_id: string | null; supplier_name: string | null } | null, items: ((items ?? []) as any[]).map((i: any): { productId: string | null; name: string; unit: string; qty: number; rate: number; discount: number; taxPercent: number; lineTotal: number } => ({ productId: i.product_id as string | null, name: i.name as string, unit: (i.unit ?? "") as string, qty: Number(i.qty), rate: Number(i.rate), discount: Number(i.discount), taxPercent: Number(i.tax_percent), lineTotal: Number(i.line_total) })) };
   });
 
 /* ---------------------------- Sales returns ---------------------------- */
@@ -289,5 +289,14 @@ export const deletePartyPayment = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin.from("pos_payments").delete().eq("id", data.id);
     if (error) throw new Error(friendlyDbError(error, "Failed to delete payment."));
     await supabaseAdmin.from("audit_log").insert({ action: "delete", entity: "pos_payment", entity_id: data.id, details: { kind: pay.kind } }).then(() => null, () => null);
+    return { ok: true };
+  });
+
+export const cancelPurchase = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), reason: z.string().max(300).default("") }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await withStore((context.supabase as Sb).rpc("pos_cancel_purchase" as never, { _id: data.id, _reason: data.reason } as never));
+    if (error) throw new Error(friendlyDbError(error, "Failed to cancel purchase."));
     return { ok: true };
   });

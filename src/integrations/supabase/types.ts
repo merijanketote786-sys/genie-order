@@ -1838,6 +1838,10 @@ export type Database = {
       }
       pos_bulk_update_products: { Args: { _rows: Json }; Returns: Json }
       pos_can: { Args: { _perm: string }; Returns: boolean }
+      pos_cancel_purchase: {
+        Args: { _id: string; _reason: string }
+        Returns: undefined
+      }
       pos_cancel_sale: {
         Args: { _id: string; _reason: string }
         Returns: undefined

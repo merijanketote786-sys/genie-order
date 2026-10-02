@@ -1,10 +1,12 @@
 import { AppShell } from "@/components/app-shell";
 import { PAY_OPTS, PosSubnav, posInput, rs } from "@/components/pos-subnav";
 import { Button } from "@/components/ui/button";
-import { getPurchaseItems, listProductsLite, listPurchases, listSuppliers, savePurchase } from "@/lib/business.functions";
+import { cancelPurchase, getPurchaseItems, listProductsLite, listPurchases, listSuppliers, savePurchase } from "@/lib/business.functions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { PackagePlus, Trash2, Undo2, Zap } from "lucide-react";
+import { PackagePlus, Trash2, Undo2, Zap, MoreVertical, ReceiptText, Printer, Download, Share2, Pencil, Ban } from "lucide-react";
+import { ShareDialog } from "@/components/share-dialog";
+import type { PrintDoc } from "@/lib/print/render";
 import { UnitSelect } from "@/components/unit-select";
 import { createPosProduct } from "@/lib/inventory.functions";
 import { useEffect, useMemo, useState, useRef } from "react";
@@ -55,6 +57,10 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [savingNew, setSavingNew] = useState(false);
+  const [editId, setEditId] = useState<{ id: string; number: string } | undefined>();
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [share, setShare] = useState<{ title: string; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const today = new Date().toLocaleDateString("en-PK");
 
@@ -110,7 +116,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
     } catch (e) { toast.error(e instanceof Error ? e.message : "Product could not be saved"); } finally { setSavingNew(false); }
   };
 
-  const reset = () => { setLines([]); setDiscount(""); setPaid(""); setNotes(""); setRefId(undefined); setDocType("purchase"); clearEntry(); };
+  const reset = () => { setLines([]); setDiscount(""); setPaid(""); setNotes(""); setRefId(undefined); setEditId(undefined); setDocType("purchase"); clearEntry(); };
 
   const startReturn = async (id: string) => {
     const r = await getPurchaseItems({ data: { id } });
@@ -118,6 +124,40 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
     setLines(r.items.map((i) => ({ productId: i.productId ?? undefined, name: i.name, unit: i.unit, qty: String(i.qty), rate: String(i.rate), discount: "", tax: String(i.taxPercent), batch: "", expiry: "" })));
     setNotes(`Return of ${r.purchase?.doc_number ?? ""}`);
     toast.message("Adjust the quantity for the return, then save");
+  };
+
+  type Hist = NonNullable<typeof hist>["purchases"][number];
+  const loadDoc = async (p: Hist): Promise<PrintDoc> => {
+    const r = await getPurchaseItems({ data: { id: p.id } });
+    return {
+      kind: "purchase", id: p.id, title: p.doc_type === "purchase" ? "Purchase Invoice" : "Purchase Return", number: p.doc_number, date: p.created_at,
+      party: p.supplier_name ? { label: "Supplier", name: p.supplier_name } : undefined,
+      lines: r.items.map((i) => ({ name: i.name, unit: i.unit, qty: i.qty, rate: i.rate, discount: i.discount, taxPercent: i.taxPercent, total: i.lineTotal })),
+      totals: [...(p.discount_total ? [{ label: "Discount", value: -p.discount_total }] : []), { label: "Grand Total", value: p.grand_total, bold: true }],
+      payments: p.paid_total ? [{ method: "Paid", amount: p.paid_total }] : [], paid: p.paid_total, balance: p.balance, notes: p.notes ?? undefined,
+    } as PrintDoc;
+  };
+  const run = async (f: () => Promise<void>) => { setBusy(true); try { await f(); } catch (e) { toast.error(e instanceof Error ? e.message : "Action failed"); } finally { setBusy(false); } };
+  const refreshAll = () => ["purchases", "suppliers", "products", "products-lite"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+  const doShare = (p: Hist) => run(async () => {
+    const d = await loadDoc(p);
+    const text = [`*${d.title} ${p.doc_number}*`, new Date(p.created_at).toLocaleString("en-PK"), p.supplier_name ? `Supplier: ${p.supplier_name}` : "", "",
+      ...(d.lines ?? []).map((l) => `${l.name} — ${l.qty} x ${rs(l.rate)} = ${rs(l.total)}`), "", `Total: ${rs(p.grand_total)}`, `Paid: ${rs(p.paid_total)}`, p.balance > 0 ? `Balance: ${rs(p.balance)}` : ""].filter((x) => x !== "").join("\n");
+    setShare({ title: p.doc_number, text });
+  });
+  const doEdit = (p: Hist) => run(async () => {
+    const r = await getPurchaseItems({ data: { id: p.id } });
+    setDocType(p.doc_type === "return" ? "return" : "purchase"); setSupplierId(p.supplier_id ?? ""); setRefId(undefined);
+    setLines(r.items.map((i) => ({ productId: i.productId ?? undefined, name: i.name, unit: i.unit, qty: String(i.qty), rate: String(i.rate), discount: i.discount ? String(i.discount) : "", tax: String(i.taxPercent), batch: "", expiry: "" })));
+    setDiscount(p.discount_total ? String(p.discount_total) : ""); setPaid(String(p.paid_total)); setNotes(p.notes ?? "");
+    setEditId({ id: p.id, number: p.doc_number });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    toast.message(`Editing ${p.doc_number} — saving will replace the old entry`);
+  });
+  const doCancel = (p: Hist) => {
+    const reason = window.prompt(`Cancel ${p.doc_number}? Reason (optional):`);
+    if (reason === null) return;
+    void run(async () => { await cancelPurchase({ data: { id: p.id, reason } }); toast.success(`${p.doc_number} cancelled`); if (editId?.id === p.id) reset(); refreshAll(); });
   };
 
   const lockRef = useRef(false);
@@ -135,6 +175,10 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
         items: valid.map((l) => ({ productId: l.productId, name: l.name, unit: l.unit, qty: num(l.qty), rate: num(l.rate), discount: num(l.discount), taxPercent: num(l.tax), batch: l.batch || undefined, expiry: l.expiry || undefined })),
       } });
       opRef.current = newRef();
+      if (editId) {
+        try { await cancelPurchase({ data: { id: editId.id, reason: `Edited — replaced by ${r.number}` } }); }
+        catch (e) { toast.error(`New entry saved, but old ${editId.number} could not be cancelled: ${e instanceof Error ? e.message : ""}`); }
+      }
       toast.success(`${docType === "purchase" ? "Purchase" : "Purchase return"} saved: ${r.number} — ${rs(r.total)}`);
       const supName = sup?.suppliers.find((x) => x.id === supplierId)?.name;
       pc.afterSave({
@@ -266,7 +310,27 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
                   <tr key={p.id} className="border-t border-border">
                     <td className="py-1.5 font-semibold">{p.doc_number}</td><td>{p.doc_type === "purchase" ? "Purchase" : "Return"}</td><td>{p.supplier_name}</td>
                     <td>{rs(p.grand_total)}</td><td>{rs(p.paid_total)}</td><td>{rs(p.balance)}</td><td className="text-xs">{new Date(p.created_at).toLocaleString("en-PK")}</td>
-                    <td>{p.doc_type === "purchase" ? <Button size="sm" variant="ghost" onClick={() => startReturn(p.id)}><Undo2 /> Return</Button> : null}</td>
+                    <td className="relative text-right">
+                      <button type="button" title="Actions" aria-label={`Actions for ${p.doc_number}`} disabled={busy} onClick={() => setMenuFor(menuFor === p.id ? null : p.id)} className="rounded-lg border border-border p-1.5 hover:bg-accent disabled:opacity-50"><MoreVertical className="size-4" /></button>
+                      {menuFor === p.id ? (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setMenuFor(null)} />
+                          <div className="absolute right-0 z-50 mt-1 w-52 overflow-hidden rounded-xl border border-border bg-popover py-1 text-left shadow-xl">
+                            {([
+                              [<ReceiptText key="a" className="size-4" />, "Preview", () => run(async () => pc.preview(await loadDoc(p), true))],
+                              [<Printer key="b" className="size-4" />, "Reprint", () => run(async () => { await pc.print(await loadDoc(p), { reprint: true }); })],
+                              [<Download key="c" className="size-4" />, "PDF", () => run(async () => { await pc.pdf(await loadDoc(p)); })],
+                              [<Share2 key="d" className="size-4" />, "Share", () => doShare(p)],
+                              [<Pencil key="e" className="size-4" />, "Edit", () => doEdit(p)],
+                              ...(p.doc_type === "purchase" ? [[<Undo2 key="f" className="size-4" />, "Return", () => startReturn(p.id)]] : []),
+                              [<Ban key="g" className="size-4" />, "Cancel", () => doCancel(p), true],
+                            ] as [React.ReactNode, string, () => void, boolean?][]).map(([icon, label, fn, danger]) => (
+                              <button key={label} type="button" onClick={() => { setMenuFor(null); fn(); }} className={`flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent ${danger ? "text-destructive" : "text-foreground"}`}>{icon} {label}</button>
+                            ))}
+                          </div>
+                        </>
+                      ) : null}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -276,10 +340,12 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
         </section>
       </div>
   );
-  if (embedded) return <>{pc.node}{body}</>;
+  const shareNode = share ? <ShareDialog title={share.title} text={share.text} onClose={() => setShare(null)} /> : null;
+  if (embedded) return <>{pc.node}{shareNode}{body}</>;
   return (
     <AppShell title="Purchases" subtitle="Stock purchases and supplier credit" active="/pos" wide>
       {pc.node}
+      {shareNode}
       {body}
     </AppShell>
   );
