@@ -266,7 +266,7 @@ export type CustomerRow = {
 export const listCustomers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({ search: z.string().trim().max(120).optional() }).parse(data ?? {}),
+    z.object({ search: z.string().trim().max(120).optional(), posOnly: z.boolean().optional() }).parse(data ?? {}),
   )
   .handler(async ({ data, context }) => {
     if (await blocked(context)) return { customers: [] as CustomerRow[], isAdmin: false };
@@ -277,6 +277,7 @@ export const listCustomers = createServerFn({ method: "GET" })
       .select("id, phone, name, city, address, courier_service_name, goods_adda_name")
       .order("updated_at", { ascending: false })
       .limit(1000);
+    if (data.posOnly) query = query.eq("pos_scoped", true);
 
     const s = data.search?.trim();
     if (s) {

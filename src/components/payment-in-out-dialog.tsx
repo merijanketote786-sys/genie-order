@@ -29,7 +29,7 @@ export function PaymentInOutDialog({ open, onOpenChange, dir, onDirChange }: { o
   const opRef = useRef(newRef());
   const listRef = useRef<HTMLUListElement>(null);
 
-  const c = useQuery({ queryKey: ["customer-balances", "all"], queryFn: () => listCustomerBalances({ data: {} }), enabled: open });
+  const c = useQuery({ queryKey: ["customer-balances", "pos"], queryFn: () => listCustomerBalances({ data: { posOnly: true } }), enabled: open });
   const s = useQuery({ queryKey: ["suppliers"], queryFn: () => listSuppliers(), enabled: open });
 
   useEffect(() => { if (!open) { setQ(""); setSel(null); setAmount(""); setNote(""); setHi(0); } }, [open]);

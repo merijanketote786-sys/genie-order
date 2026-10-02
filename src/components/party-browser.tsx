@@ -79,7 +79,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   const [adjAmt, setAdjAmt] = useState("");
   const [adjBusy, setAdjBusy] = useState(false);
 
-  const c = useQuery({ queryKey: ["customer-balances", "all"], queryFn: () => listCustomerBalances({ data: {} }), enabled, staleTime: 15_000 });
+  const c = useQuery({ queryKey: ["customer-balances", "pos"], queryFn: () => listCustomerBalances({ data: { posOnly: true } }), enabled, staleTime: 15_000 });
   const s = useQuery({ queryKey: ["suppliers"], queryFn: () => listSuppliers(), enabled, staleTime: 15_000 });
 
   const cl = useQuery({ queryKey: ["party-ledger-c", sel?.customerId], queryFn: () => getCustomerLedger({ data: { id: sel!.customerId! } }), enabled: enabled && !!sel?.customerId });
