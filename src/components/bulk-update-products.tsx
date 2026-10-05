@@ -5,6 +5,10 @@ import { UnitSelect } from "@/components/unit-select";
 import { Search, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
+
+const TINTS = ["--chart-1", "--chart-2", "--chart-3", "--chart-4", "--chart-5", "--primary", "--success", "--warning"];
+const tint = (i: number, pct: number) => ({ backgroundColor: `color-mix(in oklab, var(${TINTS[i % TINTS.length]}) ${pct}%, var(--card))` });
 
 type Col = { k: string; label: string; w: string; num?: boolean };
 const COLS: Col[] = [
@@ -42,6 +46,7 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
   const [applyMode, setApplyMode] = useState<"set" | "pct" | "add">("set");
   const [applyVal, setApplyVal] = useState("");
   const [saving, setSaving] = useState(false);
+  const [activeCol, setActiveCol] = useState<string | null>(null);
 
   const list = useMemo(() => { const t = q.trim().toLowerCase(); return products.filter((p) => !t || [p.name, p.sku, p.barcode, p.category, p.brand].some((v) => v.toLowerCase().includes(t))); }, [products, q]);
   const rowOf = (id: string): Row => { const r = { ...orig[id], ...edits[id] }; return { ...r, stock_value: edits[id]?.stock_value ?? val(r) }; };
@@ -87,6 +92,7 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
     catch (e) { toast.error(e instanceof Error ? e.message : "Delete failed"); }
   };
 
+  useUnsavedGuard(dirtyIds.length > 0);
   const allPicked = list.length > 0 && list.every((p) => picked.has(p.id));
 
   // Arrow keys move the cursor between editable fields (up/down/left/right)
@@ -139,15 +145,15 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
           </colgroup>
           <thead className="sticky top-0 z-10 bg-card shadow-[0_1px_0_0] shadow-border"><tr className="text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             <th className="sticky left-0 z-20 bg-card px-2 py-2"><input type="checkbox" checked={allPicked} onChange={() => setPicked(allPicked ? new Set() : new Set(list.map((p) => p.id)))} aria-label="Select all" /></th>
-            {COLS.map((c) => <th key={c.k} className={`truncate px-2 py-2 ${c.k === "name" ? "sticky left-12 z-20 border-r border-border bg-card" : ""}`} title={c.label}>{c.label}</th>)}
+            {COLS.map((c, i) => <th key={c.k} style={c.k === "name" ? undefined : tint(i, activeCol === c.k ? 45 : 18)} className={`truncate px-2 py-2 transition-colors ${activeCol === c.k ? "text-foreground" : ""} ${c.k === "name" ? "sticky left-12 z-20 border-r border-border bg-card" : ""}`} title={c.label}>{c.label}</th>)}
             <th className="px-2 py-2">Delete</th>
           </tr></thead>
-          <tbody onKeyDown={gridKeys}>
+          <tbody onKeyDown={gridKeys} onMouseLeave={() => setActiveCol(null)} onBlur={() => setActiveCol(null)}>
             {list.slice(0, 1000).map((p) => { const r = rowOf(p.id); return (
               <tr key={p.id} className={`border-t border-border ${dirtyIds.includes(p.id) ? "bg-accent" : ""}`}>
                 <td className={`sticky left-0 z-10 px-2 py-1 ${dirtyIds.includes(p.id) ? "bg-accent" : "bg-card"}`}><input type="checkbox" checked={picked.has(p.id)} onChange={() => setPicked((s) => { const n = new Set(s); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; })} aria-label={`Select ${p.name}`} /></td>
-                {COLS.map((c) => (
-                  <td key={c.k} className={`px-1 py-1 ${c.k === "name" ? `sticky left-12 z-10 border-r border-border ${dirtyIds.includes(p.id) ? "bg-accent" : "bg-card"}` : ""}`}>
+                {COLS.map((c, i) => (
+                  <td key={c.k} onMouseEnter={() => setActiveCol(c.k)} onFocus={() => setActiveCol(c.k)} style={c.k === "name" || dirtyIds.includes(p.id) && activeCol !== c.k ? undefined : tint(i, activeCol === c.k ? 32 : 8)} className={`px-1 py-1 transition-colors ${c.k === "name" ? `sticky left-12 z-10 border-r border-border ${dirtyIds.includes(p.id) ? "bg-accent" : "bg-card"}` : ""}`}>
                     {c.k === "unit" ? <UnitSelect className={`${posInput} h-9 w-full px-1 ${r.unit !== orig[p.id].unit ? "border-primary" : ""}`} value={r.unit} onChange={(v) => set(p.id, "unit", v)} label={`Unit ${p.name}`} /> : <input className={`${posInput} h-9 w-full px-2 ${c.num ? "text-right" : ""} ${c.k !== "stock_value" && r[c.k] !== orig[p.id][c.k] ? "border-primary" : ""}`} value={r[c.k]} inputMode={c.num ? "decimal" : undefined}
                       title={c.k === "stock_value" ? "Changing stock value will auto-calculate the purchase price" : undefined} onChange={(e) => set(p.id, c.k, e.target.value)} aria-label={`${c.label} ${p.name}`} />}
                   </td>
