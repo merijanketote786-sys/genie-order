@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
  * Shows a dialog with Cancel / Leave / Save. `onSave` should save the current entries;
  * after it resolves the navigation continues.
  */
-export function useUnsavedGuard(dirty: boolean, onSave?: () => Promise<void> | void) {
+export function useUnsavedGuard(dirty: boolean, onSave?: () => Promise<unknown> | void) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 

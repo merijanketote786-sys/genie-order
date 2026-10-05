@@ -150,7 +150,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
   const [term, setTerm] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [billDiscount, setBillDiscount] = useState("");
-  const guardNode = useUnsavedGuard(cart.length > 0, () => checkout("sale", false));
+  const guardNode = useUnsavedGuard(cart.length > 0, () => void checkout("sale", false));
   const [discType, setDiscType] = useState<"amt" | "pct">("amt");
   const [delivery, setDelivery] = useState("");
   const [pays, setPays] = useState<{ method: PayMethod; amount: string }[]>([{ method: "Cash", amount: "" }]);
