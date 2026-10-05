@@ -19,6 +19,7 @@ export function useUnsavedGuard(dirty: boolean, onSave?: () => Promise<unknown> 
       return true;
     },
     enableBeforeUnload: () => dirty,
+    withResolver: true,
   });
 
   const close = () => {
