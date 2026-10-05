@@ -370,6 +370,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   return (
     <AppShell title="Purchases" subtitle="Stock purchases and party credit" active="/pos" wide>
       {pc.node}
+      {guardNode}
       {shareNode}
       {body}
     </AppShell>
