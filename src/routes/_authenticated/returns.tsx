@@ -1,3 +1,4 @@
+import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
 import { AppShell } from "@/components/app-shell";
 import { usePinPrompt } from "@/components/pos-access";
 import { cancelWithPin } from "@/lib/pos-access.functions";
@@ -66,6 +67,7 @@ function ReturnsPage() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [freeLines, setFreeLines] = useState<Array<{ productId: string; name: string; unit: string; qty: number; rate: number }>>([]);
   const itemRef = useRef<HTMLInputElement>(null);
+  useUnsavedGuard(freeLines.length > 0 || Object.values(qty).some((v) => Number(v) > 0));
   const [mode, setMode] = useState<"refund" | "credit">("refund");
   const [method, setMethod] = useState("Cash");
   const [reason, setReason] = useState("");

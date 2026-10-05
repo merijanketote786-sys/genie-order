@@ -1,3 +1,4 @@
+import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
 import { PosCustomerSearch } from "@/components/pos-customer-search";
 import { PosSubnav } from "@/components/pos-subnav";
 import { StoreSwitcher, useActiveStore } from "@/components/store-switcher";
@@ -149,6 +150,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
   const [term, setTerm] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [billDiscount, setBillDiscount] = useState("");
+  useUnsavedGuard(cart.length > 0);
   const [discType, setDiscType] = useState<"amt" | "pct">("amt");
   const [delivery, setDelivery] = useState("");
   const [pays, setPays] = useState<{ method: PayMethod; amount: string }[]>([{ method: "Cash", amount: "" }]);
