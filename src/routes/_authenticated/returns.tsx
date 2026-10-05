@@ -67,7 +67,7 @@ function ReturnsPage() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [freeLines, setFreeLines] = useState<Array<{ productId: string; name: string; unit: string; qty: number; rate: number }>>([]);
   const itemRef = useRef<HTMLInputElement>(null);
-  useUnsavedGuard(freeLines.length > 0 || Object.values(qty).some((v) => Number(v) > 0));
+  const guardNode = useUnsavedGuard(freeLines.length > 0 || Object.values(qty).some((v) => Number(v) > 0), () => submit());
   const [mode, setMode] = useState<"refund" | "credit">("refund");
   const [method, setMethod] = useState("Cash");
   const [reason, setReason] = useState("");
@@ -164,6 +164,7 @@ function ReturnsPage() {
   return (
     <AppShell title="Sales Returns" subtitle="Refund ya customer credit" active="/pos" wide>
       {pc.node}
+      {guardNode}
       <BarcodeScannerDialog open={cameraOpen} onOpenChange={setCameraOpen} onCode={(code) => { setCameraOpen(false); if (saleId) { setItemSearch(code); setStagedId(null); return; } const p = products.find((p) => p.barcode === code || p.sku === code); if (p) stage(p.id, p.name, p.unit, p.salePrice); else { setItemSearch(code); setStagedId(null); toast.error("Barcode not linked to a POS product"); } }} />
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <PosSubnav />

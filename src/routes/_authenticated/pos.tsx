@@ -150,7 +150,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
   const [term, setTerm] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [billDiscount, setBillDiscount] = useState("");
-  useUnsavedGuard(cart.length > 0);
+  const guardNode = useUnsavedGuard(cart.length > 0, () => void checkout("sale", false));
   const [discType, setDiscType] = useState<"amt" | "pct">("amt");
   const [delivery, setDelivery] = useState("");
   const [pays, setPays] = useState<{ method: PayMethod; amount: string }[]>([{ method: "Cash", amount: "" }]);
@@ -745,6 +745,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
         {guideOpen ? <ShortcutGuide onClose={() => setGuideOpen(false)} /> : null}
         {pinNode}
         {pc.node}
+        {guardNode}
         <PosAlerts cfg={cfg} products={products} credit={balance?.found && balance.creditLimit != null && balance.balance + Math.max(0, total - paidNum) > balance.creditLimit ? { limit: balance.creditLimit, after: balance.balance + Math.max(0, total - paidNum) } : null} />
 
         <div className="border border-border bg-card">

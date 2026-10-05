@@ -92,7 +92,7 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
     catch (e) { toast.error(e instanceof Error ? e.message : "Delete failed"); }
   };
 
-  useUnsavedGuard(dirtyIds.length > 0);
+  const guardNode = useUnsavedGuard(dirtyIds.length > 0, save);
   const allPicked = list.length > 0 && list.every((p) => picked.has(p.id));
 
   // Arrow keys move the cursor between editable fields (up/down/left/right)
@@ -119,6 +119,7 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
   };
   return (
     <section className="space-y-2 rounded-xl border border-border bg-card p-3">
+      {guardNode}
       <div className="flex flex-wrap items-center gap-2">
         <p className="mr-auto font-bold text-foreground">Bulk update items <span className="text-xs font-normal text-muted-foreground">{dirtyIds.length} changed</span></p>
         <Button variant="destructive" onClick={() => del([...picked])} disabled={!picked.size || saving}><Trash2 /> Delete ({picked.size})</Button>

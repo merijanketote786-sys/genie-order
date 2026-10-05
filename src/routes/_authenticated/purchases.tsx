@@ -50,7 +50,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const [selectedParty, setSelectedParty] = useState<{ id: string; source: "customer" | "supplier"; name: string } | null>(null);
   const partyRef = useRef<HTMLUListElement>(null);
   const [lines, setLines] = useState<Line[]>([]);
-  useUnsavedGuard(lines.length > 0);
+  const guardNode = useUnsavedGuard(lines.length > 0, () => save());
   const [term, setTerm] = useState("");
   const [staged, setStaged] = useState<Staged | null>(null);
   const [sf, setSf] = useState({ qty: "1", unit: "Piece", rate: "", discount: "", tax: "0" });
@@ -366,10 +366,11 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
       </div>
   );
   const shareNode = share ? <ShareDialog title={share.title} text={share.text} onClose={() => setShare(null)} /> : null;
-  if (embedded) return <>{pc.node}{shareNode}{body}</>;
+  if (embedded) return <>{pc.node}{guardNode}{shareNode}{body}</>;
   return (
     <AppShell title="Purchases" subtitle="Stock purchases and party credit" active="/pos" wide>
       {pc.node}
+      {guardNode}
       {shareNode}
       {body}
     </AppShell>
