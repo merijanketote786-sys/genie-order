@@ -1,3 +1,4 @@
+import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
 import { AppShell } from "@/components/app-shell";
 import { PAY_OPTS, PosSubnav, posInput, rs } from "@/components/pos-subnav";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const [selectedParty, setSelectedParty] = useState<{ id: string; source: "customer" | "supplier"; name: string } | null>(null);
   const partyRef = useRef<HTMLUListElement>(null);
   const [lines, setLines] = useState<Line[]>([]);
+  useUnsavedGuard(lines.length > 0);
   const [term, setTerm] = useState("");
   const [staged, setStaged] = useState<Staged | null>(null);
   const [sf, setSf] = useState({ qty: "1", unit: "Piece", rate: "", discount: "", tax: "0" });
