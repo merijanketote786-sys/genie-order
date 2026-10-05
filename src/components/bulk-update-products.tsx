@@ -2,10 +2,11 @@ import { Button } from "@/components/ui/button";
 import { posInput, rs } from "@/components/pos-subnav";
 import { bulkUpdateProducts, deletePosProducts, type InvProduct } from "@/lib/inventory.functions";
 import { UnitSelect } from "@/components/unit-select";
-import { Search, Trash2, X } from "lucide-react";
+import { Search, Trash2, Upload, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
+import { BulkCsvImport, parseCsv } from "@/components/bulk-csv-import";
 
 const TINTS = ["--chart-1", "--chart-2", "--chart-3", "--chart-4", "--chart-5", "--primary", "--success", "--warning"];
 const tint = (i: number, pct: number) => ({ backgroundColor: `color-mix(in oklab, var(${TINTS[i % TINTS.length]}) ${pct}%, var(--card))` });
@@ -47,6 +48,7 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
   const [applyVal, setApplyVal] = useState("");
   const [saving, setSaving] = useState(false);
   const [activeCol, setActiveCol] = useState<string | null>(null);
+  const [csv, setCsv] = useState<{ headers: string[]; rows: string[][] } | null>(null);
 
   const list = useMemo(() => { const t = q.trim().toLowerCase(); return products.filter((p) => !t || [p.name, p.sku, p.barcode, p.category, p.brand].some((v) => v.toLowerCase().includes(t))); }, [products, q]);
   const rowOf = (id: string): Row => { const r = { ...orig[id], ...edits[id] }; return { ...r, stock_value: edits[id]?.stock_value ?? val(r) }; };
@@ -133,7 +135,17 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
         {COLS.find((c) => c.k === applyCol)?.num ? <select className={`${posInput} w-32`} value={applyMode} onChange={(e) => setApplyMode(e.target.value as "set")} aria-label="Method"><option value="set">This value</option><option value="pct">% increase/decrease</option><option value="add">+/− amount</option></select> : null}
         {applyCol === "unit" ? <UnitSelect className={`${posInput} w-40`} value={applyVal} onChange={setApplyVal} /> : <input className={`${posInput} w-28`} value={applyVal} onChange={(e) => setApplyVal(e.target.value)} placeholder="Value" />}
         <Button variant="outline" onClick={applyAll}>Apply</Button>
+        <label className="ml-auto inline-flex cursor-pointer items-center gap-1 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-accent"><Upload className="size-4" /> Import CSV
+          <input type="file" accept=".csv,text/csv" className="hidden" onChange={async (e) => {
+            const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
+            const all = parseCsv(await f.text()); if (all.length < 2) return toast.error("CSV has no data rows");
+            setCsv({ headers: all[0], rows: all.slice(1) });
+          }} />
+        </label>
       </div>
+      {csv && <BulkCsvImport headers={csv.headers} rows={csv.rows} products={products} onClose={() => setCsv(null)}
+        fields={COLS.filter((c) => !["name", "stock_value"].includes(c.k)).map((c) => ({ k: c.k, label: c.label, num: c.num }))}
+        onApply={(ups, n) => { ups.forEach((u) => set(u.id, u.k, u.v)); setCsv(null); toast.success(`${n} products filled from CSV — review and press Save`); }} />}
       <label className="flex h-10 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
         <Search className="size-4 text-primary" /><input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search product" />
       </label>
