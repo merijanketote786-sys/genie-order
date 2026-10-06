@@ -809,6 +809,36 @@ export type Database = {
           },
         ]
       }
+      pos_backup_runs: {
+        Row: {
+          created_at: string
+          error: string | null
+          file_name: string | null
+          id: string
+          status: string
+          target: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          file_name?: string | null
+          id?: string
+          status: string
+          target: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          file_name?: string | null
+          id?: string
+          status?: string
+          target?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
       pos_member_roles: {
         Row: {
           perms: string[] | null
@@ -1909,6 +1939,24 @@ export type Database = {
       }
       pos_perms: { Args: { _role: string }; Returns: string[] }
       pos_request_store: { Args: { _ws: string }; Returns: string }
+      pos_restore_backup: {
+        Args: { _data: Json; _mode: string }
+        Returns: Json
+      }
+      pos_restore_selfref: {
+        Args: { _col: string; _rows: Json; _t: string; _ws: string }
+        Returns: undefined
+      }
+      pos_restore_table: {
+        Args: {
+          _rows: Json
+          _strip: string[]
+          _t: string
+          _upsert?: boolean
+          _ws: string
+        }
+        Returns: number
+      }
       pos_role: { Args: { _uid: string }; Returns: string }
       pos_save_printers: {
         Args: { _defaults: Json; _printers: Json }

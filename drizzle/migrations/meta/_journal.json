@@ -323,6 +323,13 @@
       "when": 1790942374423,
       "tag": "0045_pos_cancel_purchase",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1791246431360,
+      "tag": "0046_pos_backup_restore",
+      "breakpoints": true
     }
   ]
 }
