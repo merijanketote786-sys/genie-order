@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { posInput, rs } from "@/components/pos-subnav";
 import { bulkUpdateProducts, deletePosProducts, type InvProduct } from "@/lib/inventory.functions";
 import { UnitSelect } from "@/components/unit-select";
+import { usePosCategories } from "@/lib/pos-catalog";
 import { Search, Trash2, Upload, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -57,6 +58,8 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
   const [csv, setCsv] = useState<{ headers: string[]; rows: string[][] } | null>(null);
 
   const cats = useMemo(() => [...new Set(pool.map((p) => p.category).filter(Boolean))].sort(), [pool]);
+  const { data: savedCats } = usePosCategories();
+  const catOptions = useMemo(() => [...new Set([...(savedCats ?? []).map((c) => c.name), ...cats])].sort(), [savedCats, cats]);
   const isLow = (p: InvProduct) => p.minStock != null && p.stock <= p.minStock;
   const list = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -215,6 +218,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
             {COLS.map((c, i) => <th key={c.k} style={c.k === "name" ? undefined : tint(i, activeCol === c.k ? 45 : 18)} className={`truncate px-2 py-2 transition-colors ${activeCol === c.k ? "text-foreground" : ""} ${c.k === "name" ? "sticky left-12 z-20 border-r border-border bg-card" : ""}`} title={c.label}>{c.label}</th>)}
             <th className="px-2 py-2">Delete</th>
           </tr></thead>
+          <datalist id="bulk-pos-cats">{catOptions.map((c) => <option key={c} value={c} />)}</datalist>
           <tbody onKeyDown={gridKeys} onMouseLeave={() => setActiveCol(null)} onBlur={() => setActiveCol(null)}>
             {list.slice(0, 1000).map((p) => { const r = rowOf(p.id); return (
               <tr key={p.id} className={`border-t border-border ${dirtyIds.includes(p.id) ? "bg-accent" : ""}`}>
@@ -222,6 +226,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
                 {COLS.map((c, i) => (
                   <td key={c.k} onMouseEnter={() => setActiveCol(c.k)} onFocus={() => setActiveCol(c.k)} style={c.k === "name" || dirtyIds.includes(p.id) && activeCol !== c.k ? undefined : tint(i, activeCol === c.k ? 32 : 8)} className={`px-1 py-1 transition-colors ${c.k === "name" ? `sticky left-12 z-10 border-r border-border ${dirtyIds.includes(p.id) ? "bg-accent" : "bg-card"}` : ""}`}>
                     {c.k === "is_active" ? <select className={`${posInput} h-9 w-full px-1 ${r.is_active !== orig[p.id].is_active ? "border-primary" : ""}`} value={r.is_active} onChange={(e) => set(p.id, "is_active", e.target.value)} aria-label={`Active ${p.name}`}><option value="true">Yes</option><option value="false">No</option></select>
+                      : c.k === "category" ? <input list="bulk-pos-cats" className={`${posInput} h-9 w-full px-2 ${r.category !== orig[p.id].category ? "border-primary" : ""}`} value={r.category} onChange={(e) => set(p.id, "category", e.target.value)} aria-label={`Category ${p.name}`} />
                       : c.k === "unit" ? <UnitSelect className={`${posInput} h-9 w-full px-1 ${r.unit !== orig[p.id].unit ? "border-primary" : ""}`} value={r.unit} onChange={(v) => set(p.id, "unit", v)} label={`Unit ${p.name}`} /> : <input className={`${posInput} h-9 w-full px-2 ${c.num ? "text-right" : ""} ${c.k !== "stock_value" && r[c.k] !== orig[p.id][c.k] ? "border-primary" : ""}`} value={r[c.k]} inputMode={c.num ? "decimal" : undefined}
                       title={c.k === "stock_value" ? "Changing stock value will auto-calculate the purchase price" : undefined} onChange={(e) => set(p.id, c.k, e.target.value)} aria-label={`${c.label} ${p.name}`} />}
                   </td>
