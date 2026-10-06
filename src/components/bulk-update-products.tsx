@@ -28,6 +28,7 @@ const COLS: Col[] = [
   { k: "stock_value", label: "Stock value", w: "w-32", num: true },
   { k: "min_stock", label: "Min stock", w: "w-24", num: true },
   { k: "tax_percent", label: "Tax %", w: "w-20", num: true },
+  { k: "is_active", label: "Active", w: "w-16" },
 ];
 type Row = Record<string, string>;
 const base = (p: InvProduct): Row => ({
@@ -35,6 +36,7 @@ const base = (p: InvProduct): Row => ({
   purchase_price: p.purchasePrice?.toString() ?? "", sale_price: String(p.salePrice ?? 0), wholesale_price: p.wholesalePrice?.toString() ?? "",
   wholesale_min_qty: p.wholesaleMinQty?.toString() ?? "",
   min_sale_price: p.minSalePrice?.toString() ?? "", stock: String(p.stock), min_stock: p.minStock?.toString() ?? "", tax_percent: p.taxPercent?.toString() ?? "",
+  is_active: p.isActive === false ? "false" : "true",
 });
 const val = (r: Row) => { const s = Number(r.stock) || 0, c = Number(r.purchase_price) || 0; return r.purchase_price === "" ? "" : String(Math.round(Math.max(0, s) * c * 100) / 100); };
 
