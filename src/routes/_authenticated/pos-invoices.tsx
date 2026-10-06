@@ -257,7 +257,7 @@ function PosInvoicesPage() {
                         {item(s, <Share2 className="size-4" />, "Share", () => setShare(s))}
                         {item(s, <Pencil className="size-4" />, "Edit", () => openInBilling(s, false))}
                         {isEstimate ? item(s, <FileInput className="size-4" />, "Convert to Invoice", () => openInBilling(s, true)) : null}
-                        {isEstimate ? item(s, <Truck className="size-4" />, "Convert to Delivery Challan", () => pc.preview(challanDoc(s), false)) : null}
+                        {item(s, <Truck className="size-4" />, "Convert to Delivery Challan", () => pc.preview(challanDoc(s), false))}
                         {!isEstimate ? item(s, <Ban className="size-4" />, "Cancel", () => void doCancel(s), true) : null}
                         {isEstimate ? item(s, <Trash2 className="size-4" />, "Delete", () => void doDelete(s), true) : null}
                       </div>
