@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/app-shell";
+import { MoneyAccountsPanel } from "@/components/money-accounts";
 import { posInput, rs } from "@/components/pos-subnav";
 import { usePosAccess } from "@/components/pos-access";
 import { usePrintCenter } from "@/components/print-center";
