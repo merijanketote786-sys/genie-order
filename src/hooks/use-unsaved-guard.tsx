@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useBlocker } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
@@ -48,12 +48,27 @@ export function useUnsavedGuard(dirty: boolean, onSave?: () => Promise<unknown> 
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const embedded = useContext(EmbeddedUnsavedCtx);
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
+  const hasSave = !!onSave;
+
+  /** Runs the page's save and rejects if entries are still unsaved afterwards (validation/API failure). */
+  const runSave = useCallback(async () => {
+    await onSaveRef.current?.();
+    await new Promise((r) => setTimeout(r, 60));
+    if (dirtyRef.current) throw new Error("Entries were not saved");
+  }, []);
 
   useEffect(() => {
     if (!embedded) return;
-    embedded.setGuard(dirty ? { dirty, onSave } : null);
+    embedded.setGuard(dirty ? { dirty: true, onSave: hasSave ? runSave : undefined } : null);
+  }, [embedded, dirty, hasSave, runSave]);
+  useEffect(() => {
+    if (!embedded) return;
     return () => embedded.setGuard(null);
-  }, [embedded, dirty, onSave]);
+  }, [embedded]);
 
   const blocker = useBlocker({
     shouldBlockFn: () => {
@@ -74,10 +89,10 @@ export function useUnsavedGuard(dirty: boolean, onSave?: () => Promise<unknown> 
     if (blocker.status === "blocked") blocker.proceed();
   };
   const save = async () => {
-    if (!onSave) return leave();
+    if (!onSaveRef.current) return leave();
     setSaving(true);
     try {
-      await onSave();
+      await runSave();
       leave();
     } catch {
       // save failed (already toasted by the page); stay on the page

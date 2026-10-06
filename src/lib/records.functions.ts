@@ -80,7 +80,7 @@ export const saveParty = createServerFn({ method: "POST" })
       city: data.city,
       address: data.address,
     });
-    if (!id) throw new Error("Phone number sahi nahi hai");
+    if (!id) throw new Error("Phone number is not valid");
     const { error } = await supabase.from("customers").update({
       name: data.name,
       city: data.city || null,

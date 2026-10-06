@@ -54,7 +54,7 @@ export const bulkUpdateProducts = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ rows: z.array(z.record(z.string(), z.union([z.string().max(200), z.boolean()])).refine((r) => typeof r.id === "string")).min(1).max(2000) }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: res, error } = await withStore((context.supabase as Sb).rpc("pos_bulk_update_products", { _rows: data.rows }));
-    if (error) throw new Error(error.message || "Bulk update failed");
+    if (error) throw new Error(enMsg(error.message) || "Bulk update failed");
     return res as { updated: number };
   });
 
@@ -177,7 +177,7 @@ export const createPosProduct = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ name: z.string().trim().min(1).max(200), unit: txt, sku: txt, barcode: txt, category: txt, brand: txt, sale_price: txt, purchase_price: txt, wholesale_price: txt, wholesale_min_qty: txt, stock: txt, min_stock: txt, tax_percent: txt }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: id, error } = await withStore((context.supabase as Sb).rpc("pos_create_product", { _p: data }));
-    if (error) throw new Error(error.message || "Failed to add product");
+    if (error) throw new Error(enMsg(error.message) || "Failed to add product");
     return { id: id as string };
   });
 
@@ -186,7 +186,7 @@ export const deletePosProducts = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ ids: z.array(z.string().uuid()).min(1).max(2000) }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: n, error } = await (context.supabase as Sb).rpc("pos_delete_products", { _ids: data.ids });
-    if (error) throw new Error(error.message || "Failed to delete");
+    if (error) throw new Error(enMsg(error.message) || "Failed to delete");
     return { deleted: Number(n) };
   });
 
@@ -228,3 +228,18 @@ export const getItemHistory = createServerFn({ method: "GET" })
     rows.sort((a, b) => b.date.localeCompare(a.date));
     return { rows };
   });
+
+const EN_MSG: Array<[RegExp, string]> = [
+  [/product name khali nahi ho sakta/i, "Product name cannot be empty"],
+  [/product name likhein/i, "Enter a product name"],
+  [/is naam ka product pehle se maujood hai/i, "A product with this name already exists"],
+  [/product add karne ki ijazat nahi/i, "You do not have permission to add products"],
+  [/zyada products/i, "Too many products"],
+  [/product delete karne ki ijazat nahi/i, "You do not have permission to delete products"],
+  [/product edit ki ijazat nahi/i, "You do not have permission to edit products"],
+];
+function enMsg(msg?: string) {
+  if (!msg) return msg;
+  for (const [re, en] of EN_MSG) if (re.test(msg)) return en;
+  return msg;
+}

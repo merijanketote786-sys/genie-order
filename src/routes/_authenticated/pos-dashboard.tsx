@@ -9,7 +9,7 @@ import {
   AlertTriangle, BarChart3, Boxes, FileText, HandCoins, Landmark, Notebook, Receipt, RefreshCw,
   ShoppingCart, TrendingUp, Truck, Undo2, Users, Wallet,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { ArrowDownLeft, ArrowUpRight, Factory, Users as PartiesIcon } from "lucide-react";
 import { ItemsDialog } from "@/components/items-dialog";
 import { AttendanceDialog } from "@/components/attendance";
@@ -271,6 +271,7 @@ function GuardedPopup({ open, title, onClose, children }: { open: boolean; title
   const [guard, setGuard] = useState<UnsavedGuardState>(null);
   const [warn, setWarn] = useState(false);
   const [saving, setSaving] = useState(false);
+  const ctxValue = useMemo(() => ({ setGuard }), []);
 
   const requestClose = () => {
     if (guard?.dirty) setWarn(true);
@@ -291,7 +292,7 @@ function GuardedPopup({ open, title, onClose, children }: { open: boolean; title
   };
 
   return (
-    <EmbeddedUnsavedCtx.Provider value={{ setGuard }}>
+    <EmbeddedUnsavedCtx.Provider value={ctxValue}>
       <FullScreenPopup open={open} title={title} onClose={requestClose}>{children}</FullScreenPopup>
       <UnsavedCloseDialog open={warn} saving={saving} onCancel={() => setWarn(false)} onLeave={leave} onSave={save} />
     </EmbeddedUnsavedCtx.Provider>

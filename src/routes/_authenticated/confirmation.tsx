@@ -78,19 +78,6 @@ function ConfirmationPage() {
     return { invoice, pay };
   };
 
-  /** Manually likhe/paste kiye gaye text ko box se bahar aate hi sirf invoice items tak mehdood karta hai. */
-  const cleanInvoiceField = () => {
-    const raw = values.invoice;
-    if (!raw.trim()) return;
-    const items = extractInvoiceOnly(raw);
-    if (!items) return; // koi item line nahi mili to text waise ka waisa rakho
-    if (items !== raw.trim()) {
-      setPerforma("");
-      setValues((prev) => ({ ...prev, invoice: items }));
-    }
-  };
-
-
   const set = <K extends keyof ConfirmationValues>(key: K, value: ConfirmationValues[K]) => {
     // Koi bhi field badle to neeche para purana performa foran hata dein —
     // naya performa sirf "Performa banayein" se bane ga.
@@ -358,12 +345,11 @@ function ConfirmationPage() {
           <Textarea
             value={values.invoice}
             onChange={(e) => set("invoice", e.target.value)}
-            onBlur={cleanInvoiceField}
             placeholder="Press 'Send to Confirmation' in the Invoice section, or paste items here."
             className="mt-2 min-h-32 rounded-xl bg-background font-mono text-[13px] leading-6"
           />
           <p className="mt-1 text-[11px] text-muted-foreground">
-            Paste anything — the box will keep only the invoice items and remove the rest automatically.
+            Paste invoice items here — your text is kept as you typed it.
           </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
             <Field label="Product Total" value={values.productTotal} onChange={(v) => set("productTotal", v)} placeholder="5000" inputMode="decimal" />
