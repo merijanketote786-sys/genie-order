@@ -2,10 +2,10 @@ import { useId } from "react";
 import { usePosCategories } from "@/lib/pos-catalog";
 
 /** Text box with a dropdown arrow listing saved POS categories (typing a new name still works). */
-export function CategoryInput({ value, onChange, className, label = "Category", extra = [] }: { value: string; onChange: (v: string) => void; className?: string; label?: string; extra?: string[] }) {
+export function CategoryInput({ value, onChange, className, label = "Category" }: { value: string; onChange: (v: string) => void; className?: string; label?: string }) {
   const id = useId();
   const { data } = usePosCategories();
-  const names = [...new Set([...(data ?? []).map((c) => c.name), ...extra.filter(Boolean)])].sort((a, b) => a.localeCompare(b));
+  const names = [...new Set((data ?? []).map((c) => c.name))].sort((a, b) => a.localeCompare(b));
   return (
     <div className="relative">
       <input className={`${className ?? ""} pr-7`} list={id} value={value} onChange={(e) => onChange(e.target.value)} aria-label={label} placeholder="Select category" />
