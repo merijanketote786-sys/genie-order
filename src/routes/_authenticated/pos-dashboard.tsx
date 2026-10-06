@@ -25,6 +25,7 @@ import { ChevronDown, LayoutGrid, Ruler, Tags } from "lucide-react";
 import { lazy, Suspense, type ComponentType } from "react";
 import { EmbeddedShell } from "@/components/app-shell";
 import { UnitsPanel, CategoriesPanel } from "@/components/units-categories";
+import { EmbeddedUnsavedCtx, UnsavedCloseDialog, type UnsavedGuardState } from "@/hooks/use-unsaved-guard";
 
 type RouteMod = { Route: { options: { component?: unknown } } };
 const embed = (load: () => Promise<RouteMod>) => lazy(async () => ({ default: (await load()).Route.options.component as ComponentType }));
@@ -171,13 +172,13 @@ function PosDashboardPage() {
           <AttendanceDialog open={attOpen} onOpenChange={setAttOpen} />
           <PartiesDialog open={partiesOpen} onOpenChange={setPartiesOpen} />
           <PaymentInOutDialog open={payOpen} onOpenChange={setPayOpen} dir={payDir} onDirChange={setPayDir} />
-          <FullScreenPopup open={!!pop} title={pop?.title ?? ""} onClose={() => { setPop(null); q.refetch(); }}>
+          <GuardedPopup open={!!pop} title={pop?.title ?? ""} onClose={() => { setPop(null); q.refetch(); }}>
             {pop?.kind === "cash" ? <div className="mx-auto max-w-3xl p-4"><CashCountPanel /></div>
               : pop?.kind === "bank" ? <div className="mx-auto max-w-3xl p-4"><MoneyAccountsPanel /></div>
               : pop?.kind === "units" ? <UnitsPanel />
               : pop?.kind === "categories" ? <CategoriesPanel />
               : pop?.to && PAGES[pop.to] ? <EmbedPage to={pop.to} /> : null}
-          </FullScreenPopup>
+          </GuardedPopup>
         </div>
 
         {q.isError ? <p className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">Dashboard could not load. Press Refresh.</p> : null}
@@ -262,6 +263,38 @@ function PosDashboardPage() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+/** Full-screen quick-action popup that warns before closing when the embedded page has unsaved entries. */
+function GuardedPopup({ open, title, onClose, children }: { open: boolean; title: string; onClose: () => void; children: ReactNode }) {
+  const [guard, setGuard] = useState<UnsavedGuardState>(null);
+  const [warn, setWarn] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const requestClose = () => {
+    if (guard?.dirty) setWarn(true);
+    else onClose();
+  };
+  const leave = () => { setWarn(false); onClose(); };
+  const save = async () => {
+    if (!guard?.onSave) return leave();
+    setSaving(true);
+    try {
+      await guard.onSave();
+      leave();
+    } catch {
+      setWarn(false); // save failed (page already toasted); keep popup open
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <EmbeddedUnsavedCtx.Provider value={{ setGuard }}>
+      <FullScreenPopup open={open} title={title} onClose={requestClose}>{children}</FullScreenPopup>
+      <UnsavedCloseDialog open={warn} saving={saving} onCancel={() => setWarn(false)} onLeave={leave} onSave={save} />
+    </EmbeddedUnsavedCtx.Provider>
   );
 }
 
