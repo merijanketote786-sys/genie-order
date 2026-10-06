@@ -135,17 +135,29 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
         {COLS.find((c) => c.k === applyCol)?.num ? <select className={`${posInput} w-32`} value={applyMode} onChange={(e) => setApplyMode(e.target.value as "set")} aria-label="Method"><option value="set">This value</option><option value="pct">% increase/decrease</option><option value="add">+/− amount</option></select> : null}
         {applyCol === "unit" ? <UnitSelect className={`${posInput} w-40`} value={applyVal} onChange={setApplyVal} /> : <input className={`${posInput} w-28`} value={applyVal} onChange={(e) => setApplyVal(e.target.value)} placeholder="Value" />}
         <Button variant="outline" onClick={applyAll}>Apply</Button>
-        <label className="ml-auto inline-flex cursor-pointer items-center gap-1 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-accent"><Upload className="size-4" /> Import CSV
-          <input type="file" accept=".csv,text/csv" className="hidden" onChange={async (e) => {
+        <label className="ml-auto inline-flex cursor-pointer items-center gap-1 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-accent"><Upload className="size-4" /> Upload Excel / CSV
+          <input type="file" accept=".csv,text/csv,.xlsx,.xls" className="hidden" onChange={async (e) => {
             const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
-            const all = parseCsv(await f.text()); if (all.length < 2) return toast.error("CSV has no data rows");
+            let all: string[][];
+            try {
+              if (/\.xlsx?$/i.test(f.name)) { const X = await import("xlsx"); const wb = X.read(await f.arrayBuffer()); all = (X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false, defval: "" }) as unknown[][]).map((r) => r.map((v) => String(v ?? ""))).filter((r) => r.some((v) => v.trim() !== "")); }
+              else all = parseCsv(await f.text());
+            } catch { return toast.error("Could not read this file"); } if (all.length < 2) return toast.error("CSV has no data rows");
             setCsv({ headers: all[0], rows: all.slice(1) });
           }} />
         </label>
       </div>
       {csv && <BulkCsvImport headers={csv.headers} rows={csv.rows} products={products} onClose={() => setCsv(null)}
         fields={COLS.filter((c) => !["name", "stock_value"].includes(c.k)).map((c) => ({ k: c.k, label: c.label, num: c.num }))}
-        onApply={(ups, n) => { ups.forEach((u) => set(u.id, u.k, u.v)); setCsv(null); toast.success(`${n} products filled from CSV — review and press Save`); }} />}
+        onApply={async (ups) => {
+          const by = new Map<string, Record<string, string>>();
+          ups.forEach((u) => { if (u.v !== orig[u.id]?.[u.k]) { const o = by.get(u.id) ?? { id: u.id }; o[u.k] = u.v; by.set(u.id, o); } });
+          const rows = [...by.values()]; setCsv(null);
+          if (!rows.length) return toast.info("Prices are already the same — nothing to update");
+          setSaving(true);
+          try { for (let i = 0; i < rows.length; i += 500) await bulkUpdateProducts({ data: { rows: rows.slice(i, i + 500) } }); toast.success(`${rows.length} products updated`); onSaved(); }
+          catch (e) { toast.error(e instanceof Error ? e.message : "Save failed"); } finally { setSaving(false); }
+        }} />}
       <label className="flex h-10 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
         <Search className="size-4 text-primary" /><input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search product" />
       </label>
