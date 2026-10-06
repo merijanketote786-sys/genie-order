@@ -420,19 +420,64 @@ export function BackupSection() {
     try { const r = await exportData({ data: { what } }); if (kind === "csv") csvDownload(what, r.columns, r.rows); else await xlsxDownload(what, r.columns, r.rows); toast.success(`${r.rows.length} rows export`); }
     catch (e) { toast.error(e instanceof Error ? e.message : "Export failed"); } finally { setBusy(null); }
   };
-  const backup = async () => {
+  const backup = async (toFolder: boolean) => {
     setBusy("backup");
     try {
       const { json } = await exportPosBackup();
-      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([json], { type: "application/json" })); a.download = `pos-backup-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+      const name = `pos-backup-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.json`;
+      const picker = (window as any).showDirectoryPicker;
+      if (toFolder && picker) {
+        const dir = await picker({ mode: "readwrite" });
+        const fh = await dir.getFileHandle(name, { create: true });
+        const w = await fh.createWritable(); await w.write(json); await w.close();
+        toast.success(`Backup saved in folder: ${name}`);
+      } else {
+        const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([json], { type: "application/json" })); a.download = name; a.click();
+        toast.success("Backup downloaded");
+      }
       qc.invalidateQueries({ queryKey: ["sync-overview"] });
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); } finally { setBusy(null); }
+    } catch (e) { if ((e as Error)?.name !== "AbortError") toast.error(e instanceof Error ? e.message : "Failed"); } finally { setBusy(null); }
+  };
+  const [restoreFile, setRestoreFile] = useState<File | null>(null);
+  const [mode, setMode] = useState<"merge" | "replace">("merge");
+  const [confirmText, setConfirmText] = useState("");
+  const restore = async () => {
+    if (!restoreFile) return;
+    setBusy("restore");
+    try {
+      const json = await restoreFile.text();
+      const { counts } = await restorePosBackup({ data: { mode, json } });
+      const total = Object.values(counts).reduce((s, n) => s + Number(n || 0), 0);
+      toast.success(`Restore complete — ${total} records restored`);
+      setRestoreFile(null); setConfirmText("");
+      qc.invalidateQueries();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Restore failed"); } finally { setBusy(null); }
   };
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border p-3">
-        <div><p className="text-sm font-semibold">Full backup (JSON)</p><p className="text-xs text-muted-foreground">Last backup: {data?.lastBackup ? new Date(data.lastBackup).toLocaleString("en-PK") : "never"} · No password/secret key included.</p></div>
-        <Button variant="outline" disabled={!can("settings") || busy === "backup"} onClick={backup}><Download /> Backup download</Button>
+      <div className="space-y-2 rounded-lg border border-border p-3">
+        <div><p className="text-sm font-semibold">Full POS backup</p><p className="text-xs text-muted-foreground">Last backup: {data?.lastBackup ? new Date(data.lastBackup).toLocaleString("en-PK") : "never"} · Includes items, stock per store, parties, sales, purchases, payments, expenses, accounting, attendance and POS settings. No password/PIN included.</p></div>
+        <div className="flex flex-wrap gap-2">
+          <Button disabled={!can("settings") || busy === "backup"} onClick={() => backup(true)}><Download /> Save to computer folder</Button>
+          <Button variant="outline" disabled={!can("settings") || busy === "backup"} onClick={() => backup(false)}><Download /> Download backup</Button>
+        </div>
+      </div>
+      <div className="space-y-2 rounded-lg border border-border p-3">
+        <p className="text-sm font-semibold">Restore from backup</p>
+        <Input type="file" accept=".json,application/json" disabled={!can("settings")} onChange={(e) => { setRestoreFile(e.target.files?.[0] ?? null); setConfirmText(""); }} />
+        <div className="grid gap-2 sm:grid-cols-2">
+          <label className={`cursor-pointer rounded-lg border p-2 text-xs ${mode === "merge" ? "border-primary bg-primary/5" : "border-border"}`}>
+            <input type="radio" className="mr-2" checked={mode === "merge"} onChange={() => setMode("merge")} /><b>Add missing records</b><br />Existing records stay unchanged; only records missing from POS are added back.
+          </label>
+          <label className={`cursor-pointer rounded-lg border p-2 text-xs ${mode === "replace" ? "border-destructive bg-destructive/5" : "border-border"}`}>
+            <input type="radio" className="mr-2" checked={mode === "replace"} onChange={() => setMode("replace")} /><b>Replace all POS data</b><br />Current sales, purchases, payments, expenses, stock and accounting are removed and replaced with the backup.
+          </label>
+        </div>
+        {mode === "replace" ? <Input placeholder='Type REPLACE to confirm' value={confirmText} onChange={(e) => setConfirmText(e.target.value)} /> : null}
+        <Button variant={mode === "replace" ? "destructive" : "default"} disabled={!can("settings") || !restoreFile || busy === "restore" || (mode === "replace" && confirmText !== "REPLACE")} onClick={restore}>
+          {busy === "restore" ? "Restoring…" : "Restore backup"}
+        </Button>
+        <p className="text-xs text-muted-foreground">Tip: take a fresh backup before restoring. Workspace data is never touched.</p>
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
         {EXPORT_ITEMS.map(([k, l]) => (
