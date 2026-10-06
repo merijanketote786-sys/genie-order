@@ -170,7 +170,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
           }} />
         </label>
       </div>
-      {csv && <BulkCsvImport headers={csv.headers} rows={csv.rows} products={products} onClose={() => setCsv(null)}
+      {csv && <BulkCsvImport headers={csv.headers} rows={csv.rows} products={pool} onClose={() => setCsv(null)}
         fields={COLS.filter((c) => !["name", "stock_value", "is_active"].includes(c.k)).map((c) => ({ k: c.k, label: c.label, num: c.num }))}
         onApply={async (ups) => {
           const by = new Map<string, Record<string, string>>();
@@ -181,6 +181,25 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
           try { for (let i = 0; i < rows.length; i += 500) await bulkUpdateProducts({ data: { rows: rows.slice(i, i + 500) } }); toast.success(`${rows.length} products updated`); onSaved(); }
           catch (e) { toast.error(e instanceof Error ? e.message : "Save failed"); } finally { setSaving(false); }
         }} />}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium text-muted-foreground">Show:</span>
+        <select className={`${posInput} w-60`} value={fKind} onChange={(e) => setFKind(e.target.value)} aria-label="Filter items">
+          <option value="all">All items</option>
+          <option value="active">Active items</option>
+          <option value="inactive">Inactive items</option>
+          <option value="low">Low stock (at or below min)</option>
+          <option value="out">Out of stock</option>
+          <option value="no_purchase">No purchase price</option>
+          <option value="no_sale">No sale price</option>
+          <option value="has_min">Min stock set</option>
+          <option value="no_min">No min stock set</option>
+        </select>
+        <select className={`${posInput} w-44`} value={fCat} onChange={(e) => setFCat(e.target.value)} aria-label="Filter by category">
+          <option value="">Every category</option>
+          {cats.map((c) => <option key={c}>{c}</option>)}
+        </select>
+        <span className="text-xs text-muted-foreground">{list.length} of {pool.length} items shown</span>
+      </div>
       <label className="flex h-10 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
         <Search className="size-4 text-primary" /><input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search product" />
       </label>
@@ -202,7 +221,8 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
                 <td className={`sticky left-0 z-10 px-2 py-1 ${dirtyIds.includes(p.id) ? "bg-accent" : "bg-card"}`}><input type="checkbox" checked={picked.has(p.id)} onChange={() => setPicked((s) => { const n = new Set(s); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; })} aria-label={`Select ${p.name}`} /></td>
                 {COLS.map((c, i) => (
                   <td key={c.k} onMouseEnter={() => setActiveCol(c.k)} onFocus={() => setActiveCol(c.k)} style={c.k === "name" || dirtyIds.includes(p.id) && activeCol !== c.k ? undefined : tint(i, activeCol === c.k ? 32 : 8)} className={`px-1 py-1 transition-colors ${c.k === "name" ? `sticky left-12 z-10 border-r border-border ${dirtyIds.includes(p.id) ? "bg-accent" : "bg-card"}` : ""}`}>
-                    {c.k === "unit" ? <UnitSelect className={`${posInput} h-9 w-full px-1 ${r.unit !== orig[p.id].unit ? "border-primary" : ""}`} value={r.unit} onChange={(v) => set(p.id, "unit", v)} label={`Unit ${p.name}`} /> : <input className={`${posInput} h-9 w-full px-2 ${c.num ? "text-right" : ""} ${c.k !== "stock_value" && r[c.k] !== orig[p.id][c.k] ? "border-primary" : ""}`} value={r[c.k]} inputMode={c.num ? "decimal" : undefined}
+                    {c.k === "is_active" ? <select className={`${posInput} h-9 w-full px-1 ${r.is_active !== orig[p.id].is_active ? "border-primary" : ""}`} value={r.is_active} onChange={(e) => set(p.id, "is_active", e.target.value)} aria-label={`Active ${p.name}`}><option value="true">Yes</option><option value="false">No</option></select>
+                      : c.k === "unit" ? <UnitSelect className={`${posInput} h-9 w-full px-1 ${r.unit !== orig[p.id].unit ? "border-primary" : ""}`} value={r.unit} onChange={(v) => set(p.id, "unit", v)} label={`Unit ${p.name}`} /> : <input className={`${posInput} h-9 w-full px-2 ${c.num ? "text-right" : ""} ${c.k !== "stock_value" && r[c.k] !== orig[p.id][c.k] ? "border-primary" : ""}`} value={r[c.k]} inputMode={c.num ? "decimal" : undefined}
                       title={c.k === "stock_value" ? "Changing stock value will auto-calculate the purchase price" : undefined} onChange={(e) => set(p.id, c.k, e.target.value)} aria-label={`${c.label} ${p.name}`} />}
                   </td>
                 ))}
