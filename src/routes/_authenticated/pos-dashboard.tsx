@@ -9,7 +9,7 @@ import {
   AlertTriangle, BarChart3, Boxes, FileText, HandCoins, Landmark, Notebook, Receipt, RefreshCw,
   ShoppingCart, TrendingUp, Truck, Undo2, Users, Wallet,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { ArrowDownLeft, ArrowUpRight, Factory, Users as PartiesIcon } from "lucide-react";
 import { ItemsDialog } from "@/components/items-dialog";
 import { AttendanceDialog } from "@/components/attendance";
