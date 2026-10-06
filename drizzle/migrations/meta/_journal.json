@@ -351,6 +351,13 @@
       "when": 1791249249864,
       "tag": "0049_pos_units_categories",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1791250972820,
+      "tag": "0050_relax_products_unit_check",
+      "breakpoints": true
     }
   ]
 }
