@@ -59,7 +59,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
 
   const cats = useMemo(() => [...new Set(pool.map((p) => p.category).filter(Boolean))].sort(), [pool]);
   const { data: savedCats } = usePosCategories();
-  const catOptions = useMemo(() => [...new Set([...(savedCats ?? []).map((c) => c.name), ...cats])].sort(), [savedCats, cats]);
+  const catOptions = useMemo(() => [...new Set((savedCats ?? []).map((c) => c.name))].sort(), [savedCats]);
   const isLow = (p: InvProduct) => p.minStock != null && p.stock <= p.minStock;
   const list = useMemo(() => {
     const t = q.trim().toLowerCase();
