@@ -422,22 +422,36 @@ export function BackupSection() {
     catch (e) { toast.error(e instanceof Error ? e.message : "Export failed"); } finally { setBusy(null); }
   };
   const backup = async (toFolder: boolean) => {
+    const name = `pos-backup-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.json`;
+    const download = (json: string) => {
+      const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+      const a = document.createElement("a"); a.href = url; a.download = name; a.style.display = "none";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    };
+    // Folder picker must open right on click (before any await), else the browser blocks it.
+    let dir: any = null;
+    const picker = (window as any).showDirectoryPicker;
+    if (toFolder) {
+      if (!picker || window.self !== window.top) {
+        toast.info("Folder picking isn't available here — the backup will be downloaded instead. Open the app in its own tab/computer browser to pick a folder.");
+      } else {
+        try { dir = await picker({ mode: "readwrite" }); }
+        catch (e) { if ((e as Error)?.name === "AbortError") return; toast.info("Folder access not allowed — downloading instead."); }
+      }
+    }
     setBusy("backup");
     try {
       const { json } = await exportPosBackup();
-      const name = `pos-backup-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.json`;
-      const picker = (window as any).showDirectoryPicker;
-      if (toFolder && picker) {
-        const dir = await picker({ mode: "readwrite" });
-        const fh = await dir.getFileHandle(name, { create: true });
-        const w = await fh.createWritable(); await w.write(json); await w.close();
-        toast.success(`Backup saved in folder: ${name}`);
-      } else {
-        const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([json], { type: "application/json" })); a.download = name; a.click();
-        toast.success("Backup downloaded");
-      }
+      if (dir) {
+        try {
+          const fh = await dir.getFileHandle(name, { create: true });
+          const w = await fh.createWritable(); await w.write(json); await w.close();
+          toast.success(`Backup saved in folder: ${name}`);
+        } catch { download(json); toast.success("Backup downloaded"); }
+      } else { download(json); toast.success("Backup downloaded"); }
       qc.invalidateQueries({ queryKey: ["sync-overview"] });
-    } catch (e) { if ((e as Error)?.name !== "AbortError") toast.error(e instanceof Error ? e.message : "Failed"); } finally { setBusy(null); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Backup failed"); } finally { setBusy(null); }
   };
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const [mode, setMode] = useState<"merge" | "replace">("merge");
