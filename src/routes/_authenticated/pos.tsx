@@ -150,7 +150,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
   const [term, setTerm] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [billDiscount, setBillDiscount] = useState("");
-  const guardNode = useUnsavedGuard(cart.length > 0, () => void checkout("sale", false));
+  const guardNode = useUnsavedGuard(cart.length > 0, () => checkout("sale", false));
   const [discType, setDiscType] = useState<"amt" | "pct">("amt");
   const [delivery, setDelivery] = useState("");
   const [pays, setPays] = useState<{ method: PayMethod; amount: string }[]>([{ method: "Cash", amount: "" }]);
@@ -182,7 +182,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
 
   const addParty = async () => {
     if (!party.name.trim() || !party.phone.trim()) {
-      toast.error("Party ka naam aur phone zaroori hain");
+      toast.error("Party name and phone are required");
       return;
     }
     setPartySaving(true);
@@ -192,9 +192,9 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
       setPartyOpen(false);
       setParty({ name: "", phone: "", city: "", address: "", courierServiceName: "", goodsAddaName: "" });
       qc.invalidateQueries({ queryKey: ["pos-customers"] });
-      toast.success("Party save ho gayi");
+      toast.success("Party saved");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Party save nahi hui");
+      toast.error(e instanceof Error ? e.message : "Party could not be saved");
     } finally {
       setPartySaving(false);
     }

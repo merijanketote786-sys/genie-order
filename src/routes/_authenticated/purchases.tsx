@@ -154,7 +154,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
     return {
       kind: "purchase", id: p.id, title: p.doc_type === "purchase" ? "Purchase Invoice" : "Purchase Return", number: p.doc_number, date: p.created_at,
        party: p.supplier_name ? { label: "Party", name: p.supplier_name } : undefined,
-      lines: r.items.map((i) => ({ name: i.name, unit: i.unit, qty: i.qty, rate: i.rate, discount: i.discount, taxPercent: i.taxPercent, total: i.lineTotal })),
+      lines: r.items.map((i) => ({ name: i.name, unit: i.unit, qty: i.qty, rate: i.rate, discount: i.discount, taxPct: i.taxPercent, total: i.lineTotal })),
       totals: [...(p.discount_total ? [{ label: "Discount", value: -p.discount_total }] : []), { label: "Grand Total", value: p.grand_total, bold: true }],
       payments: p.paid_total ? [{ method: "Paid", amount: p.paid_total }] : [], paid: p.paid_total, balance: p.balance, notes: p.notes ?? undefined,
     } as PrintDoc;
@@ -169,7 +169,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   });
   const doEdit = (p: Hist) => run(async () => {
     const r = await getPurchaseItems({ data: { id: p.id } });
-    setDocType(p.doc_type === "return" ? "return" : "purchase"); setSelectedParty(p.supplier_id ? { id: p.supplier_id, source: "supplier", name: p.supplier_name || "Party" } : null); setPartySearch(p.supplier_name ?? ""); setRefId(undefined);
+    setDocType(p.doc_type === "return" ? "return" : "purchase"); setSelectedParty(p.supplier_id ? { id: p.supplier_id, source: "supplier", name: p.supplier_name || "Party" } : null); setPartySearch(p.supplier_name ?? ""); setRefId(p.doc_type === "return" ? p.ref_purchase_id ?? undefined : undefined);
     setLines(r.items.map((i) => ({ productId: i.productId ?? undefined, name: i.name, unit: i.unit, qty: String(i.qty), rate: String(i.rate), discount: i.discount ? String(i.discount) : "", tax: String(i.taxPercent), batch: "", expiry: "" })));
     setDiscount(p.discount_total ? String(p.discount_total) : ""); setPaid(String(p.paid_total)); setNotes(p.notes ?? "");
     setEditId({ id: p.id, number: p.doc_number });
@@ -192,16 +192,15 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
     lockRef.current = true;
     setSaving(true);
     try {
+      // Edit: cancel the old entry first so a refused cancel never leaves two live entries.
+      if (editId) await cancelPurchase({ data: { id: editId.id, reason: "Edited — replaced by a new entry" } });
       const resolved = selectedParty ? await ensurePurchaseParty({ data: selectedParty.source === "customer" ? { customerId: selectedParty.id } : { supplierId: selectedParty.id } }) : null;
       const r = await savePurchase({ data: {
         docType, supplierId: resolved?.id, paid: paidNum, method, discount: num(discount), notes: notes || undefined, refPurchaseId: refId, clientRef: opRef.current,
         items: valid.map((l) => ({ productId: l.productId, name: l.name, unit: l.unit, qty: num(l.qty), rate: num(l.rate), discount: num(l.discount), taxPercent: num(l.tax), batch: l.batch || undefined, expiry: l.expiry || undefined })),
       } });
       opRef.current = newRef();
-      if (editId) {
-        try { await cancelPurchase({ data: { id: editId.id, reason: `Edited — replaced by ${r.number}` } }); }
-        catch (e) { toast.error(`New entry saved, but old ${editId.number} could not be cancelled: ${e instanceof Error ? e.message : ""}`); }
-      }
+      setEditId(undefined);
       toast.success(`${docType === "purchase" ? "Purchase" : "Purchase return"} saved: ${r.number} — ${rs(r.total)}`);
       const supName = selectedParty?.name ?? resolved?.name;
       pc.afterSave({
@@ -213,7 +212,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
       }, "purchase");
       reset();
       ["purchases", "suppliers", "customer-balances", "products", "products-lite"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Purchase could not be saved. Please try again."); } finally { lockRef.current = false; setSaving(false); }
+    } catch (e) { if (editId) { setEditId(undefined); qc.invalidateQueries({ queryKey: ["purchases"] }); } toast.error(e instanceof Error ? e.message : "Purchase could not be saved. Please try again."); } finally { lockRef.current = false; setSaving(false); }
   };
 
   const onKeys = (e: React.KeyboardEvent) => {

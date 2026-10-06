@@ -156,7 +156,7 @@ function pageHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, tpl: Tem
   }
 
   const totalsRows = (doc.totals ?? [])
-    .filter((t) => f.subtotal || !/^sub/i.test(t.label))
+    .filter(totalVisible(f))
     .map((t) => `<tr class="${t.bold ? "grand" : ""}"><td class="fs-${t.bold ? "grandTotal" : /^sub/i.test(t.label) ? "subtotal" : "totals"}">${esc(t.label)}</td><td class="r fs-${t.bold ? "grandTotal" : /^sub/i.test(t.label) ? "subtotal" : "totals"}">${t.neg ? "- " : ""}${cur} ${m(t.value)}</td></tr>`)
     .join("");
   const payRows = [
@@ -221,7 +221,7 @@ function thermalHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, ex: E
     .map((l, i) => `<div class=it><div class="nm fs-item">${i + 1}. ${esc(l.name)}${l.unit && !narrow ? ` <small class=fs-unit>${esc(l.unit)}</small>` : ""}</div><div class=kv><span><span class=fs-qty>${t.showQtyRate ? qtyFmt(l.qty) : `x${qtyFmt(l.qty)}`}</span>${t.showQtyRate ? ` × <span class=fs-rate>${m(l.rate)}</span>${l.discount ? ` <span class=fs-discount>-${m(l.discount)}</span>` : ""}${l.taxPct ? ` <span class=fs-tax>+${l.taxPct}%</span>` : ""}` : ""}</span><span class=fs-amount>${m(l.total)}</span></div>${l.note ? `<div class="note fs-notes">${esc(l.note)}</div>` : ""}</div>`)
     .join("");
   const table = doc.table ? doc.table.rows.map((r) => `<div class=it>${r.map((v, i) => (i === 0 ? `<div class="nm fs-item">${esc(v)}</div>` : "")).join("")}${kv(doc.table!.head.slice(1).map((h, i) => `${h}: ${typeof r[i + 1] === "number" ? m(r[i + 1] as number) : esc(r[i + 1])}`).join(" · "), "", "", "amount")}</div>`).join("") : "";
-  const totals = (doc.totals ?? []).map((x) => kv(esc(x.label), `${x.neg ? "-" : ""}${cur} ${m(x.value)}`, x.bold && t.boldTotal ? "grand" : "", x.bold ? "grandTotal" : /^sub/i.test(x.label) ? "subtotal" : "totals")).join("");
+  const totals = (doc.totals ?? []).filter(totalVisible(f)).map((x) => kv(esc(x.label), `${x.neg ? "-" : ""}${cur} ${m(x.value)}`, x.bold && t.boldTotal ? "grand" : "", x.bold ? "grandTotal" : /^sub/i.test(x.label) ? "subtotal" : "totals")).join("");
   const pays = [
     f.paymentMethod && doc.payments?.length ? kv("Payment", esc(doc.payments.filter((x) => x.amount > 0).map((x) => `${x.method} ${m(x.amount)}`).join(", ")), "", "paymentMethod") : "",
     f.paid && doc.paid != null ? kv("Paid", `${cur} ${m(doc.paid)}`, "", "paid") : "",
@@ -305,4 +305,10 @@ function customRows(doc: Pick<PrintDoc, "customFields">, cfg: { printing: { cust
         ? `<div class="fs-custom"${sz}>${lab}${esc(c.value ?? "")}</div>`
         : `<div class="fs-custom"${sz}>${lab}${esc(c.value ?? "")}</div>`;
     }).join("");
+}
+
+/** Honors the per-field Subtotal / Other totals / Grand total visibility toggles. */
+function totalVisible(f: Record<string, boolean | undefined>) {
+  return (t: { label: string; bold?: boolean }) =>
+    t.bold ? f.grandTotal !== false : /^sub/i.test(t.label) ? f.subtotal !== false : f.totals !== false;
 }

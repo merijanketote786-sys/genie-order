@@ -172,8 +172,8 @@ export const savePurchase = createServerFn({ method: "POST" })
 export const listPurchases = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data } = await (context.supabase as Sb).from("purchases").select("id, doc_number, doc_type, status, payment_status, supplier_id, supplier_name, discount_total, notes, grand_total, paid_total, balance, created_at").neq("status", "cancelled").order("created_at", { ascending: false }).limit(100);
-    return { purchases: (data ?? []).map((p: any) => ({ ...p, discount_total: Number(p.discount_total), grand_total: Number(p.grand_total), paid_total: Number(p.paid_total), balance: Number(p.balance) })) as Array<{ id: string; doc_number: string; doc_type: string; status: string; payment_status: string; supplier_id: string | null; discount_total: number; notes: string | null; supplier_name: string | null; grand_total: number; paid_total: number; balance: number; created_at: string }> };
+    const { data } = await (context.supabase as Sb).from("purchases").select("id, doc_number, doc_type, status, payment_status, supplier_id, supplier_name, ref_purchase_id, discount_total, notes, grand_total, paid_total, balance, created_at").neq("status", "cancelled").order("created_at", { ascending: false }).limit(100);
+    return { purchases: (data ?? []).map((p: any) => ({ ...p, discount_total: Number(p.discount_total), grand_total: Number(p.grand_total), paid_total: Number(p.paid_total), balance: Number(p.balance) })) as Array<{ id: string; doc_number: string; doc_type: string; status: string; payment_status: string; supplier_id: string | null; ref_purchase_id: string | null; discount_total: number; notes: string | null; supplier_name: string | null; grand_total: number; paid_total: number; balance: number; created_at: string }> };
   });
 
 export const getPurchaseItems = createServerFn({ method: "GET" })
