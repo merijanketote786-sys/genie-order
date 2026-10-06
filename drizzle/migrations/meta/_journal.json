@@ -330,6 +330,13 @@
       "when": 1791246431360,
       "tag": "0046_pos_backup_restore",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1791247191699,
+      "tag": "0047_daybook_manual_entries",
+      "breakpoints": true
     }
   ]
 }

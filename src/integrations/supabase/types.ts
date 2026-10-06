@@ -839,6 +839,68 @@ export type Database = {
         }
         Relationships: []
       }
+      pos_cash_entries: {
+        Row: {
+          account_id: string | null
+          amount: number
+          category: string
+          client_ref: string | null
+          created_at: string
+          created_by: string | null
+          direction: string
+          entry_date: string
+          id: string
+          journal_id: string | null
+          method: string
+          note: string | null
+          party: string | null
+          status: string
+          workspace_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          category?: string
+          client_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction: string
+          entry_date: string
+          id?: string
+          journal_id?: string | null
+          method?: string
+          note?: string | null
+          party?: string | null
+          status?: string
+          workspace_id?: string
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          category?: string
+          client_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction?: string
+          entry_date?: string
+          id?: string
+          journal_id?: string | null
+          method?: string
+          note?: string | null
+          party?: string | null
+          status?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_cash_entries_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "acc_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pos_member_roles: {
         Row: {
           perms: string[] | null
@@ -1868,6 +1930,10 @@ export type Database = {
       }
       pos_bulk_update_products: { Args: { _rows: Json }; Returns: Json }
       pos_can: { Args: { _perm: string }; Returns: boolean }
+      pos_cancel_cash_entry: {
+        Args: { _id: string; _reason: string }
+        Returns: undefined
+      }
       pos_cancel_purchase: {
         Args: { _id: string; _reason: string }
         Returns: undefined
@@ -1958,6 +2024,7 @@ export type Database = {
         Returns: number
       }
       pos_role: { Args: { _uid: string }; Returns: string }
+      pos_save_cash_entry: { Args: { _p: Json }; Returns: string }
       pos_save_printers: {
         Args: { _defaults: Json; _printers: Json }
         Returns: undefined
