@@ -68,7 +68,8 @@ function CatPicker({ value, original, options, onPick, label }: { value: string;
               {!opts.length && <p className="px-2 py-3 text-center text-xs text-muted-foreground">No saved category matches — add it in the Categories section first.</p>}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
