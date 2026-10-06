@@ -9,6 +9,10 @@ import { ChevronLeft, ChevronRight, Plus, Printer, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { usePrintCenter } from "@/components/print-center";
+import { usePosAccess } from "@/components/pos-access";
+import { FullScreenPopup } from "@/components/fullscreen-popup";
+import { CashCountPanel } from "@/components/money-accounts";
+import { Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/daybook")({
   head: () => ({
@@ -28,7 +32,6 @@ const localDate = (d = new Date()) => new Date(d.getTime() - d.getTimezoneOffset
 const shift = (date: string, days: number) => { const d = new Date(`${date}T12:00:00`); d.setDate(d.getDate() + days); return localDate(d); };
 const CATS_IN = ["Owner capital", "Loan received", "Other income", "Cash from bank", "Opening cash", "Other"];
 const CATS_OUT = ["Owner drawing", "Loan repaid", "Cash to bank", "Petty expense", "Salary advance", "Other"];
-const METHODS = ["Cash", "Bank", "JazzCash", "Easypaisa", "Card"];
 const tm = (t: string) => new Date(t).toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" });
 
 function DayBookPage() {
@@ -36,6 +39,7 @@ function DayBookPage() {
   const [counted, setCounted] = useState("");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
+  const [countOpen, setCountOpen] = useState(false);
   const pc = usePrintCenter();
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["daybook", date], queryFn: () => getDayBook({ data: { date, tzOffsetMin: new Date(`${date}T12:00:00`).getTimezoneOffset() } }) });
@@ -64,6 +68,7 @@ function DayBookPage() {
           <Button variant="outline" size="icon" onClick={() => setDate(shift(date, 1))} aria-label="Next day"><ChevronRight /></Button>
           <Button variant="ghost" onClick={() => setDate(localDate())}>Today</Button>
           <Button onClick={() => setOpen(true)}><Plus /> Add entry</Button>
+          <Button variant="outline" onClick={() => setCountOpen(true)}><Wallet /> Cash in hand</Button>
           <Button variant="outline" disabled={!data} onClick={() => data && pc.preview({
             kind: "report", title: "Cash Day Book", number: date, date: new Date(),
             meta: [["Opening cash", rs(data.opening)], ["Cash in", rs(data.cashIn)], ["Cash out", rs(data.cashOut)], ["Sales", rs(data.summary.sales)], ["Credit sales", rs(data.summary.creditSales)], ["Purchases", rs(data.summary.purchases)], ["Expenses", rs(data.summary.expenses)], ...Object.entries(data.byMethod).map(([k, v]) => [`${k} (net)`, rs(v)] as [string, string])],
@@ -149,6 +154,7 @@ function DayBookPage() {
           </>
         ) : <p className="py-10 text-center text-sm text-muted-foreground">Loading…</p>}
       </div>
+      <FullScreenPopup open={countOpen} title="Cash in hand — till count" onClose={() => setCountOpen(false)}><div className="mx-auto max-w-3xl p-4"><CashCountPanel initialDate={date} /></div></FullScreenPopup>
       <EntryDialog open={open} onOpenChange={setOpen} date={date} accounts={data?.accounts ?? []} onSaved={() => qc.invalidateQueries({ queryKey: ["daybook"] })} />
     </AppShell>
   );
@@ -163,6 +169,8 @@ function EntryDialog({ open, onOpenChange, date, accounts, onSaved }: { open: bo
   const [acc, setAcc] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
+  const { cfg } = usePosAccess();
+  const METHODS = cfg.payMethods.filter((m) => m !== "Credit");
   const [busy, setBusy] = useState(false);
   const [ref, setRef] = useState(() => crypto.randomUUID());
   const cats = dir === "in" ? CATS_IN : CATS_OUT;

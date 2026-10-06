@@ -19,6 +19,9 @@ import { PartiesDialog } from "@/components/parties-dialog";
 import { PaymentInOutDialog } from "@/components/payment-in-out-dialog";
 import { ManufactureDialog } from "@/components/manufacture-dialog";
 import { useMfgStatus } from "@/components/mfg-gate";
+import { FullScreenPopup } from "@/components/fullscreen-popup";
+import { CashCountPanel, MoneyAccountsPanel } from "@/components/money-accounts";
+import { ChevronDown, LayoutGrid } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/pos-dashboard")({
   head: () => ({
@@ -68,18 +71,6 @@ function RankList({ rows, qtyLabel }: { rows: PosDashRow[]; qtyLabel: string }) 
   );
 }
 
-const QUICK = [
-  { to: "/pos", label: "New Sale", icon: ShoppingCart, perm: "view_pos" },
-  { to: "/returns", label: "Sale Return", icon: Undo2, perm: "create_sale" },
-  { to: "/purchases", label: "Purchase", icon: Truck, perm: "manage_purchases" },
-  { to: "/expenses", label: "Expense", icon: Receipt, perm: "manage_expenses" },
-  { to: "/ledger", label: "Credit", icon: HandCoins, perm: "view_balances" },
-  { to: "/inventory", label: "Inventory", icon: Boxes, perm: "edit_stock" },
-  { to: "/daybook", label: "Day Book", icon: Notebook, perm: "view_reports" },
-  { to: "/reports", label: "Reports", icon: BarChart3, perm: "view_reports" },
-  { to: "/pos-invoices", label: "Invoices", icon: FileText, perm: "view_pos" },
-  { to: "/accounting", label: "Accounting", icon: Landmark, perm: "view_accounting" },
-] as const;
 
 function PosDashboardPage() {
   const { can, config } = usePosAccess();
@@ -90,6 +81,44 @@ function PosDashboardPage() {
   const [attOpen, setAttOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [payDir, setPayDir] = useState<"in" | "out">("in");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [pop, setPop] = useState<{ title: string; kind?: "cash" | "bank"; to?: string } | null>(null);
+  const page = (to: string, title: string) => () => setPop({ title, to });
+  const attOn = can("manage_expenses") && (config as unknown as { attendance?: { enabled?: boolean } }).attendance?.enabled !== false;
+  type Item = { label: string; icon: typeof Wallet; run: () => void; show?: boolean };
+  const G = (title: string, items: Item[]) => ({ title, items: items.filter((i) => i.show !== false) });
+  const groups = [
+    G("Sales", [
+      { label: "New Sale", icon: ShoppingCart, run: page("/pos", "New Sale"), show: can("view_pos") },
+      { label: "Sale Return", icon: Undo2, run: page("/returns", "Sale Return"), show: can("create_sale") },
+      { label: "Invoices", icon: FileText, run: page("/pos-invoices", "Invoices"), show: can("view_pos") },
+      { label: "Payment In", icon: ArrowDownLeft, run: () => { setPayDir("in"); setPayOpen(true); } },
+    ]),
+    G("Purchases", [
+      { label: "Purchase", icon: Truck, run: page("/purchases", "Purchase"), show: can("manage_purchases") },
+      { label: "Payment Out", icon: ArrowUpRight, run: () => { setPayDir("out"); setPayOpen(true); } },
+      { label: "Expense", icon: Receipt, run: page("/expenses", "Expenses"), show: can("manage_expenses") },
+    ]),
+    G("Cash & Bank", [
+      { label: "Cash in hand", icon: Wallet, run: () => setPop({ title: "Cash in hand — till count", kind: "cash" }), show: can("view_reports") || can("manage_expenses") },
+      { label: "Bank & cash accounts", icon: Landmark, run: () => setPop({ title: "Bank & cash accounts", kind: "bank" }), show: can("view_accounting") },
+      { label: "Day Book", icon: Notebook, run: page("/daybook", "Day Book"), show: can("view_reports") },
+      { label: "Accounting", icon: Landmark, run: page("/accounting", "Accounting"), show: can("view_accounting") },
+    ]),
+    G("Stock", [
+      { label: "Items", icon: Package, run: () => setItemsOpen(true) },
+      { label: "Inventory", icon: Boxes, run: page("/inventory", "Inventory"), show: can("edit_stock") },
+      { label: "Manufacture", icon: Factory, run: () => setMfgOpen(true), show: !!mfg?.canManufacture },
+    ]),
+    G("People", [
+      { label: "Parties", icon: PartiesIcon, run: () => setPartiesOpen(true) },
+      { label: "Credit", icon: HandCoins, run: page("/ledger", "Credit"), show: can("view_balances") },
+      { label: "Attendance", icon: CalendarCheck, run: () => setAttOpen(true), show: attOn },
+    ]),
+    G("Reports", [
+      { label: "Reports", icon: BarChart3, run: page("/reports", "Reports"), show: can("view_reports") },
+    ]),
+  ];
   const q = useQuery({ queryKey: ["pos-dashboard"], queryFn: () => getPosDashboard(), staleTime: 30_000 });
   const d = q.data;
   const maxBar = d ? Math.max(1, ...d.series.map((p) => Math.max(p.sales, p.purchases))) : 1;
@@ -98,22 +127,35 @@ function PosDashboardPage() {
     <AppShell title="POS Dashboard" subtitle="Business progress at a glance" active="/pos" wide>
       <div className="space-y-4 py-4">
         <PosSubnav />
-        <div className="flex flex-wrap gap-2">
-          {QUICK.filter((x) => can(x.perm)).map((x) => (
-            <Button key={x.to} asChild variant="outline" size="sm"><Link to={x.to}><x.icon className="size-4" /> {x.label}</Link></Button>
-          ))}
-          {mfg?.canManufacture ? <Button variant="outline" size="sm" onClick={() => setMfgOpen(true)}><Factory className="size-4" /> Manufacture</Button> : null}
+        <div className="rounded-xl border border-border bg-card">
+          <div className="flex items-center gap-2 p-2">
+            <Button className="flex-1 justify-between" variant={menuOpen ? "default" : "outline"} onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen}>
+              <span className="flex items-center gap-2"><LayoutGrid className="size-4" /> Quick actions</span><ChevronDown className={`size-4 transition-transform ${menuOpen ? "rotate-180" : ""}`} />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => q.refetch()} disabled={q.isFetching}><RefreshCw className={`size-4 ${q.isFetching ? "animate-spin" : ""}`} /> Refresh</Button>
+          </div>
+          {menuOpen ? (
+            <div className="grid gap-3 border-t border-border p-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+              {groups.map((g) => g.items.length ? (
+                <div key={g.title}>
+                  <p className="mb-1.5 text-[11px] font-bold uppercase text-muted-foreground">{g.title}</p>
+                  <div className="grid gap-1.5">
+                    {g.items.map((it) => <Button key={it.label} variant="outline" size="sm" className="justify-start" onClick={() => { setMenuOpen(false); it.run(); }}><it.icon className="size-4" /> {it.label}</Button>)}
+                  </div>
+                </div>
+              ) : null)}
+            </div>
+          ) : null}
           <ManufactureDialog open={mfgOpen} onOpenChange={setMfgOpen} />
-          <Button variant="outline" size="sm" onClick={() => setItemsOpen(true)}><Package className="size-4" /> Items</Button>
           <ItemsDialog open={itemsOpen} onOpenChange={setItemsOpen} />
-          {can("manage_expenses") && (config as unknown as { attendance?: { enabled?: boolean } }).attendance?.enabled !== false ? <Button variant="outline" size="sm" onClick={() => setAttOpen(true)}><CalendarCheck className="size-4" /> Attendance</Button> : null}
           <AttendanceDialog open={attOpen} onOpenChange={setAttOpen} />
-          <Button variant="outline" size="sm" onClick={() => setPartiesOpen(true)}><PartiesIcon className="size-4" /> Parties</Button>
           <PartiesDialog open={partiesOpen} onOpenChange={setPartiesOpen} />
-          <Button variant="outline" size="sm" onClick={() => { setPayDir("in"); setPayOpen(true); }}><ArrowDownLeft className="size-4" /> Payment In</Button>
-          <Button variant="outline" size="sm" onClick={() => { setPayDir("out"); setPayOpen(true); }}><ArrowUpRight className="size-4" /> Payment Out</Button>
           <PaymentInOutDialog open={payOpen} onOpenChange={setPayOpen} dir={payDir} onDirChange={setPayDir} />
-          <Button variant="ghost" size="sm" onClick={() => q.refetch()} disabled={q.isFetching} className="ml-auto"><RefreshCw className={`size-4 ${q.isFetching ? "animate-spin" : ""}`} /> Refresh</Button>
+          <FullScreenPopup open={!!pop} title={pop?.title ?? ""} onClose={() => { setPop(null); q.refetch(); }}>
+            {pop?.kind === "cash" ? <div className="mx-auto max-w-3xl p-4"><CashCountPanel /></div>
+              : pop?.kind === "bank" ? <div className="mx-auto max-w-3xl p-4"><MoneyAccountsPanel /></div>
+              : pop?.to ? <iframe title={pop.title} src={pop.to} className="h-full w-full border-0" /> : null}
+          </FullScreenPopup>
         </div>
 
         {q.isError ? <p className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">Dashboard could not load. Press Refresh.</p> : null}

@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          is_payment: boolean
           is_system: boolean
           name: string
           opening_balance: number
@@ -34,6 +35,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          is_payment?: boolean
           is_system?: boolean
           name: string
           opening_balance?: number
@@ -48,6 +50,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          is_payment?: boolean
           is_system?: boolean
           name?: string
           opening_balance?: number
@@ -835,6 +838,39 @@ export type Database = {
           id?: string
           status?: string
           target?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
+      pos_cash_counts: {
+        Row: {
+          count_date: string
+          counted: number
+          created_at: string
+          created_by: string | null
+          expected: number
+          id: string
+          note: string | null
+          workspace_id: string
+        }
+        Insert: {
+          count_date: string
+          counted: number
+          created_at?: string
+          created_by?: string | null
+          expected: number
+          id?: string
+          note?: string | null
+          workspace_id?: string
+        }
+        Update: {
+          count_date?: string
+          counted?: number
+          created_at?: string
+          created_by?: string | null
+          expected?: number
+          id?: string
+          note?: string | null
           workspace_id?: string
         }
         Relationships: []
@@ -1891,6 +1927,7 @@ export type Database = {
         }
         Returns: string
       }
+      acc_money: { Args: { _method: string; _ws: string }; Returns: string }
       acc_post_journal: { Args: { _id: string }; Returns: undefined }
       acc_post_source: {
         Args: { _id: string; _type: string }
@@ -1924,6 +1961,10 @@ export type Database = {
       is_active_team_member: { Args: { _user_id: string }; Returns: boolean }
       next_invoice_number: { Args: never; Returns: string }
       next_order_number: { Args: never; Returns: string }
+      pos_add_bank_account: {
+        Args: { _name: string; _opening: number }
+        Returns: string
+      }
       pos_adjust_stock: {
         Args: { _id: string; _kind: string; _note: string; _qty: number }
         Returns: undefined
@@ -2024,6 +2065,15 @@ export type Database = {
         Returns: number
       }
       pos_role: { Args: { _uid: string }; Returns: string }
+      pos_save_cash_count: {
+        Args: {
+          _counted: number
+          _date: string
+          _expected: number
+          _note: string
+        }
+        Returns: undefined
+      }
       pos_save_cash_entry: { Args: { _p: Json }; Returns: string }
       pos_save_printers: {
         Args: { _defaults: Json; _printers: Json }
