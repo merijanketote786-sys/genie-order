@@ -126,25 +126,59 @@ export const getDayBook = createServerFn({ method: "GET" })
     // Local din ki shuruaat UTC me
     const start = new Date(Date.parse(`${data.date}T00:00:00Z`) + data.tzOffsetMin * 60000).toISOString();
     const end = new Date(Date.parse(start) + 86400000).toISOString();
-    const [{ data: before }, { data: today }, { data: expBefore }, { data: expToday }] = await Promise.all([
+    const [{ data: before }, { data: today }, { data: expBefore }, { data: expToday }, { data: manBefore }, { data: manToday }, { data: salesToday }, { data: purToday }, { data: accs }] = await Promise.all([
       sb.from("pos_payments").select("direction, amount").eq("status", "completed").eq("method", "Cash").lt("created_at", start).limit(50000),
       sb.from("pos_payments").select("direction, kind, method, amount, note, created_at, customer_id, supplier_id").eq("status", "completed").gte("created_at", start).lt("created_at", end).order("created_at"),
       sb.from("expenses").select("amount").eq("status", "completed").eq("method", "Cash").lt("expense_date", data.date).limit(50000),
       sb.from("expenses").select("category, amount, method, description, created_at").eq("status", "completed").eq("expense_date", data.date),
+      sb.from("pos_cash_entries").select("direction, amount").eq("status", "completed").eq("method", "Cash").lt("entry_date", data.date).limit(50000),
+      sb.from("pos_cash_entries").select("id, direction, method, category, party, amount, note, status, created_at, account_id").eq("entry_date", data.date).order("created_at"),
+      sb.from("pos_sales").select("doc_type, doc_number, customer_name, grand_total, paid_total, balance, created_at").in("doc_type", ["sale", "return"]).neq("status", "cancelled").gte("created_at", start).lt("created_at", end).order("created_at"),
+      sb.from("purchases").select("doc_type, doc_number, supplier_name, grand_total, paid_total, balance, created_at").neq("status", "cancelled").gte("created_at", start).lt("created_at", end).order("created_at"),
+      sb.from("acc_accounts").select("id, code, name, type").eq("is_active", true).order("code"),
     ]);
-    const opening = r2(((before ?? []) as any[]).reduce((s, p) => s + (p.direction === "in" ? 1 : -1) * Number(p.amount), 0) - ((expBefore ?? []) as any[]).reduce((s, e) => s + Number(e.amount), 0));
+    const manSum = ((manBefore ?? []) as any[]).reduce((s, m) => s + (m.direction === "in" ? 1 : -1) * Number(m.amount), 0);
+    const opening = r2(((before ?? []) as any[]).reduce((s, p) => s + (p.direction === "in" ? 1 : -1) * Number(p.amount), 0) - ((expBefore ?? []) as any[]).reduce((s, e) => s + Number(e.amount), 0) + manSum);
     const LABEL: Record<string, string> = { sale: "Cash sale", receipt: "Customer payment", refund: "Sale refund", purchase: "Cash purchase", supplier_payment: "Supplier payment", purchase_refund: "Purchase refund", expense: "Expense" };
-    const rows = [
+    const accName = new Map(((accs ?? []) as any[]).map((a) => [a.id, `${a.code} ${a.name}`]));
+    type Row = { time: string; kind: string; method: string; note: string; cashIn: number; cashOut: number; amount: number; dir: string; manualId?: string };
+    const rows: Row[] = [
       ...((today ?? []) as any[]).map((p) => ({ time: p.created_at as string, kind: LABEL[p.kind] ?? p.kind, method: p.method as string, note: (p.note ?? "") as string, cashIn: p.method === "Cash" && p.direction === "in" ? Number(p.amount) : 0, cashOut: p.method === "Cash" && p.direction === "out" ? Number(p.amount) : 0, amount: Number(p.amount), dir: p.direction as string })),
       ...((expToday ?? []) as any[]).map((e) => ({ time: e.created_at as string, kind: `Expense: ${e.category}`, method: e.method as string, note: (e.description ?? "") as string, cashIn: 0, cashOut: e.method === "Cash" ? Number(e.amount) : 0, amount: Number(e.amount), dir: "out" })),
+      ...((manToday ?? []) as any[]).filter((m) => m.status === "completed").map((m) => ({ time: m.created_at as string, kind: `Manual: ${m.category}`, method: m.method as string, note: [m.party, m.account_id ? accName.get(m.account_id) : null, m.note].filter(Boolean).join(" · "), cashIn: m.method === "Cash" && m.direction === "in" ? Number(m.amount) : 0, cashOut: m.method === "Cash" && m.direction === "out" ? Number(m.amount) : 0, amount: Number(m.amount), dir: m.direction as string, manualId: m.id as string })),
     ].sort((a, b) => a.time.localeCompare(b.time));
     const byKind: Record<string, number> = {};
-    for (const r of rows) if (r.cashIn || r.cashOut) byKind[r.kind.startsWith("Expense") ? "Expenses" : r.kind] = r2((byKind[r.kind.startsWith("Expense") ? "Expenses" : r.kind] ?? 0) + r.cashIn - r.cashOut);
+    for (const r of rows) if (r.cashIn || r.cashOut) { const k = r.kind.startsWith("Expense") ? "Expenses" : r.kind.startsWith("Manual") ? "Manual entries" : r.kind; byKind[k] = r2((byKind[k] ?? 0) + r.cashIn - r.cashOut); }
     const cashIn = r2(rows.reduce((s, r) => s + r.cashIn, 0));
     const cashOut = r2(rows.reduce((s, r) => s + r.cashOut, 0));
     const byMethod: Record<string, number> = {};
     for (const r of rows) byMethod[r.method] = r2((byMethod[r.method] ?? 0) + (r.dir === "in" ? r.amount : -r.amount));
-    return { opening, cashIn, cashOut, closing: r2(opening + cashIn - cashOut), byKind, byMethod, rows };
+    const docs = [
+      ...((salesToday ?? []) as any[]).map((s) => ({ time: s.created_at as string, type: s.doc_type === "sale" ? "Sale" : "Sale return", number: s.doc_number as string, party: (s.customer_name ?? "Walk-in") as string, total: Number(s.grand_total), paid: Number(s.paid_total), balance: Number(s.balance) })),
+      ...((purToday ?? []) as any[]).map((p) => ({ time: p.created_at as string, type: p.doc_type === "purchase" ? "Purchase" : "Purchase return", number: p.doc_number as string, party: (p.supplier_name ?? "") as string, total: Number(p.grand_total), paid: Number(p.paid_total), balance: Number(p.balance) })),
+    ].sort((a, b) => a.time.localeCompare(b.time));
+    const sum = (t: string, f: "total" | "balance") => r2(docs.filter((d) => d.type === t).reduce((s, d) => s + d[f], 0));
+    const summary = { sales: sum("Sale", "total"), creditSales: sum("Sale", "balance"), salesReturns: sum("Sale return", "total"), purchases: sum("Purchase", "total"), creditPurchases: sum("Purchase", "balance"), expenses: r2(((expToday ?? []) as any[]).reduce((s, e) => s + Number(e.amount), 0)) };
+    const manual = ((manToday ?? []) as any[]).map((m) => ({ id: m.id as string, direction: m.direction as string, method: m.method as string, category: m.category as string, party: (m.party ?? "") as string, amount: Number(m.amount), note: (m.note ?? "") as string, status: m.status as string, account: m.account_id ? accName.get(m.account_id) ?? "" : "" }));
+    return { opening, cashIn, cashOut, closing: r2(opening + cashIn - cashOut), byKind, byMethod, rows, docs, summary, manual, accounts: ((accs ?? []) as any[]).map((a) => ({ id: a.id as string, label: `${a.code} ${a.name}`, type: a.type as string })) };
+  });
+
+export const saveCashEntry = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), direction: z.enum(["in", "out"]), method: z.string().min(1).max(30), category: z.string().trim().min(1).max(60), party: z.string().max(120).optional(), accountId: z.string().uuid().optional(), amount: z.number().positive().max(1e10), note: z.string().max(500).optional(), clientRef: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await (context.supabase as Sb).rpc("pos_save_cash_entry", { _p: { date: data.date, direction: data.direction, method: data.method, category: data.category, party: data.party ?? "", account_id: data.accountId ?? "", amount: data.amount, note: data.note ?? "", client_ref: data.clientRef } });
+    if (error) throw new Error(error.message.includes("permission") ? "You don't have permission to add day book entries" : friendlyDbError(error, "Could not save entry"));
+    return { ok: true };
+  });
+
+export const cancelCashEntry = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), reason: z.string().max(300) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await (context.supabase as Sb).rpc("pos_cancel_cash_entry", { _id: data.id, _reason: data.reason });
+    if (error) throw new Error(error.message.includes("permission") ? "You don't have permission" : "Could not cancel entry");
+    return { ok: true };
   });
 
 /** Line items per document number for a party statement (POS sales + purchases). */
