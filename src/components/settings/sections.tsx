@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Download, Plus, Printer, RefreshCw, Trash2, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
 export const inp = "h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus:border-primary";
