@@ -28,6 +28,7 @@ const COLS: Col[] = [
   { k: "stock_value", label: "Stock value", w: "w-32", num: true },
   { k: "min_stock", label: "Min stock", w: "w-24", num: true },
   { k: "tax_percent", label: "Tax %", w: "w-20", num: true },
+  { k: "is_active", label: "Active", w: "w-16" },
 ];
 type Row = Record<string, string>;
 const base = (p: InvProduct): Row => ({
@@ -35,13 +36,18 @@ const base = (p: InvProduct): Row => ({
   purchase_price: p.purchasePrice?.toString() ?? "", sale_price: String(p.salePrice ?? 0), wholesale_price: p.wholesalePrice?.toString() ?? "",
   wholesale_min_qty: p.wholesaleMinQty?.toString() ?? "",
   min_sale_price: p.minSalePrice?.toString() ?? "", stock: String(p.stock), min_stock: p.minStock?.toString() ?? "", tax_percent: p.taxPercent?.toString() ?? "",
+  is_active: p.isActive === false ? "false" : "true",
 });
 const val = (r: Row) => { const s = Number(r.stock) || 0, c = Number(r.purchase_price) || 0; return r.purchase_price === "" ? "" : String(Math.round(Math.max(0, s) * c * 100) / 100); };
 
-export function BulkUpdateProducts({ products, onClose, onSaved }: { products: InvProduct[]; onClose: () => void; onSaved: () => void }) {
-  const orig = useMemo(() => Object.fromEntries(products.map((p) => [p.id, base(p)])), [products]);
+export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSaved }: { products: InvProduct[]; inactiveProducts?: InvProduct[]; onClose: () => void; onSaved: () => void }) {
+  // Active + inactive items in one pool so filters can show either
+  const pool = useMemo(() => [...products, ...(inactiveProducts ?? [])], [products, inactiveProducts]);
+  const orig = useMemo(() => Object.fromEntries(pool.map((p) => [p.id, base(p)])), [pool]);
   const [edits, setEdits] = useState<Record<string, Row>>({});
   const [q, setQ] = useState("");
+  const [fKind, setFKind] = useState("all");
+  const [fCat, setFCat] = useState("");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [applyCol, setApplyCol] = useState("sale_price");
   const [applyMode, setApplyMode] = useState<"set" | "pct" | "add">("set");
@@ -50,7 +56,24 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
   const [activeCol, setActiveCol] = useState<string | null>(null);
   const [csv, setCsv] = useState<{ headers: string[]; rows: string[][] } | null>(null);
 
-  const list = useMemo(() => { const t = q.trim().toLowerCase(); return products.filter((p) => !t || [p.name, p.sku, p.barcode, p.category, p.brand].some((v) => v.toLowerCase().includes(t))); }, [products, q]);
+  const cats = useMemo(() => [...new Set(pool.map((p) => p.category).filter(Boolean))].sort(), [pool]);
+  const isLow = (p: InvProduct) => p.minStock != null && p.stock <= p.minStock;
+  const list = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    return pool.filter((p) => {
+      const active = p.isActive !== false;
+      if (fKind === "active" && !active) return false;
+      if (fKind === "inactive" && active) return false;
+      if (fKind === "low" && !isLow(p)) return false;
+      if (fKind === "out" && p.stock > 0) return false;
+      if (fKind === "no_purchase" && p.purchasePrice != null) return false;
+      if (fKind === "no_sale" && Number(p.salePrice ?? 0) > 0) return false;
+      if (fKind === "has_min" && p.minStock == null) return false;
+      if (fKind === "no_min" && p.minStock != null) return false;
+      if (fCat && p.category !== fCat) return false;
+      return !t || [p.name, p.sku, p.barcode, p.category, p.brand].some((v) => v.toLowerCase().includes(t));
+    });
+  }, [pool, q, fKind, fCat]);
   const rowOf = (id: string): Row => { const r = { ...orig[id], ...edits[id] }; return { ...r, stock_value: edits[id]?.stock_value ?? val(r) }; };
   const set = (id: string, k: string, v: string) => setEdits((e) => {
     const cur = { ...orig[id], ...e[id], [k]: v };
@@ -131,7 +154,7 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
       </div>
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-2 text-sm">
         <span className="text-xs text-muted-foreground">{picked.size ? `${picked.size} selected` : "All visible"} products:</span>
-        <select className={`${posInput} w-40`} value={applyCol} onChange={(e) => setApplyCol(e.target.value)} aria-label="Field">{COLS.filter((c) => !["name", "sku", "barcode", "stock_value"].includes(c.k)).map((c) => <option key={c.k} value={c.k}>{c.label}</option>)}</select>
+        <select className={`${posInput} w-40`} value={applyCol} onChange={(e) => setApplyCol(e.target.value)} aria-label="Field">{COLS.filter((c) => !["name", "sku", "barcode", "stock_value", "is_active"].includes(c.k)).map((c) => <option key={c.k} value={c.k}>{c.label}</option>)}</select>
         {COLS.find((c) => c.k === applyCol)?.num ? <select className={`${posInput} w-32`} value={applyMode} onChange={(e) => setApplyMode(e.target.value as "set")} aria-label="Method"><option value="set">This value</option><option value="pct">% increase/decrease</option><option value="add">+/− amount</option></select> : null}
         {applyCol === "unit" ? <UnitSelect className={`${posInput} w-40`} value={applyVal} onChange={setApplyVal} /> : <input className={`${posInput} w-28`} value={applyVal} onChange={(e) => setApplyVal(e.target.value)} placeholder="Value" />}
         <Button variant="outline" onClick={applyAll}>Apply</Button>
@@ -147,8 +170,8 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
           }} />
         </label>
       </div>
-      {csv && <BulkCsvImport headers={csv.headers} rows={csv.rows} products={products} onClose={() => setCsv(null)}
-        fields={COLS.filter((c) => !["name", "stock_value"].includes(c.k)).map((c) => ({ k: c.k, label: c.label, num: c.num }))}
+      {csv && <BulkCsvImport headers={csv.headers} rows={csv.rows} products={pool} onClose={() => setCsv(null)}
+        fields={COLS.filter((c) => !["name", "stock_value", "is_active"].includes(c.k)).map((c) => ({ k: c.k, label: c.label, num: c.num }))}
         onApply={async (ups) => {
           const by = new Map<string, Record<string, string>>();
           ups.forEach((u) => { if (u.v !== orig[u.id]?.[u.k]) { const o = by.get(u.id) ?? { id: u.id }; o[u.k] = u.v; by.set(u.id, o); } });
@@ -158,6 +181,25 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
           try { for (let i = 0; i < rows.length; i += 500) await bulkUpdateProducts({ data: { rows: rows.slice(i, i + 500) } }); toast.success(`${rows.length} products updated`); onSaved(); }
           catch (e) { toast.error(e instanceof Error ? e.message : "Save failed"); } finally { setSaving(false); }
         }} />}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium text-muted-foreground">Show:</span>
+        <select className={`${posInput} w-60`} value={fKind} onChange={(e) => setFKind(e.target.value)} aria-label="Filter items">
+          <option value="all">All items</option>
+          <option value="active">Active items</option>
+          <option value="inactive">Inactive items</option>
+          <option value="low">Low stock (at or below min)</option>
+          <option value="out">Out of stock</option>
+          <option value="no_purchase">No purchase price</option>
+          <option value="no_sale">No sale price</option>
+          <option value="has_min">Min stock set</option>
+          <option value="no_min">No min stock set</option>
+        </select>
+        <select className={`${posInput} w-44`} value={fCat} onChange={(e) => setFCat(e.target.value)} aria-label="Filter by category">
+          <option value="">Every category</option>
+          {cats.map((c) => <option key={c}>{c}</option>)}
+        </select>
+        <span className="text-xs text-muted-foreground">{list.length} of {pool.length} items shown</span>
+      </div>
       <label className="flex h-10 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
         <Search className="size-4 text-primary" /><input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search product" />
       </label>
@@ -179,7 +221,8 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
                 <td className={`sticky left-0 z-10 px-2 py-1 ${dirtyIds.includes(p.id) ? "bg-accent" : "bg-card"}`}><input type="checkbox" checked={picked.has(p.id)} onChange={() => setPicked((s) => { const n = new Set(s); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; })} aria-label={`Select ${p.name}`} /></td>
                 {COLS.map((c, i) => (
                   <td key={c.k} onMouseEnter={() => setActiveCol(c.k)} onFocus={() => setActiveCol(c.k)} style={c.k === "name" || dirtyIds.includes(p.id) && activeCol !== c.k ? undefined : tint(i, activeCol === c.k ? 32 : 8)} className={`px-1 py-1 transition-colors ${c.k === "name" ? `sticky left-12 z-10 border-r border-border ${dirtyIds.includes(p.id) ? "bg-accent" : "bg-card"}` : ""}`}>
-                    {c.k === "unit" ? <UnitSelect className={`${posInput} h-9 w-full px-1 ${r.unit !== orig[p.id].unit ? "border-primary" : ""}`} value={r.unit} onChange={(v) => set(p.id, "unit", v)} label={`Unit ${p.name}`} /> : <input className={`${posInput} h-9 w-full px-2 ${c.num ? "text-right" : ""} ${c.k !== "stock_value" && r[c.k] !== orig[p.id][c.k] ? "border-primary" : ""}`} value={r[c.k]} inputMode={c.num ? "decimal" : undefined}
+                    {c.k === "is_active" ? <select className={`${posInput} h-9 w-full px-1 ${r.is_active !== orig[p.id].is_active ? "border-primary" : ""}`} value={r.is_active} onChange={(e) => set(p.id, "is_active", e.target.value)} aria-label={`Active ${p.name}`}><option value="true">Yes</option><option value="false">No</option></select>
+                      : c.k === "unit" ? <UnitSelect className={`${posInput} h-9 w-full px-1 ${r.unit !== orig[p.id].unit ? "border-primary" : ""}`} value={r.unit} onChange={(v) => set(p.id, "unit", v)} label={`Unit ${p.name}`} /> : <input className={`${posInput} h-9 w-full px-2 ${c.num ? "text-right" : ""} ${c.k !== "stock_value" && r[c.k] !== orig[p.id][c.k] ? "border-primary" : ""}`} value={r[c.k]} inputMode={c.num ? "decimal" : undefined}
                       title={c.k === "stock_value" ? "Changing stock value will auto-calculate the purchase price" : undefined} onChange={(e) => set(p.id, c.k, e.target.value)} aria-label={`${c.label} ${p.name}`} />}
                   </td>
                 ))}

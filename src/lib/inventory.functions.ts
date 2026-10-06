@@ -10,23 +10,26 @@ const optNum = z.number().min(0).max(1e9).nullable();
 export type InvProduct = {
   id: string; name: string; unit: string; stock: number; salePrice: number; purchasePrice: number | null;
   wholesalePrice: number | null; wholesaleMinQty: number | null; minSalePrice: number | null; minStock: number | null; taxPercent: number | null;
-  sku: string; barcode: string; category: string; brand: string;
+  sku: string; barcode: string; category: string; brand: string; isActive?: boolean;
 };
 
 export const listInventory = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data } = await (context.supabase as Sb).from("products")
-      .select("id, name, unit, stock, sale_price, custom_sale_price, purchase_price, wholesale_price, wholesale_min_qty, min_sale_price, min_stock, tax_percent, sku, barcode, category, brand")
-      .eq("is_active", true).eq("scope", "pos").order("name").limit(5000);
-    const products: InvProduct[] = ((data ?? []) as any[]).map((p) => ({
+      .select("id, name, unit, stock, is_active, sale_price, custom_sale_price, purchase_price, wholesale_price, wholesale_min_qty, min_sale_price, min_stock, tax_percent, sku, barcode, category, brand")
+      .eq("scope", "pos").order("name").limit(5000);
+    const toInv = (p: any): InvProduct => ({
       id: p.id, name: p.name, unit: p.unit, stock: Number(p.stock ?? 0), salePrice: Number(p.custom_sale_price ?? p.sale_price ?? 0),
       purchasePrice: p.purchase_price == null ? null : Number(p.purchase_price), wholesalePrice: p.wholesale_price == null ? null : Number(p.wholesale_price),
       wholesaleMinQty: p.wholesale_min_qty == null ? null : Number(p.wholesale_min_qty),
       minSalePrice: p.min_sale_price == null ? null : Number(p.min_sale_price), minStock: p.min_stock == null ? null : Number(p.min_stock),
       taxPercent: p.tax_percent == null ? null : Number(p.tax_percent), sku: p.sku ?? "", barcode: p.barcode ?? "", category: p.category ?? "", brand: p.brand ?? "",
-    }));
-    return { products };
+      isActive: p.is_active !== false,
+    });
+    const rows = ((data ?? []) as any[]).map(toInv);
+    // products = active only (existing behaviour), inactive = soft-deleted items for bulk edit
+    return { products: rows.filter((p) => p.isActive), inactive: rows.filter((p) => !p.isActive) };
   });
 
 export const updateProductDetails = createServerFn({ method: "POST" })
