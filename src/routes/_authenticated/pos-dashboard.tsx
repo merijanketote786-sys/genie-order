@@ -21,7 +21,25 @@ import { ManufactureDialog } from "@/components/manufacture-dialog";
 import { useMfgStatus } from "@/components/mfg-gate";
 import { FullScreenPopup } from "@/components/fullscreen-popup";
 import { CashCountPanel, MoneyAccountsPanel } from "@/components/money-accounts";
-import { ChevronDown, LayoutGrid } from "lucide-react";
+import { ChevronDown, LayoutGrid, Ruler, Tags } from "lucide-react";
+import { lazy, Suspense, type ComponentType } from "react";
+import { EmbeddedShell } from "@/components/app-shell";
+import { UnitsPanel, CategoriesPanel } from "@/components/units-categories";
+
+type RouteMod = { Route: { options: { component?: unknown } } };
+const embed = (load: () => Promise<RouteMod>) => lazy(async () => ({ default: (await load()).Route.options.component as ComponentType }));
+const PAGES: Record<string, ComponentType> = {
+  "/pos": embed(() => import("./pos")),
+  "/returns": embed(() => import("./returns")),
+  "/pos-invoices": embed(() => import("./pos-invoices")),
+  "/purchases": embed(() => import("./purchases")),
+  "/expenses": embed(() => import("./expenses")),
+  "/daybook": embed(() => import("./daybook")),
+  "/accounting": embed(() => import("./accounting")),
+  "/inventory": embed(() => import("./inventory")),
+  "/ledger": embed(() => import("./ledger")),
+  "/reports": embed(() => import("./reports")),
+};
 
 export const Route = createFileRoute("/_authenticated/pos-dashboard")({
   head: () => ({
@@ -82,7 +100,7 @@ function PosDashboardPage() {
   const [payOpen, setPayOpen] = useState(false);
   const [payDir, setPayDir] = useState<"in" | "out">("in");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [pop, setPop] = useState<{ title: string; kind?: "cash" | "bank"; to?: string } | null>(null);
+  const [pop, setPop] = useState<{ title: string; kind?: "cash" | "bank" | "units" | "categories"; to?: string } | null>(null);
   const page = (to: string, title: string) => () => setPop({ title, to });
   const attOn = can("manage_expenses") && (config as unknown as { attendance?: { enabled?: boolean } }).attendance?.enabled !== false;
   type Item = { label: string; icon: typeof Wallet; run: () => void; show?: boolean };
@@ -107,6 +125,8 @@ function PosDashboardPage() {
     ]),
     G("Stock", [
       { label: "Items", icon: Package, run: () => setItemsOpen(true) },
+      { label: "Units", icon: Ruler, run: () => setPop({ title: "Units & conversions", kind: "units" }) },
+      { label: "Categories", icon: Tags, run: () => setPop({ title: "Item categories", kind: "categories" }) },
       { label: "Inventory", icon: Boxes, run: page("/inventory", "Inventory"), show: can("edit_stock") },
       { label: "Manufacture", icon: Factory, run: () => setMfgOpen(true), show: !!mfg?.canManufacture },
     ]),
@@ -154,7 +174,9 @@ function PosDashboardPage() {
           <FullScreenPopup open={!!pop} title={pop?.title ?? ""} onClose={() => { setPop(null); q.refetch(); }}>
             {pop?.kind === "cash" ? <div className="mx-auto max-w-3xl p-4"><CashCountPanel /></div>
               : pop?.kind === "bank" ? <div className="mx-auto max-w-3xl p-4"><MoneyAccountsPanel /></div>
-              : pop?.to ? <iframe title={pop.title} src={pop.to} className="h-full w-full border-0" /> : null}
+              : pop?.kind === "units" ? <UnitsPanel />
+              : pop?.kind === "categories" ? <CategoriesPanel />
+              : pop?.to && PAGES[pop.to] ? <EmbedPage to={pop.to} /> : null}
           </FullScreenPopup>
         </div>
 
@@ -240,5 +262,14 @@ function PosDashboardPage() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+function EmbedPage({ to }: { to: string }) {
+  const Page = PAGES[to];
+  return (
+    <EmbeddedShell.Provider value={true}>
+      <Suspense fallback={<p className="p-6 text-center text-sm text-muted-foreground">Opening…</p>}><Page /></Suspense>
+    </EmbeddedShell.Provider>
   );
 }

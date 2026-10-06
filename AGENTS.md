@@ -22,3 +22,5 @@
 - Render Parties transaction actions through the shared portal dropdown and use compact transaction rows on phones; this prevents clipping inside scroll areas while keeping ledger amounts readable.
 - Keep historical sales and purchase party IDs in their existing records, and present same-phone contacts together in POS; this preserves transaction links and balances without destructive data migration.
 - POS party selectors must request only POS-scoped customers, while Workspace customer selectors retain their existing full list; this prevents Workspace-only contacts from appearing in POS workflows.
+- POS units (main/sub with conversion factor = sub units per 1 main) and saved categories live in pos_units / pos_categories, written via the browser client under RLS (edit_stock or admin); keeps them workspace-scoped without new RPCs.
+- Dashboard quick-action popups render route components directly inside EmbeddedShell (AppShell renders children only) instead of iframes; nested iframes lose the preview auth session.

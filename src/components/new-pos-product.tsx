@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { posInput } from "@/components/pos-subnav";
 import { UnitSelect } from "@/components/unit-select";
+import { CategoryInput } from "@/components/category-input";
 import { createPosProduct } from "@/lib/inventory.functions";
 import { UNIT_GROUPS } from "@/lib/units";
 import { X } from "lucide-react";
@@ -36,7 +37,7 @@ export function NewPosProduct({ onClose, onSaved }: { onClose: () => void; onSav
           </select>
         </label>
         <label className="text-xs text-muted-foreground">Unit<UnitSelect className={posInput} value={unit} onChange={setUnit} group={group} /></label>
-        {I({ k: "sku", label: "Item code" })}{I({ k: "barcode", label: "Barcode" })}{I({ k: "category", label: "Category" })}{I({ k: "brand", label: "Brand" })}
+        {I({ k: "sku", label: "Item code" })}{I({ k: "barcode", label: "Barcode" })}<label className="text-xs text-muted-foreground">Category<CategoryInput className={posInput} value={f.category} onChange={(v) => setF((x) => ({ ...x, category: v }))} /></label>{I({ k: "brand", label: "Brand" })}
         {I({ k: "sale_price", label: "Sale price", dec: true })}{I({ k: "purchase_price", label: "Purchase price", dec: true })}{I({ k: "wholesale_price", label: "Wholesale price", dec: true })}{I({ k: "wholesale_min_qty", label: "Min wholesale qty", dec: true })}{I({ k: "stock", label: "Opening stock", dec: true })}
         {I({ k: "min_stock", label: "Min stock", dec: true })}{I({ k: "tax_percent", label: "Tax %", dec: true })}
       </div>

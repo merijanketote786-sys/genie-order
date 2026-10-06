@@ -35,7 +35,10 @@ import { useQuery } from "@tanstack/react-query";
 import { getMyAccess } from "@/lib/admin.functions";
 import { getMySettings } from "@/lib/settings.functions";
 import { isSectionAllowed } from "@/lib/settings";
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+
+/** Jab koi page popup ke andar render ho to shell (nav/header) nahi dikhta. */
+export const EmbeddedShell = createContext(false);
 
 const NAV_HIDDEN_KEY = "workspace-nav-hidden";
 
@@ -95,7 +98,7 @@ type AppShellProps = {
   children: ReactNode;
 };
 
-export function AppShell({
+function AppShellInner({
   title,
   subtitle,
   active,
@@ -355,4 +358,10 @@ export function AppShell({
       </section>
     </div>
   );
+}
+
+export function AppShell(props: AppShellProps & { wide?: boolean }) {
+  const embedded = useContext(EmbeddedShell);
+  if (embedded) return <div className="mx-auto w-full max-w-[1600px] px-3 pb-6">{props.children}</div>;
+  return <AppShellInner {...props} />;
 }
