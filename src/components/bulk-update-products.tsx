@@ -40,10 +40,14 @@ const base = (p: InvProduct): Row => ({
 });
 const val = (r: Row) => { const s = Number(r.stock) || 0, c = Number(r.purchase_price) || 0; return r.purchase_price === "" ? "" : String(Math.round(Math.max(0, s) * c * 100) / 100); };
 
-export function BulkUpdateProducts({ products, onClose, onSaved }: { products: InvProduct[]; onClose: () => void; onSaved: () => void }) {
-  const orig = useMemo(() => Object.fromEntries(products.map((p) => [p.id, base(p)])), [products]);
+export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSaved }: { products: InvProduct[]; inactiveProducts?: InvProduct[]; onClose: () => void; onSaved: () => void }) {
+  // Active + inactive items in one pool so filters can show either
+  const pool = useMemo(() => [...products, ...(inactiveProducts ?? [])], [products, inactiveProducts]);
+  const orig = useMemo(() => Object.fromEntries(pool.map((p) => [p.id, base(p)])), [pool]);
   const [edits, setEdits] = useState<Record<string, Row>>({});
   const [q, setQ] = useState("");
+  const [fKind, setFKind] = useState("all");
+  const [fCat, setFCat] = useState("");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [applyCol, setApplyCol] = useState("sale_price");
   const [applyMode, setApplyMode] = useState<"set" | "pct" | "add">("set");
@@ -52,7 +56,24 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
   const [activeCol, setActiveCol] = useState<string | null>(null);
   const [csv, setCsv] = useState<{ headers: string[]; rows: string[][] } | null>(null);
 
-  const list = useMemo(() => { const t = q.trim().toLowerCase(); return products.filter((p) => !t || [p.name, p.sku, p.barcode, p.category, p.brand].some((v) => v.toLowerCase().includes(t))); }, [products, q]);
+  const cats = useMemo(() => [...new Set(pool.map((p) => p.category).filter(Boolean))].sort(), [pool]);
+  const isLow = (p: InvProduct) => p.minStock != null && p.stock <= p.minStock;
+  const list = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    return pool.filter((p) => {
+      const active = p.isActive !== false;
+      if (fKind === "active" && !active) return false;
+      if (fKind === "inactive" && active) return false;
+      if (fKind === "low" && !isLow(p)) return false;
+      if (fKind === "out" && p.stock > 0) return false;
+      if (fKind === "no_purchase" && p.purchasePrice != null) return false;
+      if (fKind === "no_sale" && Number(p.salePrice ?? 0) > 0) return false;
+      if (fKind === "has_min" && p.minStock == null) return false;
+      if (fKind === "no_min" && p.minStock != null) return false;
+      if (fCat && p.category !== fCat) return false;
+      return !t || [p.name, p.sku, p.barcode, p.category, p.brand].some((v) => v.toLowerCase().includes(t));
+    });
+  }, [pool, q, fKind, fCat]);
   const rowOf = (id: string): Row => { const r = { ...orig[id], ...edits[id] }; return { ...r, stock_value: edits[id]?.stock_value ?? val(r) }; };
   const set = (id: string, k: string, v: string) => setEdits((e) => {
     const cur = { ...orig[id], ...e[id], [k]: v };
