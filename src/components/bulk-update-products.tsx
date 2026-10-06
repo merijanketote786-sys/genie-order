@@ -3,7 +3,7 @@ import { posInput, rs } from "@/components/pos-subnav";
 import { bulkUpdateProducts, deletePosProducts, type InvProduct } from "@/lib/inventory.functions";
 import { UnitSelect } from "@/components/unit-select";
 import { usePosCategories } from "@/lib/pos-catalog";
-import { Search, Trash2, Upload, X } from "lucide-react";
+import { ChevronDown, Search, Trash2, Upload, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
@@ -40,6 +40,38 @@ const base = (p: InvProduct): Row => ({
   is_active: p.isActive === false ? "false" : "true",
 });
 const val = (r: Row) => { const s = Number(r.stock) || 0, c = Number(r.purchase_price) || 0; return r.purchase_price === "" ? "" : String(Math.round(Math.max(0, s) * c * 100) / 100); };
+
+// Category cell: tap opens a small popup listing only the categories saved in the Categories section
+function CatPicker({ value, original, options, onPick, label }: { value: string; original: string; options: string[]; onPick: (v: string) => void; label: string }) {
+  const [open, setOpen] = useState(false);
+  const [cq, setCq] = useState("");
+  const opts = options.filter((o) => o.toLowerCase().includes(cq.trim().toLowerCase()));
+  return (
+    <>
+      <button type="button" onClick={() => { setOpen(true); setCq(""); }} aria-label={label}
+        className={`${posInput} flex h-9 w-full items-center justify-between gap-1 px-2 text-left ${value !== original ? "border-primary" : ""}`}>
+        <span className={`truncate ${value ? "" : "text-muted-foreground"}`}>{value || "Select category"}</span>
+        <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+      </button>
+      {open && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={() => setOpen(false)}>
+          <div className="w-full max-w-xs rounded-xl border border-border bg-card p-3 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="truncate text-sm font-semibold text-foreground">{label}</p>
+              <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label="Close"><X /></Button>
+            </div>
+            <input autoFocus className={`${posInput} mb-2 h-9 w-full px-2`} placeholder="Search category" value={cq} onChange={(e) => setCq(e.target.value)} />
+            <div className="max-h-56 overflow-auto">
+              {value && <button type="button" className="block w-full rounded-md px-2 py-2 text-left text-sm text-destructive hover:bg-accent" onClick={() => { onPick(""); setOpen(false); }}>Clear category</button>}
+              {opts.map((o) => <button key={o} type="button" className={`block w-full rounded-md px-2 py-2 text-left text-sm hover:bg-accent ${o === value ? "bg-accent font-semibold" : ""}`} onClick={() => { onPick(o); setOpen(false); }}>{o}</button>)}
+              {!opts.length && <p className="px-2 py-3 text-center text-xs text-muted-foreground">No saved category matches — add it in the Categories section first.</p>}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 
 export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSaved }: { products: InvProduct[]; inactiveProducts?: InvProduct[]; onClose: () => void; onSaved: () => void }) {
   // Active + inactive items in one pool so filters can show either
