@@ -271,6 +271,7 @@ function GuardedPopup({ open, title, onClose, children }: { open: boolean; title
   const [guard, setGuard] = useState<UnsavedGuardState>(null);
   const [warn, setWarn] = useState(false);
   const [saving, setSaving] = useState(false);
+  const ctxValue = useMemo(() => ({ setGuard }), []);
 
   const requestClose = () => {
     if (guard?.dirty) setWarn(true);
@@ -291,7 +292,7 @@ function GuardedPopup({ open, title, onClose, children }: { open: boolean; title
   };
 
   return (
-    <EmbeddedUnsavedCtx.Provider value={{ setGuard }}>
+    <EmbeddedUnsavedCtx.Provider value={ctxValue}>
       <FullScreenPopup open={open} title={title} onClose={requestClose}>{children}</FullScreenPopup>
       <UnsavedCloseDialog open={warn} saving={saving} onCancel={() => setWarn(false)} onLeave={leave} onSave={save} />
     </EmbeddedUnsavedCtx.Provider>

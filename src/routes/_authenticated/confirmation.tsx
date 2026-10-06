@@ -78,19 +78,6 @@ function ConfirmationPage() {
     return { invoice, pay };
   };
 
-  /** Manually likhe/paste kiye gaye text ko box se bahar aate hi sirf invoice items tak mehdood karta hai. */
-  const cleanInvoiceField = () => {
-    const raw = values.invoice;
-    if (!raw.trim()) return;
-    const items = extractInvoiceOnly(raw);
-    if (!items) return; // koi item line nahi mili to text waise ka waisa rakho
-    if (items !== raw.trim()) {
-      setPerforma("");
-      setValues((prev) => ({ ...prev, invoice: items }));
-    }
-  };
-
-
   const set = <K extends keyof ConfirmationValues>(key: K, value: ConfirmationValues[K]) => {
     // Koi bhi field badle to neeche para purana performa foran hata dein —
     // naya performa sirf "Performa banayein" se bane ga.
