@@ -6,7 +6,7 @@ import { Search, Trash2, Upload, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
-import { BulkCsvImport, parseCsv } from "@/components/bulk-csv-import";
+import { BulkCsvImport, parseCsv, detectTable } from "@/components/bulk-csv-import";
 
 const TINTS = ["--chart-1", "--chart-2", "--chart-3", "--chart-4", "--chart-5", "--primary", "--success", "--warning"];
 const tint = (i: number, pct: number) => ({ backgroundColor: `color-mix(in oklab, var(${TINTS[i % TINTS.length]}) ${pct}%, var(--card))` });
@@ -143,7 +143,7 @@ export function BulkUpdateProducts({ products, onClose, onSaved }: { products: I
               if (/\.xlsx?$/i.test(f.name)) { const X = await import("xlsx"); const wb = X.read(await f.arrayBuffer()); all = (X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false, defval: "" }) as unknown[][]).map((r) => r.map((v) => String(v ?? ""))).filter((r) => r.some((v) => v.trim() !== "")); }
               else all = parseCsv(await f.text());
             } catch { return toast.error("Could not read this file"); } if (all.length < 2) return toast.error("CSV has no data rows");
-            setCsv({ headers: all[0], rows: all.slice(1) });
+            setCsv(detectTable(all));
           }} />
         </label>
       </div>
