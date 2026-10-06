@@ -40,7 +40,7 @@ const GUESS: Record<string, RegExp> = {
 // Header row = the row (within the first 15) with the most non-empty, mostly non-numeric cells
 export function detectTable(all: string[][]): { headers: string[]; rows: string[][] } {
   let best = 0, score = -1;
-  all.slice(0, 15).forEach((r, i) => { const sc = r.filter((v) => v.trim() && !isFinite(Number(cleanNum(v) || "x"))).length; if (sc > score) { score = sc; best = i; } });
+  all.slice(0, 15).forEach((r, i) => { const sc = r.filter((v) => v.trim() && !isFinite(Number(cleanNum(v) || "x"))).length + 10 * r.filter((v) => Object.values(GUESS).some((re) => re.test(v.trim()))).length; if (sc > score) { score = sc; best = i; } });
   const width = Math.max(0, ...all.map((r) => r.length));
   const headers = Array.from({ length: width }, (_, i) => (all[best]?.[i] ?? "").trim() || `Column ${i + 1}`);
   return { headers, rows: all.slice(best + 1) };
