@@ -5,6 +5,7 @@ import { UnitSelect } from "@/components/unit-select";
 import { usePosCategories } from "@/lib/pos-catalog";
 import { ChevronDown, Search, Trash2, Upload, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
 import { BulkCsvImport, parseCsv, detectTable } from "@/components/bulk-csv-import";
@@ -53,12 +54,12 @@ function CatPicker({ value, original, options, onPick, label }: { value: string;
         <span className={`truncate ${value ? "" : "text-muted-foreground"}`}>{value || "Select category"}</span>
         <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
       </button>
-      {open && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={() => setOpen(false)}>
+      {open && createPortal(
+        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/40 p-4" onClick={() => setOpen(false)}>
           <div className="w-full max-w-xs rounded-xl border border-border bg-card p-3 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-2 flex items-center justify-between gap-2">
               <p className="truncate text-sm font-semibold text-foreground">{label}</p>
-              <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label="Close"><X /></Button>
+              <Button type="button" variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setOpen(false); }} aria-label="Close"><X /></Button>
             </div>
             <input autoFocus className={`${posInput} mb-2 h-9 w-full px-2`} placeholder="Search category" value={cq} onChange={(e) => setCq(e.target.value)} />
             <div className="max-h-56 overflow-auto">
@@ -67,7 +68,8 @@ function CatPicker({ value, original, options, onPick, label }: { value: string;
               {!opts.length && <p className="px-2 py-3 text-center text-xs text-muted-foreground">No saved category matches — add it in the Categories section first.</p>}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
