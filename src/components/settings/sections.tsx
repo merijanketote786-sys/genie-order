@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { usePinPrompt, usePosAccess } from "@/components/pos-access";
 import { usePrintCenter } from "@/components/print-center";
-import { POS_ROLES, exportPosBackup, listPosMembers, savePosSettings, setPosMemberRole } from "@/lib/pos-access.functions";
+import { POS_ROLES, exportPosBackup, restorePosBackup, listPosMembers, savePosSettings, setPosMemberRole } from "@/lib/pos-access.functions";
 import { BASE_PAY_METHODS, DEFAULT_TAX_RATES, FORMAT_LABEL, ROLE_LABEL, type ColKey, type FieldKey, type PaperFormat, type PosConfig, type PrinterCfg, type PrinterRole } from "@/lib/pos-config";
 import { exportData, getSyncOverview, listAuditLog, savePrinters } from "@/lib/print-admin.functions";
 import { printBridge, type BridgePrinter } from "@/lib/print/dispatch";
