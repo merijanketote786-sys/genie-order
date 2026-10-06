@@ -344,6 +344,13 @@
       "when": 1791247769116,
       "tag": "0048_bank_accounts_cash_counts",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1791249249864,
+      "tag": "0049_pos_units_categories",
+      "breakpoints": true
     }
   ]
 }

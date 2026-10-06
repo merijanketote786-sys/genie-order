@@ -937,6 +937,27 @@ export type Database = {
           },
         ]
       }
+      pos_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          workspace_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
       pos_member_roles: {
         Row: {
           perms: string[] | null
@@ -1358,6 +1379,44 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: []
+      }
+      pos_units: {
+        Row: {
+          created_at: string
+          factor: number
+          id: string
+          name: string
+          parent_id: string | null
+          short_name: string | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          factor?: number
+          id?: string
+          name: string
+          parent_id?: string | null
+          short_name?: string | null
+          workspace_id?: string
+        }
+        Update: {
+          created_at?: string
+          factor?: number
+          id?: string
+          name?: string
+          parent_id?: string | null
+          short_name?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_units_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "pos_units"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
