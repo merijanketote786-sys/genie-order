@@ -337,6 +337,13 @@
       "when": 1791247191699,
       "tag": "0047_daybook_manual_entries",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1791247769116,
+      "tag": "0048_bank_accounts_cash_counts",
+      "breakpoints": true
     }
   ]
 }
