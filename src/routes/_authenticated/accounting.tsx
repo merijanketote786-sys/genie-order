@@ -36,6 +36,7 @@ const n = (v: number) => (Math.abs(v) < 0.005 ? "" : rs(v));
 
 const TABS: { id: string; label: string; perm: PosPerm }[] = [
   { id: "dash", label: "Dashboard", perm: "view_accounting" },
+  { id: "bank", label: "Bank & Cash", perm: "view_accounting" },
   { id: "coa", label: "Chart of Accounts", perm: "view_accounting" },
   { id: "jr", label: "Journal Entries", perm: "view_accounting" },
   { id: "gl", label: "General Ledger", perm: "view_ledger" },
@@ -96,6 +97,7 @@ function AccountingPage() {
           ))}
         </nav>
         {tab === "dash" && <Dashboard />}
+        {tab === "bank" && <MoneyAccountsPanel />}
         {tab === "coa" && <ChartOfAccounts accounts={accounts} used={base.data?.usedIds ?? []} canEdit={can("manage_accounts")} />}
         {tab === "jr" && <Journals accounts={accounts} canCreate={can("create_journal")} canPost={can("post_journal")} />}
         {tab === "gl" && <Ledger accounts={accounts} bar={ex.bar} />}
