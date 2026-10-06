@@ -161,7 +161,7 @@ function InventoryPage() {
               <>
                 <div><p className="font-bold text-foreground">{cur.name}</p><p className="text-xs text-muted-foreground">Stock {cur.stock} {cur.unit} · Sale price {rs(cur.salePrice)}</p></div>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  <F k="sku" label="SKU" /><F k="barcode" label="Barcode" /><label className="text-xs text-muted-foreground">Category<CategoryInput className={posInput} value={edit?.category ?? ""} extra={cats} onChange={(v) => setEdit((x) => (x ? { ...x, category: v } : x))} /></label><F k="brand" label="Brand" />
+                  <F k="sku" label="SKU" /><F k="barcode" label="Barcode" /><label className="text-xs text-muted-foreground">Category<CategoryInput className={posInput} value={edit?.category ?? ""} onChange={(v) => setEdit((x) => (x ? { ...x, category: v } : x))} /></label><F k="brand" label="Brand" />
                   <F k="salePrice" label="Sale price (POS rate)" dec /><F k="purchasePrice" label="Purchase price" dec /><F k="wholesalePrice" label="Wholesale price" dec /><F k="wholesaleMinQty" label="Min wholesale qty" dec /><F k="minSalePrice" label="Min sale price" dec />
                   <F k="minStock" label="Min stock (alert)" dec /><F k="taxPercent" label="Tax %" dec />
                 </div>
