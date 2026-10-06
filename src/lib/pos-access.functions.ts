@@ -130,16 +130,43 @@ export const cancelWithPin = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/** Admin backup: POS ke tamam records JSON me. */
+const BACKUP_TABLES = ["pos_stores", "customers", "suppliers", "products", "pos_store_stock", "pos_recipes", "pos_sales", "pos_sale_items", "purchases", "purchase_items", "pos_payments", "expenses", "stock_movements", "acc_accounts", "acc_journals", "acc_journal_lines", "acc_settings", "att_labour", "att_days", "att_payments"];
+
+/** Admin backup: POS ke tamam records JSON me (restore ke qabil). */
 export const exportPosBackup = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const sb = context.supabase as Sb;
     const { data: ok } = await sb.rpc("pos_can", { _perm: "settings" });
     if (!ok) throw new Error("Not allowed");
-    const tables = ["customers", "suppliers", "pos_sales", "pos_sale_items", "purchases", "purchase_items", "pos_payments", "expenses", "stock_movements", "products"];
     const out: Record<string, unknown[]> = {};
-    for (const t of tables) { const { data } = await sb.from(t).select("*").limit(50000); out[t] = data ?? []; }
-    await sb.rpc("pos_log_event", { _action: "backup", _entity: "pos", _entity_id: null, _details: { tables: tables.length } });
-    return { json: JSON.stringify({ exportedAt: new Date().toISOString(), tables: out }) };
+    for (const t of BACKUP_TABLES) {
+      const rows: unknown[] = [];
+      for (let from = 0; ; from += 1000) {
+        let q = sb.from(t).select("*").range(from, from + 999);
+        if (t === "customers") q = q.eq("pos_scoped", true);
+        const { data, error } = await q;
+        if (error) throw new Error(`Backup failed (${t})`);
+        rows.push(...(data ?? []));
+        if (!data || data.length < 1000) break;
+      }
+      out[t] = rows;
+    }
+    const { data: st } = await sb.from("pos_settings").select("config").maybeSingle();
+    await sb.rpc("pos_log_event", { _action: "backup", _entity: "pos", _entity_id: null, _details: { tables: BACKUP_TABLES.length } });
+    return { json: JSON.stringify({ app: "hb-pos", version: 2, exportedAt: new Date().toISOString(), tables: out, pos_settings_config: st?.config ?? null }) };
+  });
+
+/** Backup file wapas POS me: merge (sirf missing records) ya replace (transactions badal do). */
+export const restorePosBackup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ mode: z.enum(["merge", "replace"]), json: z.string().min(2).max(80_000_000) }).parse(d))
+  .handler(async ({ data, context }) => {
+    let parsed: any;
+    try { parsed = JSON.parse(data.json); } catch { throw new Error("This is not a valid backup file"); }
+    if (!parsed || typeof parsed.tables !== "object") throw new Error("This is not a POS backup file");
+    const payload = { ...parsed.tables, pos_settings_config: parsed.pos_settings_config ?? null };
+    const { data: res, error } = await (context.supabase as Sb).rpc("pos_restore_backup", { _data: payload, _mode: data.mode });
+    if (error) throw new Error(error.message.includes("permission") ? "Only admins can restore a backup" : `Restore failed: ${error.message}`);
+    return { counts: (res ?? {}) as Record<string, number> };
   });
