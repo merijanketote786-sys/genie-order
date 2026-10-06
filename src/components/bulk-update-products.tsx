@@ -154,7 +154,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
       </div>
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-2 text-sm">
         <span className="text-xs text-muted-foreground">{picked.size ? `${picked.size} selected` : "All visible"} products:</span>
-        <select className={`${posInput} w-40`} value={applyCol} onChange={(e) => setApplyCol(e.target.value)} aria-label="Field">{COLS.filter((c) => !["name", "sku", "barcode", "stock_value"].includes(c.k)).map((c) => <option key={c.k} value={c.k}>{c.label}</option>)}</select>
+        <select className={`${posInput} w-40`} value={applyCol} onChange={(e) => setApplyCol(e.target.value)} aria-label="Field">{COLS.filter((c) => !["name", "sku", "barcode", "stock_value", "is_active"].includes(c.k)).map((c) => <option key={c.k} value={c.k}>{c.label}</option>)}</select>
         {COLS.find((c) => c.k === applyCol)?.num ? <select className={`${posInput} w-32`} value={applyMode} onChange={(e) => setApplyMode(e.target.value as "set")} aria-label="Method"><option value="set">This value</option><option value="pct">% increase/decrease</option><option value="add">+/− amount</option></select> : null}
         {applyCol === "unit" ? <UnitSelect className={`${posInput} w-40`} value={applyVal} onChange={setApplyVal} /> : <input className={`${posInput} w-28`} value={applyVal} onChange={(e) => setApplyVal(e.target.value)} placeholder="Value" />}
         <Button variant="outline" onClick={applyAll}>Apply</Button>
@@ -171,7 +171,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
         </label>
       </div>
       {csv && <BulkCsvImport headers={csv.headers} rows={csv.rows} products={products} onClose={() => setCsv(null)}
-        fields={COLS.filter((c) => !["name", "stock_value"].includes(c.k)).map((c) => ({ k: c.k, label: c.label, num: c.num }))}
+        fields={COLS.filter((c) => !["name", "stock_value", "is_active"].includes(c.k)).map((c) => ({ k: c.k, label: c.label, num: c.num }))}
         onApply={async (ups) => {
           const by = new Map<string, Record<string, string>>();
           ups.forEach((u) => { if (u.v !== orig[u.id]?.[u.k]) { const o = by.get(u.id) ?? { id: u.id }; o[u.k] = u.v; by.set(u.id, o); } });
