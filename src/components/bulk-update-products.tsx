@@ -3,7 +3,7 @@ import { posInput, rs } from "@/components/pos-subnav";
 import { bulkUpdateProducts, deletePosProducts, type InvProduct } from "@/lib/inventory.functions";
 import { UnitSelect } from "@/components/unit-select";
 import { usePosCategories } from "@/lib/pos-catalog";
-import { Search, Trash2, Upload, X } from "lucide-react";
+import { ChevronDown, Search, Trash2, Upload, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
@@ -40,6 +40,38 @@ const base = (p: InvProduct): Row => ({
   is_active: p.isActive === false ? "false" : "true",
 });
 const val = (r: Row) => { const s = Number(r.stock) || 0, c = Number(r.purchase_price) || 0; return r.purchase_price === "" ? "" : String(Math.round(Math.max(0, s) * c * 100) / 100); };
+
+// Category cell: tap opens a small popup listing only the categories saved in the Categories section
+function CatPicker({ value, original, options, onPick, label }: { value: string; original: string; options: string[]; onPick: (v: string) => void; label: string }) {
+  const [open, setOpen] = useState(false);
+  const [cq, setCq] = useState("");
+  const opts = options.filter((o) => o.toLowerCase().includes(cq.trim().toLowerCase()));
+  return (
+    <>
+      <button type="button" onClick={() => { setOpen(true); setCq(""); }} aria-label={label}
+        className={`${posInput} flex h-9 w-full items-center justify-between gap-1 px-2 text-left ${value !== original ? "border-primary" : ""}`}>
+        <span className={`truncate ${value ? "" : "text-muted-foreground"}`}>{value || "Select category"}</span>
+        <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+      </button>
+      {open && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={() => setOpen(false)}>
+          <div className="w-full max-w-xs rounded-xl border border-border bg-card p-3 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="truncate text-sm font-semibold text-foreground">{label}</p>
+              <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label="Close"><X /></Button>
+            </div>
+            <input autoFocus className={`${posInput} mb-2 h-9 w-full px-2`} placeholder="Search category" value={cq} onChange={(e) => setCq(e.target.value)} />
+            <div className="max-h-56 overflow-auto">
+              {value && <button type="button" className="block w-full rounded-md px-2 py-2 text-left text-sm text-destructive hover:bg-accent" onClick={() => { onPick(""); setOpen(false); }}>Clear category</button>}
+              {opts.map((o) => <button key={o} type="button" className={`block w-full rounded-md px-2 py-2 text-left text-sm hover:bg-accent ${o === value ? "bg-accent font-semibold" : ""}`} onClick={() => { onPick(o); setOpen(false); }}>{o}</button>)}
+              {!opts.length && <p className="px-2 py-3 text-center text-xs text-muted-foreground">No saved category matches — add it in the Categories section first.</p>}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 
 export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSaved }: { products: InvProduct[]; inactiveProducts?: InvProduct[]; onClose: () => void; onSaved: () => void }) {
   // Active + inactive items in one pool so filters can show either
@@ -206,7 +238,53 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
       <label className="flex h-10 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
         <Search className="size-4 text-primary" /><input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search product" />
       </label>
-      <div className="max-h-[60vh] overflow-auto rounded-lg border border-border">
+      {/* Mobile: one card per product so no field is hidden behind sideways scrolling */}
+      <div className="max-h-[60vh] space-y-2 overflow-auto sm:hidden">
+        {list.slice(0, 300).map((p) => { const r = rowOf(p.id); const dirty = dirtyIds.includes(p.id); const numIn = (k: string, lab: string) => (
+          <label key={k} className="block text-[11px] font-medium text-muted-foreground">{lab}
+            <input className={`${posInput} mt-0.5 h-9 w-full px-2 text-right text-foreground`} value={r[k]} inputMode="decimal" onChange={(e) => set(p.id, k, e.target.value)} aria-label={`${lab} ${p.name}`} />
+          </label>);
+          return (
+            <div key={p.id} className={`rounded-lg border border-border p-2 ${dirty ? "bg-accent" : "bg-card"}`}>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" checked={picked.has(p.id)} onChange={() => setPicked((s) => { const n = new Set(s); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; })} aria-label={`Select ${p.name}`} />
+                <p className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">{p.name}</p>
+                <Button variant="ghost" size="icon" onClick={() => del([p.id])} aria-label={`Delete ${p.name}`}><Trash2 className="text-destructive" /></Button>
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <label className="col-span-2 block text-[11px] font-medium text-muted-foreground">Category
+                  <div className="mt-0.5"><CatPicker value={r.category} original={orig[p.id].category} options={catOptions} onPick={(v) => set(p.id, "category", v)} label={`Category — ${p.name}`} /></div>
+                </label>
+                <label className="block text-[11px] font-medium text-muted-foreground">Unit
+                  <div className="mt-0.5"><UnitSelect className={`${posInput} h-9 w-full px-1`} value={r.unit} onChange={(v) => set(p.id, "unit", v)} label={`Unit ${p.name}`} /></div>
+                </label>
+                <label className="block text-[11px] font-medium text-muted-foreground">Active
+                  <select className={`${posInput} mt-0.5 h-9 w-full px-1`} value={r.is_active} onChange={(e) => set(p.id, "is_active", e.target.value)} aria-label={`Active ${p.name}`}><option value="true">Yes</option><option value="false">No</option></select>
+                </label>
+                {numIn("purchase_price", "Purchase price")}
+                {numIn("sale_price", "Sale price")}
+                {numIn("wholesale_price", "Wholesale price")}
+                {numIn("wholesale_min_qty", "Min wholesale qty")}
+                {numIn("min_sale_price", "Min sale price")}
+                {numIn("stock", "Stock qty")}
+                {numIn("min_stock", "Min stock")}
+                {numIn("tax_percent", "Tax %")}
+                <label className="block text-[11px] font-medium text-muted-foreground">Item code
+                  <input className={`${posInput} mt-0.5 h-9 w-full px-2`} value={r.sku} onChange={(e) => set(p.id, "sku", e.target.value)} aria-label={`Item code ${p.name}`} />
+                </label>
+                <label className="block text-[11px] font-medium text-muted-foreground">Barcode
+                  <input className={`${posInput} mt-0.5 h-9 w-full px-2`} value={r.barcode} onChange={(e) => set(p.id, "barcode", e.target.value)} aria-label={`Barcode ${p.name}`} />
+                </label>
+                <label className="col-span-2 block text-[11px] font-medium text-muted-foreground">Brand
+                  <input className={`${posInput} mt-0.5 h-9 w-full px-2`} value={r.brand} onChange={(e) => set(p.id, "brand", e.target.value)} aria-label={`Brand ${p.name}`} />
+                </label>
+              </div>
+            </div>
+          );
+        })}
+        {list.length > 300 && <p className="py-2 text-center text-xs text-muted-foreground">Showing first 300 — use search or filters to narrow the list.</p>}
+      </div>
+      <div className="hidden max-h-[60vh] overflow-auto rounded-lg border border-border sm:block">
         <table className="w-full min-w-[2050px] table-fixed border-collapse text-sm">
           <colgroup>
             <col className="w-12" />
@@ -218,7 +296,6 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
             {COLS.map((c, i) => <th key={c.k} style={c.k === "name" ? undefined : tint(i, activeCol === c.k ? 45 : 18)} className={`truncate px-2 py-2 transition-colors ${activeCol === c.k ? "text-foreground" : ""} ${c.k === "name" ? "sticky left-12 z-20 border-r border-border bg-card" : ""}`} title={c.label}>{c.label}</th>)}
             <th className="px-2 py-2">Delete</th>
           </tr></thead>
-          <datalist id="bulk-pos-cats">{catOptions.map((c) => <option key={c} value={c} />)}</datalist>
           <tbody onKeyDown={gridKeys} onMouseLeave={() => setActiveCol(null)} onBlur={() => setActiveCol(null)}>
             {list.slice(0, 1000).map((p) => { const r = rowOf(p.id); return (
               <tr key={p.id} className={`border-t border-border ${dirtyIds.includes(p.id) ? "bg-accent" : ""}`}>
@@ -226,7 +303,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
                 {COLS.map((c, i) => (
                   <td key={c.k} onMouseEnter={() => setActiveCol(c.k)} onFocus={() => setActiveCol(c.k)} style={c.k === "name" || dirtyIds.includes(p.id) && activeCol !== c.k ? undefined : tint(i, activeCol === c.k ? 32 : 8)} className={`px-1 py-1 transition-colors ${c.k === "name" ? `sticky left-12 z-10 border-r border-border ${dirtyIds.includes(p.id) ? "bg-accent" : "bg-card"}` : ""}`}>
                     {c.k === "is_active" ? <select className={`${posInput} h-9 w-full px-1 ${r.is_active !== orig[p.id].is_active ? "border-primary" : ""}`} value={r.is_active} onChange={(e) => set(p.id, "is_active", e.target.value)} aria-label={`Active ${p.name}`}><option value="true">Yes</option><option value="false">No</option></select>
-                      : c.k === "category" ? <input list="bulk-pos-cats" className={`${posInput} h-9 w-full px-2 ${r.category !== orig[p.id].category ? "border-primary" : ""}`} value={r.category} onChange={(e) => set(p.id, "category", e.target.value)} aria-label={`Category ${p.name}`} />
+                      : c.k === "category" ? <CatPicker value={r.category} original={orig[p.id].category} options={catOptions} onPick={(v) => set(p.id, "category", v)} label={`Category — ${p.name}`} />
                       : c.k === "unit" ? <UnitSelect className={`${posInput} h-9 w-full px-1 ${r.unit !== orig[p.id].unit ? "border-primary" : ""}`} value={r.unit} onChange={(v) => set(p.id, "unit", v)} label={`Unit ${p.name}`} /> : <input className={`${posInput} h-9 w-full px-2 ${c.num ? "text-right" : ""} ${c.k !== "stock_value" && r[c.k] !== orig[p.id][c.k] ? "border-primary" : ""}`} value={r[c.k]} inputMode={c.num ? "decimal" : undefined}
                       title={c.k === "stock_value" ? "Changing stock value will auto-calculate the purchase price" : undefined} onChange={(e) => set(p.id, c.k, e.target.value)} aria-label={`${c.label} ${p.name}`} />}
                   </td>
