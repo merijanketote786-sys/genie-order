@@ -1,4 +1,6 @@
 # Roadmap — Vyapar-style POS
+- [x] POS backup: save to computer folder/download, restore with merge or replace
+- [ ] Daily automatic Google Drive backup — blocked: Google Drive connection was declined
 - [x] Keep Workspace-only customers out of POS Parties, billing, purchase, and payment selections
 - [x] Merge supplier and party experience across purchases, sales, navigation, and settings without losing historical transactions
 - [x] Fix Parties transaction action popup and make Parties page mobile responsive

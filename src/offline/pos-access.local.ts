@@ -19,6 +19,7 @@ export async function listPosMembers() { return { members: [] as { id: string; n
 export async function setPosMemberRole(_a: unknown) { throw new Error("Staff roles are not available in the offline app"); }
 export async function cancelWithPin(_a: unknown) { throw new Error("Not available in the offline app"); }
 export async function exportPosBackup(): Promise<{ json: string }> { return { json: localStorage.getItem(KEY) || "{}" }; }
+export async function restorePosBackup(_: { data: { mode: string; json: string } }): Promise<{ counts: Record<string, number> }> { throw new Error("Restore is available in the online app"); }
 export function _savePrintersLocal(printers: unknown, defaults: unknown) {
   localStorage.setItem(KEY, JSON.stringify({ ...read(), printers, printerDefaults: defaults }));
 }
