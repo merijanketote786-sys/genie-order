@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,6 +52,20 @@ export function WaTemplateButton({ getReceipt, disabled }: { getReceipt: () => R
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<Tpl | null>(null);
   const [text, setText] = useState("");
+  const editRef = useRef<HTMLTextAreaElement | null>(null);
+  const insertVar = (v: string) => {
+    if (!edit) return;
+    const token = `{{${v}}}`;
+    const el = editRef.current;
+    const start = el?.selectionStart ?? edit.body.length;
+    const end = el?.selectionEnd ?? start;
+    setEdit({ ...edit, body: `${edit.body.slice(0, start)}${token}${edit.body.slice(end)}` });
+    requestAnimationFrame(() => {
+      el?.focus();
+      const cursor = start + token.length;
+      el?.setSelectionRange(cursor, cursor);
+    });
+  };
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -119,10 +133,10 @@ export function WaTemplateButton({ getReceipt, disabled }: { getReceipt: () => R
                   <input className="h-10 rounded-lg border bg-background px-3 text-sm" placeholder="Template name" value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} maxLength={60} />
                   <div className="flex flex-wrap gap-1">
                     {VARS.map((v) => (
-                      <button key={v} type="button" className="rounded-md bg-accent px-2 py-1 text-[11px] text-accent-foreground" onClick={() => setEdit({ ...edit, body: `${edit.body}{{${v}}}` })}>{v}</button>
+                      <button key={v} type="button" className="rounded-md bg-accent px-2 py-1 text-[11px] text-accent-foreground" onMouseDown={(e) => e.preventDefault()} onClick={() => insertVar(v)}>{v}</button>
                     ))}
                   </div>
-                  <textarea className="min-h-56 rounded-lg border bg-background p-3 font-mono text-xs" value={edit.body} onChange={(e) => setEdit({ ...edit, body: e.target.value })} maxLength={3000} />
+                  <textarea ref={editRef} className="min-h-56 rounded-lg border bg-background p-3 font-mono text-xs" value={edit.body} onChange={(e) => setEdit({ ...edit, body: e.target.value })} maxLength={3000} />
                   <p className="text-[11px] text-muted-foreground">Use *bold*, _italic_ like WhatsApp. Tap a variable to insert it.</p>
                   <div className="flex flex-wrap justify-end gap-2">
                     <Button variant="outline" onClick={() => setEdit(null)}>Cancel</Button>
