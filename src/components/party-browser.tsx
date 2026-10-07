@@ -369,7 +369,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
             <div className="space-y-2 rounded-lg border border-primary p-2">
               <div className="grid gap-2 sm:grid-cols-2">
                 <input className={inputCls} placeholder="Name *" value={addName} onChange={(e) => setAddName(e.target.value)} />
-                <input className={inputCls} placeholder="Phone *" inputMode="tel" value={addPhone} onChange={(e) => setAddPhone(e.target.value.replace(/[^\d+\s-]/g, ""))} />
+                <input className={inputCls} placeholder="Phone (optional)" inputMode="tel" value={addPhone} onChange={(e) => setAddPhone(e.target.value.replace(/[^\d+\s-]/g, ""))} />
               </div>
               <Button type="button" className="w-full" disabled={saving} onClick={addParty}>{saving ? "Saving…" : "Save party"}</Button>
             </div>
