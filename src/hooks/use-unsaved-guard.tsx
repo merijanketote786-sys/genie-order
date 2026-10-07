@@ -20,17 +20,17 @@ export function UnsavedCloseDialog({ open, saving, onCancel, onLeave, onSave }: 
   if (!open || typeof document === "undefined") return null;
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-sm rounded-xl border bg-card p-5 shadow-xl">
+      <div className="w-full max-w-md overflow-hidden rounded-xl border bg-card p-5 shadow-xl">
         <h2 className="text-base font-semibold">Unsaved entries</h2>
         <p className="mt-1.5 text-sm text-muted-foreground">
           You have unsaved entries on this page. Save them before leaving, or leave without saving.
         </p>
-        <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button variant="outline" onClick={onCancel} disabled={saving}>Cancel</Button>
-          <Button variant="ghost" className="text-destructive hover:text-destructive" onClick={onLeave} disabled={saving}>
+        <div className="mt-5 flex flex-col-reverse flex-wrap gap-2 sm:flex-row sm:justify-end">
+          <Button variant="outline" className="w-full sm:w-auto" onClick={onCancel} disabled={saving}>Cancel</Button>
+          <Button variant="ghost" className="w-full text-destructive hover:text-destructive sm:w-auto" onClick={onLeave} disabled={saving}>
             Leave without saving
           </Button>
-          <Button onClick={onSave} disabled={saving}>{saving ? "Saving…" : "Save & leave"}</Button>
+          <Button className="w-full sm:w-auto" onClick={onSave} disabled={saving}>{saving ? "Saving…" : "Save & leave"}</Button>
         </div>
       </div>
     </div>,
