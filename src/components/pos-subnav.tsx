@@ -3,6 +3,7 @@ import { ItemsDialog } from "@/components/items-dialog";
 import { AttendanceDialog } from "@/components/attendance";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { usePosAccess } from "@/components/pos-access";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import type { PosPerm } from "@/lib/pos-access.functions";
 import { LayoutDashboard, Landmark, Settings2, BarChart3, Boxes, BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users, FileCheck2, ArrowLeft, Package, CalendarCheck, ClipboardList, GripVertical } from "lucide-react";
@@ -45,6 +46,11 @@ export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   useEffect(() => {
     try { const s = JSON.parse(localStorage.getItem(ORDER_KEY) || "[]"); if (Array.isArray(s)) setOrder(s); } catch { /* ignore */ }
+    // Account-level order (saved on the signed-in user) wins over the local copy.
+    void supabase.auth.getUser().then(({ data }) => {
+      const s = (data.user?.user_metadata as { pos_sidebar_order?: unknown } | undefined)?.pos_sidebar_order;
+      if (Array.isArray(s)) { setOrder(s as string[]); try { localStorage.setItem(ORDER_KEY, JSON.stringify(s)); } catch { /* ignore */ } }
+    });
   }, []);
 
   const visible = [
@@ -71,6 +77,7 @@ export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
     const up = () => {
       setDragKey(null);
       try { localStorage.setItem(ORDER_KEY, JSON.stringify(orderRef.current)); } catch { /* ignore */ }
+      void supabase.auth.updateUser({ data: { pos_sidebar_order: orderRef.current } });
       window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up);
     };
     window.addEventListener("pointermove", move); window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
