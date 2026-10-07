@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { ItemsDialog } from "@/components/items-dialog";
 import { AttendanceDialog } from "@/components/attendance";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { usePosAccess } from "@/components/pos-access";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import type { PosPerm } from "@/lib/pos-access.functions";
-import { LayoutDashboard, Landmark, Settings2, BarChart3, Boxes, BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users, FileCheck2, ArrowLeft, Package, CalendarCheck, ClipboardList, GripVertical } from "lucide-react";
+import { LayoutDashboard, Landmark, Settings2, BarChart3, Boxes, BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users, FileCheck2, ArrowLeft, Package, CalendarCheck, ClipboardList, GripVertical, Search } from "lucide-react";
 
 const ITEMS = [
   { to: "/pos-dashboard", label: "Dashboard", icon: LayoutDashboard, perm: "view_pos" },
@@ -24,6 +24,26 @@ const ITEMS = [
   { to: "/accounting", label: "Accounting", icon: Landmark, perm: "view_accounting" },
   { to: "/pos-settings", label: "POS Settings", icon: Settings2, perm: "view_pos" },
 ] as const satisfies ReadonlyArray<{ to: string; label: string; icon: unknown; perm: PosPerm }>;
+
+const KEYWORDS: Record<string, string> = {
+  "/pos-dashboard": "home quick actions overview summary units categories cash in hand",
+  "/pos": "sale bill billing new sale invoice counter checkout",
+  "/returns": "sale return refund credit note purchase return",
+  "/purchases": "purchase buy supplier stock in bill",
+  "/parties": "customers suppliers party balance statement payment in out",
+  "/ledger": "credit udhaar receivable payable balances",
+  "/expenses": "expense kharcha spending",
+  "/attendance": "attendance labour salary staff",
+  "/daybook": "day book daily cash in hand closing",
+  "/inventory": "inventory stock bulk update products items csv adjust",
+  "/reports": "reports profit sales report stock summary",
+  "/pos-invoices": "invoices estimates delivery challan reprint",
+  "/accounting": "accounting ledger bank accounts balance sheet profit loss",
+  "/pos-settings": "settings printing backup restore permissions",
+  items: "items products stock price",
+  "attendance-mark": "mark attendance check in",
+};
+const LABELS: Record<string, string> = { items: "Items", "attendance-mark": "Mark attendance" };
 
 const ORDER_KEY = "pos-sidebar-order";
 const ALL_KEYS = [...ITEMS.map((i) => i.to as string), "items", "attendance-mark"];
@@ -43,6 +63,8 @@ export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const [order, setOrder] = useState<string[]>([]);
   const [dragKey, setDragKey] = useState<string | null>(null);
   const orderRef = useRef<string[]>([]);
+  const [q, setQ] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     try { const s = JSON.parse(localStorage.getItem(ORDER_KEY) || "[]"); if (Array.isArray(s)) setOrder(s); } catch { /* ignore */ }
@@ -58,7 +80,15 @@ export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
     ...(can("view_pos") ? ["items"] : []),
     ...(attOn && can("manage_expenses") ? ["attendance-mark"] : []),
   ];
-  const keys = sortByOrder(visible, order);
+  const label = (k: string) => LABELS[k] ?? ITEMS.find((x) => x.to === k)?.label ?? k;
+  const ql = q.trim().toLowerCase();
+  const keys = sortByOrder(visible, order).filter((k) => !ql || `${label(k)} ${KEYWORDS[k] ?? ""}`.toLowerCase().includes(ql));
+  const openKey = (k: string) => {
+    setQ("");
+    if (k === "items") setItemsOpen(true);
+    else if (k === "attendance-mark") setAttOpen(true);
+    else { void navigate({ to: k }); onNavigate?.(); }
+  };
   orderRef.current = sortByOrder(ALL_KEYS, order);
 
   const startDrag = (key: string, e: React.PointerEvent) => {
@@ -89,18 +119,24 @@ export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-4" aria-label="POS navigation">
-        <p className="mb-3 px-3 text-[10px] font-bold uppercase text-sidebar-muted">POS</p>
+        <div className="relative mb-3">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-sidebar-muted" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search features..." aria-label="Search POS features"
+            onKeyDown={(e) => { if (e.key === "Enter" && keys[0]) { e.preventDefault(); openKey(keys[0]); } else if (e.key === "Escape") setQ(""); }}
+            className="h-10 w-full rounded-lg border border-sidebar-border bg-background pl-8 pr-3 text-sm text-foreground outline-none focus:border-primary" />
+        </div>
+        {ql && !keys.length ? <p className="px-3 text-xs text-sidebar-muted">No feature found</p> : null}
         {keys.map((k) => {
           let body: React.ReactNode;
           if (k === "items") {
-            body = <button type="button" onClick={() => setItemsOpen(true)} className={`${rowCls} ${idle} text-left`}><Package className="size-4 shrink-0" /> Items</button>;
+            body = <button type="button" onClick={() => openKey("items")} className={`${rowCls} ${idle} text-left`}><Package className="size-4 shrink-0" /> Items</button>;
           } else if (k === "attendance-mark") {
-            body = <button type="button" onClick={() => setAttOpen(true)} className={`${rowCls} ${idle} text-left`}><CalendarCheck className="size-4 shrink-0" /> Mark attendance</button>;
+            body = <button type="button" onClick={() => openKey("attendance-mark")} className={`${rowCls} ${idle} text-left`}><CalendarCheck className="size-4 shrink-0" /> Mark attendance</button>;
           } else {
             const i = ITEMS.find((x) => x.to === k)!;
             const active = pathname === i.to;
             body = (
-              <Link to={i.to} onClick={onNavigate} aria-current={active ? "page" : undefined}
+              <Link to={i.to} onClick={() => { setQ(""); onNavigate?.(); }} aria-current={active ? "page" : undefined}
                 className={`${rowCls} ${active ? "bg-sidebar-accent text-sidebar-accent-foreground" : idle}`}>
                 <i.icon className="size-4 shrink-0" /> {i.label}
               </Link>
