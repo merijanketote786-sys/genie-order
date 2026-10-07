@@ -1,5 +1,6 @@
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
 import { PosCustomerSearch } from "@/components/pos-customer-search";
+import { WaTemplateButton } from "@/components/wa-template-button";
 import { PosSubnav } from "@/components/pos-subnav";
 import { StoreSwitcher, useActiveStore } from "@/components/store-switcher";
 import { usePinPrompt, usePosAccess } from "@/components/pos-access";
@@ -1153,6 +1154,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
               <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("held", false)}><Pause /> Hold (F10)</Button>
               <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("quotation", false)}><FileText /> Quotation</Button>
             </div>
+            <WaTemplateButton disabled={!cart.length} getReceipt={() => receipt(editing?.number || "Draft")} />
             <p className="text-[11px] text-muted-foreground"><K>Ctrl+S</K> / <K>F9</K> save + print · <K>Ctrl+Enter</K> save without print · <K>Ctrl+Shift+H</K> hold · <K>Alt+N</K> new bill</p>
             <div className="grid grid-cols-3 gap-2">
               <Button variant="ghost" size="sm" onClick={() => setDocsOpen("held")}><FolderOpen /> Held bills</Button>
