@@ -43,6 +43,60 @@ const KEYWORDS: Record<string, string> = {
   items: "items products stock price",
   "attendance-mark": "mark attendance check in",
 };
+// Every feature inside POS pages, so search finds it from anywhere.
+const FEATURES: { label: string; to: string; kw: string }[] = [
+  { label: "New sale / invoice", to: "/pos", kw: "bill sale invoice counter checkout new" },
+  { label: "Barcode scan", to: "/pos", kw: "barcode scanner scan item code" },
+  { label: "Estimate / quotation", to: "/pos", kw: "estimate quotation quote" },
+  { label: "Credit (udhaar) sale", to: "/pos", kw: "credit udhaar sale party" },
+  { label: "Discount & tax on bill", to: "/pos", kw: "discount tax gst charges" },
+  { label: "Print / PDF / WhatsApp bill", to: "/pos", kw: "print pdf whatsapp share receipt thermal" },
+  { label: "Hold bill", to: "/pos", kw: "hold park draft" },
+  { label: "Quick actions", to: "/pos-dashboard", kw: "quick actions shortcuts popup" },
+  { label: "Units (main & sub)", to: "/pos-dashboard", kw: "units unit kg gram litre conversion sub unit" },
+  { label: "Categories", to: "/pos-dashboard", kw: "category categories group" },
+  { label: "Manufacturing", to: "/pos-dashboard", kw: "manufacture manufacturing production raw material finished goods" },
+  { label: "Payment In", to: "/pos-dashboard", kw: "payment in receive received collection" },
+  { label: "Payment Out", to: "/pos-dashboard", kw: "payment out pay paid supplier" },
+  { label: "Sales summary", to: "/pos-dashboard", kw: "today sales summary overview stats" },
+  { label: "Sale return", to: "/returns", kw: "sale return refund credit note" },
+  { label: "Bill-free return", to: "/returns", kw: "return without bill free" },
+  { label: "New purchase", to: "/purchases", kw: "purchase buy stock in supplier bill" },
+  { label: "Purchase return", to: "/purchases", kw: "purchase return debit note" },
+  { label: "Purchase history / edit / cancel", to: "/purchases", kw: "purchase history edit cancel reprint" },
+  { label: "Add / edit party", to: "/parties", kw: "add party customer supplier contact phone" },
+  { label: "Adjust party balance", to: "/parties", kw: "opening balance adjust to receive to pay" },
+  { label: "Party transactions / statement", to: "/parties", kw: "statement transactions history party ledger" },
+  { label: "WhatsApp reminder", to: "/parties", kw: "whatsapp reminder message" },
+  { label: "Receivables & payables", to: "/ledger", kw: "udhaar credit receivable payable due balance" },
+  { label: "Add expense", to: "/expenses", kw: "expense kharcha rent bill electricity spending" },
+  { label: "Staff attendance & salary", to: "/attendance", kw: "attendance staff labour salary employee" },
+  { label: "Day book entry (money in/out)", to: "/daybook", kw: "day book entry money in out daily hisab" },
+  { label: "Cash in hand count", to: "/daybook", kw: "cash in hand galla till count closing adjust" },
+  { label: "Bulk update items", to: "/inventory", kw: "bulk update edit price items" },
+  { label: "CSV import prices", to: "/inventory", kw: "csv import excel upload price" },
+  { label: "Add / edit product", to: "/inventory", kw: "add product item new edit" },
+  { label: "Stock adjustment", to: "/inventory", kw: "stock adjust adjustment quantity" },
+  { label: "Low / out of stock", to: "/inventory", kw: "low stock min stock out of stock reorder" },
+  { label: "Stores / stock transfer", to: "/inventory", kw: "store stores branch transfer" },
+  { label: "Barcode labels", to: "/inventory", kw: "barcode label print sticker" },
+  { label: "Sales report", to: "/reports", kw: "sales report daily monthly" },
+  { label: "Profit & loss", to: "/reports", kw: "profit loss margin p&l" },
+  { label: "Stock summary report", to: "/reports", kw: "stock summary value report" },
+  { label: "Invoices list", to: "/pos-invoices", kw: "invoices list search history" },
+  { label: "Estimates", to: "/pos-invoices", kw: "estimate quotation convert" },
+  { label: "Delivery challan", to: "/pos-invoices", kw: "delivery challan dc convert" },
+  { label: "Edit / cancel / reprint invoice", to: "/pos-invoices", kw: "edit cancel reprint duplicate invoice" },
+  { label: "Bank accounts", to: "/accounting", kw: "bank account add adjust balance jazzcash easypaisa" },
+  { label: "Chart of accounts / journal", to: "/accounting", kw: "chart accounts journal entry double entry" },
+  { label: "Balance sheet / trial balance", to: "/accounting", kw: "balance sheet trial balance" },
+  { label: "Print / invoice design settings", to: "/pos-settings", kw: "print printing invoice design font template logo" },
+  { label: "Backup & restore", to: "/pos-settings", kw: "backup restore download save computer" },
+  { label: "Users & permissions", to: "/pos-settings", kw: "users permissions roles access pin" },
+  { label: "Invoice numbering", to: "/pos-settings", kw: "numbering prefix invoice number" },
+  { label: "Custom charges", to: "/pos-settings", kw: "custom charges delivery fee freight" },
+];
+
 const LABELS: Record<string, string> = { items: "Items", "attendance-mark": "Mark attendance" };
 
 const ORDER_KEY = "pos-sidebar-order";
@@ -83,6 +137,9 @@ export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const label = (k: string) => LABELS[k] ?? ITEMS.find((x) => x.to === k)?.label ?? k;
   const ql = q.trim().toLowerCase();
   const keys = sortByOrder(visible, order).filter((k) => !ql || `${label(k)} ${KEYWORDS[k] ?? ""}`.toLowerCase().includes(ql));
+  const words = ql.split(/\s+/).filter(Boolean);
+  const hit = (t: string) => words.every((w) => t.toLowerCase().includes(w));
+  const featHits = ql ? FEATURES.filter((f) => visible.includes(f.to) && hit(`${f.label} ${f.kw} ${label(f.to)}`)).slice(0, 20) : [];
   const openKey = (k: string) => {
     setQ("");
     if (k === "items") setItemsOpen(true);
@@ -122,10 +179,10 @@ export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
         <div className="relative mb-3">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-sidebar-muted" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search features..." aria-label="Search POS features"
-            onKeyDown={(e) => { if (e.key === "Enter" && keys[0]) { e.preventDefault(); openKey(keys[0]); } else if (e.key === "Escape") setQ(""); }}
+            onKeyDown={(e) => { if (e.key === "Enter" && (keys[0] || featHits[0])) { e.preventDefault(); openKey(keys[0] ?? featHits[0].to); } else if (e.key === "Escape") setQ(""); }}
             className="h-10 w-full rounded-lg border border-sidebar-border bg-background pl-8 pr-3 text-sm text-foreground outline-none focus:border-primary" />
         </div>
-        {ql && !keys.length ? <p className="px-3 text-xs text-sidebar-muted">No feature found</p> : null}
+        {ql && !keys.length && !featHits.length ? <p className="px-3 text-xs text-sidebar-muted">No feature found</p> : null}
         {keys.map((k) => {
           let body: React.ReactNode;
           if (k === "items") {
@@ -152,6 +209,17 @@ export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
             </div>
           );
         })}
+        {featHits.length ? (
+          <div className="mt-3 space-y-0.5 border-t border-sidebar-border pt-2">
+            <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-sidebar-muted">Features</p>
+            {featHits.map((f, n) => (
+              <button key={n} type="button" onClick={() => openKey(f.to)} className={`${rowCls} ${idle} w-full text-left`}>
+                <Search className="size-3.5 shrink-0" />
+                <span className="min-w-0 flex-1"><span className="block truncate">{f.label}</span><span className="block text-[11px] font-normal text-sidebar-muted">in {label(f.to)}</span></span>
+              </button>
+            ))}
+          </div>
+        ) : null}
         <ItemsDialog open={itemsOpen} onOpenChange={setItemsOpen} />
         <AttendanceDialog open={attOpen} onOpenChange={setAttOpen} />
       </nav>
