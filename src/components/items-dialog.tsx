@@ -72,7 +72,10 @@ export function ItemsDialog({ open, onOpenChange }: { open: boolean; onOpenChang
               return (
                 <li key={p.id}>
                   <button type="button" onClick={() => setItem(p)} className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm hover:bg-muted">
-                    <span className="truncate font-medium text-foreground">{p.name}</span>
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-foreground">{p.name}</span>
+                      <span className="block text-[11px] text-muted-foreground">Sale {rs(p.salePrice || 0)} · Purchase {p.purchasePrice == null ? "—" : rs(p.purchasePrice)}</span>
+                    </span>
                     <span className={`shrink-0 font-semibold ${stock < 0 ? "text-destructive" : stock === 0 ? "text-muted-foreground" : "text-success"}`}>{stock} {p.unit}</span>
                   </button>
                 </li>
@@ -173,12 +176,22 @@ function ItemHistoryDialog({ item, onClose, storeSel, setStoreSel, stores, stock
           </button>
         </div>
         {item ? (
-          <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-5">
-            {[["In stock", stockOf(item)], ["Sold", sum((r) => r.kind === "sale")], ["Purchased", sum((r) => r.kind === "purchase")],
+          <>
+          <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+            {[["Stock quantity", `${stockOf(item)} ${item.unit}`, stockOf(item) < 0],
+              ["Stock value", item.purchasePrice == null ? "—" : rs(stockOf(item) * item.purchasePrice), stockOf(item) < 0],
+              ["Sale price", rs(item.salePrice || 0), false],
+              ["Purchase price", item.purchasePrice == null ? "—" : rs(item.purchasePrice), false]].map(([l, v, neg]) => (
+              <div key={l as string} className="rounded-lg border border-primary/30 bg-primary/5 p-2"><p className="text-[11px] text-muted-foreground">{l as string}</p><p className={`font-bold ${neg ? "text-destructive" : ""}`}>{v as string}</p></div>
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+            {[["Sold", sum((r) => r.kind === "sale")], ["Purchased", sum((r) => r.kind === "purchase")],
               ["Manufactured", sum((r) => r.kind === "manufacture_in")], ["In estimates", sum((r) => r.kind === "quotation")]].map(([l, v]) => (
               <div key={l as string} className="rounded-lg border border-border bg-card p-2"><p className="text-[11px] text-muted-foreground">{l}</p><p className={`font-bold ${Number(v) < 0 ? "text-destructive" : ""}`}>{v} {item.unit}</p></div>
             ))}
           </div>
+          </>
         ) : null}
         <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-border">
           <table className="w-full text-sm">
