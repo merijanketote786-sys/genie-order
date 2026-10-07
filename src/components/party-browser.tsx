@@ -111,10 +111,11 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   const toPay = r2(list.reduce((a, p) => a + Math.max(0, -p.balance), 0));
 
   const addParty = async () => {
-    if (!addName.trim() || !addPhone.trim()) { toast.error("Name and phone are required"); return; }
+    if (!addName.trim()) { toast.error("Party name is required"); return; }
     setSaving(true);
     try {
-      await saveParty({ data: { name: addName.trim(), phone: addPhone.trim() } });
+      if (addPhone.trim()) await saveParty({ data: { name: addName.trim(), phone: addPhone.trim() } });
+      else await saveSupplier({ data: { name: addName.trim() } });
       toast.success("Party added");
       setAddName(""); setAddPhone(""); setAddOpen(false);
       await Promise.all([qc.invalidateQueries({ queryKey: ["customer-balances"] }), qc.invalidateQueries({ queryKey: ["suppliers"] })]);
