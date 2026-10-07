@@ -58,16 +58,19 @@ export function WaTemplateButton({ getReceipt, disabled }: { getReceipt: () => R
       const v = data.user?.user_metadata?.[KEY] as Stored | undefined;
       if (v && Array.isArray(v.templates)) setSt(v);
     });
+    try { const l = localStorage.getItem(KEY); if (l) setSt((p) => ({ ...p, ...JSON.parse(l) })); } catch { /* ignore */ }
   }, []);
 
   const persist = async (next: Stored) => {
     setSt(next);
+    try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* ignore */ }
     const { error } = await supabase.auth.updateUser({ data: { [KEY]: next } });
     if (error) toast.error("Could not save template settings");
   };
 
   const current = st.templates.find((t) => t.id === st.selected) ?? st.templates[0];
   const openPopup = () => {
+    if (disabled) { toast.error("Add at least one item to the bill first"); return; }
     setText(render(current?.body ?? DEFAULT_BODY, getReceipt()));
     setEdit(null);
     setOpen(true);
@@ -101,7 +104,7 @@ export function WaTemplateButton({ getReceipt, disabled }: { getReceipt: () => R
           <input type="checkbox" className="size-4 accent-primary" checked={st.enabled} onChange={(e) => void persist({ ...st, enabled: e.target.checked })} />
           Enable
         </label>
-        <Button variant="outline" className="flex-1" disabled={!st.enabled || disabled} onClick={openPopup}><MessageCircle /> WhatsApp message</Button>
+        <Button variant="outline" className="flex-1" disabled={!st.enabled} onClick={openPopup}><MessageCircle /> WhatsApp message</Button>
       </div>
       {open ? createPortal(
         <div className="fixed inset-0 z-[100] grid place-items-center bg-foreground/40 p-3" onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
