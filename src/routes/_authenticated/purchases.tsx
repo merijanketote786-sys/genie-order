@@ -2,7 +2,7 @@ import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
 import { AppShell } from "@/components/app-shell";
 import { PAY_OPTS, PosSubnav, posInput, rs } from "@/components/pos-subnav";
 import { Button } from "@/components/ui/button";
-import { cancelPurchase, ensurePurchaseParty, getPurchaseItems, listProductsLite, listPurchases, listSuppliers, savePurchase } from "@/lib/business.functions";
+import { cancelPurchase, ensurePurchaseParty, saveSupplier, getPurchaseItems, listProductsLite, listPurchases, listSuppliers, savePurchase } from "@/lib/business.functions";
 import { listCustomerBalances } from "@/lib/ledger.functions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -15,6 +15,9 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import { toast } from "sonner";
 import { newRef } from "@/lib/pos-errors";
 import { usePrintCenter } from "@/components/print-center";
+import { StoreSwitcher, useActiveStore } from "@/components/store-switcher";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { UserPlus } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/purchases")({
   head: () => ({
@@ -38,6 +41,19 @@ const GRID = "mgrid grid grid-cols-[36px_minmax(200px,2.4fr)_minmax(80px,0.8fr)_
 export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; startDocType?: "purchase" | "return" } = {}) {
   const qc = useQueryClient();
   const pc = usePrintCenter();
+  const activeStore = useActiveStore();
+  const [np, setNp] = useState<{ name: string; phone: string; address: string } | null>(null);
+  const [npBusy, setNpBusy] = useState(false);
+  const addNewParty = async () => {
+    if (!np?.name.trim()) return toast.error("Party name is required");
+    setNpBusy(true);
+    try {
+      const r = await saveSupplier({ data: { name: np.name.trim(), phone: np.phone.trim() || undefined, address: np.address.trim() || undefined } });
+      await qc.invalidateQueries({ queryKey: ["suppliers"] });
+      setSelectedParty({ id: r.id, source: "supplier", name: np.name.trim() }); setPartySearch(np.name.trim()); setNp(null);
+      toast.success("Party added");
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not add party"); } finally { setNpBusy(false); }
+  };
   const { data: sup } = useQuery({ queryKey: ["suppliers"], queryFn: () => listSuppliers() });
    const { data: parties } = useQuery({ queryKey: ["customer-balances", "pos"], queryFn: () => listCustomerBalances({ data: { posOnly: true } }) });
   const { data: prod } = useQuery({ queryKey: ["products-lite"], queryFn: () => listProductsLite(), staleTime: 60_000 });
@@ -187,6 +203,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const save = async () => {
     const valid = lines.filter((l) => l.name.trim() && num(l.qty) > 0);
     if (!valid.length) return toast.error("Enter at least one item");
+    if (activeStore.isAllStores) return toast.error("Select a specific store before saving a purchase");
     if (paidNum < total && !selectedParty) return toast.error("Select a party for a credit purchase");
     if (lockRef.current) return;
     lockRef.current = true;
@@ -233,7 +250,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
                 <button type="button" role="tab" aria-selected={docType === "return"} onClick={() => { setDocType("return"); setRefId(undefined); }} className={`rounded-full px-4 py-1.5 text-sm font-bold ${docType === "return" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Return</button>
               </div>
             </div>
-            <div className="text-right text-sm text-muted-foreground">Bill date <b className="text-foreground">{today}</b></div>
+            <div className="flex flex-wrap items-center gap-3"><StoreSwitcher /><div className="text-right text-sm text-muted-foreground">Bill date <b className="text-foreground">{today}</b></div></div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 px-4 py-3">
@@ -242,6 +259,18 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
               {partyOpen && partyOptions.length > 0 ? <ul ref={partyRef} role="listbox" className="absolute left-0 right-0 top-full z-40 mt-1 max-h-64 overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg">{partyOptions.map((p, i) => <li key={`${p.source}-${p.id}`} role="option" aria-selected={partyIndex === i}><button type="button" className={`w-full rounded px-2 py-2 text-left text-sm ${partyIndex === i ? "bg-accent" : "hover:bg-accent"}`} onMouseDown={(e) => { e.preventDefault(); pickParty(p); }}>{p.name}{p.phone ? <span className="ml-2 text-xs text-muted-foreground">{p.phone}</span> : null}</button></li>)}</ul> : null}
             </div>
              {selectedParty ? <Button type="button" size="sm" variant="outline" onClick={() => { setSelectedParty(null); setPartySearch(""); }}>Clear</Button> : null}
+             <Button type="button" size="sm" variant="outline" onClick={() => setNp({ name: selectedParty ? "" : partySearch, phone: "", address: "" })}><UserPlus /> Add party</Button>
+             <Dialog open={!!np} onOpenChange={(o) => { if (!o) setNp(null); }}>
+               <DialogContent className="max-w-md">
+                 <DialogHeader><DialogTitle>Add party</DialogTitle></DialogHeader>
+                 <div className="space-y-2">
+                   <input className={posInput} autoFocus placeholder="Party name *" value={np?.name ?? ""} onChange={(e) => setNp((x) => x && { ...x, name: e.target.value })} />
+                   <input className={posInput} placeholder="Phone (optional)" inputMode="tel" value={np?.phone ?? ""} onChange={(e) => setNp((x) => x && { ...x, phone: e.target.value.replace(/[^\d+\s-]/g, "") })} />
+                   <input className={posInput} placeholder="Address (optional)" value={np?.address ?? ""} onChange={(e) => setNp((x) => x && { ...x, address: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void addNewParty(); } }} />
+                   <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setNp(null)}>Cancel</Button><Button disabled={npBusy} onClick={() => void addNewParty()}>{npBusy ? "Saving..." : "Save party"}</Button></div>
+                 </div>
+               </DialogContent>
+             </Dialog>
           </div>
 
           <div className="overflow-x-auto">

@@ -51,10 +51,10 @@ export const saveSupplier = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const sb = context.supabase as Sb;
     const row = { name: data.name, phone: data.phone || null, address: data.address || null, opening_balance: data.openingBalance ?? 0 };
-    const q = data.id ? sb.from("suppliers").update(row).eq("id", data.id) : sb.from("suppliers").insert(row);
-    const { error } = await q;
-    if (error) throw new Error("Failed to save supplier");
-    return { ok: true };
+    const q = data.id ? sb.from("suppliers").update(row).eq("id", data.id).select("id").maybeSingle() : sb.from("suppliers").insert(row).select("id").single();
+    const { data: saved, error } = await q;
+    if (error) throw new Error("Failed to save party");
+    return { ok: true, id: (saved?.id ?? data.id ?? "") as string };
   });
 
 /** Resolve a POS party to its purchase-side record without changing historical document IDs. */

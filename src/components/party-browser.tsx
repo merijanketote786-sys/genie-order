@@ -111,10 +111,11 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   const toPay = r2(list.reduce((a, p) => a + Math.max(0, -p.balance), 0));
 
   const addParty = async () => {
-    if (!addName.trim() || !addPhone.trim()) { toast.error("Name and phone are required"); return; }
+    if (!addName.trim()) { toast.error("Party name is required"); return; }
     setSaving(true);
     try {
-      await saveParty({ data: { name: addName.trim(), phone: addPhone.trim() } });
+      if (addPhone.trim()) await saveParty({ data: { name: addName.trim(), phone: addPhone.trim() } });
+      else await saveSupplier({ data: { name: addName.trim() } });
       toast.success("Party added");
       setAddName(""); setAddPhone(""); setAddOpen(false);
       await Promise.all([qc.invalidateQueries({ queryKey: ["customer-balances"] }), qc.invalidateQueries({ queryKey: ["suppliers"] })]);
@@ -368,7 +369,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
             <div className="space-y-2 rounded-lg border border-primary p-2">
               <div className="grid gap-2 sm:grid-cols-2">
                 <input className={inputCls} placeholder="Name *" value={addName} onChange={(e) => setAddName(e.target.value)} />
-                <input className={inputCls} placeholder="Phone *" inputMode="tel" value={addPhone} onChange={(e) => setAddPhone(e.target.value.replace(/[^\d+\s-]/g, ""))} />
+                <input className={inputCls} placeholder="Phone (optional)" inputMode="tel" value={addPhone} onChange={(e) => setAddPhone(e.target.value.replace(/[^\d+\s-]/g, ""))} />
               </div>
               <Button type="button" className="w-full" disabled={saving} onClick={addParty}>{saving ? "Saving…" : "Save party"}</Button>
             </div>
