@@ -120,10 +120,11 @@ function PosInvoicesPage() {
   const [search, setSearch] = useState("");
   const [share, setShare] = useState<SaleRow | null>(null);
   const [estimates, setEstimates] = useState(false);
+  const [range, setRange] = useState<DateRange>(ALL_DATES);
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [editSale, setEditSale] = useState<SaleRow | null>(null);
-  const q = useQuery({ queryKey: ["pos-sales", search, estimates], queryFn: () => listPosSales({ data: { search, estimates } }) });
+  const q = useQuery({ queryKey: ["pos-sales", search, estimates, range], queryFn: () => listPosSales({ data: { search, estimates, ...rangeToIso(range) } }) });
   const sales = ((q.data?.sales ?? []) as SaleRow[]).filter((s) => s.status !== "cancelled");
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["pos-sales"] });
@@ -204,14 +205,17 @@ function PosInvoicesPage() {
             </button>
           ))}
         </div>
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by invoice #, customer, phone"
-            className="h-10 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-sm outline-none focus:border-primary"
-          />
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative w-full max-w-sm">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by invoice #, customer, phone"
+              className="h-10 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-sm outline-none focus:border-primary"
+            />
+          </div>
+          <DateRangeFilter value={range} onChange={setRange} />
         </div>
         {q.isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : null}
         {!q.isLoading && sales.length === 0 ? <p className="text-sm text-muted-foreground">No POS invoices found.</p> : null}
