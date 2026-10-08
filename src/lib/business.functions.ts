@@ -176,8 +176,8 @@ export const listPurchases = createServerFn({ method: "GET" })
     let q = (context.supabase as Sb).from("purchases").select("id, doc_number, doc_type, status, payment_status, supplier_id, supplier_name, ref_purchase_id, discount_total, notes, grand_total, paid_total, balance, created_at").neq("status", "cancelled").order("created_at", { ascending: false }).limit(100);
     if (data.from) q = q.gte("created_at", data.from);
     if (data.to) q = q.lte("created_at", data.to);
-    const { data } = await q;
-    return { purchases: (data ?? []).map((p: any) => ({ ...p, discount_total: Number(p.discount_total), grand_total: Number(p.grand_total), paid_total: Number(p.paid_total), balance: Number(p.balance) })) as Array<{ id: string; doc_number: string; doc_type: string; status: string; payment_status: string; supplier_id: string | null; ref_purchase_id: string | null; discount_total: number; notes: string | null; supplier_name: string | null; grand_total: number; paid_total: number; balance: number; created_at: string }> };
+    const { data: rows } = await q;
+    return { purchases: (rows ?? []).map((p: any) => ({ ...p, discount_total: Number(p.discount_total), grand_total: Number(p.grand_total), paid_total: Number(p.paid_total), balance: Number(p.balance) })) as Array<{ id: string; doc_number: string; doc_type: string; status: string; payment_status: string; supplier_id: string | null; ref_purchase_id: string | null; discount_total: number; notes: string | null; supplier_name: string | null; grand_total: number; paid_total: number; balance: number; created_at: string }> };
   });
 
 export const getPurchaseItems = createServerFn({ method: "GET" })
@@ -295,8 +295,8 @@ export const listReturns = createServerFn({ method: "GET" })
     let q = (context.supabase as Sb).from("pos_sales").select("id, doc_number, customer_name, grand_total, paid_total, notes, status, created_at").eq("doc_type", "return").order("created_at", { ascending: false }).limit(100);
     if (data.from) q = q.gte("created_at", data.from);
     if (data.to) q = q.lte("created_at", data.to);
-    const { data } = await q;
-    return { returns: (data ?? []).map((r: any) => ({ ...r, grand_total: Number(r.grand_total), paid_total: Number(r.paid_total) })) as Array<{ id: string; doc_number: string; customer_name: string | null; grand_total: number; paid_total: number; notes: string | null; status: string; created_at: string }> };
+    const { data: rows } = await q;
+    return { returns: (rows ?? []).map((r: any) => ({ ...r, grand_total: Number(r.grand_total), paid_total: Number(r.paid_total) })) as Array<{ id: string; doc_number: string; customer_name: string | null; grand_total: number; paid_total: number; notes: string | null; status: string; created_at: string }> };
   });
 
 export const cancelDoc = createServerFn({ method: "POST" })
