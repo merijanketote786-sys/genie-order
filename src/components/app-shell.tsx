@@ -172,7 +172,7 @@ function AppShellInner({
   });
   const userAllowed = mine.data?.settings.allowedSections ?? [];
   const workspaceAllowed = mine.data?.workspace.allowedSections ?? [];
-  const visibleTabs = TABS.filter((tab) => isSectionAllowed(tab.to, userAllowed, workspaceAllowed));
+  const visibleTabs = TABS.filter((tab) => isSectionAllowed(tab.to, userAllowed, workspaceAllowed) && !(tab.to === "/pos" && sub?.pos === false));
   const tabs = access.data?.isOwner
     ? [...visibleTabs, SETTINGS_TAB, ADMIN_TAB]
     : [...visibleTabs, SETTINGS_TAB];
