@@ -209,13 +209,20 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
     lockRef.current = true;
     setSaving(true);
     try {
-      // Edit: cancel the old entry first so a refused cancel never leaves two live entries.
-      if (editId) await cancelPurchase({ data: { id: editId.id, reason: "Edited — replaced by a new entry" } });
+      // Edit: save the new entry FIRST, then cancel the old one — a failed save must never delete the original.
       const resolved = selectedParty ? await ensurePurchaseParty({ data: selectedParty.source === "customer" ? { customerId: selectedParty.id } : { supplierId: selectedParty.id } }) : null;
       const r = await savePurchase({ data: {
         docType, supplierId: resolved?.id, paid: paidNum, method, discount: num(discount), notes: notes || undefined, refPurchaseId: refId, clientRef: opRef.current,
         items: valid.map((l) => ({ productId: l.productId, name: l.name, unit: l.unit, qty: num(l.qty), rate: num(l.rate), discount: num(l.discount), taxPercent: num(l.tax), batch: l.batch || undefined, expiry: l.expiry || undefined })),
       } });
+      if (editId) {
+        try {
+          await cancelPurchase({ data: { id: editId.id, reason: "Edited — replaced by a new entry" } });
+        } catch (ce) {
+          toast.error(`New entry saved as ${r.number}, but the old entry ${editId.number} could not be cancelled — cancel it manually from the list.`);
+          console.error("cancel after edit failed", ce);
+        }
+      }
       opRef.current = newRef();
       setEditId(undefined);
       toast.success(`${docType === "purchase" ? "Purchase" : "Purchase return"} saved: ${r.number} — ${rs(r.total)}`);
