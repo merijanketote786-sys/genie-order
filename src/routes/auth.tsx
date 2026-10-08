@@ -112,8 +112,12 @@ function AuthPage() {
         });
         if (error) throw error;
         if (!data.session) {
-          setSent("Account created — check your email for the confirmation link.");
-          toast.success("Confirmation email sent");
+          setSent(
+            usePhone
+              ? "Account created — you can now sign in with your mobile number."
+              : "Account created — check your email for the confirmation link.",
+          );
+          toast.success("Account created");
         }
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
