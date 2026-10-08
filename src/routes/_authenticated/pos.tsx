@@ -1175,7 +1175,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
               <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("held", false)}><Pause /> Hold (F10)</Button>
               <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("quotation", false)}><FileText /> Quotation</Button>
             </div>
-            <WaTemplateButton disabled={!cart.length} getReceipt={() => receipt(editing?.number || "Draft")} />
+            <WaTemplateButton disabled={!cart.length} getReceipt={() => receipt(editing?.number || manualNumber.trim() || "Draft")} />
             <p className="text-[11px] text-muted-foreground"><K>Ctrl+S</K> / <K>F9</K> save + print · <K>Ctrl+Enter</K> save without print · <K>Ctrl+Shift+H</K> hold · <K>Alt+N</K> new bill</p>
             <div className="grid grid-cols-3 gap-2">
               <Button variant="ghost" size="sm" onClick={() => setDocsOpen("held")}><FolderOpen /> Held bills</Button>
