@@ -6,6 +6,10 @@ export const Route = createFileRoute("/_authenticated")({
   // getSession reads the locally cached session (no network round-trip),
   // so switching tabs doesn't wait on an auth request every time.
   beforeLoad: async () => {
+    // Server par session hota hi nahi — wahan redirect karne se server ka HTML
+    // aur client ka first render alag ban jata tha (hydration mismatch → page
+    // reload maangta tha). Redirect sirf browser mein hota hai.
+    if (typeof window === "undefined") return { user: null };
     const { data, error } = await supabase.auth.getSession();
     const user = data.session?.user;
     if (error || !user) throw redirect({ to: "/auth" });
