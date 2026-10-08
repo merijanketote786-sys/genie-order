@@ -87,7 +87,7 @@ function AuthPage() {
     if (digits.startsWith("0")) digits = "92" + digits.slice(1);
     if (!digits.startsWith("92")) digits = "92" + digits;
     if (digits.length < 11) throw new Error("Enter a valid mobile number (e.g. 03001234567)");
-    return `p${digits}@phone.orderbot.local`;
+    return `p${digits}@phone.hbchemicalspakistan.com`;
   };
 
   const submit = async (e: React.FormEvent) => {
