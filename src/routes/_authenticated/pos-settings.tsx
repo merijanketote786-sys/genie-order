@@ -1,5 +1,6 @@
 import { DevicesManager, LabourManager } from "@/components/attendance";
 import { PrintTemplatesPicker } from "@/components/settings/print-templates";
+import { PartyImport } from "@/components/settings/party-import";
 import { AppShell } from "@/components/app-shell";
 import { usePosAccess } from "@/components/pos-access";
 import { useMfgStatus } from "@/components/mfg-gate";
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/_authenticated/pos-settings")({
 /** Custom (non-schema) blocks har section me. keywords search ke liye. */
 const CUSTOM: Partial<Record<SectionId, { keywords: string; render: (p: { draft: PosConfig; upd: (p: string, v: unknown) => void; disabled: boolean; dirty: boolean; saving: boolean; onSave: () => void }) => ReactNode }[]>> = {
   business: [{ keywords: "logo image", render: (p) => <LogoField {...p} /> }],
+  customers: [{ keywords: "import parties csv excel upload customers suppliers", render: () => <PartyImport /> }],
   payments: [{ keywords: "payment method cash card bank jazzcash easypaisa credit custom default", render: (p) => <PaymentsEditor {...p} /> }],
   taxes: [{ keywords: "tax rates multiple gst percentage name", render: (p) => <TaxRatesEditor {...p} /> }],
   invoices: [{ keywords: "invoice fields show hide logo signature sku barcode columns width discount tax", render: (p) => <InvoiceFieldsEditor {...p} /> }],
