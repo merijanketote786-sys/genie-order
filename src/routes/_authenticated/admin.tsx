@@ -446,7 +446,9 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="nu-pw">Password (leave blank to send an invite)</Label>
+            <Label htmlFor="nu-pw">
+              {usePhone ? "Password (required)" : "Password (leave blank to send an invite)"}
+            </Label>
             <Input
               id="nu-pw"
               type="text"
