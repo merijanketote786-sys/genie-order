@@ -379,6 +379,13 @@
       "when": 1791498447969,
       "tag": "0053_subscription_module_access",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1791499615246,
+      "tag": "0054_sub_guard_user_tables",
+      "breakpoints": true
     }
   ]
 }

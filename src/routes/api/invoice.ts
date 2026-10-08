@@ -1,3 +1,4 @@
+import { subscriptionBlock } from "@/lib/subscription-gate.server";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
@@ -157,6 +158,8 @@ export const Route = createFileRoute("/api/invoice")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const subBlocked = await subscriptionBlock(request);
+        if (subBlocked) return subBlocked;
         const { messages } = (await request.json()) as ChatRequestBody;
         if (!Array.isArray(messages)) {
           return new Response("Messages are required", { status: 400 });
