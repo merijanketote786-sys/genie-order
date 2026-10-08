@@ -365,6 +365,7 @@ function SettingsSection() {
 
 function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [email, setEmail] = useState("");
+  const [usePhone, setUsePhone] = useState(false);
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"admin" | "staff">("staff");
@@ -374,7 +375,8 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
     mutationFn: (invite: boolean) =>
       createAppUser({
         data: {
-          email,
+          email: usePhone ? undefined : email,
+          phone: usePhone ? email : undefined,
           fullName,
           role,
           invite,
@@ -403,18 +405,33 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
           <DialogTitle className="font-display">Create new user</DialogTitle>
           <DialogDescription>
             Set the password yourself, or send an invite email so the user can create their own password.
+            Staff without an email can be added with a mobile number — they will sign in with that number and password.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
+          <div className="flex gap-2">
+            {(["Email", "Mobile number"] as const).map((m) => (
+              <Button
+                key={m}
+                type="button"
+                variant={(m === "Mobile number") === usePhone ? "default" : "outline"}
+                className="h-9 flex-1 text-xs"
+                onClick={() => setUsePhone(m === "Mobile number")}
+              >
+                {m}
+              </Button>
+            ))}
+          </div>
           <div className="space-y-1.5">
-            <Label htmlFor="nu-email">Email</Label>
+            <Label htmlFor="nu-email">{usePhone ? "Mobile number" : "Email"}</Label>
             <Input
               id="nu-email"
-              type="email"
+              type={usePhone ? "tel" : "email"}
+              inputMode={usePhone ? "tel" : undefined}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="user@example.com"
+              placeholder={usePhone ? "03001234567" : "user@example.com"}
               className="h-11"
             />
           </div>
@@ -429,7 +446,9 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="nu-pw">Password (leave blank to send an invite)</Label>
+            <Label htmlFor="nu-pw">
+              {usePhone ? "Password (required)" : "Password (leave blank to send an invite)"}
+            </Label>
             <Input
               id="nu-pw"
               type="text"
@@ -466,14 +485,16 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
             {create.isPending ? <Loader2 className="size-4 animate-spin" /> : <UserPlus className="size-4" />}
             Create user
           </Button>
-          <Button
-            variant="outline"
-            className="h-11 flex-1 gap-2"
-            disabled={create.isPending || !email}
-            onClick={() => create.mutate(true)}
-          >
-            <Mail className="size-4" /> Send invite
-          </Button>
+          {!usePhone && (
+            <Button
+              variant="outline"
+              className="h-11 flex-1 gap-2"
+              disabled={create.isPending || !email}
+              onClick={() => create.mutate(true)}
+            >
+              <Mail className="size-4" /> Send invite
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

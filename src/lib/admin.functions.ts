@@ -382,7 +382,8 @@ export const createAppUser = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) =>
     z
       .object({
-        email: z.string().email(),
+        email: z.string().email().optional(),
+        phone: z.string().max(20).optional(),
         fullName: z.string().max(120).optional(),
         password: z.string().min(8).max(72).optional(),
         role: z.enum(["admin", "staff"]).default("staff"),
@@ -395,7 +396,19 @@ export const createAppUser = createServerFn({ method: "POST" })
     if (!(await isAdminUser(context.supabase, context.userId))) {
       return { ok: false as const, message: "Sirf admin naya user bana sakta hai." };
     }
-    if (!data.invite && !data.password) {
+    // Phone number ko wahi internal email ID di jati hai jo sign-in page use karta hai,
+    // taake staff apne number + password se login kar sake.
+    let email = data.email;
+    if (data.phone) {
+      let digits = data.phone.replace(/\D/g, "");
+      if (digits.startsWith("0")) digits = "92" + digits.slice(1);
+      if (!digits.startsWith("92")) digits = "92" + digits;
+      if (digits.length < 11) return { ok: false as const, message: "Enter a valid mobile number (e.g. 03001234567)" };
+      email = `p${digits}@phone.hbchemicalspakistan.com`;
+    }
+    if (!email) return { ok: false as const, message: "Enter an email or mobile number." };
+    const invite = data.invite && !data.phone; // phone users cannot receive invite emails
+    if (!invite && !data.password) {
       return { ok: false as const, message: "Enter a password or send an invite email." };
     }
 
@@ -403,8 +416,8 @@ export const createAppUser = createServerFn({ method: "POST" })
     const ws = await workspaceOf(context.userId);
 
     let userId: string | null = null;
-    if (data.invite) {
-      const { data: res, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
+    if (invite) {
+      const { data: res, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
         redirectTo: data.redirectTo,
         data: { full_name: data.fullName ?? "" },
       });
@@ -412,7 +425,7 @@ export const createAppUser = createServerFn({ method: "POST" })
       userId = res.user?.id ?? null;
     } else {
       const { data: res, error } = await supabaseAdmin.auth.admin.createUser({
-        email: data.email,
+        email,
         password: data.password!,
         email_confirm: true,
         user_metadata: { full_name: data.fullName ?? "" },
@@ -447,7 +460,11 @@ export const createAppUser = createServerFn({ method: "POST" })
 
     return {
       ok: true as const,
-      message: data.invite ? "Invite email bhej diya" : "Naya user ban gaya",
+      message: invite
+        ? "Invite email bhej diya"
+        : data.phone
+          ? "Naya user ban gaya — woh apne mobile number aur password se sign in karega"
+          : "Naya user ban gaya",
     };
   });
 
