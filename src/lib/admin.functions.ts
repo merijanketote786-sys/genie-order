@@ -23,6 +23,8 @@ export type AdminUserRow = {
   confirmed: boolean;
   /** true when the user runs their own separate workspace (self signup) */
   separate: boolean;
+  /** mobile signup waiting for owner approval */
+  pending: boolean;
 };
 
 type RpcClient = { rpc: (fn: "has_role", args: { _user_id: string; _role: "admin" }) => PromiseLike<{ data: unknown }> };
@@ -73,10 +75,12 @@ export const listAppUsers = createServerFn({ method: "GET" })
     if (error) return { ok: false as const, users: [] as AdminUserRow[], message: error.message };
 
     const ids = authData.users.map((u) => u.id);
-    const [{ data: profiles }, { data: roles }] = await Promise.all([
+    const [{ data: profiles }, { data: roles }, { data: pendingRows }] = await Promise.all([
       supabaseAdmin.from("profiles").select("id, full_name, is_active, workspace_id").in("id", ids),
       supabaseAdmin.from("user_roles").select("user_id, role").in("user_id", ids),
+      (supabaseAdmin as any).from("signup_requests").select("user_id").is("approved_at", null),
     ]);
+    const pendingIds = new Set(((pendingRows ?? []) as { user_id: string }[]).map((r) => r.user_id));
 
     const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
     const myWs = profileMap.get(context.userId)?.workspace_id;
@@ -94,6 +98,7 @@ export const listAppUsers = createServerFn({ method: "GET" })
         lastSignInAt: u.last_sign_in_at ?? null,
         confirmed: Boolean(u.email_confirmed_at),
         separate: Boolean(p && myWs && p.workspace_id !== myWs),
+        pending: pendingIds.has(u.id),
       };
     });
 
@@ -171,6 +176,22 @@ export const updateUserAccess = createServerFn({ method: "POST" })
     }
 
     return { ok: true as const, message: "Updated successfully" };
+  });
+
+/** Platform owner approves a pending mobile-number signup. */
+export const approveSignup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ userId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: owner } = await (context.supabase as any).rpc("is_platform_owner");
+    if (owner !== true) return { ok: false as const, message: "Only the main owner can approve signups." };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await (supabaseAdmin as any)
+      .from("signup_requests")
+      .update({ approved_at: new Date().toISOString() })
+      .eq("user_id", data.userId);
+    if (error) return { ok: false as const, message: error.message };
+    return { ok: true as const, message: "Signup approved" };
   });
 
 /** Platform owner moves a self-signed-up user (their own workspace) into the owner's workspace as staff. */
@@ -522,6 +543,8 @@ export const createAppUser = createServerFn({ method: "POST" })
         );
     }
 
+    // admin-created accounts never need signup approval
+    await (supabaseAdmin as any).from("signup_requests").delete().eq("user_id", userId);
 
     return {
       ok: true as const,

@@ -9,6 +9,7 @@ import {
   createAppUser,
   deleteAppUser,
   adoptAppUser,
+  approveSignup,
   detachAppUser,
   exportRecordsCsv,
   getAdminStats,
@@ -227,6 +228,17 @@ function UsersSection() {
     onError: () => toast.error("Could not move user."),
   });
 
+  const approve = useMutation({
+    mutationFn: (userId: string) => approveSignup({ data: { userId } }),
+    onSuccess: (res) => {
+      if (res.ok) {
+        toast.success(res.message);
+        void qc.invalidateQueries({ queryKey: ["admin-users"] });
+      } else toast.error(res.message);
+    },
+    onError: () => toast.error("Could not approve signup."),
+  });
+
   const detach = useMutation({
     mutationFn: (userId: string) => detachAppUser({ data: { userId } }),
     onSuccess: (res) => {
@@ -295,6 +307,7 @@ function UsersSection() {
                     <td className="px-4 py-3">
                       <p className="font-semibold text-foreground">{u.fullName || "—"}</p>
                       <p className="text-xs text-muted-foreground">{u.email}</p>
+                      {u.pending && <p className="text-[11px] font-bold text-destructive">Signup pending approval</p>}
                       {u.separate && <p className="text-[11px] font-semibold text-muted-foreground">Own separate account</p>}
                     </td>
                     <td className="px-4 py-3">
@@ -312,6 +325,16 @@ function UsersSection() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap justify-end gap-2">
+                        {u.pending && isOwner && (
+                          <Button
+                            size="sm"
+                            disabled={approve.isPending}
+                            onClick={() => approve.mutate(u.id)}
+                            className="h-9 gap-1.5 text-xs"
+                          >
+                            <UserCheck className="size-3.5" /> Approve signup
+                          </Button>
+                        )}
                         {u.separate && (
                           <Button
                             size="sm"

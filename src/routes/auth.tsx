@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Loader2, LogIn } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import logo from "@/assets/logo.webp";
 import { GoogleButton } from "@/components/google-button";
@@ -64,6 +64,8 @@ function AuthPage() {
   // is mismatch se hydration fail hoti thi aur page reload maangta tha.
   // Pehla client render bhi khaali rakhte hain, mount ke baad asli page.
   const [mounted, setMounted] = useState(false);
+  const pendingRef = useRef(false);
+  const busyRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -71,7 +73,10 @@ function AuthPage() {
       if (data.session) goNext();
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session) goNext();
+      if (event === "SIGNED_IN" && session) {
+        // wait for approval check before entering the app
+        setTimeout(() => { if (!pendingRef.current && !busyRef.current) goNext(); }, 0);
+      }
     });
     return () => sub.subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -90,16 +95,38 @@ function AuthPage() {
     return `p${digits}@phone.hbchemicalspakistan.com`;
   };
 
+  // Mobile signups wait for owner approval before they can sign in.
+  const isPending = async (): Promise<boolean> => {
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) return false;
+    const { data: req } = await (supabase as any)
+      .from("signup_requests")
+      .select("approved_at")
+      .eq("user_id", u.user.id)
+      .maybeSingle();
+    if (req && !req.approved_at) {
+      pendingRef.current = true;
+      await supabase.auth.signOut();
+      setSent("Signup under verification");
+      toast.info("Signup under verification");
+      return true;
+    }
+    return false;
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
+    busyRef.current = true;
+    pendingRef.current = false;
     setSent(null);
     try {
       const loginEmail = resolveEmail();
       if (mode === "signin") {
         const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
         if (error) throw error;
+        if (await isPending()) return;
         toast.success("Welcome back");
       } else if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
@@ -114,7 +141,7 @@ function AuthPage() {
         if (!data.session && usePhone) {
           const { error: signErr } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
           if (!signErr) {
-            toast.success("Account created");
+            await isPending();
             return;
           }
         }
@@ -137,7 +164,12 @@ function AuthPage() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
+      busyRef.current = false;
       setBusy(false);
+      if (!pendingRef.current) {
+        const { data: s2 } = await supabase.auth.getSession();
+        if (s2.session) goNext();
+      }
     }
   };
 

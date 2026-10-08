@@ -386,6 +386,13 @@
       "when": 1791499615246,
       "tag": "0054_sub_guard_user_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1791500094925,
+      "tag": "0055_phone_signup_approval",
+      "breakpoints": true
     }
   ]
 }
