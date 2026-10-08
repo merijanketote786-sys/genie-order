@@ -543,6 +543,8 @@ export const createAppUser = createServerFn({ method: "POST" })
         );
     }
 
+    // admin-created accounts never need signup approval
+    await (supabaseAdmin as any).from("signup_requests").delete().eq("user_id", userId);
 
     return {
       ok: true as const,
