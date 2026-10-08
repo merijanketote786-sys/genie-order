@@ -365,6 +365,7 @@ function SettingsSection() {
 
 function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [email, setEmail] = useState("");
+  const [usePhone, setUsePhone] = useState(false);
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"admin" | "staff">("staff");
@@ -374,7 +375,8 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
     mutationFn: (invite: boolean) =>
       createAppUser({
         data: {
-          email,
+          email: usePhone ? undefined : email,
+          phone: usePhone ? email : undefined,
           fullName,
           role,
           invite,
