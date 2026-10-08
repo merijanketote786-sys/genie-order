@@ -140,7 +140,19 @@ function PosDashboardPage() {
       { label: "Reports", icon: BarChart3, run: page("/reports", "Reports"), show: can("view_reports") },
     ]),
   ];
-  const q = useQuery({ queryKey: ["pos-dashboard"], queryFn: () => getPosDashboard(), staleTime: 30_000 });
+  const q = useQuery({
+    queryKey: ["pos-dashboard"],
+    queryFn: async () => {
+      // Sign-in/sign-out ke beech session na ho to request hi na bhejo (401 blank screen se bachao)
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) return null;
+      return getPosDashboard();
+    },
+    staleTime: 30_000,
+    retry: false,
+    throwOnError: false,
+  });
   const d = q.data;
   const maxBar = d ? Math.max(1, ...d.series.map((p) => Math.max(p.sales, p.purchases))) : 1;
 
