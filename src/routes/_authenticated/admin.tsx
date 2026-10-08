@@ -9,6 +9,7 @@ import {
   createAppUser,
   deleteAppUser,
   adoptAppUser,
+  detachAppUser,
   exportRecordsCsv,
   getAdminStats,
   getMyAccess,
@@ -224,6 +225,19 @@ function UsersSection() {
     onError: () => toast.error("Could not move user."),
   });
 
+  const detach = useMutation({
+    mutationFn: (userId: string) => detachAppUser({ data: { userId } }),
+    onSuccess: (res) => {
+      if (res.ok) {
+        toast.success(res.message);
+        void qc.invalidateQueries({ queryKey: ["admin-users"] });
+        void qc.invalidateQueries({ queryKey: ["sub-list"] });
+        void qc.invalidateQueries({ queryKey: ["pos-members"] });
+      } else toast.error(res.message);
+    },
+    onError: () => toast.error("Could not move user."),
+  });
+
   const rows = useMemo(() => {
     const list = users.data?.ok ? users.data.users : [];
     const q = search.trim().toLowerCase();
@@ -306,6 +320,19 @@ function UsersSection() {
                             className="h-9 gap-1.5 text-xs"
                           >
                             <UserPlus className="size-3.5" /> Make my staff
+                          </Button>
+                        )}
+                        {!u.separate && isOwner && u.id !== myId && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={detach.isPending}
+                            onClick={() => {
+                              if (window.confirm(`Move ${u.email} to their own separate account? They will become admin of a new empty workspace and lose access to your data. Activate it later in Subscriptions.`)) detach.mutate(u.id);
+                            }}
+                            className="h-9 gap-1.5 text-xs"
+                          >
+                            <UserX className="size-3.5" /> Separate account
                           </Button>
                         )}
                         <Button
