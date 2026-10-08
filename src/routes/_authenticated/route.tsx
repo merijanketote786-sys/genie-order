@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { SubscriptionBanner } from "@/components/subscription";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -25,5 +26,5 @@ function AuthGate() {
     if (!user) navigate({ to: "/auth", replace: true });
   }, [user, navigate]);
   if (!user) return null;
-  return <Outlet />;
+  return <><SubscriptionBanner /><Outlet /></>;
 }
