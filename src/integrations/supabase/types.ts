@@ -1951,6 +1951,24 @@ export type Database = {
         }
         Relationships: []
       }
+      workspace_subscriptions: {
+        Row: {
+          expires_at: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          expires_at?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          expires_at?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -2018,6 +2036,8 @@ export type Database = {
         Returns: boolean
       }
       is_active_team_member: { Args: { _user_id: string }; Returns: boolean }
+      is_platform_owner: { Args: never; Returns: boolean }
+      my_subscription: { Args: never; Returns: Json }
       next_invoice_number: { Args: never; Returns: string }
       next_order_number: { Args: never; Returns: string }
       pos_add_bank_account: {
@@ -2172,6 +2192,9 @@ export type Database = {
       pos_verify_mfg_pin: { Args: { _pin: string }; Returns: boolean }
       pos_verify_pin: { Args: { _pin: string }; Returns: boolean }
       set_order_number_start: { Args: { _start: number }; Returns: undefined }
+      sub_list: { Args: never; Returns: Json }
+      sub_set: { Args: { _expires: string; _ws: string }; Returns: undefined }
+      ws_active: { Args: { _ws: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "staff"
