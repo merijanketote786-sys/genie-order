@@ -53,6 +53,7 @@ function AuthPage() {
     else navigate({ to: "/", replace: true });
   };
   const [mode, setMode] = useState<Mode>("signin");
+  const [usePhone, setUsePhone] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -78,19 +79,31 @@ function AuthPage() {
 
   if (!mounted) return null;
 
+  // Phone number ko ek internal email ID mein badalte hain taake bina SMS
+  // service ke phone se signup/signin ho sake (phone hi login ID hai).
+  const resolveEmail = (): string => {
+    if (!usePhone) return email.trim();
+    let digits = email.replace(/\D/g, "");
+    if (digits.startsWith("0")) digits = "92" + digits.slice(1);
+    if (!digits.startsWith("92")) digits = "92" + digits;
+    if (digits.length < 11) throw new Error("Enter a valid mobile number (e.g. 03001234567)");
+    return `p${digits}@phone.orderbot.local`;
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
     setSent(null);
     try {
+      const loginEmail = resolveEmail();
       if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
         if (error) throw error;
         toast.success("Welcome back");
       } else if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: loginEmail,
           password,
           options: {
             emailRedirectTo: next ? window.location.origin + next : window.location.origin,
@@ -99,8 +112,12 @@ function AuthPage() {
         });
         if (error) throw error;
         if (!data.session) {
-          setSent("Account created — check your email for the confirmation link.");
-          toast.success("Confirmation email sent");
+          setSent(
+            usePhone
+              ? "Account created — you can now sign in with your mobile number."
+              : "Account created — check your email for the confirmation link.",
+          );
+          toast.success("Account created");
         }
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -153,18 +170,42 @@ function AuthPage() {
               </div>
             ) : null}
 
+            {mode !== "forgot" ? (
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setUsePhone(false); setEmail(""); }}
+                  className={`h-9 flex-1 rounded-lg border text-sm font-medium ${!usePhone ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+                >
+                  Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setUsePhone(true); setEmail(""); }}
+                  className={`h-9 flex-1 rounded-lg border text-sm font-medium ${usePhone ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+                >
+                  Mobile number
+                </button>
+              </div>
+            ) : null}
+
             <div className="grid gap-1.5">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{usePhone ? "Mobile number" : "Email"}</Label>
               <Input
                 id="email"
-                type="email"
+                type={usePhone ? "tel" : "email"}
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@company.com"
-                autoComplete="email"
+                placeholder={usePhone ? "03001234567" : "you@company.com"}
+                autoComplete={usePhone ? "tel" : "email"}
                 className="h-11"
               />
+              {usePhone ? (
+                <p className="text-xs text-muted-foreground">
+                  No OTP needed — your mobile number is your login ID. Remember the password you set.
+                </p>
+              ) : null}
             </div>
 
             {mode !== "forgot" ? (
