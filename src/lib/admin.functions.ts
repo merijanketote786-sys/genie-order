@@ -203,6 +203,37 @@ export const adoptAppUser = createServerFn({ method: "POST" })
     return { ok: true as const, message: "User added to your workspace as staff" };
   });
 
+/** Platform owner moves a staff user out into their own separate workspace, where they become admin. */
+export const detachAppUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ userId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: owner } = await (context.supabase as any).rpc("is_platform_owner");
+    if (owner !== true) return { ok: false as const, message: "Only the main owner can do this." };
+    if (data.userId === context.userId) return { ok: false as const, message: "You cannot move your own account." };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [{ data: target }, { data: authUser }] = await Promise.all([
+      supabaseAdmin.from("profiles").select("workspace_id").eq("id", data.userId).maybeSingle(),
+      supabaseAdmin.auth.admin.getUserById(data.userId),
+    ]);
+    const em = (authUser?.user?.email ?? "").toLowerCase();
+    if (em === "hhtraders008@gmail.com" || em === "merijanketote786@gmail.com") return { ok: false as const, message: "Owner accounts cannot be moved." };
+    if (!target) return { ok: false as const, message: "User not found." };
+    if (target.workspace_id === data.userId) return { ok: false as const, message: "User already has a separate account." };
+    const ws = data.userId;
+    const sb = supabaseAdmin as any;
+    const { error } = await sb.from("profiles").update({ workspace_id: ws, role: "admin" }).eq("id", data.userId);
+    if (error) return { ok: false as const, message: "Could not move user: " + error.message };
+    await sb.from("user_roles").delete().eq("user_id", data.userId);
+    await sb.from("user_roles").insert({ user_id: data.userId, role: "admin", workspace_id: ws });
+    await sb.from("pos_member_roles").delete().eq("user_id", data.userId);
+    await sb.from("user_settings").update({ workspace_id: ws }).eq("user_id", data.userId);
+    await sb.from("label_settings").update({ workspace_id: ws }).eq("user_id", data.userId);
+    // new separate workspace starts inactive until the owner activates it in Subscriptions
+    await sb.from("workspace_subscriptions").upsert({ workspace_id: ws, expires_at: new Date().toISOString() }, { onConflict: "workspace_id", ignoreDuplicates: true });
+    return { ok: true as const, message: "User moved to a separate account" };
+  });
+
 /** Admin removes a user: access ends immediately and they only see the sign-in page. */
 export const deleteAppUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

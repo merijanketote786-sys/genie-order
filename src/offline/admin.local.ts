@@ -40,3 +40,7 @@ export async function exportRecordsCsv() {
 export async function adoptAppUser(_a: unknown) {
   return { ok: false as const, message: "Not available in the offline app" };
 }
+
+export async function detachAppUser(_a: unknown) {
+  return { ok: false as const, message: "Not available in the offline app" };
+}
