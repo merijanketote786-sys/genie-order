@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { usePinPrompt } from "@/components/pos-access";
 import { cancelWithPin } from "@/lib/pos-access.functions";
 import { PAY_OPTS, PosSubnav, posInput, rs } from "@/components/pos-subnav";
+import { ALL_DATES, DateRangeFilter, rangeToIso, type DateRange } from "@/components/date-range-filter";
 import { Button } from "@/components/ui/button";
 import { cancelDoc, getSaleForReturn, listProductsLite, listReturns, saveSalesReturn, saveUnlinkedSalesReturn, searchSales } from "@/lib/business.functions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -76,7 +77,8 @@ function ReturnsPage() {
 
   const { data: found } = useQuery({ queryKey: ["ret-search", dq], queryFn: () => searchSales({ data: { q: dq } }) });
   const { data: sale } = useQuery({ queryKey: ["ret-sale", saleId], queryFn: () => getSaleForReturn({ data: { id: saleId! } }), enabled: !!saleId });
-  const { data: hist } = useQuery({ queryKey: ["ret-list"], queryFn: () => listReturns() });
+  const [range, setRange] = useState<DateRange>(ALL_DATES);
+  const { data: hist } = useQuery({ queryKey: ["ret-list", range], queryFn: () => listReturns({ data: rangeToIso(range) }) });
   const { data: prod } = useQuery({ queryKey: ["products-lite"], queryFn: () => listProductsLite(), staleTime: 60_000 });
   const products = prod?.products ?? [];
 
@@ -279,7 +281,10 @@ function ReturnsPage() {
         </section>
 
         <section className="rounded-xl border border-border bg-card p-3">
-          <p className="mb-2 text-sm font-bold text-foreground">Return history</p>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-bold text-foreground">Return history</p>
+            <DateRangeFilter value={range} onChange={setRange} />
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="text-left text-xs text-muted-foreground"><th>No.</th><th>Customer</th><th>Amount</th><th>Refund</th><th>Note</th><th>Date</th><th /></tr></thead>

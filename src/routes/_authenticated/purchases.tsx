@@ -1,6 +1,7 @@
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
 import { AppShell } from "@/components/app-shell";
 import { PAY_OPTS, PosSubnav, posInput, rs } from "@/components/pos-subnav";
+import { ALL_DATES, DateRangeFilter, rangeToIso, type DateRange } from "@/components/date-range-filter";
 import { Button } from "@/components/ui/button";
 import { cancelPurchase, ensurePurchaseParty, saveSupplier, getPurchaseItems, listProductsLite, listPurchases, listSuppliers, savePurchase } from "@/lib/business.functions";
 import { listCustomerBalances } from "@/lib/ledger.functions";
@@ -57,7 +58,8 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const { data: sup } = useQuery({ queryKey: ["suppliers"], queryFn: () => listSuppliers() });
    const { data: parties } = useQuery({ queryKey: ["customer-balances", "pos"], queryFn: () => listCustomerBalances({ data: { posOnly: true } }) });
   const { data: prod } = useQuery({ queryKey: ["products-lite"], queryFn: () => listProductsLite(), staleTime: 60_000 });
-  const { data: hist } = useQuery({ queryKey: ["purchases"], queryFn: () => listPurchases() });
+  const [range, setRange] = useState<DateRange>(ALL_DATES);
+  const { data: hist } = useQuery({ queryKey: ["purchases", range], queryFn: () => listPurchases({ data: rangeToIso(range) }) });
   const [docType, setDocType] = useState<"purchase" | "return">(startDocType ?? "purchase");
   const [refId, setRefId] = useState<string | undefined>();
   const [partySearch, setPartySearch] = useState("");
@@ -361,7 +363,10 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
         </section>
 
         <section className="rounded-xl border border-border bg-card p-3">
-          <p className="mb-2 text-sm font-bold text-foreground">Purchase history</p>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-bold text-foreground">Purchase history</p>
+            <DateRangeFilter value={range} onChange={setRange} />
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
                <thead><tr className="text-left text-xs text-muted-foreground"><th>No.</th><th>Type</th><th>Party</th><th>Total</th><th>Paid</th><th>Balance</th><th>Date</th><th /></tr></thead>
