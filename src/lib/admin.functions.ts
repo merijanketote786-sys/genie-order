@@ -21,6 +21,8 @@ export type AdminUserRow = {
   createdAt: string;
   lastSignInAt: string | null;
   confirmed: boolean;
+  /** true when the user runs their own separate workspace (self signup) */
+  separate: boolean;
 };
 
 type RpcClient = { rpc: (fn: "has_role", args: { _user_id: string; _role: "admin" }) => PromiseLike<{ data: unknown }> };
@@ -72,11 +74,12 @@ export const listAppUsers = createServerFn({ method: "GET" })
 
     const ids = authData.users.map((u) => u.id);
     const [{ data: profiles }, { data: roles }] = await Promise.all([
-      supabaseAdmin.from("profiles").select("id, full_name, is_active").in("id", ids),
+      supabaseAdmin.from("profiles").select("id, full_name, is_active, workspace_id").in("id", ids),
       supabaseAdmin.from("user_roles").select("user_id, role").in("user_id", ids),
     ]);
 
     const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+    const myWs = profileMap.get(context.userId)?.workspace_id;
     const adminIds = new Set((roles ?? []).filter((r) => r.role === "admin").map((r) => r.user_id));
 
     const users: AdminUserRow[] = authData.users.map((u) => {
@@ -90,6 +93,7 @@ export const listAppUsers = createServerFn({ method: "GET" })
         createdAt: u.created_at,
         lastSignInAt: u.last_sign_in_at ?? null,
         confirmed: Boolean(u.email_confirmed_at),
+        separate: Boolean(p && myWs && p.workspace_id !== myWs),
       };
     });
 
@@ -167,6 +171,36 @@ export const updateUserAccess = createServerFn({ method: "POST" })
     }
 
     return { ok: true as const, message: "Updated successfully" };
+  });
+
+/** Platform owner moves a self-signed-up user (their own workspace) into the owner's workspace as staff. */
+export const adoptAppUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ userId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: owner } = await (context.supabase as any).rpc("is_platform_owner");
+    if (owner !== true) return { ok: false as const, message: "Only the main owner can do this." };
+    if (data.userId === context.userId) return { ok: false as const, message: "You cannot move your own account." };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [{ data: me }, { data: target }, { data: authUser }] = await Promise.all([
+      supabaseAdmin.from("profiles").select("workspace_id").eq("id", context.userId).maybeSingle(),
+      supabaseAdmin.from("profiles").select("workspace_id").eq("id", data.userId).maybeSingle(),
+      supabaseAdmin.auth.admin.getUserById(data.userId),
+    ]);
+    const em = (authUser?.user?.email ?? "").toLowerCase();
+    if (em === "hhtraders008@gmail.com" || em === "merijanketote786@gmail.com") return { ok: false as const, message: "Owner accounts cannot be moved." };
+    if (!me?.workspace_id || !target) return { ok: false as const, message: "User not found." };
+    if (target.workspace_id === me.workspace_id) return { ok: false as const, message: "User is already in your workspace." };
+    const ws = me.workspace_id;
+    const sb = supabaseAdmin as any;
+    const { error } = await sb.from("profiles").update({ workspace_id: ws, role: "staff" }).eq("id", data.userId);
+    if (error) return { ok: false as const, message: "Could not move user: " + error.message };
+    await sb.from("user_roles").delete().eq("user_id", data.userId);
+    await sb.from("user_roles").insert({ user_id: data.userId, role: "staff", workspace_id: ws });
+    await sb.from("pos_member_roles").delete().eq("user_id", data.userId);
+    await sb.from("user_settings").update({ workspace_id: ws }).eq("user_id", data.userId);
+    await sb.from("label_settings").update({ workspace_id: ws }).eq("user_id", data.userId);
+    return { ok: true as const, message: "User added to your workspace as staff" };
   });
 
 /** Admin removes a user: access ends immediately and they only see the sign-in page. */
