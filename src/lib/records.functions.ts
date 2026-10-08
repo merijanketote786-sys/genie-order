@@ -154,7 +154,12 @@ export const saveOrder = createServerFn({ method: "POST" })
       .select("id")
       .maybeSingle();
 
-    if (error) throw new Error("Could not save order");
+    if (error) {
+      console.error("saveOrder failed", error);
+      if (/subscription/i.test(error.message ?? ""))
+        throw new Error("Subscription inactive — contact the admin to activate your account.");
+      throw new Error("Could not save order");
+    }
     return { ok: true, id: row?.id as string, duplicate: false };
   });
 
