@@ -553,6 +553,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
     setNotes("");
     setCustomFieldValues({});
     setCustomFieldTotals({});
+    setCustomFieldOn({});
     if (!cfg.sales.keepCustomerAfterSale) {
       setCustomerName("");
       setCustomerPhone("");
@@ -667,6 +668,10 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
       setGoodsAddaName(ui.goodsAddaName ?? "");
       setCustomFieldValues(Object.fromEntries((ui.customFields ?? []).map((field, index) => [index, field.value ?? ""])));
       setCustomFieldTotals(Object.fromEntries((ui.customFields ?? []).map((field, index) => [index, field.addToTotal ?? false])));
+      setCustomFieldOn(Object.fromEntries(cfg.printing.customFields.map((field, index) => {
+        const saved = (ui.customFields ?? []).find((f) => f.label === field.label);
+        return [index, Boolean(saved && (saved.value?.trim() || saved.addToTotal))];
+      })));
       setPays([{ method: "Cash", amount: "" }]);
       setManualNumber("");
       setEditing(asInvoice ? { id: d.id, number: d.doc_number } : null);
