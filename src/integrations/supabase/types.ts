@@ -1702,6 +1702,27 @@ export type Database = {
           },
         ]
       }
+      signup_requests: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          login_email: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          login_email: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          login_email?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       stock_movements: {
         Row: {
           created_at: string
