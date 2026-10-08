@@ -485,14 +485,16 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
             {create.isPending ? <Loader2 className="size-4 animate-spin" /> : <UserPlus className="size-4" />}
             Create user
           </Button>
-          <Button
-            variant="outline"
-            className="h-11 flex-1 gap-2"
-            disabled={create.isPending || !email}
-            onClick={() => create.mutate(true)}
-          >
-            <Mail className="size-4" /> Send invite
-          </Button>
+          {!usePhone && (
+            <Button
+              variant="outline"
+              className="h-11 flex-1 gap-2"
+              disabled={create.isPending || !email}
+              onClick={() => create.mutate(true)}
+            >
+              <Mail className="size-4" /> Send invite
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
