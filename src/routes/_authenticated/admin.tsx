@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   createAppUser,
   deleteAppUser,
+  adoptAppUser,
   exportRecordsCsv,
   getAdminStats,
   getMyAccess,
@@ -211,6 +212,18 @@ function UsersSection() {
     onError: () => toast.error("Could not delete user."),
   });
 
+  const adopt = useMutation({
+    mutationFn: (userId: string) => adoptAppUser({ data: { userId } }),
+    onSuccess: (res) => {
+      if (res.ok) {
+        toast.success(res.message);
+        void qc.invalidateQueries({ queryKey: ["admin-users"] });
+        void qc.invalidateQueries({ queryKey: ["pos-members"] });
+      } else toast.error(res.message);
+    },
+    onError: () => toast.error("Could not move user."),
+  });
+
   const rows = useMemo(() => {
     const list = users.data?.ok ? users.data.users : [];
     const q = search.trim().toLowerCase();
@@ -266,6 +279,7 @@ function UsersSection() {
                     <td className="px-4 py-3">
                       <p className="font-semibold text-foreground">{u.fullName || "—"}</p>
                       <p className="text-xs text-muted-foreground">{u.email}</p>
+                      {u.separate && <p className="text-[11px] font-semibold text-muted-foreground">Own separate account</p>}
                     </td>
                     <td className="px-4 py-3">
                       <Badge tone={u.role === "admin" ? "primary" : "muted"}>
@@ -282,6 +296,18 @@ function UsersSection() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap justify-end gap-2">
+                        {u.separate && (
+                          <Button
+                            size="sm"
+                            disabled={adopt.isPending}
+                            onClick={() => {
+                              if (window.confirm(`Move ${u.email} into your workspace as staff? Their admin rights and their own separate workspace access will end.`)) adopt.mutate(u.id);
+                            }}
+                            className="h-9 gap-1.5 text-xs"
+                          >
+                            <UserPlus className="size-3.5" /> Make my staff
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
