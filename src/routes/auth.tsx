@@ -79,19 +79,31 @@ function AuthPage() {
 
   if (!mounted) return null;
 
+  // Phone number ko ek internal email ID mein badalte hain taake bina SMS
+  // service ke phone se signup/signin ho sake (phone hi login ID hai).
+  const resolveEmail = (): string => {
+    if (!usePhone) return email.trim();
+    let digits = email.replace(/\D/g, "");
+    if (digits.startsWith("0")) digits = "92" + digits.slice(1);
+    if (!digits.startsWith("92")) digits = "92" + digits;
+    if (digits.length < 11) throw new Error("Enter a valid mobile number (e.g. 03001234567)");
+    return `p${digits}@phone.orderbot.local`;
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
     setSent(null);
     try {
+      const loginEmail = resolveEmail();
       if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
         if (error) throw error;
         toast.success("Welcome back");
       } else if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: loginEmail,
           password,
           options: {
             emailRedirectTo: next ? window.location.origin + next : window.location.origin,
