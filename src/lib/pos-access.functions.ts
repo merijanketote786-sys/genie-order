@@ -117,7 +117,13 @@ export const setPosMemberRole = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ userId: z.string().uuid(), role: z.enum(POS_ROLES) }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await (context.supabase as Sb).rpc("pos_set_member_role", { _user: data.userId, _role: data.role });
-    if (error) throw new Error("Could not save role");
+    if (error) {
+      const m = error.message || "";
+      if (m.includes("not in workspace")) throw new Error("This user has their own separate account, not a staff member of your workspace. Add staff from \"Create new user\" instead.");
+      if (m.toLowerCase().includes("subscription")) throw new Error("Subscription inactive — renew it to change roles.");
+      if (m.includes("Ijazat")) throw new Error("You do not have permission to manage user roles.");
+      throw new Error("Could not save role: " + m);
+    }
     return { ok: true };
   });
 
