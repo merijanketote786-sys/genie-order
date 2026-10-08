@@ -159,6 +159,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
   const [notes, setNotes] = useState("");
   const [customFieldValues, setCustomFieldValues] = useState<Record<number, string>>({});
   const [customFieldTotals, setCustomFieldTotals] = useState<Record<number, boolean>>({});
+  const [customFieldOn, setCustomFieldOn] = useState<Record<number, boolean>>({});
   const [editing, setEditing] = useState<{ id: string; number: string } | null>(null);
   const [manualNumber, setManualNumber] = useState("");
   const [docsOpen, setDocsOpen] = useState<"held" | "quotation" | null>(null);
@@ -479,11 +480,14 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
 
   const pre = totals(cart, 0, 0);
   const discAmt = discType === "pct" ? Math.round(((pre.subtotal + pre.taxTotal) * Math.min(100, n(billDiscount))) / 100 * 100) / 100 : n(billDiscount);
-  const billCustomFields = cfg.printing.customFields.map((field, index) => ({
-    ...field,
-    value: customFieldValues[index] ?? field.value ?? "",
-    addToTotal: customFieldTotals[index] ?? field.addToTotal ?? false,
-  }));
+  const billCustomFields = cfg.printing.customFields
+    .map((field, index) => ({
+      ...field,
+      value: customFieldValues[index] ?? field.value ?? "",
+      addToTotal: customFieldTotals[index] ?? field.addToTotal ?? false,
+      enabled: customFieldOn[index] ?? false,
+    }))
+    .filter((field) => field.enabled && (field.value.trim() || field.addToTotal));
   const customCharges = customChargesTotal(billCustomFields);
   const { subtotal, taxTotal, itemDiscount, total } = totals(cart, discAmt, n(delivery), customCharges);
   const qtyTotal = Math.round(cart.reduce((s, l) => s + (l.qty || 0), 0) * 1000) / 1000;
