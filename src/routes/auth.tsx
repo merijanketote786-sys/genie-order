@@ -53,6 +53,7 @@ function AuthPage() {
     else navigate({ to: "/", replace: true });
   };
   const [mode, setMode] = useState<Mode>("signin");
+  const [usePhone, setUsePhone] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
