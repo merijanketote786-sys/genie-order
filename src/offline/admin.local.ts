@@ -36,3 +36,7 @@ export async function getSyncConnectInfo() {
 export async function exportRecordsCsv() {
   return { ...unavailable, csv: "", count: 0 };
 }
+
+export async function adoptAppUser(_a: unknown) {
+  return { ok: false as const, message: "Not available in the offline app" };
+}
