@@ -111,6 +111,13 @@ function AuthPage() {
           },
         });
         if (error) throw error;
+        if (!data.session && usePhone) {
+          const { error: signErr } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+          if (!signErr) {
+            toast.success("Account created");
+            return;
+          }
+        }
         if (!data.session) {
           setSent(
             usePhone
