@@ -1954,18 +1954,24 @@ export type Database = {
       workspace_subscriptions: {
         Row: {
           expires_at: string | null
+          pos_enabled: boolean
           updated_at: string
           workspace_id: string
+          ws_enabled: boolean
         }
         Insert: {
           expires_at?: string | null
+          pos_enabled?: boolean
           updated_at?: string
           workspace_id: string
+          ws_enabled?: boolean
         }
         Update: {
           expires_at?: string | null
+          pos_enabled?: boolean
           updated_at?: string
           workspace_id?: string
+          ws_enabled?: boolean
         }
         Relationships: []
       }
@@ -2194,6 +2200,10 @@ export type Database = {
       set_order_number_start: { Args: { _start: number }; Returns: undefined }
       sub_list: { Args: never; Returns: Json }
       sub_set: { Args: { _expires: string; _ws: string }; Returns: undefined }
+      sub_set_modules: {
+        Args: { _pos: boolean; _workspace: boolean; _ws: string }
+        Returns: undefined
+      }
       ws_active: { Args: { _ws: string }; Returns: boolean }
     }
     Enums: {
