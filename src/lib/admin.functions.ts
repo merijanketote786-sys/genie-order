@@ -416,8 +416,8 @@ export const createAppUser = createServerFn({ method: "POST" })
     const ws = await workspaceOf(context.userId);
 
     let userId: string | null = null;
-    if (data.invite) {
-      const { data: res, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
+    if (invite) {
+      const { data: res, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
         redirectTo: data.redirectTo,
         data: { full_name: data.fullName ?? "" },
       });
@@ -425,7 +425,7 @@ export const createAppUser = createServerFn({ method: "POST" })
       userId = res.user?.id ?? null;
     } else {
       const { data: res, error } = await supabaseAdmin.auth.admin.createUser({
-        email: data.email,
+        email,
         password: data.password!,
         email_confirm: true,
         user_metadata: { full_name: data.fullName ?? "" },
