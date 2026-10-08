@@ -170,18 +170,42 @@ function AuthPage() {
               </div>
             ) : null}
 
+            {mode !== "forgot" ? (
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setUsePhone(false); setEmail(""); }}
+                  className={`h-9 flex-1 rounded-lg border text-sm font-medium ${!usePhone ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+                >
+                  Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setUsePhone(true); setEmail(""); }}
+                  className={`h-9 flex-1 rounded-lg border text-sm font-medium ${usePhone ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+                >
+                  Mobile number
+                </button>
+              </div>
+            ) : null}
+
             <div className="grid gap-1.5">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{usePhone ? "Mobile number" : "Email"}</Label>
               <Input
                 id="email"
-                type="email"
+                type={usePhone ? "tel" : "email"}
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@company.com"
-                autoComplete="email"
+                placeholder={usePhone ? "03001234567" : "you@company.com"}
+                autoComplete={usePhone ? "tel" : "email"}
                 className="h-11"
               />
+              {usePhone ? (
+                <p className="text-xs text-muted-foreground">
+                  No OTP needed — your mobile number is your login ID. Remember the password you set.
+                </p>
+              ) : null}
             </div>
 
             {mode !== "forgot" ? (
