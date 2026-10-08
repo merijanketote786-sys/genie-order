@@ -1131,13 +1131,23 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
                 {cfg.printing.customFields.map((field, index) => field.show === false ? null : (
                   <label key={`${field.label}-${index}`} className="block text-xs text-muted-foreground">
                     <span className="mb-1 flex items-center justify-between gap-3">
-                      <span>{field.label.trim() || `Custom field ${index + 1}`}</span>
+                      <span className="flex items-center gap-1.5 font-medium text-foreground">
+                        <input
+                          type="checkbox"
+                          className="size-3.5"
+                          checked={customFieldOn[index] ?? false}
+                          onChange={(e) => setCustomFieldOn((values) => ({ ...values, [index]: e.target.checked }))}
+                          aria-label={`Include ${field.label.trim() || `custom field ${index + 1}`} on invoice`}
+                        />
+                        {field.label.trim() || `Custom field ${index + 1}`}
+                      </span>
                       <span className="flex items-center gap-1.5 whitespace-nowrap font-medium text-foreground">
                         <input
                           type="checkbox"
                           className="size-3.5"
                           checked={customFieldTotals[index] ?? field.addToTotal ?? false}
                           onChange={(e) => setCustomFieldTotals((values) => ({ ...values, [index]: e.target.checked }))}
+                          disabled={!(customFieldOn[index] ?? false)}
                           aria-label={`Add ${field.label.trim() || `custom field ${index + 1}`} to total`}
                         />
                         Add to total
@@ -1147,8 +1157,9 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
                       className={inputCls}
                       value={customFieldValues[index] ?? field.value ?? ""}
                       onChange={(e) => setCustomFieldValues((values) => ({ ...values, [index]: e.target.value }))}
-                      placeholder={(customFieldTotals[index] ?? field.addToTotal) ? "Enter amount" : "Enter value for this invoice"}
+                      placeholder={(customFieldOn[index] ?? false) ? ((customFieldTotals[index] ?? field.addToTotal) ? "Enter amount" : "Enter value for this invoice") : "Tick to include on invoice"}
                       inputMode={(customFieldTotals[index] ?? field.addToTotal) ? "decimal" : "text"}
+                      disabled={!(customFieldOn[index] ?? false)}
                       maxLength={200}
                     />
                   </label>
