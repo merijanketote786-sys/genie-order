@@ -236,7 +236,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
       }, "purchase");
       reset();
       ["purchases", "suppliers", "customer-balances", "products", "products-lite"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
-    } catch (e) { if (editId) { setEditId(undefined); qc.invalidateQueries({ queryKey: ["purchases"] }); } toast.error(e instanceof Error ? e.message : "Purchase could not be saved. Please try again."); } finally { lockRef.current = false; setSaving(false); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Purchase could not be saved. Please try again."); } finally { lockRef.current = false; setSaving(false); }
   };
 
   const onKeys = (e: React.KeyboardEvent) => {
