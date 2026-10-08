@@ -50,7 +50,7 @@ export function AdminWorkspaceSettings({ onAddUser, usersOnly }: { onAddUser?: (
       toast.success("POS role saved");
       void qc.invalidateQueries({ queryKey: ["pos-members"] });
     },
-    onError: () => toast.error("Could not save POS role"),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Could not save role"),
   });
 
   const [form, setForm] = useState({
