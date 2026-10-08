@@ -1,6 +1,7 @@
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
 import { PosCustomerSearch } from "@/components/pos-customer-search";
 import { WaTemplateButton } from "@/components/wa-template-button";
+import { ShippingCalcButton } from "@/components/shipping-calc-button";
 import { PosSubnav } from "@/components/pos-subnav";
 import { StoreSwitcher, useActiveStore } from "@/components/store-switcher";
 import { usePinPrompt, usePosAccess } from "@/components/pos-access";
@@ -1099,7 +1100,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
                 </span>
                 <input className={inputCls} value={billDiscount} readOnly={lockDisc} onFocus={() => { if (lockDisc) void unlock(); }} onChange={(e) => setBillDiscount(e.target.value)} inputMode="decimal" placeholder={lockDisc ? "PIN" : "0"} />
               </label>
-              <label className="text-xs text-muted-foreground">Delivery<input className={inputCls} value={delivery} onChange={(e) => setDelivery(e.target.value)} inputMode="decimal" placeholder="0" /></label>
+              <div className="text-xs text-muted-foreground"><span className="flex items-center justify-between">Delivery<ShippingCalcButton onUse={(a) => setDelivery(String(a))} /></span><input aria-label="Delivery" className={inputCls} value={delivery} onChange={(e) => setDelivery(e.target.value)} inputMode="decimal" placeholder="0" /></div>
             </div>
 
             <div className="space-y-2 border-t border-border pt-4 text-sm">

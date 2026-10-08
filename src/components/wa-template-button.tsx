@@ -35,7 +35,7 @@ const money = (n: number) => `Rs ${(Math.round((Number(n) || 0) * 100) / 100).to
 function render(body: string, r: ReceiptInput) {
   const sub = r.lines.reduce((s, l) => s + l.price * l.qty - (l.discount || 0), 0);
   const grand = sub - (r.billDiscount || 0) + (r.delivery || 0);
-  const items = r.lines.map((l, i) => `${i + 1}. ${l.name} — ${l.qty} ${l.unitOverride || l.unit || ""} × ${money(l.price)} = ${money(l.price * l.qty - (l.discount || 0))}`.replace(/\s+×/, " ×")).join("\n");
+  const items = r.lines.map((l) => `${l.name} ${l.qty}${l.unitOverride || l.unit || ""}`.trim()).join(",");
   const map: Record<string, string> = {
     business: r.business, invoice_number: r.invoiceNumber, date: r.date,
     customer_name: r.customerName ?? "", customer_phone: r.customerPhone ?? "",
