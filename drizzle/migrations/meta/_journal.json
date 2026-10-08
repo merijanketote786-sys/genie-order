@@ -365,6 +365,13 @@
       "when": 1791494294868,
       "tag": "0051_workspace_subscriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1791496006779,
+      "tag": "0052_auto_confirm_phone_signups",
+      "breakpoints": true
     }
   ]
 }
