@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { AdminWorkspaceSettings } from "@/components/admin-workspace-settings";
+import { SubscriptionManager } from "@/components/subscription";
 import { MfgPinSettings } from "@/components/mfg-pin-settings";
 import { Settings2 } from "lucide-react";
 import { WorkspaceHeader } from "@/components/workspace-header";
@@ -354,6 +355,7 @@ function SettingsSection() {
   const [open, setOpen] = useState(false);
   return (
     <>
+      <SubscriptionManager />
       <MfgPinSettings />
       <AdminWorkspaceSettings onAddUser={() => setOpen(true)} />
       <CreateUserDialog open={open} onClose={() => setOpen(false)} />
