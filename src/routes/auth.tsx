@@ -59,8 +59,13 @@ function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState<string | null>(null);
+  // Server Suspense fallback render karta hai, client pehli dafa component —
+  // is mismatch se hydration fail hoti thi aur page reload maangta tha.
+  // Pehla client render bhi khaali rakhte hain, mount ke baad asli page.
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) goNext();
     });
@@ -70,6 +75,8 @@ function AuthPage() {
     return () => sub.subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate, next]);
+
+  if (!mounted) return null;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
