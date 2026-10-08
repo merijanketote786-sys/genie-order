@@ -460,7 +460,11 @@ export const createAppUser = createServerFn({ method: "POST" })
 
     return {
       ok: true as const,
-      message: data.invite ? "Invite email bhej diya" : "Naya user ban gaya",
+      message: invite
+        ? "Invite email bhej diya"
+        : data.phone
+          ? "Naya user ban gaya — woh apne mobile number aur password se sign in karega"
+          : "Naya user ban gaya",
     };
   });
 
