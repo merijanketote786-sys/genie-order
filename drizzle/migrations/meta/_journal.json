@@ -372,6 +372,13 @@
       "when": 1791496006779,
       "tag": "0052_auto_confirm_phone_signups",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1791498447969,
+      "tag": "0053_subscription_module_access",
+      "breakpoints": true
     }
   ]
 }
