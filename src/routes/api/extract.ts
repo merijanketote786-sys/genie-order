@@ -1,3 +1,4 @@
+import { subscriptionBlock } from "@/lib/subscription-gate.server";
 import { createFileRoute } from "@tanstack/react-router";
 
 const SYSTEM_PROMPT = `Aap aik data extraction assistant hain. User aap ko image ya PDF file dega jis me text, order details, invoice, receipt, ya koi bhi likhi hui information ho sakti hai.
@@ -22,6 +23,8 @@ export const Route = createFileRoute("/api/extract")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const subBlocked = await subscriptionBlock(request);
+        if (subBlocked) return subBlocked;
         const { requireUserId } = await import("@/lib/api-auth.server");
         const userId = await requireUserId(request);
         if (!userId) {

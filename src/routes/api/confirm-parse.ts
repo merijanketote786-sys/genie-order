@@ -1,3 +1,4 @@
+import { subscriptionBlock } from "@/lib/subscription-gate.server";
 import { createFileRoute } from "@tanstack/react-router";
 
 const SYSTEM_PROMPT = `Aap aik customer-details extractor hain. User kisi bhi format (Urdu, Roman Urdu, English, bikhri hui lines, message text) me customer ki details dega.
@@ -16,6 +17,8 @@ export const Route = createFileRoute("/api/confirm-parse")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const subBlocked = await subscriptionBlock(request);
+        if (subBlocked) return subBlocked;
         const { requireUserId } = await import("@/lib/api-auth.server");
         const userId = await requireUserId(request);
         if (!userId) return new Response("Unauthorized", { status: 401 });

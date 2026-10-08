@@ -1,3 +1,4 @@
+import { subscriptionBlock } from "@/lib/subscription-gate.server";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 import { DEFAULT_ORDER_TEMPLATE, ORDER_TEMPLATE_MAX_LENGTH } from "@/lib/order-template";
 import { createFileRoute } from "@tanstack/react-router";
@@ -62,6 +63,8 @@ export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const subBlocked = await subscriptionBlock(request);
+        if (subBlocked) return subBlocked;
         const { requireUserId } = await import("@/lib/api-auth.server");
         const userId = await requireUserId(request);
         if (!userId) {
