@@ -405,18 +405,33 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
           <DialogTitle className="font-display">Create new user</DialogTitle>
           <DialogDescription>
             Set the password yourself, or send an invite email so the user can create their own password.
+            Staff without an email can be added with a mobile number — they will sign in with that number and password.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
+          <div className="flex gap-2">
+            {(["Email", "Mobile number"] as const).map((m) => (
+              <Button
+                key={m}
+                type="button"
+                variant={(m === "Mobile number") === usePhone ? "default" : "outline"}
+                className="h-9 flex-1 text-xs"
+                onClick={() => setUsePhone(m === "Mobile number")}
+              >
+                {m}
+              </Button>
+            ))}
+          </div>
           <div className="space-y-1.5">
-            <Label htmlFor="nu-email">Email</Label>
+            <Label htmlFor="nu-email">{usePhone ? "Mobile number" : "Email"}</Label>
             <Input
               id="nu-email"
-              type="email"
+              type={usePhone ? "tel" : "email"}
+              inputMode={usePhone ? "tel" : undefined}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="user@example.com"
+              placeholder={usePhone ? "03001234567" : "user@example.com"}
               className="h-11"
             />
           </div>
