@@ -382,7 +382,8 @@ export const createAppUser = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) =>
     z
       .object({
-        email: z.string().email(),
+        email: z.string().email().optional(),
+        phone: z.string().max(20).optional(),
         fullName: z.string().max(120).optional(),
         password: z.string().min(8).max(72).optional(),
         role: z.enum(["admin", "staff"]).default("staff"),
@@ -395,7 +396,19 @@ export const createAppUser = createServerFn({ method: "POST" })
     if (!(await isAdminUser(context.supabase, context.userId))) {
       return { ok: false as const, message: "Sirf admin naya user bana sakta hai." };
     }
-    if (!data.invite && !data.password) {
+    // Phone number ko wahi internal email ID di jati hai jo sign-in page use karta hai,
+    // taake staff apne number + password se login kar sake.
+    let email = data.email;
+    if (data.phone) {
+      let digits = data.phone.replace(/\D/g, "");
+      if (digits.startsWith("0")) digits = "92" + digits.slice(1);
+      if (!digits.startsWith("92")) digits = "92" + digits;
+      if (digits.length < 11) return { ok: false as const, message: "Enter a valid mobile number (e.g. 03001234567)" };
+      email = `p${digits}@phone.hbchemicalspakistan.com`;
+    }
+    if (!email) return { ok: false as const, message: "Enter an email or mobile number." };
+    const invite = data.invite && !data.phone; // phone users cannot receive invite emails
+    if (!invite && !data.password) {
       return { ok: false as const, message: "Enter a password or send an invite email." };
     }
 
