@@ -223,11 +223,11 @@ export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
         <ItemsDialog open={itemsOpen} onOpenChange={setItemsOpen} />
         <AttendanceDialog open={attOpen} onOpenChange={setAttOpen} />
       </nav>
-      <div className="border-t border-sidebar-border p-3">
+      {wsAllowed && <div className="border-t border-sidebar-border p-3">
         <Button asChild variant="ghost" className="w-full justify-start text-sidebar-foreground">
           <Link to="/dashboard" onClick={onNavigate}><ArrowLeft className="size-4" /> Workspace</Link>
         </Button>
-      </div>
+      </div>}
     </div>
   );
 }

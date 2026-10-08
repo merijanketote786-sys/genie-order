@@ -151,12 +151,15 @@ function AppShellInner({
       } else if (e.key.toLowerCase() === "p") {
         e.preventDefault();
         e.stopPropagation();
-        void navigate({ to: isPos ? "/dashboard" : "/pos-dashboard" });
+        if (!otherLocked) void navigate({ to: isPos ? "/dashboard" : "/pos-dashboard" });
       }
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [toggleNav, navigate, isPos]);
+  }, [toggleNav, navigate, isPos, otherLocked]);
+  useEffect(() => {
+    if (sideLocked && !otherLocked) void navigate({ to: isPos ? "/dashboard" : "/pos-dashboard", replace: true });
+  }, [sideLocked, otherLocked, isPos, navigate]);
   const access = useQuery({
     queryKey: ["my-access"],
     queryFn: () => getMyAccess(),
