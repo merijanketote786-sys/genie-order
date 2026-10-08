@@ -184,6 +184,8 @@ function StatsSection() {
 
 function UsersSection() {
   const users = useQuery({ queryKey: ["admin-users"], queryFn: () => listAppUsers() });
+  const access = useQuery({ queryKey: ["my-access"], queryFn: () => getMyAccess() });
+  const isOwner = access.data?.isOwner === true;
   const [pwUser, setPwUser] = useState<AdminUserRow | null>(null);
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
@@ -322,7 +324,7 @@ function UsersSection() {
                             <UserPlus className="size-3.5" /> Make my staff
                           </Button>
                         )}
-                        {!u.separate && isOwner && u.id !== myId && (
+                        {!u.separate && isOwner && u.email !== access.data?.email && (
                           <Button
                             size="sm"
                             variant="outline"
