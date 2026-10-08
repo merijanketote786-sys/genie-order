@@ -1,3 +1,4 @@
+import { useMySubscription } from "@/components/subscription";
 import { useEffect, useRef, useState } from "react";
 import { ItemsDialog } from "@/components/items-dialog";
 import { AttendanceDialog } from "@/components/attendance";
@@ -110,6 +111,7 @@ function sortByOrder(keys: string[], order: string[]) {
 /** Shared POS navigation, displayed in the app shell rather than on every page. */
 export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { can, config } = usePosAccess();
+  const wsAllowed = useMySubscription().data?.workspace !== false;
   const attOn = (config as unknown as { attendance?: { enabled?: boolean } }).attendance?.enabled !== false;
   const [attOpen, setAttOpen] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
