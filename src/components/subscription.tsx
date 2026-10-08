@@ -6,8 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
 const sb = supabase as any;
-type MySub = { active: boolean; expires_at: string | null; owner: boolean };
-type SubRow = { workspace_id: string; email: string | null; name: string | null; business: string | null; created_at: string; expires_at: string | null };
+type MySub = { active: boolean; expires_at: string | null; owner: boolean; pos?: boolean; workspace?: boolean };
+type SubRow = { workspace_id: string; email: string | null; name: string | null; business: string | null; created_at: string; expires_at: string | null; pos_enabled: boolean; ws_enabled: boolean };
 
 export function useMySubscription() {
   return useQuery({
@@ -58,6 +58,14 @@ export function SubscriptionManager() {
     onSuccess: () => { toast.success("Subscription updated"); qc.invalidateQueries({ queryKey: ["sub-list"] }); },
     onError: (e: Error) => toast.error(e.message),
   });
+  const mods = useMutation({
+    mutationFn: async (v: { ws: string; pos: boolean; workspace: boolean }) => {
+      const { error } = await sb.rpc("sub_set_modules", { _ws: v.ws, _pos: v.pos, _workspace: v.workspace });
+      if (error) throw new Error(error.message.includes("at least one") ? "Keep at least one of POS or Workspace enabled" : "Could not update access");
+    },
+    onSuccess: () => { toast.success("Access updated"); qc.invalidateQueries({ queryKey: ["sub-list"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
   if (!me?.owner) return null;
   const now = Date.now();
   return (
@@ -79,6 +87,11 @@ export function SubscriptionManager() {
                 <p className={`text-xs font-semibold ${active ? "text-primary" : "text-destructive"}`}>
                   {active ? `Active · ${r.expires_at ? `until ${fmt(r.expires_at)}` : "Unlimited"}` : `Inactive${r.expires_at ? ` · expired ${fmt(r.expires_at)}` : ""}`}
                 </p>
+                <div className="mt-1 flex flex-wrap items-center gap-3 text-xs font-semibold text-foreground">
+                  <span className="text-muted-foreground">Access:</span>
+                  <label className="flex items-center gap-1.5"><input type="checkbox" checked={r.pos_enabled} disabled={mods.isPending} onChange={(e) => mods.mutate({ ws: r.workspace_id, pos: e.target.checked, workspace: r.ws_enabled })} /> POS</label>
+                  <label className="flex items-center gap-1.5"><input type="checkbox" checked={r.ws_enabled} disabled={mods.isPending} onChange={(e) => mods.mutate({ ws: r.workspace_id, pos: r.pos_enabled, workspace: e.target.checked })} /> Workspace</label>
+                </div>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
                 <Button size="sm" variant="outline" disabled={set.isPending} onClick={() => set.mutate({ ws: r.workspace_id, exp: addMonths(base, 1) })}>+1 month</Button>

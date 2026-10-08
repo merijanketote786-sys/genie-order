@@ -7,6 +7,7 @@ import { WorkspaceNavDialog } from "@/components/workspace-nav-dialog";
 import { PosSidebar } from "@/components/pos-subnav";
 import { FeatureAccessMenu } from "@/components/feature-access-menu";
 import { cn } from "@/lib/utils";
+import { useMySubscription } from "@/components/subscription";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Calculator,
@@ -111,6 +112,9 @@ function AppShellInner({
   const [posMenuOpen, setPosMenuOpen] = useState(false);
   const isPos = active === "/pos" || active === "/accounting";
   const navigate = useNavigate();
+  const sub = useMySubscription().data;
+  const sideLocked = !!sub && (isPos ? sub.pos === false : sub.workspace === false);
+  const otherLocked = !!sub && (isPos ? sub.workspace === false : sub.pos === false);
   useEffect(() => {
     if (!posMenuOpen) return;
     const close = (event: KeyboardEvent) => { if (event.key === "Escape") setPosMenuOpen(false); };
@@ -256,10 +260,10 @@ function AppShellInner({
               <p className="truncate text-sm text-muted-foreground">{subtitle}</p>
             </div>
             <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-              <Button variant="outline" size="sm" asChild className="h-10 shrink-0 border-border bg-card font-semibold"
+              {!otherLocked && <Button variant="outline" size="sm" asChild className="h-10 shrink-0 border-border bg-card font-semibold"
                 title={isPos ? "Switch to Workspace (press P)" : "Switch to POS (press P)"}>
                 <Link to={isPos ? "/dashboard" : "/pos-dashboard"}>{isPos ? "Workspace" : "POS"}</Link>
-              </Button>
+              </Button>}
               {isPos && <Button variant="outline" size="icon" onClick={() => setPosMenuOpen(true)}
                 className="size-10 shrink-0 border-border bg-card xl:hidden" title="Open POS menu" aria-label="Open POS menu">
                 <Menu className="size-4" />
@@ -327,6 +331,12 @@ function AppShellInner({
               <p className="mt-1 text-sm text-muted-foreground">
                 Your account has been blocked by the admin. Contact: hhtraders008@gmail.com
               </p>
+            </div>
+          ) : sideLocked ? (
+            <div className="mx-auto mt-10 max-w-md rounded-xl border border-border bg-card p-6 text-center">
+              <h2 className="font-display text-base font-bold text-foreground">{isPos ? "POS" : "Workspace"} not included</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Your subscription does not include {isPos ? "POS" : "Workspace"}. Please contact the admin to add it.</p>
+              <Button asChild className="mt-4"><Link to={isPos ? "/dashboard" : "/pos-dashboard"}>Go to {isPos ? "Workspace" : "POS"}</Link></Button>
             </div>
           ) : (
             children
