@@ -121,7 +121,7 @@ export const listPosDocs = createServerFn({ method: "GET" })
 /** POS invoice record — sirf POS sales (items + payments ke saath), print/share ke liye. */
 export const listPosSales = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ search: z.string().trim().max(80).optional(), estimates: z.boolean().optional() }).parse(d))
+  .inputValidator((d: unknown) => z.object({ search: z.string().trim().max(80).optional(), estimates: z.boolean().optional(), from: z.string().max(40).optional(), to: z.string().max(40).optional() }).parse(d))
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
     let q = supabase
@@ -132,6 +132,8 @@ export const listPosSales = createServerFn({ method: "GET" })
       .limit(200);
     const s = (data.search ?? "").trim();
     if (s) q = q.or(`doc_number.ilike.%${s}%,customer_name.ilike.%${s}%,customer_phone.ilike.%${s}%`);
+    if (data.from) q = q.gte("created_at", data.from);
+    if (data.to) q = q.lte("created_at", data.to);
     const { data: rows, error } = await q;
     if (error) throw new Error("Failed to load invoices");
     const ids = (rows ?? []).map((r: { id: string }) => r.id);
