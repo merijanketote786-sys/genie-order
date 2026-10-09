@@ -24,3 +24,4 @@
 - POS party selectors must request only POS-scoped customers, while Workspace customer selectors retain their existing full list; this prevents Workspace-only contacts from appearing in POS workflows.
 - POS units (main/sub with conversion factor = sub units per 1 main) and saved categories live in pos_units / pos_categories, written via the browser client under RLS (edit_stock or admin); keeps them workspace-scoped without new RPCs.
 - Dashboard quick-action popups render route components directly inside EmbeddedShell (AppShell renders children only) instead of iframes; nested iframes lose the preview auth session.
+- Handle rotation with shared AppShell/dialog safe-area and short-landscape CSS rather than orientation listeners or remounts, so in-progress entries survive viewport changes.

@@ -181,7 +181,7 @@ function AppShellInner({
   return (
     <div
       className={cn(
-        "grid h-[100dvh] min-h-0 overflow-hidden bg-background",
+        "app-viewport grid h-[100dvh] min-h-0 overflow-hidden bg-background",
         navHidden ? "xl:grid-cols-[minmax(0,1fr)]" : "xl:grid-cols-[244px_minmax(0,1fr)]",
       )}
     >
@@ -239,7 +239,7 @@ function AppShellInner({
       ) : null}
 
       <section className="flex min-h-0 min-w-0 flex-col">
-        <header className="shrink-0 border-b border-border bg-surface/95 backdrop-blur-sm">
+        <header className="app-header shrink-0 border-b border-border bg-surface/95 backdrop-blur-sm">
           <div className="grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 sm:min-h-16 sm:gap-3 sm:px-6 lg:px-8">
             <div className={cn("flex min-w-0 items-center gap-2.5", navHidden ? "" : "xl:hidden")}>
               <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-card">
@@ -318,7 +318,7 @@ function AppShellInner({
 
         {isPos && posMenuOpen && <div className="fixed inset-0 z-50 xl:hidden" role="dialog" aria-modal="true" aria-label="POS menu">
           <div className="absolute inset-0 bg-foreground/40" onClick={() => setPosMenuOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 flex w-[min(300px,85vw)] flex-col border-r border-sidebar-border bg-sidebar shadow-xl">
+          <aside className="app-drawer absolute inset-y-0 left-0 flex min-h-0 w-[min(300px,85vw)] flex-col border-r border-sidebar-border bg-sidebar shadow-xl">
             <div className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
               <span className="font-display text-base font-bold text-sidebar-foreground">POS</span>
               <Button variant="ghost" size="icon" onClick={() => setPosMenuOpen(false)} aria-label="Close POS menu" className="text-sidebar-foreground"><X /></Button>
@@ -327,7 +327,7 @@ function AppShellInner({
           </aside>
         </div>}
 
-        <main className={`mx-auto flex min-h-0 w-full ${wide ? "max-w-[1600px]" : "max-w-[1180px]"} flex-1 flex-col overflow-y-auto px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:px-5 xl:px-8 xl:pb-0`}>
+        <main className={`app-main mx-auto flex min-h-0 w-full ${wide ? "max-w-[1600px]" : "max-w-[1180px]"} flex-1 flex-col overflow-y-auto px-3 ${isPos ? "pb-[env(safe-area-inset-bottom)]" : "pb-[calc(4.5rem+env(safe-area-inset-bottom))]"} sm:px-5 xl:px-8 xl:pb-0`}>
           {access.data && access.data.isActive === false ? (
             <div className="glass-panel my-6 rounded-3xl px-4 py-10 text-center">
               <h2 className="font-display text-base font-bold text-foreground">Access blocked</h2>
@@ -345,7 +345,7 @@ function AppShellInner({
             children
           )}
         </main>
-        {!isPos && <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg xl:hidden" aria-label="Mobile navigation">
+        {!isPos && <nav className="app-mobile-nav fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg xl:hidden" aria-label="Mobile navigation">
           <div className="mx-auto grid max-w-lg grid-cols-5 gap-1 p-1.5">
             {primaryTabs.map((tab) => {
               const isActive = tab.to === active;
