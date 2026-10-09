@@ -266,6 +266,62 @@
 
 
 /* Phone layout for bill tables: each row becomes a compact card (item on top, fields below). */
+/* Shared orientation handling: no remounts or state changes on rotation. */
+.app-header {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+.app-main {
+  padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+  padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+}
+.app-drawer {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+}
+.app-mobile-nav {
+  padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
+  padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
+}
+.app-fullscreen-popup {
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+.app-dialog {
+  max-width: calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+  max-height: calc(100dvh - 2rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+  overscroll-behavior: contain;
+}
+@media (min-width: 640px) {
+  .app-main {
+    padding-left: max(1.25rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1.25rem, env(safe-area-inset-right, 0px));
+  }
+}
+@media (min-width: 1280px) {
+  .app-main { padding-inline: 2rem; }
+}
+@media (orientation: landscape) and (max-height: 600px) and (max-width: 1279px) {
+  .app-header > div { min-height: 3rem; }
+  .workspace-page-heading { padding-block: 0.5rem; }
+  .workspace-page-heading h2 { font-size: 1.125rem; margin-top: 0; }
+  .workspace-page-heading h2 + p { display: none; }
+  .app-mobile-nav > div { max-width: 48rem; padding-block: 0.25rem; }
+  .app-mobile-nav a, .app-mobile-nav button {
+    height: 2.75rem;
+    flex-direction: row;
+    gap: 0.375rem;
+  }
+  .app-main:has(+ .app-mobile-nav) {
+    padding-bottom: calc(3.25rem + env(safe-area-inset-bottom, 0px));
+  }
+  .workspace-tool-dock { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .workspace-tool-dock button { height: 2.75rem; }
+  .app-dialog nav[aria-label="All workspace sections"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .app-dialog nav[aria-label="All workspace sections"] a { min-height: 4rem; }
+}
+
 @media (max-width: 767px) {
   .mgrid {
     grid-template-columns: 28px repeat(3, minmax(0, 1fr)) 40px !important;

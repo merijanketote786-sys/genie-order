@@ -1,4 +1,5 @@
 # Roadmap — Vyapar-style POS
+- [x] Enable mobile/tablet rotation and verify shared POS/Workspace navigation and popups in both orientations
 - [x] POS backup: save to computer folder/download, restore with merge or replace
 - [ ] Daily automatic Google Drive backup — blocked: Google Drive connection was declined
 - [x] Keep Workspace-only customers out of POS Parties, billing, purchase, and payment selections

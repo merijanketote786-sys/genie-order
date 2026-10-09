@@ -64,7 +64,7 @@ export function WorkspaceTool({
 
 export function WorkspaceToolDock({ children }: { children: ReactNode }) {
   return (
-    <div className="grid grid-cols-3 gap-1 rounded-xl border border-border bg-surface p-1 shadow-sm min-[480px]:grid-cols-4 lg:grid-cols-6">
+    <div className="workspace-tool-dock grid grid-cols-3 gap-1 rounded-xl border border-border bg-surface p-1 shadow-sm min-[480px]:grid-cols-4 lg:grid-cols-6">
       {children}
     </div>
   );
