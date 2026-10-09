@@ -70,9 +70,10 @@ export const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
 /** Empty list = sab sections allowed. */
 export function isSectionAllowed(
   section: string,
-  userAllowed: string[],
+  userAllowedRaw: string[],
   workspaceAllowed: string[],
 ): boolean {
+  const userAllowed = stripAccessMarkers(userAllowed_(userAllowedRaw));
   if (userAllowed.length > 0) return userAllowed.includes(section);
   if (workspaceAllowed.length > 0) return workspaceAllowed.includes(section);
   return true;
