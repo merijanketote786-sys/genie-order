@@ -15,7 +15,18 @@ export function useMySubscription() {
     queryFn: async () => {
       const { data, error } = await sb.rpc("my_subscription");
       if (error) return null;
-      return data as MySub;
+      const s = { ...(data as MySub) };
+      // Per-user POS / Workspace access set by the admin (markers in allowed_sections)
+      if (!s.owner) {
+        const { data: u } = await supabase.auth.getUser();
+        if (u.user) {
+          const { data: row } = await sb.from("user_settings").select("allowed_sections").eq("user_id", u.user.id).maybeSingle();
+          const list: string[] = Array.isArray(row?.allowed_sections) ? row.allowed_sections : [];
+          if (list.includes("!pos")) s.pos = false;
+          if (list.includes("!ws")) s.workspace = false;
+        }
+      }
+      return s;
     },
     staleTime: 60_000,
   });

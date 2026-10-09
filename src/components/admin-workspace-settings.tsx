@@ -112,15 +112,22 @@ export function AdminWorkspaceSettings({ onAddUser, usersOnly }: { onAddUser?: (
     },
   });
 
-  const sectionsFor = (userId: string) =>
+  const rawSectionsFor = (userId: string) =>
     members.data?.members?.find((m) => m.userId === userId)?.allowedSections ?? [];
+  const sectionsFor = (userId: string) => rawSectionsFor(userId).filter((k) => !k.startsWith("!"));
+  const markersFor = (userId: string) => rawSectionsFor(userId).filter((k) => k.startsWith("!"));
+  const toggleSide = (userId: string, marker: string) => {
+    const m = markersFor(userId);
+    const nextM = m.includes(marker) ? m.filter((k) => k !== marker) : [...m, marker];
+    saveSections.mutate({ userId, allowedSections: [...sectionsFor(userId), ...nextM] });
+  };
 
   const toggleSection = (userId: string, key: string) => {
     const current = sectionsFor(userId);
     const all = APP_SECTIONS.map((s) => s.key as string);
     const base = current.length ? current : all;
     const next = base.includes(key) ? base.filter((k) => k !== key) : [...base, key];
-    saveSections.mutate({ userId, allowedSections: next.length === all.length ? [] : next });
+    saveSections.mutate({ userId, allowedSections: [...(next.length === all.length ? [] : next), ...markersFor(userId)] });
   };
 
   return (
@@ -269,6 +276,23 @@ export function AdminWorkspaceSettings({ onAddUser, usersOnly }: { onAddUser?: (
                       </label>
                     )}
                   </div>
+                  {posRole !== "admin" ? (
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-background/50 p-2">
+                      <span className="text-[11px] font-bold uppercase text-muted-foreground">Access</span>
+                      {([["!pos", "POS"], ["!ws", "Workspace"]] as const).map(([mk, label]) => {
+                        const on = !markersFor(u.id).includes(mk);
+                        return (
+                          <Button key={mk} type="button" size="sm" variant={on ? "default" : "outline"} className="h-8 px-3 text-[11px]"
+                            disabled={saveSections.isPending} onClick={() => toggleSide(u.id, mk)} aria-pressed={on}>
+                            {on ? "✓ " : ""}{label}
+                          </Button>
+                        );
+                      })}
+                      <span className="text-[11px] text-muted-foreground">
+                        {markersFor(u.id).length === 0 ? "Both" : markersFor(u.id).length === 2 ? "No access" : markersFor(u.id).includes("!pos") ? "Workspace only" : "POS only"}
+                      </span>
+                    </div>
+                  ) : null}
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {APP_SECTIONS.map((s) => {
                       const on = allowed.length === 0 || allowed.includes(s.key);
