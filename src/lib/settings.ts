@@ -73,8 +73,15 @@ export function isSectionAllowed(
   userAllowedRaw: string[],
   workspaceAllowed: string[],
 ): boolean {
-  const userAllowed = stripAccessMarkers(userAllowed_(userAllowedRaw));
+  const userAllowed = stripAccessMarkers(userAllowedRaw);
   if (userAllowed.length > 0) return userAllowed.includes(section);
   if (workspaceAllowed.length > 0) return workspaceAllowed.includes(section);
   return true;
+}
+
+/** "!pos" / "!ws" markers in a user's allowed_sections block POS / Workspace for that user. */
+export const NO_POS = "!pos";
+export const NO_WS = "!ws";
+export function stripAccessMarkers(list: string[]): string[] {
+  return list.filter((k) => !k.startsWith("!"));
 }
