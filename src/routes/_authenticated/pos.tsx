@@ -666,8 +666,14 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
       setCustomerCityArea(ui.customerCityArea ?? "");
       setCourierServiceName(ui.courierServiceName ?? "");
       setGoodsAddaName(ui.goodsAddaName ?? "");
-      setCustomFieldValues(Object.fromEntries((ui.customFields ?? []).map((field, index) => [index, field.value ?? ""])));
-      setCustomFieldTotals(Object.fromEntries((ui.customFields ?? []).map((field, index) => [index, field.addToTotal ?? false])));
+      setCustomFieldValues(Object.fromEntries(cfg.printing.customFields.map((field, index) => {
+        const saved = (ui.customFields ?? []).find((f) => f.label === field.label);
+        return [index, saved?.value ?? ""];
+      })));
+      setCustomFieldTotals(Object.fromEntries(cfg.printing.customFields.map((field, index) => {
+        const saved = (ui.customFields ?? []).find((f) => f.label === field.label);
+        return [index, saved?.addToTotal ?? false];
+      })));
       setCustomFieldOn(Object.fromEntries(cfg.printing.customFields.map((field, index) => {
         const saved = (ui.customFields ?? []).find((f) => f.label === field.label);
         return [index, Boolean(saved && (saved.value?.trim() || saved.addToTotal))];
