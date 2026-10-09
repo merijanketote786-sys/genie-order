@@ -19,7 +19,7 @@ export function WorkspaceHeader({
   className,
 }: WorkspaceHeaderProps) {
   return (
-    <section className={cn("shrink-0 border-b border-transparent pb-1 pt-4 sm:border-border sm:py-6", className)}>
+    <section className={cn("workspace-page-heading shrink-0 border-b border-transparent pb-1 pt-4 sm:border-border sm:py-6", className)}>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
         <div className="flex min-w-0 items-center gap-3 sm:items-start sm:gap-3.5">
           <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm sm:size-11">

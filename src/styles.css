@@ -304,6 +304,9 @@
 }
 @media (orientation: landscape) and (max-height: 600px) and (max-width: 1279px) {
   .app-header > div { min-height: 3rem; }
+  .workspace-page-heading { padding-block: 0.5rem; }
+  .workspace-page-heading h2 { font-size: 1.125rem; margin-top: 0; }
+  .workspace-page-heading h2 + p { display: none; }
   .app-mobile-nav > div { max-width: 48rem; padding-block: 0.25rem; }
   .app-mobile-nav a, .app-mobile-nav button {
     height: 2.75rem;
