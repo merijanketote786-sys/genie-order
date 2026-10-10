@@ -637,6 +637,8 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
           if (print) void pc.print(doc);
           if (kind === "sale" && cfg.sales.autoPdf) void pc.pdf(doc);
         }
+        // Save aur Save + Print dono ke baad PDF preview (Print / Save PDF / WhatsApp / Email)
+        pc.preview(doc, false);
         toast.success(`${kind === "quotation" ? (estimate ? "Estimate" : "Quotation") : "Sale"} saved: ${res.invoiceNumber}${res.duplicate ? " (already saved)" : ""}${res.change > 0 ? ` — return change Rs ${money(res.change)}` : ""}`);
         setEstimate(false);
       }
