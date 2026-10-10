@@ -109,8 +109,19 @@ export async function buildPdfBlob(doc: PrintDoc, cfg: ResolvedCfg, o: { format?
       pdf.addImage(slice.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, spec.widthMm, h / 2 / pxPerMm);
       first = false; y += h;
     }
-    pdf.save(`${(doc.number || doc.title).replace(/[^\w.-]+/g, "_")}.pdf`);
+    return pdf.output("blob");
   } finally {
     frame.remove();
   }
+}
+
+/** PDF: rendered HTML ko exact paper size par snapshot karke pages banata hai aur download karta hai. */
+export async function downloadPdf(doc: PrintDoc, cfg: ResolvedCfg, o: { format?: PaperFormat; template?: import("@/lib/pos-config").TemplateId } = {}) {
+  const blob = await buildPdfBlob(doc, cfg, o);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = pdfFileName(doc);
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
