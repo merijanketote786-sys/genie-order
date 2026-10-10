@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { usePosAccess } from "@/components/pos-access";
 import { buildPdfBlob, pdfFileName } from "@/lib/print/dispatch";
+import type { ResolvedCfg } from "@/lib/pos-config";
 import type { PrintDoc } from "@/lib/print/render";
-import { Loader2, MessageCircle, X } from "lucide-react";
+import { Loader2, Mail, MessageCircle, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -42,43 +43,64 @@ export function waMessage(doc: PrintDoc, business: string) {
   return out.join("\n");
 }
 
+function downloadBlob(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
 /**
- * WhatsApp share: document ko PDF banata hai aur installed WhatsApp app mein
- * customer ki chat ke saath share karta hai. Mobile par share sheet se WhatsApp
- * khulta hai (PDF attached); desktop par PDF download hota hai aur WhatsApp app
- * customer ki chat ke saath khul jata hai (PDF attach karna hota hai).
+ * Document ko PDF bana kar share karta hai (text nahi).
+ * Mobile: share sheet (PDF attached). Desktop: PDF download + WhatsApp app / email app khulta hai.
+ * Returns false agar user ne share sheet cancel kar di.
  */
-export function WhatsAppSendDialog({ doc, business, onClose }: { doc: PrintDoc; business: string; onClose: () => void }) {
+export async function sharePdf(doc: PrintDoc, cfg: ResolvedCfg, o: { via: "whatsapp"; phone: string } | { via: "email"; email?: string }): Promise<boolean> {
+  const blob = await buildPdfBlob(doc, cfg);
+  const name = pdfFileName(doc);
+  const title = `${doc.title} ${doc.number}`.trim();
+  const file = new File([blob], name, { type: "application/pdf" });
+  const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean };
+  const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+  if (mobile && nav.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title });
+    } catch (e) {
+      if (e instanceof Error && e.name === "AbortError") return false;
+      throw e;
+    }
+    toast.success(o.via === "whatsapp" ? "PDF shared — select WhatsApp and the customer's chat" : "PDF shared — select your email app");
+    return true;
+  }
+  downloadBlob(blob, name);
+  if (o.via === "whatsapp") {
+    openWhatsAppApp(waNumber(o.phone), `${title} — PDF downloaded, please attach it here.`);
+    toast.success("PDF downloaded — WhatsApp opened, attach the PDF and send");
+  } else {
+    const to = o.email?.trim() ? encodeURIComponent(o.email.trim()) : "";
+    window.location.href = `mailto:${to}?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`Please find attached ${title} (${name}).`)}`;
+    toast.success("PDF downloaded — attach it to the email and send");
+  }
+  return true;
+}
+
+/** WhatsApp share: document ko PDF banata hai aur installed WhatsApp app mein customer ki chat ke saath share karta hai. */
+export function WhatsAppSendDialog({ doc, onClose }: { doc: PrintDoc; business?: string; onClose: () => void }) {
   const { cfg } = usePosAccess();
   const [phone, setPhone] = useState(doc.party?.phone ?? "");
   const [busy, setBusy] = useState(false);
-  const num = waNumber(phone);
-  const valid = num.length >= 10;
+  const valid = waNumber(phone).length >= 10;
 
   const send = async () => {
     if (!valid || busy) return;
     setBusy(true);
     try {
-      const blob = await buildPdfBlob(doc, cfg);
-      const file = new File([blob], pdfFileName(doc), { type: "application/pdf" });
-      const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean };
-      if (nav.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: `${doc.title} ${doc.number}`.trim() });
-        toast.success("PDF shared — select WhatsApp and the customer's chat");
-      } else {
-        // Desktop / unsupported: PDF download + installed WhatsApp app mein customer ki chat
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = pdfFileName(doc);
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
-        openWhatsAppApp(num, `${doc.title} ${doc.number} — PDF downloaded, please attach it here.`);
-        toast.success("PDF downloaded — WhatsApp opened, attach the PDF and send");
-      }
-      onClose();
-    } catch (e) {
-      if (e instanceof Error && e.name === "AbortError") return; // user cancelled share sheet
+      if (await sharePdf(doc, cfg, { via: "whatsapp", phone })) onClose();
+    } catch {
       toast.error("PDF could not be created. Please try again.");
     } finally {
       setBusy(false);
@@ -86,7 +108,7 @@ export function WhatsAppSendDialog({ doc, business, onClose }: { doc: PrintDoc; 
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-foreground/50 p-2" role="dialog" aria-modal="true" aria-label="Send on WhatsApp">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-foreground/50 p-2" role="dialog" aria-modal="true" aria-label="Send on WhatsApp">
       <div className="flex max-h-full w-full max-w-md flex-col overflow-auto rounded-xl border border-border bg-card p-4 shadow-2xl">
         <div className="mb-3 flex items-center gap-2">
           <MessageCircle className="text-primary" />
@@ -107,6 +129,49 @@ export function WhatsAppSendDialog({ doc, business, onClose }: { doc: PrintDoc; 
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button disabled={!valid || busy} onClick={send} className="gap-1.5">
             {busy ? <Loader2 className="animate-spin" /> : <MessageCircle />} {busy ? "Preparing PDF…" : "Send PDF on WhatsApp"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Email share: PDF banata hai; mobile par share sheet, PC par PDF download + email app. */
+export function EmailSendDialog({ doc, onClose }: { doc: PrintDoc; onClose: () => void }) {
+  const { cfg } = usePosAccess();
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const send = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      if (await sharePdf(doc, cfg, { via: "email", email })) onClose();
+    } catch {
+      toast.error("PDF could not be created. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-foreground/50 p-2" role="dialog" aria-modal="true" aria-label="Email PDF">
+      <div className="flex max-h-full w-full max-w-md flex-col overflow-auto rounded-xl border border-border bg-card p-4 shadow-2xl">
+        <div className="mb-3 flex items-center gap-2">
+          <Mail className="text-primary" />
+          <p className="mr-auto font-bold text-foreground">Email PDF</p>
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close"><X /></Button>
+        </div>
+        <label className="block text-xs text-muted-foreground">Email address (optional)
+          <input className="mt-1 h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="party@email.com" inputMode="email" />
+        </label>
+        <p className="mt-3 rounded-xl border border-border bg-surface-2/60 p-3 text-xs text-muted-foreground">
+          On mobile, the share sheet opens with the PDF attached — choose your email app. On PC, the PDF downloads and your email app opens — attach the downloaded PDF there.
+        </p>
+        <div className="mt-3 flex flex-wrap justify-end gap-2">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button disabled={busy} onClick={send} className="gap-1.5">
+            {busy ? <Loader2 className="animate-spin" /> : <Mail />} {busy ? "Preparing PDF…" : "Send PDF by email"}
           </Button>
         </div>
       </div>
