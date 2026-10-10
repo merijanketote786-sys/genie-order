@@ -115,7 +115,7 @@ const n = (v: string) => {
 /** Quantity badalte hi rate khud sale/wholesale me switch ho jati hai. */
 const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
 
- export function PosPage({ onSaved }: { onSaved?: () => void } = {}) {
+ export function PosPage({ onSaved }: { onSaved?: (doc?: PrintDoc) => void } = {}) {
    // Phone-width hint: field placeholders shorten so they stay readable on a narrow bill card.
    const [phone, setPhone] = useState(false);
    useEffect(() => {
@@ -627,6 +627,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
       });
       docRef.current = newRef();
       const final = { ...r, invoiceNumber: res.invoiceNumber };
+      let savedDoc: PrintDoc | undefined;
       if (kind === "held") {
         toast.success(`Bill held: ${res.invoiceNumber}`);
       } else {
@@ -637,6 +638,8 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
           if (print) void pc.print(doc);
           if (kind === "sale" && cfg.sales.autoPdf) void pc.pdf(doc);
         }
+        // Save aur Save + Print dono ke baad PDF preview (Print / Save PDF / WhatsApp / Email)
+        if (onSaved) savedDoc = doc; else pc.preview(doc, false);
         toast.success(`${kind === "quotation" ? (estimate ? "Estimate" : "Quotation") : "Sale"} saved: ${res.invoiceNumber}${res.duplicate ? " (already saved)" : ""}${res.change > 0 ? ` — return change Rs ${money(res.change)}` : ""}`);
         setEstimate(false);
       }
@@ -644,7 +647,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
       qc.invalidateQueries({ queryKey: ["pos-docs"] });
       qc.invalidateQueries({ queryKey: ["pos-balance"] });
       reset();
-      if (kind !== "held") onSaved?.();
+      if (kind !== "held") onSaved?.(savedDoc);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Unable to save invoice. Please try again.");
     } finally {

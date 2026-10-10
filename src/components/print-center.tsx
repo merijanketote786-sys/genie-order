@@ -4,8 +4,8 @@ import { FORMAT_LABEL, TEMPLATE_LABEL, type PaperFormat, type TemplateId } from 
 import { logPosEvent } from "@/lib/print-admin.functions";
 import { downloadPdf, printBridge, printDocument, resolvePrinter } from "@/lib/print/dispatch";
 import { renderPrint, type PrintDoc } from "@/lib/print/render";
-import { Download, Loader2, MessageCircle, Printer, X } from "lucide-react";
-import { WhatsAppSendDialog } from "@/components/whatsapp-send";
+import { Download, Loader2, Mail, MessageCircle, Printer, X } from "lucide-react";
+import { EmailSendDialog, WhatsAppSendDialog } from "@/components/whatsapp-send";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -66,6 +66,7 @@ function PrintPreviewDialog({ doc, onClose, onPrint, onPdf }: { doc: PrintDoc; o
   const [spec, setSpec] = useState({ widthMm: 80, heightMm: null as number | null });
   const [busy, setBusy] = useState(false);
   const [wa, setWa] = useState(false);
+  const [mail, setMail] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [scale, setScale] = useState(1);
@@ -120,12 +121,14 @@ function PrintPreviewDialog({ doc, onClose, onPrint, onPdf }: { doc: PrintDoc; o
             {bridge && printer?.deviceName ? `Desktop app: will go directly to "${printer.deviceName}"` : printer ? `Saved printer: ${printer.name} — select this same printer in the print window (the browser remembers it)` : "Select a printer in the print window · Margins: None · Scale: 100%"}
           </p>
           <Button variant="outline" onClick={() => setWa(true)}><MessageCircle /> WhatsApp</Button>
-          <Button variant="outline" disabled={busy} onClick={async () => { setBusy(true); await onPdf({ format, template }); setBusy(false); }}><Download /> PDF</Button>
+          <Button variant="outline" onClick={() => setMail(true)}><Mail /> Email PDF</Button>
+          <Button variant="outline" disabled={busy} onClick={async () => { setBusy(true); await onPdf({ format, template }); setBusy(false); }}><Download /> Save PDF</Button>
           <Button disabled={busy} onClick={async () => { setBusy(true); await onPrint({ format, template, copies: Math.max(1, Number(copies) || 1) }); setBusy(false); }}><Printer /> Print</Button>
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="ghost" onClick={onClose}>Close</Button>
         </div>
       </div>
       {wa && <WhatsAppSendDialog doc={doc} business={cfg.business.name} onClose={() => setWa(false)} />}
+      {mail && <EmailSendDialog doc={doc} onClose={() => setMail(false)} />}
     </div>
   );
 }
