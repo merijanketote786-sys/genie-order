@@ -4,7 +4,7 @@ import { bulkUpdateProducts, deletePosProducts, type InvProduct } from "@/lib/in
 import { UnitSelect } from "@/components/unit-select";
 import { usePosCategories } from "@/lib/pos-catalog";
 import { ChevronDown, Search, Trash2, Upload, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
@@ -22,8 +22,8 @@ const COLS: Col[] = [
   { k: "brand", label: "Brand", w: "w-28" },
   { k: "unit", label: "Unit", w: "w-36" },
   { k: "purchase_price", label: "Purchase price", w: "w-32", num: true },
-  { k: "sale_price", label: "Sale price", w: "w-32", num: true },
-  { k: "wholesale_price", label: "Wholesale price", w: "w-32", num: true },
+  { k: "sale_price", label: "Sale price", w: "w-44", num: true },
+  { k: "wholesale_price", label: "Wholesale price", w: "w-48", num: true },
   { k: "wholesale_min_qty", label: "Min wholesale qty", w: "w-32", num: true },
   { k: "min_sale_price", label: "Min sale price", w: "w-32", num: true },
   { k: "stock", label: "Stock qty", w: "w-24", num: true },
@@ -40,7 +40,18 @@ const base = (p: InvProduct): Row => ({
   min_sale_price: p.minSalePrice?.toString() ?? "", stock: String(p.stock), min_stock: p.minStock?.toString() ?? "", tax_percent: p.taxPercent?.toString() ?? "",
   is_active: p.isActive === false ? "false" : "true",
 });
+const MK_KEY = "pos-bulk-markup";
 const val = (r: Row) => { const s = Number(r.stock) || 0, c = Number(r.purchase_price) || 0; return r.purchase_price === "" ? "" : String(Math.round(Math.max(0, s) * c * 100) / 100); };
+
+function MkHead({ label, on, pct, onOn, onPct }: { label: string; on: boolean; pct: string; onOn: (v: boolean) => void; onPct: (v: string) => void }) {
+  return (
+    <div className="flex items-center gap-1 normal-case">
+      <input type="checkbox" checked={on} onChange={(e) => onOn(e.target.checked)} aria-label={`Auto ${label} for all`} title="Auto % from purchase price for all products" />
+      <span className="truncate">{label}</span>
+      <input className={`${posInput} h-6 w-12 px-1 text-right text-[11px]`} value={pct} inputMode="decimal" onChange={(e) => onPct(e.target.value)} aria-label={`${label} percent`} />%
+    </div>
+  );
+}
 
 // Category cell: tap opens a small popup listing only the categories saved in the Categories section
 function CatPicker({ value, original, options, onPick, label }: { value: string; original: string; options: string[]; onPick: (v: string) => void; label: string }) {
@@ -112,10 +123,27 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
     });
   }, [pool, q, fKind, fCat]);
   const rowOf = (id: string): Row => { const r = { ...orig[id], ...edits[id] }; return { ...r, stock_value: edits[id]?.stock_value ?? val(r) }; };
+  // Auto pricing from purchase price: sale = purchase + sale%, wholesale = purchase + wholesale%
+  const [mk, setMk] = useState({ salePct: "45", wsPct: "15", saleOn: true, wsOn: true });
+  useEffect(() => { try { const v = localStorage.getItem(MK_KEY); if (v) setMk((m) => ({ ...m, ...JSON.parse(v) })); } catch { /* ignore */ } }, []);
+  const updMk = (p: Partial<typeof mk>) => setMk((m) => { const n = { ...m, ...p }; try { localStorage.setItem(MK_KEY, JSON.stringify(n)); } catch { /* ignore */ } return n; });
+  const [rowMk, setRowMk] = useState<Record<string, { sale?: boolean; ws?: boolean }>>({});
+  const autoOn = (id: string, f: "sale" | "ws") => rowMk[id]?.[f] ?? (f === "sale" ? mk.saleOn : mk.wsOn);
+  const priced = (pp: string, pct: string) => { const c = Number(pp), x = Number(pct); return pp.trim() === "" || !isFinite(c) || !isFinite(x) ? null : String(Math.round(c * (1 + x / 100) * 100) / 100); };
+  const applyMk = (id: string, cur: Row, only?: "sale" | "ws", force?: { sale?: boolean; ws?: boolean }) => {
+    if (only !== "ws" && (force?.sale ?? autoOn(id, "sale"))) { const v = priced(cur.purchase_price, mk.salePct); if (v != null) cur.sale_price = v; }
+    if (only !== "sale" && (force?.ws ?? autoOn(id, "ws"))) { const v = priced(cur.purchase_price, mk.wsPct); if (v != null) cur.wholesale_price = v; }
+  };
+  const toggleRowMk = (id: string, f: "sale" | "ws") => {
+    const on = !autoOn(id, f);
+    setRowMk((m) => ({ ...m, [id]: { ...m[id], [f]: on } }));
+    if (on) setEdits((e) => { const cur = { ...orig[id], ...e[id] }; applyMk(id, cur, f, { [f]: true }); return { ...e, [id]: cur }; });
+  };
   const set = (id: string, k: string, v: string) => setEdits((e) => {
     const cur = { ...orig[id], ...e[id], [k]: v };
     if (k === "stock_value") { const s = Number(cur.stock) || 0; if (s > 0 && v !== "") cur.purchase_price = String(Math.round((Number(v) / s) * 100) / 100); }
     else delete cur.stock_value;
+    if (k === "purchase_price" || k === "stock_value") applyMk(id, cur);
     return { ...e, [id]: cur };
   });
   const dirtyIds = Object.keys(edits).filter((id) => COLS.some((c) => c.k !== "stock_value" && (edits[id][c.k] ?? orig[id][c.k]) !== orig[id][c.k]));
@@ -237,13 +265,19 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
         </select>
         <span className="text-xs text-muted-foreground">{list.length} of {pool.length} items shown</span>
       </div>
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border p-2 text-xs text-muted-foreground">
+        <span className="font-medium text-foreground">Auto price from purchase price:</span>
+        <label className="inline-flex items-center gap-1"><input type="checkbox" checked={mk.saleOn} onChange={(e) => { updMk({ saleOn: e.target.checked }); setRowMk((m) => Object.fromEntries(Object.entries(m).map(([id, x]) => [id, { ...x, sale: undefined }]))); }} aria-label="Auto sale price for all" />Sale +<input className={`${posInput} h-8 w-16 px-1 text-right`} value={mk.salePct} inputMode="decimal" onChange={(e) => updMk({ salePct: e.target.value })} aria-label="Sale price percent" />%</label>
+        <label className="inline-flex items-center gap-1"><input type="checkbox" checked={mk.wsOn} onChange={(e) => { updMk({ wsOn: e.target.checked }); setRowMk((m) => Object.fromEntries(Object.entries(m).map(([id, x]) => [id, { ...x, ws: undefined }]))); }} aria-label="Auto wholesale price for all" />Wholesale +<input className={`${posInput} h-8 w-16 px-1 text-right`} value={mk.wsPct} inputMode="decimal" onChange={(e) => updMk({ wsPct: e.target.value })} aria-label="Wholesale price percent" />%</label>
+        <span>Untick to type a custom rate. Each product also has its own small tick.</span>
+      </div>
       <label className="flex h-10 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
         <Search className="size-4 text-primary" /><input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search product" />
       </label>
       {/* Mobile: one card per product so no field is hidden behind sideways scrolling */}
       <div className="max-h-[60vh] space-y-2 overflow-auto sm:hidden">
         {list.slice(0, 300).map((p) => { const r = rowOf(p.id); const dirty = dirtyIds.includes(p.id); const numIn = (k: string, lab: string) => (
-          <label key={k} className="block text-[11px] font-medium text-muted-foreground">{lab}
+          <label key={k} className="block text-[11px] font-medium text-muted-foreground"><span className="flex items-center justify-between gap-1">{lab}{k === "sale_price" || k === "wholesale_price" ? <span className="inline-flex items-center gap-1" title="Auto % from purchase price"><input type="checkbox" className="size-3.5" checked={autoOn(p.id, k === "sale_price" ? "sale" : "ws")} onChange={() => toggleRowMk(p.id, k === "sale_price" ? "sale" : "ws")} aria-label={`Auto ${lab} ${p.name}`} />Auto %</span> : null}</span>
             <input className={`${posInput} mt-0.5 h-9 w-full px-2 text-right text-foreground`} value={r[k]} inputMode="decimal" onChange={(e) => set(p.id, k, e.target.value)} aria-label={`${lab} ${p.name}`} />
           </label>);
           return (
@@ -287,7 +321,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
         {list.length > 300 && <p className="py-2 text-center text-xs text-muted-foreground">Showing first 300 — use search or filters to narrow the list.</p>}
       </div>
       <div className="hidden max-h-[60vh] overflow-auto rounded-lg border border-border sm:block">
-        <table className="w-full min-w-[2050px] table-fixed border-collapse text-sm">
+        <table className="w-full min-w-[2150px] table-fixed border-collapse text-sm">
           <colgroup>
             <col className="w-12" />
             {COLS.map((c) => <col key={c.k} className={c.w} />)}
@@ -295,7 +329,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
           </colgroup>
           <thead className="sticky top-0 z-10 bg-card shadow-[0_1px_0_0] shadow-border"><tr className="text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             <th className="sticky left-0 z-20 bg-card px-2 py-2"><input type="checkbox" checked={allPicked} onChange={() => setPicked(allPicked ? new Set() : new Set(list.map((p) => p.id)))} aria-label="Select all" /></th>
-            {COLS.map((c, i) => <th key={c.k} style={c.k === "name" ? undefined : tint(i, activeCol === c.k ? 45 : 18)} className={`truncate px-2 py-2 transition-colors ${activeCol === c.k ? "text-foreground" : ""} ${c.k === "name" ? "sticky left-12 z-20 border-r border-border bg-card" : ""}`} title={c.label}>{c.label}</th>)}
+            {COLS.map((c, i) => <th key={c.k} style={c.k === "name" ? undefined : tint(i, activeCol === c.k ? 45 : 18)} className={`truncate px-2 py-2 transition-colors ${activeCol === c.k ? "text-foreground" : ""} ${c.k === "name" ? "sticky left-12 z-20 border-r border-border bg-card" : ""}`} title={c.label}>{c.k === "sale_price" || c.k === "wholesale_price" ? <MkHead label={c.label} on={c.k === "sale_price" ? mk.saleOn : mk.wsOn} pct={c.k === "sale_price" ? mk.salePct : mk.wsPct} onOn={(v) => { updMk(c.k === "sale_price" ? { saleOn: v } : { wsOn: v }); setRowMk((m) => Object.fromEntries(Object.entries(m).map(([id, x]) => [id, { ...x, [c.k === "sale_price" ? "sale" : "ws"]: undefined }]))); }} onPct={(v) => updMk(c.k === "sale_price" ? { salePct: v } : { wsPct: v })} /> : c.label}</th>)}
             <th className="px-2 py-2">Delete</th>
           </tr></thead>
           <tbody onKeyDown={gridKeys} onMouseLeave={() => setActiveCol(null)} onBlur={() => setActiveCol(null)}>
@@ -306,6 +340,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
                   <td key={c.k} onMouseEnter={() => setActiveCol(c.k)} onFocus={() => setActiveCol(c.k)} style={c.k === "name" || dirtyIds.includes(p.id) && activeCol !== c.k ? undefined : tint(i, activeCol === c.k ? 32 : 8)} className={`px-1 py-1 transition-colors ${c.k === "name" ? `sticky left-12 z-10 border-r border-border ${dirtyIds.includes(p.id) ? "bg-accent" : "bg-card"}` : ""}`}>
                     {c.k === "is_active" ? <select className={`${posInput} h-9 w-full px-1 ${r.is_active !== orig[p.id].is_active ? "border-primary" : ""}`} value={r.is_active} onChange={(e) => set(p.id, "is_active", e.target.value)} aria-label={`Active ${p.name}`}><option value="true">Yes</option><option value="false">No</option></select>
                       : c.k === "category" ? <CatPicker value={r.category} original={orig[p.id].category} options={catOptions} onPick={(v) => set(p.id, "category", v)} label={`Category — ${p.name}`} />
+                      : c.k === "sale_price" || c.k === "wholesale_price" ? <div className="flex items-center gap-1"><input type="checkbox" className="size-3.5 shrink-0" title="Auto % from purchase price (untick for custom rate)" checked={autoOn(p.id, c.k === "sale_price" ? "sale" : "ws")} onChange={() => toggleRowMk(p.id, c.k === "sale_price" ? "sale" : "ws")} aria-label={`Auto ${c.label} ${p.name}`} /><input className={`${posInput} h-9 w-full min-w-0 px-2 text-right ${r[c.k] !== orig[p.id][c.k] ? "border-primary" : ""}`} value={r[c.k]} inputMode="decimal" onChange={(e) => set(p.id, c.k, e.target.value)} aria-label={`${c.label} ${p.name}`} /></div>
                       : c.k === "unit" ? <UnitSelect className={`${posInput} h-9 w-full px-1 ${r.unit !== orig[p.id].unit ? "border-primary" : ""}`} value={r.unit} onChange={(v) => set(p.id, "unit", v)} label={`Unit ${p.name}`} /> : <input className={`${posInput} h-9 w-full px-2 ${c.num ? "text-right" : ""} ${c.k !== "stock_value" && r[c.k] !== orig[p.id][c.k] ? "border-primary" : ""}`} value={r[c.k]} inputMode={c.num ? "decimal" : undefined}
                       title={c.k === "stock_value" ? "Changing stock value will auto-calculate the purchase price" : undefined} onChange={(e) => set(p.id, c.k, e.target.value)} aria-label={`${c.label} ${p.name}`} />}
                   </td>

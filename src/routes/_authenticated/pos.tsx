@@ -3,6 +3,8 @@ import { PosCustomerSearch } from "@/components/pos-customer-search";
 import { WaTemplateButton } from "@/components/wa-template-button";
 import { ShippingCalcButton } from "@/components/shipping-calc-button";
 import { PosSubnav } from "@/components/pos-subnav";
+import { CustomerPasteBox } from "@/components/customer-paste-box";
+import { ChallanDialog, toChallan } from "@/components/challan-dialog";
 import { StoreSwitcher, useActiveStore } from "@/components/store-switcher";
 import { usePinPrompt, usePosAccess } from "@/components/pos-access";
 import { AppShell } from "@/components/app-shell";
@@ -155,7 +157,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
   const guardNode = useUnsavedGuard(cart.length > 0, () => checkout("sale", false));
   const [discType, setDiscType] = useState<"amt" | "pct">("amt");
   const [delivery, setDelivery] = useState("");
-  const [pays, setPays] = useState<{ method: PayMethod; amount: string }[]>([{ method: "Cash", amount: "" }]);
+  const [pays, setPays] = useState<{ method: PayMethod; amount: string }[]>([{ method: "Credit", amount: "" }]);
   const [notes, setNotes] = useState("");
   const [customFieldValues, setCustomFieldValues] = useState<Record<number, string>>({});
   const [customFieldTotals, setCustomFieldTotals] = useState<Record<number, boolean>>({});
@@ -237,7 +239,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
   useEffect(() => {
     if (cfgApplied.current || !posCfg || !Object.keys(posCfg).length) return;
     cfgApplied.current = true;
-    setPays([{ method: cfg.defaultPay as PayMethod, amount: "" }]);
+    setPays([{ method: "Credit", amount: "" }]);
     try { if (localStorage.getItem(GRID_KEY) == null) setShowGrid(cfg.pos.showGrid); } catch { /* ignore */ }
   }, [posCfg, cfg]);
   const toggleGrid = () => {
@@ -549,7 +551,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
     setDiscType("amt");
     setDelivery("");
     setUnlocked(false);
-    setPays([{ method: cfg.defaultPay as PayMethod, amount: "" }]);
+    setPays([{ method: "Credit", amount: "" }]);
     setNotes("");
     setCustomFieldValues({});
     setCustomFieldTotals({});
@@ -566,6 +568,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
     if (cfg.pos.autoFocusSearch) scanRef.current?.focus();
   };
 
+  const [challan, setChallan] = useState<PrintDoc | null>(null);
   const submitLock = useRef(false);
   const docRef = useRef<string>(newRef());
   const checkout = async (rawKind: "sale" | "held" | "quotation", print: boolean) => {
@@ -633,7 +636,6 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
         setLastDoc(doc);
         if (!res.duplicate) {
           if (print) void pc.print(doc);
-          else pc.afterSave(doc, kind === "quotation" ? "quotation" : "pos");
           if (kind === "sale" && cfg.sales.autoPdf) void pc.pdf(doc);
         }
         toast.success(`${kind === "quotation" ? (estimate ? "Estimate" : "Quotation") : "Sale"} saved: ${res.invoiceNumber}${res.duplicate ? " (already saved)" : ""}${res.change > 0 ? ` — return change Rs ${money(res.change)}` : ""}`);
@@ -678,7 +680,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
         const saved = (ui.customFields ?? []).find((f) => f.label === field.label);
         return [index, Boolean(saved && (saved.value?.trim() || saved.addToTotal))];
       })));
-      setPays([{ method: "Cash", amount: "" }]);
+      setPays([{ method: "Credit", amount: "" }]);
       setManualNumber("");
       setEditing(asInvoice ? { id: d.id, number: d.doc_number } : null);
       setDocsOpen(null);
@@ -796,6 +798,14 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
               </Button>
             </div>
             <p className="mt-1.5 text-[11px] text-muted-foreground"><K>Alt+C</K> customer name · <K>Alt+P</K> add new party</p>
+            <CustomerPasteBox onApply={(c) => {
+              if (c.name) setCustomerName(c.name);
+              if (c.phone) setCustomerPhone(c.phone);
+              if (c.address) setCustomerAddress(c.address);
+              if (c.city) setCustomerCityArea(c.city);
+              if (c.goodsAdda) setGoodsAddaName(c.goodsAdda);
+              if (c.courier) setCourierServiceName(c.courier);
+            }} />
             {partyOpen ? (
               <div className="mb-3 rounded-xl border border-primary/40 bg-accent/30 p-3">
                 <p className="mb-2 text-sm font-bold text-foreground">Add new party</p>
@@ -816,7 +826,9 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
             <div className="mt-6 flex w-fit max-w-full gap-1 rounded-lg border-2 border-primary bg-muted p-1.5 shadow-sm" role="group" aria-label="Document type">
               <Button type="button" size="sm" variant={estimate ? "ghost" : "default"} aria-pressed={!estimate} onClick={() => setEstimate(false)} className="min-w-24 shadow-sm">Invoice</Button>
               <Button type="button" size="sm" variant={estimate ? "default" : "ghost"} aria-pressed={estimate} onClick={() => setEstimate(true)} className="min-w-24 shadow-sm">Estimate</Button>
+              <Button type="button" size="sm" variant="ghost" disabled={!cart.length} onClick={() => setChallan(toChallan(receiptToDoc(receipt(editing?.number || manualNumber.trim() || "Draft"), { date: new Date() })))} className="min-w-24 shadow-sm">Delivery Challan</Button>
             </div>
+            {challan ? <ChallanDialog doc={challan} onClose={() => setChallan(null)} onPrint={(d) => void pc.print(d)} onPdf={(d) => void pc.pdf(d)} /> : null}
             <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+E</K> switch Invoice / Estimate</p>
             <BarcodeScannerDialog
               open={camOpen}
@@ -1175,7 +1187,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
 
             {editing ? <p className="rounded-lg bg-accent p-2 text-xs text-accent-foreground">Open: <b>{editing.number}</b> — this will close when saved. <button className="underline" onClick={() => setEditing(null)}>Detach</button></p> : null}
 
-            <Button size="lg" className="h-12 w-full text-base" disabled={!cart.length || saving} onClick={() => checkout("sale", true)}><Printer /> {estimate ? "Save Estimate" : "Save + Print (F9)"} — Rs {money(total)}</Button>
+            <Button size="lg" className="h-12 w-full text-base" disabled={!cart.length || saving} onClick={() => checkout("sale", true)}><Printer /> {estimate ? "Save + Print Estimate (F9)" : "Save + Print (F9)"} — Rs {money(total)}</Button>
             <div className="grid grid-cols-3 gap-2">
               <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("sale", false)}><Save /> Save</Button>
               <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("held", false)}><Pause /> Hold (F10)</Button>
