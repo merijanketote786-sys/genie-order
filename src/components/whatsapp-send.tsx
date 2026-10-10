@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
+import { usePosAccess } from "@/components/pos-access";
+import { buildPdfBlob, pdfFileName } from "@/lib/print/dispatch";
 import type { PrintDoc } from "@/lib/print/render";
-import { MessageCircle, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Loader2, MessageCircle, X } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 /** Pakistani numbers → international digits (03xx → 923xx). */
 export function waNumber(raw?: string) {
@@ -39,46 +42,72 @@ export function waMessage(doc: PrintDoc, business: string) {
   return out.join("\n");
 }
 
+/**
+ * WhatsApp share: document ko PDF banata hai aur installed WhatsApp app mein
+ * customer ki chat ke saath share karta hai. Mobile par share sheet se WhatsApp
+ * khulta hai (PDF attached); desktop par PDF download hota hai aur WhatsApp app
+ * customer ki chat ke saath khul jata hai (PDF attach karna hota hai).
+ */
 export function WhatsAppSendDialog({ doc, business, onClose }: { doc: PrintDoc; business: string; onClose: () => void }) {
+  const { cfg } = usePosAccess();
   const [phone, setPhone] = useState(doc.party?.phone ?? "");
-  const [text, setText] = useState(() => waMessage(doc, business));
-  const [qr, setQr] = useState("");
+  const [busy, setBusy] = useState(false);
   const num = waNumber(phone);
-  const link = useMemo(() => `https://wa.me/${num}?text=${encodeURIComponent(text)}`, [num, text]);
   const valid = num.length >= 10;
 
-  useEffect(() => {
-    let live = true;
-    if (valid) void import("qrcode").then((m) => (m.default ?? m).toDataURL(link, { margin: 1, width: 220 })).then((u) => { if (live) setQr(u); }).catch(() => { if (live) setQr(""); });
-    else setQr("");
-    return () => { live = false; };
-  }, [link, valid]);
+  const send = async () => {
+    if (!valid || busy) return;
+    setBusy(true);
+    try {
+      const blob = await buildPdfBlob(doc, cfg);
+      const file = new File([blob], pdfFileName(doc), { type: "application/pdf" });
+      const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean };
+      if (nav.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: `${doc.title} ${doc.number}`.trim() });
+        toast.success("PDF shared — select WhatsApp and the customer's chat");
+      } else {
+        // Desktop / unsupported: PDF download + installed WhatsApp app mein customer ki chat
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = pdfFileName(doc);
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        openWhatsAppApp(num, `${doc.title} ${doc.number} — PDF downloaded, please attach it here.`);
+        toast.success("PDF downloaded — WhatsApp opened, attach the PDF and send");
+      }
+      onClose();
+    } catch (e) {
+      if (e instanceof Error && e.name === "AbortError") return; // user cancelled share sheet
+      toast.error("PDF could not be created. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-foreground/50 p-2" role="dialog" aria-modal="true" aria-label="Send on WhatsApp">
-      <div className="flex max-h-full w-full max-w-2xl flex-col overflow-auto rounded-xl border border-border bg-card p-4 shadow-2xl">
+      <div className="flex max-h-full w-full max-w-md flex-col overflow-auto rounded-xl border border-border bg-card p-4 shadow-2xl">
         <div className="mb-3 flex items-center gap-2">
           <MessageCircle className="text-primary" />
           <p className="mr-auto font-bold text-foreground">Send on WhatsApp</p>
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close"><X /></Button>
         </div>
-        <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
-          <div className="space-y-2">
-            <label className="block text-xs text-muted-foreground">Party WhatsApp number
-              <input className="mt-1 h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="03xx xxxxxxx" inputMode="tel" />
-            </label>
-            <label className="block text-xs text-muted-foreground">Message
-              <textarea className="mt-1 h-64 w-full rounded-md border border-border bg-background p-2 font-mono text-xs text-foreground" value={text} onChange={(e) => setText(e.target.value)} />
-            </label>
-          </div>
-          <div className="flex flex-col items-center gap-2 text-center">
-            {qr ? <img src={qr} alt="WhatsApp QR code" className="h-52 w-52 rounded-md border border-border bg-background" /> : <div className="grid h-52 w-52 place-items-center rounded-md border border-dashed border-border text-xs text-muted-foreground">Enter a valid number</div>}
-            <p className="max-w-52 text-xs text-muted-foreground">Scan with your phone camera — WhatsApp opens with the message ready. Just press Send.</p>
+        <div className="space-y-3">
+          <label className="block text-xs text-muted-foreground">Party WhatsApp number
+            <input className="mt-1 h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="03xx xxxxxxx" inputMode="tel" />
+          </label>
+          <div className="rounded-xl border border-border bg-surface-2/60 p-3 text-xs text-muted-foreground">
+            <p className="font-semibold text-foreground">{doc.title} {doc.number}</p>
+            <p className="mt-1">The document will be sent as a <b>PDF file</b>, not as text.</p>
+            <p className="mt-1">On mobile, the share sheet opens — choose WhatsApp and the customer's chat. On PC, the PDF downloads and the installed WhatsApp app opens with the customer's chat — attach the downloaded PDF there.</p>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap justify-end gap-2">
-          <Button variant="outline" onClick={() => navigator.clipboard?.writeText(text)}>Copy message</Button>
-          <Button disabled={!valid} onClick={() => openWhatsAppApp(num, text)}><MessageCircle /> Open WhatsApp</Button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button disabled={!valid || busy} onClick={send} className="gap-1.5">
+            {busy ? <Loader2 className="animate-spin" /> : <MessageCircle />} {busy ? "Preparing PDF…" : "Send PDF on WhatsApp"}
+          </Button>
         </div>
       </div>
     </div>
