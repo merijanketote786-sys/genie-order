@@ -22,8 +22,8 @@ const COLS: Col[] = [
   { k: "brand", label: "Brand", w: "w-28" },
   { k: "unit", label: "Unit", w: "w-36" },
   { k: "purchase_price", label: "Purchase price", w: "w-32", num: true },
-  { k: "sale_price", label: "Sale price", w: "w-32", num: true },
-  { k: "wholesale_price", label: "Wholesale price", w: "w-32", num: true },
+  { k: "sale_price", label: "Sale price", w: "w-44", num: true },
+  { k: "wholesale_price", label: "Wholesale price", w: "w-48", num: true },
   { k: "wholesale_min_qty", label: "Min wholesale qty", w: "w-32", num: true },
   { k: "min_sale_price", label: "Min sale price", w: "w-32", num: true },
   { k: "stock", label: "Stock qty", w: "w-24", num: true },
@@ -321,7 +321,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
         {list.length > 300 && <p className="py-2 text-center text-xs text-muted-foreground">Showing first 300 — use search or filters to narrow the list.</p>}
       </div>
       <div className="hidden max-h-[60vh] overflow-auto rounded-lg border border-border sm:block">
-        <table className="w-full min-w-[2050px] table-fixed border-collapse text-sm">
+        <table className="w-full min-w-[2150px] table-fixed border-collapse text-sm">
           <colgroup>
             <col className="w-12" />
             {COLS.map((c) => <col key={c.k} className={c.w} />)}
