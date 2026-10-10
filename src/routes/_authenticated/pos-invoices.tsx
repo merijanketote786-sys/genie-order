@@ -274,7 +274,7 @@ function PosInvoicesPage() {
           })}
         </div>
       </div>
-      {share ? <ShareDialog title={share.doc_number} text={shareText(share)} phone={share.customer_phone ?? undefined} onClose={() => setShare(null)} /> : null}
+      {share ? (() => { const d = saleToDoc(share); return <ShareDialog title={share.doc_number} doc={d} phone={share.customer_phone ?? undefined} onOpenPdf={() => pc.preview(d, true)} onClose={() => setShare(null)} />; })() : null}
       {editSale ? (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-background">
           <button

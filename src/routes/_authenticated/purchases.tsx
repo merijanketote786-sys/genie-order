@@ -86,7 +86,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const [editId, setEditId] = useState<{ id: string; number: string } | undefined>();
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
-  const [share, setShare] = useState<{ title: string; text: string } | null>(null);
+  const [share, setShare] = useState<{ title: string; doc: PrintDoc } | null>(null);
   const [busy, setBusy] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const today = new Date().toLocaleDateString("en-PK");
@@ -181,9 +181,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const refreshAll = () => ["purchases", "suppliers", "products", "products-lite"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   const doShare = (p: Hist) => run(async () => {
     const d = await loadDoc(p);
-     const text = [`*${d.title} ${p.doc_number}*`, new Date(p.created_at).toLocaleString("en-PK"), p.supplier_name ? `Party: ${p.supplier_name}` : "", "",
-      ...(d.lines ?? []).map((l) => `${l.name} — ${l.qty} x ${rs(l.rate)} = ${rs(l.total)}`), "", `Total: ${rs(p.grand_total)}`, `Paid: ${rs(p.paid_total)}`, p.balance > 0 ? `Balance: ${rs(p.balance)}` : ""].filter((x) => x !== "").join("\n");
-    setShare({ title: p.doc_number, text });
+    setShare({ title: p.doc_number, doc: d });
   });
   const doEdit = (p: Hist) => run(async () => {
     const r = await getPurchaseItems({ data: { id: p.id } });
@@ -405,7 +403,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
         </section>
       </div>
   );
-  const shareNode = share ? <ShareDialog title={share.title} text={share.text} onClose={() => setShare(null)} /> : null;
+  const shareNode = share ? <ShareDialog title={share.title} doc={share.doc} onOpenPdf={() => pc.preview(share.doc, true)} onClose={() => setShare(null)} /> : null;
   if (embedded) return <>{pc.node}{guardNode}{shareNode}{body}</>;
   return (
     <AppShell title="Purchases" subtitle="Stock purchases and party credit" active="/pos" wide>
