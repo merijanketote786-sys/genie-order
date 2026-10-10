@@ -286,7 +286,7 @@ function PosInvoicesPage() {
           >
             <X className="size-5" />
           </button>
-          <PosPage onSaved={() => { setEditSale(null); refresh(); }} />
+          <PosPage onSaved={(d) => { setEditSale(null); refresh(); if (d) pc.preview(d, false); }} />
         </div>
       ) : null}
       {pc.node}
