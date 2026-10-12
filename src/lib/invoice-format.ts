@@ -66,7 +66,7 @@ type Item = { name: string; price: number | null };
 
 export function parseItems(text: string, rates: RateRow[]): Item[] {
   const items: Item[] = [];
-  for (const raw of text.split(/\n|,/)) {
+  for (const raw of text.split(/\n|,(?!\d{3}\b)/)) {
     let line = raw.replace(/^\s*(\d+\s*[).]|[*\-•])\s*/, "").replace(/\.{2,}/g, " ").trim();
     if (!line || NON_ITEM.test(line) || !/[a-z]/i.test(line)) continue;
     let qty = 1;
