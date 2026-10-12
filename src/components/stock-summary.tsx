@@ -47,9 +47,20 @@ async function buildPdf(rows: Row[], cols: Col[], biz: Biz, size: Size) {
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.text(`${new Date().toLocaleString("en-PK")} · ${rows.length} items`, W - m, y, { align: "right" });
   const total = rows.reduce((s, r) => s + n(r.stock) * n(r.purchase_price), 0);
   const hasVal = cols.some((c) => c.key === "value");
+  const pageTotals: Record<number, number> = {};
   autoTable(doc, {
-    startY: y + 3, margin: { left: m, right: m, top: m, bottom: m + 4 }, showHead: "everyPage",
-    didDrawPage: () => { const pg = doc.getNumberOfPages(); doc.setFontSize(7); doc.text(`Page ${pg}`, W / 2, doc.internal.pageSize.getHeight() - m / 2, { align: "center" }); },
+    startY: y + 3, margin: { left: m, right: m, top: m, bottom: m + 8 }, showHead: "everyPage",
+    didDrawCell: (d) => { if (d.section === "body" && d.column.index === 0) { const r = rows[d.row.index]; if (r) pageTotals[d.pageNumber] = (pageTotals[d.pageNumber] ?? 0) + n(r.stock) * n(r.purchase_price); } },
+    didDrawPage: (d) => {
+      const pg = d.pageNumber, H = doc.internal.pageSize.getHeight();
+      doc.setFontSize(7);
+      doc.text(`Page ${pg}`, W / 2, H - m / 2, { align: "center" });
+      const last = pg === doc.getNumberOfPages();
+      doc.setFont("helvetica", "bold");
+      doc.text(`Page total: Rs ${money(pageTotals[pg] ?? 0)}`, W - m, H - m / 2, { align: "right" });
+      if (last) doc.text(`Grand total: Rs ${money(total)}`, m, H - m / 2, { align: "left" });
+      doc.setFont("helvetica", "normal");
+    },
     head: [["#", ...cols.map((c) => c.label)]],
     body: rows.map((r, i) => [i + 1, ...cols.map((c) => (c.num ? money(Number(c.get(r))) : String(c.get(r))))]),
     foot: hasVal ? [["", ...cols.map((c, i) => (c.key === "value" ? money(total) : i === 0 ? "Total" : ""))]] : undefined,
@@ -89,11 +100,11 @@ export function StockSummary({ open, onClose }: { open: boolean; onClose: () => 
   const filteredRows = useMemo(() => rows.filter((r) => FILTERS.some((f) => statusSel.includes(f.key) && f.test(r))), [rows, statusSel]);
 
   useEffect(() => {
-    if (!open || !rows.length || !biz) return;
+    if (!open || !filteredRows.length || !biz) return;
     let live = true;
     setUrl(""); setPages([]);
     (async () => {
-      const d = await buildPdf(rows, COLS, biz, size);
+      const d = await buildPdf(filteredRows, COLS, biz, size);
       const buf = d.output("arraybuffer");
       const pdfjs = await import("pdfjs-dist");
       const worker = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
@@ -109,7 +120,7 @@ export function StockSummary({ open, onClose }: { open: boolean; onClose: () => 
       if (live) { setPages(out); setUrl("ok"); }
     })().catch(() => { if (live) setUrl("ok"); });
     return () => { live = false; };
-  }, [open, rows, biz, size]);
+  }, [open, filteredRows, biz, size]);
 
   const total = useMemo(() => rows.reduce((s, r) => s + n(r.stock) * n(r.purchase_price), 0), [rows]);
   const fname = `stock-summary-${new Date().toISOString().slice(0, 10)}`;
@@ -141,8 +152,8 @@ export function StockSummary({ open, onClose }: { open: boolean; onClose: () => 
           <Button size="sm" variant="outline" disabled={!rows.length} onClick={() => setAsk("xlsx")}><FileSpreadsheet /> Download Excel</Button>
         </div>
         <div className="min-h-[60vh] flex-1 overflow-auto rounded-lg border border-border bg-muted p-2 sm:p-4">
-          {isLoading || (rows.length && !url) ? <div className="grid h-full place-items-center"><Loader2 className="animate-spin" /></div>
-            : !rows.length ? <p className="p-6 text-center text-sm text-muted-foreground">No items.</p>
+          {isLoading || (filteredRows.length && !url) ? <div className="grid h-full place-items-center"><Loader2 className="animate-spin" /></div>
+            : !filteredRows.length ? <p className="p-6 text-center text-sm text-muted-foreground">No items.</p>
             : <div className="mx-auto flex flex-col items-center gap-4">{pages.map((src, i) => <div key={i} className="w-full" style={{ maxWidth: size === "a4" ? 794 : 560 }}><img src={src} alt={`Page ${i + 1}`} className="w-full bg-card shadow-lg" /><p className="mt-1 text-center text-xs text-muted-foreground">Page {i + 1} of {pages.length}</p></div>)}{!pages.length && <p className="p-6 text-sm text-muted-foreground">Preview unavailable — use Download PDF.</p>}</div>}
         </div>
       </div>
