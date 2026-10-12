@@ -15,6 +15,7 @@ import { loadChatHistory, saveChatHistory } from "@/lib/chat-history";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { EXTRACT_EXTENSIONS, extractFileText } from "@/lib/extract.functions";
 
 export const Route = createFileRoute("/_authenticated/extract")({
   head: () => ({
@@ -73,9 +74,9 @@ function ExtractChat() {
       toast.error("File must be less than 15MB");
       return false;
     }
-    const isSupported = file.type.startsWith("image/") || file.type === "application/pdf";
+    const isSupported = EXTRACT_EXTENSIONS.includes((file.name.split(".").pop() ?? "").toLowerCase());
     if (!isSupported) {
-      toast.error("Only image or PDF files are supported");
+      toast.error("Only Excel, CSV, Word (.docx) or TXT files are supported");
       return false;
     }
     if (pendingPreview?.startsWith("blob:")) URL.revokeObjectURL(pendingPreview);
@@ -168,26 +169,7 @@ function ExtractChat() {
         { id: loadingId, role: "assistant", text: "", loading: true },
       ]);
 
-      const { supabase } = await import("@/integrations/supabase/client");
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-
-      const res = await fetch("/api/extract", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          prompt: currentPrompt,
-          file: { name: file.name, type: file.type, dataUrl },
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.text();
-        throw new Error(err || "Extraction failed");
-      }
-      const { text } = (await res.json()) as { text: string };
+      const { text } = await extractFileText({ data: { fileName: file.name, dataUrl } });
       setMessages((m) =>
         m.map((msg) =>
           msg.id === loadingId
@@ -328,7 +310,7 @@ function ExtractChat() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,application/pdf"
+              accept=".xlsx,.xls,.csv,.txt,.docx"
               className="hidden"
               onChange={handleFileChange}
             />
