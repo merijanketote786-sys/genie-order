@@ -301,9 +301,11 @@ export async function renderPrint(doc: PrintDoc, cfg: ResolvedCfg, o: RenderOpts
   return { html, spec };
 }
 
-function customRows(doc: Pick<PrintDoc, "customFields">, cfg: { printing: { customFields?: InvoiceCustomField[] } }, thermal: boolean): string {
+const CUSTOM_FIELD_KINDS = new Set(["pos", "sale", "quotation"]);
+function customRows(doc: Pick<PrintDoc, "customFields" | "kind">, cfg: { printing: { customFields?: InvoiceCustomField[] } }, thermal: boolean): string {
+  if (!CUSTOM_FIELD_KINDS.has(doc.kind)) return "";
   return (doc.customFields ?? cfg.printing.customFields ?? [])
-    .filter((c) => c.show !== false && !c.addToTotal && (c.label?.trim() || c.value?.trim()))
+    .filter((c) => c.show !== false && !c.addToTotal && !!c.value?.trim())
     .map((c) => {
       const fs = c.sizePt && c.sizePt >= 5 && c.sizePt <= 36 ? `font-size:${c.sizePt}pt!important;` : "";
       const sz = ` style="${fs}${thermal ? "" : "margin-bottom:1mm"}"`;
