@@ -25,3 +25,4 @@
 - POS units (main/sub with conversion factor = sub units per 1 main) and saved categories live in pos_units / pos_categories, written via the browser client under RLS (edit_stock or admin); keeps them workspace-scoped without new RPCs.
 - Dashboard quick-action popups render route components directly inside EmbeddedShell (AppShell renders children only) instead of iframes; nested iframes lose the preview auth session.
 - Handle rotation with shared AppShell/dialog safe-area and short-landscape CSS rather than orientation listeners or remounts, so in-progress entries survive viewport changes.
+- Workspace order/invoice/confirmation formatting, extract and rate imports are rule-based (src/lib/template-engine.ts + per-user order_templates kinds incl. *_input); no AI calls anywhere in the app, so they work without credits and stay predictable.
