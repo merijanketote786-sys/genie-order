@@ -55,10 +55,8 @@ async function buildPdf(rows: Row[], cols: Col[], biz: Biz, size: Size) {
       const pg = d.pageNumber, H = doc.internal.pageSize.getHeight();
       doc.setFontSize(7);
       doc.text(`Page ${pg}`, W / 2, H - m / 2, { align: "center" });
-      const last = pg === doc.getNumberOfPages();
       doc.setFont("helvetica", "bold");
       doc.text(`Page total: Rs ${money(pageTotals[pg] ?? 0)}`, W - m, H - m / 2, { align: "right" });
-      if (last) doc.text(`Grand total: Rs ${money(total)}`, m, H - m / 2, { align: "left" });
       doc.setFont("helvetica", "normal");
     },
     head: [["#", ...cols.map((c) => c.label)]],
@@ -69,6 +67,10 @@ async function buildPdf(rows: Row[], cols: Col[], biz: Biz, size: Size) {
     footStyles: { fillColor: [226, 232, 240], textColor: 20, fontStyle: "bold" },
     columnStyles: Object.fromEntries(cols.map((c, i) => [i + 1, c.num ? { halign: "right" } : {}])),
   });
+  const qtyTotal = rows.reduce((s, r) => s + n(r.stock), 0);
+  doc.setPage(doc.getNumberOfPages());
+  doc.setFont("helvetica", "bold"); doc.setFontSize(7);
+  doc.text(`Grand total: ${rows.length} items · Stock qty ${money(qtyTotal)} · Stock value Rs ${money(total)}`, m, doc.internal.pageSize.getHeight() - m / 2, { align: "left" });
   return doc;
 }
 
