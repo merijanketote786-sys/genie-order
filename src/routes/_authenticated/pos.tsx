@@ -894,27 +894,32 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
           </section>
 
           {/* Sale invoice grid — Vyapar jaisi table: # | ITEM | WEIGHT | SIZE | QTY | UNIT | PRICE/UNIT | AMOUNT */}
-          <ItemsPasteBox onApply={async (items) => {
-            let created = 0;
-            for (const it of items) {
-              const key = it.name.trim().toLowerCase();
-              let p = products.find((x) => x.name.toLowerCase() === key);
-              if (!p) {
-                try {
-                  await createPosProduct({ data: { name: it.name.trim() } });
-                  created++;
-                } catch (e) {
-                  toast.error(`${it.name}: ${e instanceof Error ? e.message : "save failed"}`);
-                  continue;
-                }
-                p = { name: it.name.trim(), unit: it.unit || "Piece", p100: null, p250: null, p500: null, sale: 0, stock: null, customSale: null, customP100: null, customP250: null, customP500: null } as DbProduct;
-                add(p, "sale", { qty: it.qty, price: it.price ?? 0, unit: it.unit });
-              } else {
-                add(p, undefined, { qty: it.qty, price: it.price, unit: it.unit });
+          <ItemsPasteBox
+            isKnown={(name) => products.some((x) => x.name.toLowerCase() === name.trim().toLowerCase())}
+            onApply={async (items) => {
+              for (const it of items) {
+                const p = products.find((x) => x.name.toLowerCase() === it.name.trim().toLowerCase());
+                if (p) add(p, undefined, { qty: it.qty, price: it.price, unit: it.unit });
               }
-            }
-            if (created) { qc.invalidateQueries(); toast.success(`${created} new item(s) saved to inventory`); }
-          }} />
+            }}
+            onCreate={async (it) => {
+              await createPosProduct({ data: { name: it.name.trim() } });
+              const p = { name: it.name.trim(), unit: it.unit || "Piece", p100: null, p250: null, p500: null, sale: 0, stock: null, customSale: null, customP100: null, customP250: null, customP500: null } as DbProduct;
+              add(p, "sale", { qty: it.qty, price: it.price ?? 0, unit: it.unit });
+              qc.invalidateQueries();
+            }}
+            findSimilar={(name) => {
+              const words = name.trim().toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+              return products
+                .filter((x) => words.some((w) => x.name.toLowerCase().includes(w)))
+                .slice(0, 8)
+                .map((x) => x.name);
+            }}
+            onPickSimilar={(name, it) => {
+              const p = products.find((x) => x.name === name);
+              if (p) add(p, undefined, { qty: it.qty, price: it.price, unit: it.unit });
+            }}
+          />
           <section className="border-y border-border">
             <div className="overflow-x-auto">
             <div className="md:min-w-[960px]">
