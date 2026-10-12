@@ -47,9 +47,13 @@ async function buildPdf(rows: Row[], cols: Col[], biz: Biz, size: Size) {
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.text(`${new Date().toLocaleString("en-PK")} · ${rows.length} items`, W - m, y, { align: "right" });
   const total = rows.reduce((s, r) => s + n(r.stock) * n(r.purchase_price), 0);
   const pageTotals: Record<number, number> = {};
+  let lastRowBottom = 0, lastRowPage = 1;
   autoTable(doc, {
     startY: y + 3, margin: { left: m, right: m, top: m, bottom: m + 8 }, showHead: "everyPage", showFoot: "never",
-    didDrawCell: (d) => { if (d.section === "body" && d.column.index === 0) { const r = rows[d.row.index]; if (r) pageTotals[d.pageNumber] = (pageTotals[d.pageNumber] ?? 0) + n(r.stock) * n(r.purchase_price); } },
+    didDrawCell: (d) => {
+      if (d.section === "body" && d.column.index === 0) { const r = rows[d.row.index]; if (r) pageTotals[d.pageNumber] = (pageTotals[d.pageNumber] ?? 0) + n(r.stock) * n(r.purchase_price); }
+      if (d.section === "body" && d.row.index === rows.length - 1) { lastRowBottom = d.cell.y + d.cell.h; lastRowPage = d.pageNumber; }
+    },
     didDrawPage: (d) => {
       const pg = d.pageNumber, H = doc.internal.pageSize.getHeight();
       doc.setFontSize(7);
