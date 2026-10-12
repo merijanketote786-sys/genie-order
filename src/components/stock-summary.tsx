@@ -120,7 +120,7 @@ export function StockSummary({ open, onClose }: { open: boolean; onClose: () => 
       if (live) { setPages(out); setUrl("ok"); }
     })().catch(() => { if (live) setUrl("ok"); });
     return () => { live = false; };
-  }, [open, rows, biz, size]);
+  }, [open, filteredRows, biz, size]);
 
   const total = useMemo(() => rows.reduce((s, r) => s + n(r.stock) * n(r.purchase_price), 0), [rows]);
   const fname = `stock-summary-${new Date().toISOString().slice(0, 10)}`;
@@ -152,8 +152,8 @@ export function StockSummary({ open, onClose }: { open: boolean; onClose: () => 
           <Button size="sm" variant="outline" disabled={!rows.length} onClick={() => setAsk("xlsx")}><FileSpreadsheet /> Download Excel</Button>
         </div>
         <div className="min-h-[60vh] flex-1 overflow-auto rounded-lg border border-border bg-muted p-2 sm:p-4">
-          {isLoading || (rows.length && !url) ? <div className="grid h-full place-items-center"><Loader2 className="animate-spin" /></div>
-            : !rows.length ? <p className="p-6 text-center text-sm text-muted-foreground">No items.</p>
+          {isLoading || (filteredRows.length && !url) ? <div className="grid h-full place-items-center"><Loader2 className="animate-spin" /></div>
+            : !filteredRows.length ? <p className="p-6 text-center text-sm text-muted-foreground">No items.</p>
             : <div className="mx-auto flex flex-col items-center gap-4">{pages.map((src, i) => <div key={i} className="w-full" style={{ maxWidth: size === "a4" ? 794 : 560 }}><img src={src} alt={`Page ${i + 1}`} className="w-full bg-card shadow-lg" /><p className="mt-1 text-center text-xs text-muted-foreground">Page {i + 1} of {pages.length}</p></div>)}{!pages.length && <p className="p-6 text-sm text-muted-foreground">Preview unavailable — use Download PDF.</p>}</div>}
         </div>
       </div>
