@@ -84,6 +84,9 @@ export function StockSummary({ open, onClose }: { open: boolean; onClose: () => 
   const [url, setUrl] = useState("");
   const [ask, setAsk] = useState<null | "print" | "pdf" | "xlsx">(null);
   const [sel, setSel] = useState<string[]>(COLS.map((c) => c.key));
+  const [statusSel, setStatusSel] = useState<string[]>(["active"]);
+
+  const filteredRows = useMemo(() => rows.filter((r) => FILTERS.some((f) => statusSel.includes(f.key) && f.test(r))), [rows, statusSel]);
 
   useEffect(() => {
     if (!open || !rows.length || !biz) return;
@@ -116,11 +119,11 @@ export function StockSummary({ open, onClose }: { open: boolean; onClose: () => 
     const kind = ask; setAsk(null);
     if (kind === "xlsx") {
       const X = await import("xlsx");
-      const ws = X.utils.aoa_to_sheet([cols.map((c) => c.label), ...rows.map((r) => cols.map((c) => c.get(r)))]);
+      const ws = X.utils.aoa_to_sheet([cols.map((c) => c.label), ...filteredRows.map((r) => cols.map((c) => c.get(r)))]);
       const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, "Stock"); X.writeFile(wb, `${fname}.xlsx`);
       return;
     }
-    const doc = await buildPdf(rows, cols, biz ?? { name: "", address: "", phone: "", email: "", website: "", taxId: "" }, size);
+    const doc = await buildPdf(filteredRows, cols, biz ?? { name: "", address: "", phone: "", email: "", website: "", taxId: "" }, size);
     if (kind === "pdf") { doc.save(`${fname}.pdf`); return; }
     doc.autoPrint();
     const w = window.open(URL.createObjectURL(doc.output("blob")));
