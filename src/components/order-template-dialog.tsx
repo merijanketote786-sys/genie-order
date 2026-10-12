@@ -25,18 +25,30 @@ import {
 } from "@/lib/order-template.functions";
 import {
   CONFIRMATION_TEMPLATE_VARIABLES,
-  DEFAULT_CONFIRMATION_TEMPLATE,
-  DEFAULT_ORDER_TEMPLATE,
+  INPUT_TEMPLATE_VARIABLES,
   ORDER_TEMPLATE_MAX_LENGTH,
   ORDER_TEMPLATE_VARIABLES,
-  type TemplateKind,
+  defaultTemplateFor,
+  type AnyTemplateKind,
 } from "@/lib/order-template";
+import { INVOICE_TEMPLATE_VARIABLES } from "@/lib/invoice-format";
+import { humanize, slugify, tokensOf } from "@/lib/template-engine";
+import type { LucideIcon } from "lucide-react";
+
+const KIND_META: Record<AnyTemplateKind, { title: string; button: string; vars: readonly { label: string; token: string }[] }> = {
+  order: { title: "Order output templates", button: "Template", vars: ORDER_TEMPLATE_VARIABLES },
+  order_input: { title: "Message input formats", button: "Input format", vars: INPUT_TEMPLATE_VARIABLES },
+  invoice: { title: "Invoice templates", button: "Template", vars: INVOICE_TEMPLATE_VARIABLES },
+  confirmation: { title: "Confirmation templates", button: "Template", vars: CONFIRMATION_TEMPLATE_VARIABLES },
+  confirmation_input: { title: "Message input formats", button: "Input format", vars: INPUT_TEMPLATE_VARIABLES },
+};
 
 type OrderTemplateDialogProps = {
   template: string;
   onTemplateChange: (template: string) => void;
   compact?: boolean;
-  kind?: TemplateKind;
+  kind?: AnyTemplateKind;
+  icon?: LucideIcon;
 };
 
 export function OrderTemplateDialog({
@@ -44,12 +56,11 @@ export function OrderTemplateDialog({
   onTemplateChange,
   compact = false,
   kind = "order",
+  icon: Icon = FilePenLine,
 }: OrderTemplateDialogProps) {
-  const isConfirm = kind === "confirmation";
-  const baseTemplate = isConfirm ? DEFAULT_CONFIRMATION_TEMPLATE : DEFAULT_ORDER_TEMPLATE;
-  const variables: readonly { label: string; token: string }[] = isConfirm
-    ? CONFIRMATION_TEMPLATE_VARIABLES
-    : ORDER_TEMPLATE_VARIABLES;
+  const meta = KIND_META[kind];
+  const isInput = kind.endsWith("_input");
+  const baseTemplate = defaultTemplateFor(kind);
   const queryClient = useQueryClient();
   const loadTemplates = useServerFn(getOrderTemplate);
   const saveTemplate = useServerFn(saveOrderTemplate);
@@ -68,6 +79,24 @@ export function OrderTemplateDialog({
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
+  const [newVar, setNewVar] = useState("");
+  const known = new Set(meta.vars.map((v) => v.token));
+  const custom = Array.from(new Set([...templates.map((t) => t.template), draft].flatMap(tokensOf)))
+    .map((k) => `{{${k}}}`)
+    .filter((t) => !known.has(t));
+  const variables = [
+    ...meta.vars,
+    ...custom.map((token) => ({ label: humanize(token.slice(2, -2)), token })),
+  ];
+  const addCustomVariable = () => {
+    const key = slugify(newVar);
+    if (!key) {
+      toast.error("Enter a variable name");
+      return;
+    }
+    insertVariable(isInput ? `${humanize(key).replace(/^./, (c) => c.toUpperCase())}: {{${key}}}` : `{{${key}}}`);
+    setNewVar("");
+  };
 
   const selectedName = templates.find((t) => t.id === selectedId)?.name;
 
@@ -226,16 +255,17 @@ export function OrderTemplateDialog({
           disabled={loading}
           className={compact ? "relative h-16 w-full min-w-0 flex-col gap-1 rounded-lg px-1.5 text-xs text-muted-foreground sm:h-14 sm:px-2" : undefined}
         >
-          <FilePenLine className="size-5 sm:size-4" /> {compact ? "Template" : loading ? "Loading..." : selectedName ? selectedName : "Templates"}
+          <Icon className="size-5 sm:size-4" /> {compact ? meta.button : loading ? "Loading..." : selectedName ? selectedName : "Templates"}
           {compact && selectedName ? <span className="absolute right-2 top-2 size-1.5 rounded-full bg-success" /> : null}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[92dvh] w-[calc(100%-1.5rem)] max-w-2xl overflow-y-auto rounded-2xl p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle>{isConfirm ? "Confirmation templates" : "Order templates"}</DialogTitle>
+          <DialogTitle>{meta.title}</DialogTitle>
           <DialogDescription>
-            Save multiple templates and select whichever you need. Every new{" "}
-            {isConfirm ? "order proforma" : "order"} will be created using the selected template.
+            {isInput
+              ? "Set the label format customers' messages are written in. Each label line maps to a variable, e.g. Name: {{name}}."
+              : "Save multiple templates and select whichever you need. Output is filled from the message using your variables — no AI."}
           </DialogDescription>
         </DialogHeader>
 
@@ -345,6 +375,25 @@ export function OrderTemplateDialog({
                   {variable.label}
                 </Button>
               ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={newVar}
+                onChange={(e) => setNewVar(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addCustomVariable();
+                  }
+                }}
+                maxLength={40}
+                disabled={saving}
+                placeholder="Custom variable (e.g. Goods adda)"
+                className="h-9 rounded-xl bg-card"
+              />
+              <Button type="button" variant="outline" size="sm" className="h-9" disabled={saving} onMouseDown={(e) => e.preventDefault()} onClick={addCustomVariable}>
+                <Plus /> Add
+              </Button>
             </div>
           </div>
           <Textarea
