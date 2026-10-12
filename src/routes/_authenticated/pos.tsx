@@ -157,7 +157,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
   const guardNode = useUnsavedGuard(cart.length > 0, () => checkout("sale", false));
   const [discType, setDiscType] = useState<"amt" | "pct">("amt");
   const [delivery, setDelivery] = useState("");
-  const [pays, setPays] = useState<{ method: PayMethod; amount: string }[]>([{ method: "Credit", amount: "" }]);
+  const [pays, setPays] = useState<{ method: PayMethod; amount: string }[]>([{ method: "Cash", amount: "" }]);
   const [notes, setNotes] = useState("");
   const [customFieldValues, setCustomFieldValues] = useState<Record<number, string>>({});
   const [customFieldTotals, setCustomFieldTotals] = useState<Record<number, boolean>>({});
@@ -239,7 +239,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
   useEffect(() => {
     if (cfgApplied.current || !posCfg || !Object.keys(posCfg).length) return;
     cfgApplied.current = true;
-    setPays([{ method: "Credit", amount: "" }]);
+    setPays([{ method: cfg.defaultPay as PayMethod, amount: "" }]);
     try { if (localStorage.getItem(GRID_KEY) == null) setShowGrid(cfg.pos.showGrid); } catch { /* ignore */ }
   }, [posCfg, cfg]);
   const toggleGrid = () => {
@@ -551,7 +551,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
     setDiscType("amt");
     setDelivery("");
     setUnlocked(false);
-    setPays([{ method: "Credit", amount: "" }]);
+    setPays([{ method: cfg.defaultPay as PayMethod, amount: "" }]);
     setNotes("");
     setCustomFieldValues({});
     setCustomFieldTotals({});
@@ -682,7 +682,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
         const saved = (ui.customFields ?? []).find((f) => f.label === field.label);
         return [index, Boolean(saved && (saved.value?.trim() || saved.addToTotal))];
       })));
-      setPays([{ method: "Credit", amount: "" }]);
+      setPays([{ method: "Cash", amount: "" }]);
       setManualNumber("");
       setEditing(asInvoice ? { id: d.id, number: d.doc_number } : null);
       setDocsOpen(null);
