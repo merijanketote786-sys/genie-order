@@ -23,19 +23,30 @@ const COLS: Col[] = [
   { key: "value", label: "Stock value", num: true, get: (r) => n(r.stock) * n(r.purchase_price) },
 ];
 
-async function buildPdf(rows: Row[], cols: Col[]) {
+type Biz = { name: string; address: string; phone: string; email: string; website: string; taxId: string };
+type Size = "a4" | "a5";
+const bizLines = (b: Biz) => [b.address, b.phone && `Ph: ${b.phone}`, b.email, b.website, b.taxId && `NTN/GST: ${b.taxId}`].filter(Boolean) as string[];
+
+async function buildPdf(rows: Row[], cols: Col[], biz: Biz, size: Size) {
   const [{ jsPDF }, { default: autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
-  const doc = new jsPDF({ orientation: cols.length > 6 ? "landscape" : "portrait", unit: "mm", format: "a4" });
-  doc.setFontSize(14); doc.text("Stock Summary", 14, 14);
-  doc.setFontSize(9); doc.text(new Date().toLocaleString("en-PK"), 14, 20);
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: size });
+  const W = doc.internal.pageSize.getWidth(), m = size === "a5" ? 8 : 12;
+  let y = m + 4;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(size === "a5" ? 13 : 16); doc.text(biz.name || "HB Chemicals Pakistan", W / 2, y, { align: "center" });
+  doc.setFont("helvetica", "normal"); doc.setFontSize(size === "a5" ? 7.5 : 9);
+  for (const l of bizLines(biz)) { y += 4.5; doc.text(l, W / 2, y, { align: "center" }); }
+  y += 3; doc.setDrawColor(150); doc.line(m, y, W - m, y);
+  y += 6; doc.setFont("helvetica", "bold"); doc.setFontSize(size === "a5" ? 10 : 12); doc.text("Stock Summary", m, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.text(`${new Date().toLocaleString("en-PK")} · ${rows.length} items`, W - m, y, { align: "right" });
   const total = rows.reduce((s, r) => s + n(r.stock) * n(r.purchase_price), 0);
   const hasVal = cols.some((c) => c.key === "value");
   autoTable(doc, {
-    startY: 24,
+    startY: y + 3, margin: { left: m, right: m, top: m, bottom: m + 4 }, showHead: "everyPage",
+    didDrawPage: () => { const pg = doc.getNumberOfPages(); doc.setFontSize(7); doc.text(`Page ${pg}`, W / 2, doc.internal.pageSize.getHeight() - m / 2, { align: "center" }); },
     head: [["#", ...cols.map((c) => c.label)]],
     body: rows.map((r, i) => [i + 1, ...cols.map((c) => (c.num ? money(Number(c.get(r))) : String(c.get(r))))]),
     foot: hasVal ? [["", ...cols.map((c, i) => (c.key === "value" ? money(total) : i === 0 ? "Total" : ""))]] : undefined,
-    styles: { fontSize: 8, cellPadding: 1.5 },
+    styles: { fontSize: size === "a5" ? (cols.length > 6 ? 5.5 : 6.5) : (cols.length > 6 ? 7 : 8), cellPadding: size === "a5" ? 1 : 1.5, overflow: "linebreak" },
     headStyles: { fillColor: [30, 41, 59] },
     footStyles: { fillColor: [226, 232, 240], textColor: 20, fontStyle: "bold" },
     columnStyles: Object.fromEntries(cols.map((c, i) => [i + 1, c.num ? { halign: "right" } : {}])),
@@ -52,16 +63,43 @@ export function StockSummary({ open, onClose }: { open: boolean; onClose: () => 
       return (data ?? []) as Row[];
     },
   });
+  const { data: biz } = useQuery({
+    queryKey: ["stock-summary-biz"], enabled: open,
+    queryFn: async (): Promise<Biz> => {
+      const { data } = await supabase.from("pos_settings").select("config").maybeSingle();
+      const c = (data?.config ?? {}) as { business?: Partial<Biz>; receiptBusiness?: string };
+      const b = c.business ?? {};
+      return { name: b.name || c.receiptBusiness || "", address: b.address ?? "", phone: b.phone ?? "", email: b.email ?? "", website: b.website ?? "", taxId: b.taxId ?? "" };
+    },
+  });
+  const [size, setSize] = useState<Size>("a4");
+  const [pages, setPages] = useState<string[]>([]);
   const [url, setUrl] = useState("");
   const [ask, setAsk] = useState<null | "print" | "pdf" | "xlsx">(null);
   const [sel, setSel] = useState<string[]>(COLS.map((c) => c.key));
 
   useEffect(() => {
-    if (!open || !rows.length) return;
-    let live = true, u = "";
-    buildPdf(rows, COLS).then((d) => { if (!live) return; u = URL.createObjectURL(d.output("blob")); setUrl(u); });
-    return () => { live = false; if (u) URL.revokeObjectURL(u); };
-  }, [open, rows]);
+    if (!open || !rows.length || !biz) return;
+    let live = true;
+    setUrl(""); setPages([]);
+    (async () => {
+      const d = await buildPdf(rows, COLS, biz, size);
+      const buf = d.output("arraybuffer");
+      const pdfjs = await import("pdfjs-dist");
+      const worker = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+      pdfjs.GlobalWorkerOptions.workerSrc = worker;
+      const pdf = await pdfjs.getDocument({ data: new Uint8Array(buf) }).promise;
+      const out: string[] = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const pg = await pdf.getPage(i); const vp = pg.getViewport({ scale: 2 });
+        const cv = document.createElement("canvas"); cv.width = vp.width; cv.height = vp.height;
+        await pg.render({ canvasContext: cv.getContext("2d")!, viewport: vp, canvas: cv }).promise;
+        out.push(cv.toDataURL("image/jpeg", 0.85));
+      }
+      if (live) { setPages(out); setUrl("ok"); }
+    })().catch(() => { if (live) setUrl("ok"); });
+    return () => { live = false; };
+  }, [open, rows, biz, size]);
 
   const total = useMemo(() => rows.reduce((s, r) => s + n(r.stock) * n(r.purchase_price), 0), [rows]);
   const fname = `stock-summary-${new Date().toISOString().slice(0, 10)}`;
@@ -75,7 +113,7 @@ export function StockSummary({ open, onClose }: { open: boolean; onClose: () => 
       const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, "Stock"); X.writeFile(wb, `${fname}.xlsx`);
       return;
     }
-    const doc = await buildPdf(rows, cols);
+    const doc = await buildPdf(rows, cols, biz ?? { name: "", address: "", phone: "", email: "", website: "", taxId: "" }, size);
     if (kind === "pdf") { doc.save(`${fname}.pdf`); return; }
     doc.autoPrint();
     const w = window.open(URL.createObjectURL(doc.output("blob")));
@@ -87,14 +125,15 @@ export function StockSummary({ open, onClose }: { open: boolean; onClose: () => 
       <div className="flex h-full flex-col gap-2 p-3">
         <div className="flex flex-wrap items-center gap-2">
           <p className="mr-auto text-sm text-muted-foreground">{rows.length} items · Stock value <b className="text-foreground">Rs {money(total)}</b></p>
+          <div className="flex overflow-hidden rounded-md border border-border">{(["a4", "a5"] as const).map((k) => <button key={k} type="button" onClick={() => setSize(k)} className={`px-3 py-1 text-xs font-semibold ${size === k ? "bg-primary text-primary-foreground" : "bg-card text-foreground"}`}>{k.toUpperCase()}</button>)}</div>
           <Button size="sm" variant="outline" disabled={!rows.length} onClick={() => setAsk("print")}><Printer /> Print</Button>
           <Button size="sm" variant="outline" disabled={!rows.length} onClick={() => setAsk("pdf")}><Download /> Download PDF</Button>
           <Button size="sm" variant="outline" disabled={!rows.length} onClick={() => setAsk("xlsx")}><FileSpreadsheet /> Download Excel</Button>
         </div>
-        <div className="min-h-[60vh] flex-1 overflow-hidden rounded-lg border border-border bg-muted">
+        <div className="min-h-[60vh] flex-1 overflow-auto rounded-lg border border-border bg-muted p-2 sm:p-4">
           {isLoading || (rows.length && !url) ? <div className="grid h-full place-items-center"><Loader2 className="animate-spin" /></div>
             : !rows.length ? <p className="p-6 text-center text-sm text-muted-foreground">No items.</p>
-            : <iframe title="Stock summary PDF" src={url} className="h-full min-h-[60vh] w-full border-0" />}
+            : <div className="mx-auto flex flex-col items-center gap-4">{pages.map((src, i) => <div key={i} className="w-full" style={{ maxWidth: size === "a4" ? 794 : 560 }}><img src={src} alt={`Page ${i + 1}`} className="w-full bg-card shadow-lg" /><p className="mt-1 text-center text-xs text-muted-foreground">Page {i + 1} of {pages.length}</p></div>)}{!pages.length && <p className="p-6 text-sm text-muted-foreground">Preview unavailable — use Download PDF.</p>}</div>}
         </div>
       </div>
       {ask && typeof document !== "undefined" && createPortal(
