@@ -47,9 +47,20 @@ async function buildPdf(rows: Row[], cols: Col[], biz: Biz, size: Size) {
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.text(`${new Date().toLocaleString("en-PK")} · ${rows.length} items`, W - m, y, { align: "right" });
   const total = rows.reduce((s, r) => s + n(r.stock) * n(r.purchase_price), 0);
   const hasVal = cols.some((c) => c.key === "value");
+  const pageTotals: Record<number, number> = {};
   autoTable(doc, {
-    startY: y + 3, margin: { left: m, right: m, top: m, bottom: m + 4 }, showHead: "everyPage",
-    didDrawPage: () => { const pg = doc.getNumberOfPages(); doc.setFontSize(7); doc.text(`Page ${pg}`, W / 2, doc.internal.pageSize.getHeight() - m / 2, { align: "center" }); },
+    startY: y + 3, margin: { left: m, right: m, top: m, bottom: m + 8 }, showHead: "everyPage",
+    didDrawCell: (d) => { if (d.section === "body" && d.column.index === 0) { const r = rows[d.row.index]; if (r) pageTotals[d.pageNumber] = (pageTotals[d.pageNumber] ?? 0) + n(r.stock) * n(r.purchase_price); } },
+    didDrawPage: (d) => {
+      const pg = d.pageNumber, H = doc.internal.pageSize.getHeight();
+      doc.setFontSize(7);
+      doc.text(`Page ${pg}`, W / 2, H - m / 2, { align: "center" });
+      const last = pg === doc.getNumberOfPages();
+      doc.setFont("helvetica", "bold");
+      doc.text(`Page total: Rs ${money(pageTotals[pg] ?? 0)}`, W - m, H - m / 2, { align: "right" });
+      if (last) doc.text(`Grand total: Rs ${money(total)}`, m, H - m / 2, { align: "left" });
+      doc.setFont("helvetica", "normal");
+    },
     head: [["#", ...cols.map((c) => c.label)]],
     body: rows.map((r, i) => [i + 1, ...cols.map((c) => (c.num ? money(Number(c.get(r))) : String(c.get(r))))]),
     foot: hasVal ? [["", ...cols.map((c, i) => (c.key === "value" ? money(total) : i === 0 ? "Total" : ""))]] : undefined,
@@ -89,11 +100,11 @@ export function StockSummary({ open, onClose }: { open: boolean; onClose: () => 
   const filteredRows = useMemo(() => rows.filter((r) => FILTERS.some((f) => statusSel.includes(f.key) && f.test(r))), [rows, statusSel]);
 
   useEffect(() => {
-    if (!open || !rows.length || !biz) return;
+    if (!open || !filteredRows.length || !biz) return;
     let live = true;
     setUrl(""); setPages([]);
     (async () => {
-      const d = await buildPdf(rows, COLS, biz, size);
+      const d = await buildPdf(filteredRows, COLS, biz, size);
       const buf = d.output("arraybuffer");
       const pdfjs = await import("pdfjs-dist");
       const worker = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
