@@ -46,10 +46,9 @@ async function buildPdf(rows: Row[], cols: Col[], biz: Biz, size: Size) {
   y += 6; doc.setFont("helvetica", "bold"); doc.setFontSize(size === "a5" ? 10 : 12); doc.text("Stock Summary", m, y);
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.text(`${new Date().toLocaleString("en-PK")} · ${rows.length} items`, W - m, y, { align: "right" });
   const total = rows.reduce((s, r) => s + n(r.stock) * n(r.purchase_price), 0);
-  const hasVal = cols.some((c) => c.key === "value");
   const pageTotals: Record<number, number> = {};
   autoTable(doc, {
-    startY: y + 3, margin: { left: m, right: m, top: m, bottom: m + 8 }, showHead: "everyPage",
+    startY: y + 3, margin: { left: m, right: m, top: m, bottom: m + 8 }, showHead: "everyPage", showFoot: "never",
     didDrawCell: (d) => { if (d.section === "body" && d.column.index === 0) { const r = rows[d.row.index]; if (r) pageTotals[d.pageNumber] = (pageTotals[d.pageNumber] ?? 0) + n(r.stock) * n(r.purchase_price); } },
     didDrawPage: (d) => {
       const pg = d.pageNumber, H = doc.internal.pageSize.getHeight();
@@ -61,10 +60,8 @@ async function buildPdf(rows: Row[], cols: Col[], biz: Biz, size: Size) {
     },
     head: [["#", ...cols.map((c) => c.label)]],
     body: rows.map((r, i) => [i + 1, ...cols.map((c) => (c.num ? money(Number(c.get(r))) : String(c.get(r))))]),
-    foot: hasVal ? [["", ...cols.map((c, i) => (c.key === "value" ? money(total) : i === 0 ? "Total" : ""))]] : undefined,
     styles: { fontSize: size === "a5" ? (cols.length > 6 ? 5.5 : 6.5) : (cols.length > 6 ? 7 : 8), cellPadding: size === "a5" ? 1 : 1.5, overflow: "linebreak" },
     headStyles: { fillColor: [30, 41, 59] },
-    footStyles: { fillColor: [226, 232, 240], textColor: 20, fontStyle: "bold" },
     columnStyles: Object.fromEntries(cols.map((c, i) => [i + 1, c.num ? { halign: "right" } : {}])),
   });
   const qtyTotal = rows.reduce((s, r) => s + n(r.stock), 0);
@@ -120,7 +117,7 @@ export function StockSummary({ open, onClose }: { open: boolean; onClose: () => 
         out.push(cv.toDataURL("image/jpeg", 0.85));
       }
       if (live) { setPages(out); setUrl("ok"); }
-    })().catch(() => { if (live) setUrl("ok"); });
+    })().catch((e) => { console.error("Stock Summary preview failed:", e); if (live) setUrl("ok"); });
     return () => { live = false; };
   }, [open, filteredRows, biz, size]);
 
