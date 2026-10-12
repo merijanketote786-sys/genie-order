@@ -8,7 +8,8 @@ import { getSalarySheet, payLabour, type SalaryRow } from "@/lib/attendance.func
 import { newRef } from "@/lib/pos-errors";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { CalendarCheck, Settings2 } from "lucide-react";
+import { CalendarCheck, Printer, Settings2 } from "lucide-react";
+import { usePrintCenter } from "@/components/print-center";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -39,9 +40,30 @@ function AttendancePage() {
   const rows = (data?.rows ?? []).filter((r) => r.isActive || r.earned || r.paid || r.advances);
   const tot = rows.reduce((a, r) => ({ earned: a.earned + r.earned, adv: a.adv + r.advances, paid: a.paid + r.paid, net: a.net + r.net }), { earned: 0, adv: 0, paid: 0, net: 0 });
   const allowed = can("manage_expenses");
+  const pc = usePrintCenter();
+  const fmt = (x: string) => new Date(`${x}T00:00:00`).toLocaleDateString("en-PK");
+  const printSheet = () => {
+    if (!rows.length) { toast.error("No labour in this period"); return; }
+    pc.preview({
+      kind: "statement", title: "Salary Sheet", number: `${fmt(from)} - ${fmt(to)}`, date: new Date(),
+      meta: [["Period", `${fmt(from)} to ${fmt(to)}`], ["Labour", String(rows.length)]],
+      table: {
+        head: ["Name", "Type", "Full", "Half", "Leave", "Absent", "OT hrs", "Per day", "Earned", "Advance", "Paid", "Payable"],
+        align: ["l", "l", "r", "r", "r", "r", "r", "r", "r", "r", "r", "r"],
+        rows: rows.map((r) => [r.name, r.salaryType, r.full, r.half, r.leave, r.absent, r.otHours, r.perDay, r.earned, r.advances, r.paid, r.net]),
+      },
+      totals: [
+        { label: "Total earned", value: tot.earned },
+        { label: "Total advances", value: tot.adv },
+        { label: "Total paid", value: tot.paid },
+        { label: "Total payable", value: tot.net, bold: true },
+      ],
+    });
+  };
 
   return (
     <AppShell title="Attendance & Salary" subtitle="Labour attendance and live salary" active="/pos" wide>
+      {pc.node}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
         <div className="flex flex-wrap items-center gap-2">
           {allowed ? <Button onClick={() => setMarkOpen(true)}><CalendarCheck /> Mark attendance</Button> : null}
@@ -50,6 +72,7 @@ function AttendancePage() {
           <input type="date" className={`${posInput} w-40`} value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From" />
           <span className="text-sm">to</span>
           <input type="date" className={`${posInput} w-40`} value={to} onChange={(e) => setTo(e.target.value)} aria-label="To" />
+          <Button variant="outline" size="sm" onClick={printSheet}><Printer /> Salary sheet · Print / PDF</Button>
           {can("settings") ? <Button asChild variant="ghost" size="sm" className="ml-auto"><Link to="/pos-settings"><Settings2 /> Machines & settings</Link></Button> : null}
         </div>
         {(config as unknown as { attendance?: { postExpenses?: boolean } }).attendance?.postExpenses === false ? <p className="rounded-lg border border-border bg-muted/40 p-2 text-xs text-muted-foreground">Expenses link is OFF — salary payments are recorded here only.</p> : null}
