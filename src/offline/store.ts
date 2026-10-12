@@ -71,7 +71,7 @@ export type OfflineProduct = {
 
 export type OfflineTemplate = {
   id: string;
-  kind: "order" | "confirmation";
+  kind: string;
   name: string;
   template_text: string;
   is_selected: boolean;

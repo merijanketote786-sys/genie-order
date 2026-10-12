@@ -44,10 +44,6 @@ import { Route as AuthenticatedReturnsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
 import { Route as AuthenticatedSyncRouteImport } from './routes/_authenticated/sync'
-import { Route as ApiChatRouteImport } from './routes/api/chat'
-import { Route as ApiConfirmParseRouteImport } from './routes/api/confirm-parse'
-import { Route as ApiExtractRouteImport } from './routes/api/extract'
-import { Route as ApiInvoiceRouteImport } from './routes/api/invoice'
 import { Route as IclockCdataRouteImport } from './routes/iclock/cdata'
 import { Route as IclockDevicecmdRouteImport } from './routes/iclock/devicecmd'
 import { Route as IclockGetrequestRouteImport } from './routes/iclock/getrequest'
@@ -236,26 +232,6 @@ const AuthenticatedSyncRoute = AuthenticatedSyncRouteImport.update({
   path: '/sync',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const ApiChatRoute = ApiChatRouteImport.update({
-  id: '/api/chat',
-  path: '/api/chat',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiConfirmParseRoute = ApiConfirmParseRouteImport.update({
-  id: '/api/confirm-parse',
-  path: '/api/confirm-parse',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiExtractRoute = ApiExtractRouteImport.update({
-  id: '/api/extract',
-  path: '/api/extract',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiInvoiceRoute = ApiInvoiceRouteImport.update({
-  id: '/api/invoice',
-  path: '/api/invoice',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IclockCdataRoute = IclockCdataRouteImport.update({
   id: '/iclock/cdata',
   path: '/iclock/cdata',
@@ -327,10 +303,6 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/sync': typeof AuthenticatedSyncRoute
-  '/api/chat': typeof ApiChatRoute
-  '/api/confirm-parse': typeof ApiConfirmParseRoute
-  '/api/extract': typeof ApiExtractRoute
-  '/api/invoice': typeof ApiInvoiceRoute
   '/iclock/cdata': typeof IclockCdataRoute
   '/iclock/devicecmd': typeof IclockDevicecmdRoute
   '/iclock/getrequest': typeof IclockGetrequestRoute
@@ -373,10 +345,6 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/sync': typeof AuthenticatedSyncRoute
-  '/api/chat': typeof ApiChatRoute
-  '/api/confirm-parse': typeof ApiConfirmParseRoute
-  '/api/extract': typeof ApiExtractRoute
-  '/api/invoice': typeof ApiInvoiceRoute
   '/iclock/cdata': typeof IclockCdataRoute
   '/iclock/devicecmd': typeof IclockDevicecmdRoute
   '/iclock/getrequest': typeof IclockGetrequestRoute
@@ -422,10 +390,6 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
   '/_authenticated/sync': typeof AuthenticatedSyncRoute
-  '/api/chat': typeof ApiChatRoute
-  '/api/confirm-parse': typeof ApiConfirmParseRoute
-  '/api/extract': typeof ApiExtractRoute
-  '/api/invoice': typeof ApiInvoiceRoute
   '/iclock/cdata': typeof IclockCdataRoute
   '/iclock/devicecmd': typeof IclockDevicecmdRoute
   '/iclock/getrequest': typeof IclockGetrequestRoute
@@ -472,10 +436,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/suppliers'
     | '/sync'
-    | '/api/chat'
-    | '/api/confirm-parse'
-    | '/api/extract'
-    | '/api/invoice'
     | '/iclock/cdata'
     | '/iclock/devicecmd'
     | '/iclock/getrequest'
@@ -518,10 +478,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/suppliers'
     | '/sync'
-    | '/api/chat'
-    | '/api/confirm-parse'
-    | '/api/extract'
-    | '/api/invoice'
     | '/iclock/cdata'
     | '/iclock/devicecmd'
     | '/iclock/getrequest'
@@ -566,10 +522,6 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/suppliers'
     | '/_authenticated/sync'
-    | '/api/chat'
-    | '/api/confirm-parse'
-    | '/api/extract'
-    | '/api/invoice'
     | '/iclock/cdata'
     | '/iclock/devicecmd'
     | '/iclock/getrequest'
@@ -586,10 +538,6 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
-  ApiChatRoute: typeof ApiChatRoute
-  ApiConfirmParseRoute: typeof ApiConfirmParseRoute
-  ApiExtractRoute: typeof ApiExtractRoute
-  ApiInvoiceRoute: typeof ApiInvoiceRoute
   IclockCdataRoute: typeof IclockCdataRoute
   IclockDevicecmdRoute: typeof IclockDevicecmdRoute
   IclockGetrequestRoute: typeof IclockGetrequestRoute
@@ -846,34 +794,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSyncRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/api/chat': {
-      id: '/api/chat'
-      path: '/api/chat'
-      fullPath: '/api/chat'
-      preLoaderRoute: typeof ApiChatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/confirm-parse': {
-      id: '/api/confirm-parse'
-      path: '/api/confirm-parse'
-      fullPath: '/api/confirm-parse'
-      preLoaderRoute: typeof ApiConfirmParseRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/extract': {
-      id: '/api/extract'
-      path: '/api/extract'
-      fullPath: '/api/extract'
-      preLoaderRoute: typeof ApiExtractRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/invoice': {
-      id: '/api/invoice'
-      path: '/api/invoice'
-      fullPath: '/api/invoice'
-      preLoaderRoute: typeof ApiInvoiceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/iclock/cdata': {
       id: '/iclock/cdata'
       path: '/iclock/cdata'
@@ -1002,10 +922,6 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
-  ApiChatRoute: ApiChatRoute,
-  ApiConfirmParseRoute: ApiConfirmParseRoute,
-  ApiExtractRoute: ApiExtractRoute,
-  ApiInvoiceRoute: ApiInvoiceRoute,
   IclockCdataRoute: IclockCdataRoute,
   IclockDevicecmdRoute: IclockDevicecmdRoute,
   IclockGetrequestRoute: IclockGetrequestRoute,

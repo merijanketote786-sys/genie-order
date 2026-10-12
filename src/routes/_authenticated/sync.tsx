@@ -55,7 +55,7 @@ function SyncPage() {
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <WorkspaceTool icon={FileSpreadsheet} label="Excel / CSV" title="Excel / CSV upload"><VyaparUploadCard /></WorkspaceTool>
           <WorkspaceTool icon={ClipboardPaste} label="Paste rates" title="Paste rate list"><PasteRatesCard /></WorkspaceTool>
-          <WorkspaceTool icon={FileScan} label="PDF / Image" title="Document se rates"><DocumentImportCard /></WorkspaceTool>
+          <WorkspaceTool icon={FileScan} label="File import" title="Rates from file"><DocumentImportCard /></WorkspaceTool>
           <WorkspaceTool icon={Zap} label="Auto sync" title="Automatic sync"><AutoSyncCard /></WorkspaceTool>
           <WorkspaceTool icon={Plug} label="API connect" title="Software connection"><ConnectApiCard /></WorkspaceTool>
           <WorkspaceTool icon={HelpCircle} label="Help" title="Vyapar se export">

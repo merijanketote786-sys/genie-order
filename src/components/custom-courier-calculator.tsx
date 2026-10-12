@@ -34,7 +34,25 @@ import {
 const inputClass =
   "mt-2 h-12 w-full rounded-xl border border-input bg-background px-4 text-base text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/30";
 
-const ACCEPT = ".pdf,.docx,.xlsx,.xls,.csv,.txt,.png,.jpg,.jpeg,.webp";
+const ACCEPT = ".docx,.xlsx,.xls,.csv,.txt";
+const SAMPLE_SHEET = `Service,Zone,Upto Kg,Rate
+Standard,Within city,0.5,150
+Standard,Within city,1,200
+Standard,Same province,1,230
+Standard,Cross province,1,260
+Additional Kg Rate,50
+Fuel %,15
+Tax %,18
+COD %,4
+Material,Flyer,15`;
+function downloadSample() {
+  const url = URL.createObjectURL(new Blob([SAMPLE_SHEET], { type: "text/csv" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "courier-rates-sample.csv";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 function fileToDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -191,8 +209,11 @@ export function CustomCourierCalculator() {
             <Upload className="h-4 w-4 text-primary" /> Upload your courier rate sheet
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            PDF, Word (.docx), Excel (.xlsx/.xls), CSV, or a picture of the rate chart — rates will be
-            read automatically and applied to the calculator.
+            Excel (.xlsx/.xls), CSV, Word (.docx) or TXT with columns Service, Zone, Upto Kg, Rate
+            (plus optional Additional Kg Rate, Fuel %, Tax %, COD %, Material rows). No AI is used.{" "}
+            <button type="button" onClick={downloadSample} className="font-semibold text-primary underline">
+              Download sample
+            </button>
           </p>
           <input
             ref={fileRef}

@@ -12,7 +12,8 @@ import { ChatComposer } from "@/components/lightweight-chat";
 import { supabase } from "@/integrations/supabase/client";
 import { clearHandoff, peekHandoff, setHandoff } from "@/lib/handoff";
 import { getMySettings } from "@/lib/settings.functions";
-import { DEFAULT_CONFIRMATION_TEMPLATE } from "@/lib/order-template";
+import { DEFAULT_CONFIRMATION_INPUT_TEMPLATE, DEFAULT_CONFIRMATION_TEMPLATE } from "@/lib/order-template";
+import { blankForm, parseMessage, tokensOf } from "@/lib/template-engine";
 import {
   EMPTY_CONFIRMATION,
   detectInvoicePayment,
@@ -24,7 +25,7 @@ import {
 } from "@/lib/confirmation";
 import { RateMiniCalculatorBody } from "@/components/rate-mini-calculator";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Calculator, Eraser, FileSignature, Sparkles, Trash2, Users } from "lucide-react";
+import { Calculator, Eraser, FileInput, FileSignature, Sparkles, Trash2, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -59,7 +60,9 @@ function ConfirmationPage() {
   const [codAmount, setCodAmount] = useState("");
   const [performa, setPerforma] = useState("");
   const [pasted, setPasted] = useState("");
-  const [parsing, setParsing] = useState(false);
+  const parsing = false;
+  const [inputTemplate, setInputTemplate] = useState(DEFAULT_CONFIRMATION_INPUT_TEMPLATE);
+  const [extras, setExtras] = useState<Record<string, string>>({});
   const [parcelStatus, setParcelStatus] = useState<"paid" | "unpaid" | "">("");
   const navigate = useNavigate();
 
@@ -149,6 +152,7 @@ function ConfirmationPage() {
   const buildFrom = (
     vals: ConfirmationValues,
     pay?: { method: "COD" | "CC"; codAmount: string; status: "paid" | "unpaid" | "" },
+    extraVars: Record<string, string> = extras,
   ) => {
     const method = pay?.method ?? paymentMethod;
     const cod = pay ? pay.codAmount : codAmount;
@@ -161,7 +165,7 @@ function ConfirmationPage() {
           ? " — 0 amount parcel (Paid)"
           : " — Unpaid parcel"
         : "";
-    setPerforma(renderConfirmation(template, { ...vals, payment: base ? `${base}${suffix}` : "" }));
+    setPerforma(renderConfirmation(template, { ...vals, payment: base ? `${base}${suffix}` : "" }, extraVars));
   };
 
   const build = async () => {
@@ -177,38 +181,29 @@ function ConfirmationPage() {
     toast.success("Order performa is ready");
   };
 
-  const fillFromText = async (text: string) => {
-    setParsing(true);
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      const res = await fetch("/api/confirm-parse", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ text }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const parsed = (await res.json()) as Partial<ConfirmationValues>;
-      let next: ConfirmationValues = values;
-      setValues((prev) => {
-        const merged = { ...prev };
-        for (const [key, value] of Object.entries(parsed) as [keyof ConfirmationValues, string][]) {
-          if (typeof value === "string" && value.trim()) merged[key] = value.trim();
-        }
-        next = merged;
-        return merged;
-      });
-      buildFrom(next);
-      setPasted("");
-      toast.success("Data filled in as per the template");
-    } catch {
-      toast.error("Could not understand the text — please try again");
-    } finally {
-      setParsing(false);
+  const fillFromText = (text: string) => {
+    const { vars } = parseMessage(text, { inputTemplate, extraKeys: tokensOf(template) });
+    const map: Record<string, keyof ConfirmationValues> = {
+      order_number: "orderNumber", name: "name", phone: "phone", city: "city", address: "address",
+      notes: "notes", product_total: "productTotal", delivery: "delivery", advance: "advance",
+    };
+    const merged = { ...values };
+    const rest: Record<string, string> = {};
+    for (const [k, v] of Object.entries(vars)) {
+      if (!v.trim()) continue;
+      const f = map[k];
+      if (f) merged[f] = v.trim();
+      else rest[k] = v.trim();
     }
+    if (!Object.keys(vars).length) {
+      toast.error("No labels found — use your input format (e.g. Name: ...)");
+      return;
+    }
+    setExtras(rest);
+    setValues(merged);
+    buildFrom(merged, undefined, rest);
+    setPasted("");
+    toast.success("Data filled in as per the template");
   };
 
   const clearAll = () => {
@@ -285,6 +280,13 @@ function ConfirmationPage() {
             onTemplateChange={setTemplate}
             compact
           />
+          <OrderTemplateDialog
+            kind="confirmation_input"
+            template={inputTemplate}
+            onTemplateChange={setInputTemplate}
+            compact
+            icon={FileInput}
+          />
           <Button
             type="button"
             variant="ghost"
@@ -300,8 +302,11 @@ function ConfirmationPage() {
             Paste customer details
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Write or paste customer details in any format — as soon as you press send, only the
-            name, phone, city, address etc. will be filled into the fields below.
+            Write details in your input format (e.g. Name: Ali) and press send — fields below fill
+            automatically. No AI is used.{" "}
+            <button type="button" className="font-semibold text-primary underline" onClick={() => setPasted(blankForm(inputTemplate))}>
+              Insert format
+            </button>
           </p>
           <div className="mt-2 rounded-xl border border-border bg-background">
             <ChatComposer

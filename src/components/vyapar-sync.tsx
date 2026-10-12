@@ -26,7 +26,6 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 const SHEET_EXT = ["xlsx", "xls", "csv"];
-const DOC_TYPES = ["application/pdf"];
 
 function extOf(name: string) {
   return (name.split(".").pop() ?? "").toLowerCase();
@@ -37,7 +36,7 @@ function isSheetFile(f: File) {
 }
 
 function isDocFile(f: File) {
-  return DOC_TYPES.includes(f.type) || f.type.startsWith("image/") || extOf(f.name) === "pdf";
+  return ["xlsx", "xls", "csv", "txt", "docx"].includes(extOf(f.name));
 }
 
 async function toBase64(f: File) {
@@ -362,7 +361,7 @@ export function DocumentImportCard() {
       setResult({
         ok: false,
         message: `".${extOf(f.name)}" files are not supported.`,
-        errors: ["Only PDF or image (JPG/PNG) works here."],
+        errors: ["Only Excel, CSV, Word or TXT files work here (columns: Item Name, Sale Price, Unit, Stock)."],
       });
       setFile(null);
       return;
@@ -431,11 +430,11 @@ export function DocumentImportCard() {
         </span>
         <div className="min-w-0">
           <h2 className="font-display text-[15px] font-bold leading-tight">
-            PDF / image to rate list
+            File to rate list
           </h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Upload a PDF or screenshot — the app will read and show the rate list, and it will
-            only save once you confirm.
+            Upload an Excel, CSV, Word or TXT table with columns Item Name, Sale Price, Unit,
+            Stock — rows are previewed and only saved once you confirm. No AI is used.
           </p>
         </div>
       </div>
@@ -459,11 +458,11 @@ export function DocumentImportCard() {
           }`}
         >
           <FileScan className="h-4 w-4 shrink-0 text-primary" />
-          <span className="truncate">{file ? file.name : "Drop or choose a PDF or image"}</span>
+          <span className="truncate">{file ? file.name : "Drop or choose an Excel, CSV, Word or TXT file"}</span>
           <input
             ref={inputRef}
             type="file"
-            accept=".pdf,image/*"
+            accept=".xlsx,.xls,.csv,.txt,.docx"
             className="sr-only"
             onChange={(e) => accept(e.target.files?.[0])}
           />

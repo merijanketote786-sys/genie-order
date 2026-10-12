@@ -281,27 +281,14 @@ export const syncProductsFromText = createServerFn({ method: "POST" })
     });
   });
 
-const DOC_PROMPT = `Aap aik rate-list extractor hain. Di gayi file (PDF ya tasveer) me se products ki rate list nikaalein.
-
-Sirf TSV (tab separated) output dein, koi baat nahi, koi code fence nahi.
-Pehli line bilkul ye ho:
-Item Name\tSale Price\tUnit\tStock
-
-Phir har product ki aik line. Rules:
-- Sirf wahi rows jo file me likhi hain — kuch guess mat karein.
-- Sale Price sirf number (currency symbol, comma ke bagair).
-- Unit me kg, grammes, litre, pcs, piece, bottles, bundles me se jo laagu ho; na pata ho to khali chhorein.
-- Stock na ho to 0.
-- Agar file me rate list ka table nahi hai to sirf ye likhein: NO_TABLE`;
-
-/** PDF ya tasveer se rate list padh kar preview banata hai (save nahi karta). */
+/** Excel / CSV / Word / TXT rate list ko bina AI parh kar preview banata hai (save nahi karta). */
 export const previewProductsFromDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z
       .object({
         fileName: z.string().min(1).max(260),
-        fileType: z.string().min(1).max(120),
+        fileType: z.string().max(120).default(""),
         dataUrl: z.string().min(1).max(14_000_000),
       })
       .parse(data),
@@ -310,61 +297,39 @@ export const previewProductsFromDocument = createServerFn({ method: "POST" })
     if (await blocked(context)) {
       return { ok: false as const, message: "Your access is blocked. Contact the admin." };
     }
-    const isImage = data.fileType.startsWith("image/");
-    const isPdf = data.fileType === "application/pdf";
-    if (!isImage && !isPdf) {
-      return {
-        ok: false as const,
-        message: "Only PDF or image (JPG/PNG) is supported.",
-      };
+    const ext = (data.fileName.split(".").pop() ?? "").toLowerCase();
+    if (!["xlsx", "xls", "csv", "txt", "docx"].includes(ext)) {
+      return { ok: false as const, message: "Upload an Excel (.xlsx/.xls), CSV, Word (.docx) or TXT file." };
     }
-
-    const key = process.env["LOVABLE_API_KEY"];
-    if (!key) return { ok: false as const, message: "AI service is not configured." };
-
-    const content: unknown[] = [{ type: "text", text: "Is file ki rate list TSV me dein." }];
-    if (isImage) content.push({ type: "image_url", image_url: { url: data.dataUrl } });
-    else
-      content.push({
-        type: "file",
-        file: { filename: data.fileName, file_data: data.dataUrl },
-      });
-
+    const base64 = data.dataUrl.includes(",") ? data.dataUrl.split(",")[1]! : data.dataUrl;
+    let bytes: Uint8Array;
+    try {
+      const bin = atob(base64);
+      bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+    } catch {
+      return { ok: false as const, message: "Could not read the file. Please upload it again." };
+    }
     let text = "";
     try {
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: DOC_PROMPT },
-            { role: "user", content },
-          ],
-        }),
-      });
-      if (res.status === 429) {
-        return { ok: false as const, message: "Too many requests right now — try again in a bit." };
+      if (ext === "xlsx" || ext === "xls" || ext === "csv") {
+        const { read, utils } = await import("xlsx");
+        const wb = read(bytes, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]!];
+        text = ws ? utils.sheet_to_csv(ws, { blankrows: false }) : "";
+      } else if (ext === "docx") {
+        const { docxToText } = await import("@/lib/courier-doc.server");
+        text = await docxToText(bytes);
+      } else {
+        text = new TextDecoder().decode(bytes);
       }
-      if (res.status === 402) {
-        return { ok: false as const, message: "AI credits have run out. Please add credits." };
-      }
-      if (!res.ok) {
-        return { ok: false as const, message: "There was a problem reading the file. Try again." };
-      }
-      const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-      text = json.choices?.[0]?.message?.content ?? "";
     } catch {
-      return { ok: false as const, message: "There was a problem reading the file. Try again." };
+      return { ok: false as const, message: "Could not read the file — it may be corrupted or password-protected." };
     }
-
-    const cleaned = text.replace(/```[a-z]*/gi, "").trim();
-    if (!cleaned || /NO_TABLE/i.test(cleaned)) {
-      return { ok: false as const, message: "No rate list table found in the file." };
-    }
+    if (text.trim().length < 5) return { ok: false as const, message: "No rate list table found in the file." };
 
     const { parseDelimitedText } = await import("@/lib/vyapar-sheet.server");
-    const parsed = parseDelimitedText(cleaned);
+    const parsed = parseDelimitedText(text);
     if (!parsed.ok) return { ok: false as const, message: parsed.error };
 
     return {
