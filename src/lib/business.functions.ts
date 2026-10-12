@@ -335,3 +335,15 @@ export const cancelPurchase = createServerFn({ method: "POST" })
     if (error) throw new Error(friendlyDbError(error, "Failed to cancel purchase."));
     return { ok: true };
   });
+
+/** Kisi unpaid/partial sale invoice par seedha payment receive — atomic DB function. */
+export const receiveSalePayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ saleId: z.string().uuid(), amount: z.number().positive().max(1e9), method: z.string().min(1).max(30), note: z.string().max(300).optional(), clientRef: z.string().uuid().optional() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: res, error } = await (context.supabase as Sb).rpc("pos_receive_sale_payment", { _sale: data.saleId, _amount: data.amount, _method: data.method, _note: data.note ?? "", _ref: data.clientRef ?? null });
+    if (error) throw new Error(friendlyDbError(error, "Failed to receive payment."));
+    return res as { payment_id: string; paid_total?: number; balance?: number };
+  });

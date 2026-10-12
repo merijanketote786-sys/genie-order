@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Printer, ReceiptText, Download, Share2, Search, RotateCcw, MoreVertical, Ban, Trash2, FileInput, Truck, Pencil, X } from "lucide-react";
+import { Printer, ReceiptText, Download, Share2, Search, RotateCcw, MoreVertical, Ban, Trash2, FileInput, Truck, Pencil, X, Wallet } from "lucide-react";
+import { ReceivePaymentDialog } from "@/components/receive-payment-dialog";
 import { PosPage } from "./pos";
 import { AppShell } from "@/components/app-shell";
 import { PosSubnav, rs } from "@/components/pos-subnav";
@@ -125,6 +126,7 @@ function PosInvoicesPage() {
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [editSale, setEditSale] = useState<SaleRow | null>(null);
+  const [receive, setReceive] = useState<SaleRow | null>(null);
   const q = useQuery({ queryKey: ["pos-sales", search, estimates, range], queryFn: () => listPosSales({ data: { search, estimates, ...rangeToIso(range) } }) });
   const sales = ((q.data?.sales ?? []) as SaleRow[]).filter((s) => s.status !== "cancelled");
 
@@ -260,6 +262,7 @@ function PosInvoicesPage() {
                         {item(s, <Printer className="size-4" />, "Reprint", () => pc.print(doc, { reprint: true }))}
                         {item(s, <Download className="size-4" />, "PDF", () => pc.pdf(doc))}
                         {item(s, <Share2 className="size-4" />, "Share", () => setShare(s))}
+                        {s.doc_type === "sale" && Number(s.balance) > 0 ? item(s, <Wallet className="size-4" />, "Receive Payment", () => setReceive(s)) : null}
                         {item(s, <Pencil className="size-4" />, "Edit", () => openInBilling(s, false))}
                         {isEstimate ? item(s, <FileInput className="size-4" />, "Convert to Invoice", () => openInBilling(s, true)) : null}
                         {item(s, <Truck className="size-4" />, "Convert to Delivery Challan", () => pc.preview(challanDoc(s), false))}
@@ -275,6 +278,20 @@ function PosInvoicesPage() {
         </div>
       </div>
       {share ? (() => { const d = saleToDoc(share); return <ShareDialog title={share.doc_number} doc={d} phone={share.customer_phone ?? undefined} onOpenPdf={() => pc.preview(d, true)} onClose={() => setShare(null)} />; })() : null}
+      {receive ? (
+        <ReceivePaymentDialog
+          sale={receive}
+          onClose={() => setReceive(null)}
+          onDone={(amount, method) => {
+            const r = receive;
+            setReceive(null);
+            refresh();
+            ["customer-balances", "cust-bal", "cust-ledger", "pos-dashboard"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+            const after = Math.max(0, Number(r.balance) - amount);
+            pc.preview({ kind: "receipt", title: "Payment Receipt", number: `RCPT-${r.doc_number}`, date: new Date().toISOString(), party: { label: "Received from", name: r.customer_name ?? undefined, phone: r.customer_phone ?? undefined }, lines: [], payments: [{ method, amount }], totals: [{ label: `Against ${r.doc_number}`, value: amount, bold: true }, { label: "Balance remaining", value: after }], paid: amount, balance: after } as PrintDoc, false);
+          }}
+        />
+      ) : null}
       {editSale ? (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-background">
           <button
