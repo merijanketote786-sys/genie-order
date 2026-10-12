@@ -421,6 +421,13 @@
       "when": 1791844820542,
       "tag": "0059_pos_receive_sale_payment",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1791845099058,
+      "tag": "0060_purchase_supplier_bill_freight",
+      "breakpoints": true
     }
   ]
 }
