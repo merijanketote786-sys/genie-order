@@ -69,9 +69,12 @@ async function buildPdf(rows: Row[], cols: Col[], biz: Biz, size: Size) {
     columnStyles: Object.fromEntries(cols.map((c, i) => [i + 1, c.num ? { halign: "right" } : {}])),
   });
   const qtyTotal = rows.reduce((s, r) => s + n(r.stock), 0);
-  doc.setPage(doc.getNumberOfPages());
+  const H = doc.internal.pageSize.getHeight();
+  doc.setPage(lastRowPage);
+  const gy = Math.min(lastRowBottom || H - m - 8, H - m - 4);
+  doc.setDrawColor(150); doc.setLineWidth(0.2); doc.line(m, gy + 1.4, W - m, gy + 1.4);
   doc.setFont("helvetica", "bold"); doc.setFontSize(7);
-  doc.text(`Grand total: ${rows.length} items · Stock qty ${money(qtyTotal)} · Stock value Rs ${money(total)}`, m, doc.internal.pageSize.getHeight() - m / 2, { align: "left" });
+  doc.text(`Grand total: ${rows.length} items · Stock qty ${money(qtyTotal)} · Stock value Rs ${money(total)}`, m, gy + 5, { align: "left" });
   return doc;
 }
 
