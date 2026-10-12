@@ -24,7 +24,7 @@ import { PaymentModeField, paymentLine, stripPaymentLines, upsertPaymentLine, ty
 import { DEFAULT_ORDER_TEMPLATE } from "@/lib/order-template";
 import { detectInvoicePayment } from "@/lib/confirmation";
 import { saveOrder } from "@/lib/records.functions";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Calculator, ClipboardList, CreditCard, FileInput, Languages, MessageSquareText, Package, QrCode, Sparkles, Users } from "lucide-react";
 
@@ -113,7 +113,8 @@ function OrderChat() {
     setMessages((m) => [...m, userMsg]);
     try {
       const probe = formatOrder(text, orderTemplate, inputTemplate);
-      const auto = probe.vars["order_number"] ? null : await fetchAutoOrderNumber();
+      const wantsNumber = /\{\{order_number\}\}|order\s*(number|no|#)/i.test(orderTemplate);
+      const auto = probe.vars["order_number"] || !wantsNumber ? null : await fetchAutoOrderNumber();
       const { output } = formatOrder(text, orderTemplate, inputTemplate, auto);
       setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", parts: [{ type: "text", text: output }] }]);
     } catch (e) {
