@@ -6,7 +6,7 @@ import { FullScreenPopup } from "@/components/fullscreen-popup";
 import { Download, FileSpreadsheet, Loader2, Printer, X } from "lucide-react";
 import { createPortal } from "react-dom";
 
-type Row = { name: string; unit: string; sku: string | null; barcode: string | null; sale_price: number; purchase_price: number | null; wholesale_price: number | null; stock: number };
+type Row = { name: string; unit: string; sku: string | null; barcode: string | null; sale_price: number; purchase_price: number | null; wholesale_price: number | null; stock: number; is_active: boolean; min_stock: number | null };
 type Col = { key: string; label: string; num?: boolean; get: (r: Row) => string | number };
 
 const n = (v: number | null | undefined) => Number(v ?? 0);
@@ -22,6 +22,13 @@ const COLS: Col[] = [
   { key: "stock", label: "Stock qty", num: true, get: (r) => n(r.stock) },
   { key: "value", label: "Stock value", num: true, get: (r) => n(r.stock) * n(r.purchase_price) },
 ];
+
+const FILTERS = [
+  { key: "active", label: "Active products", test: (r: Row) => r.is_active },
+  { key: "inactive", label: "Inactive products", test: (r: Row) => !r.is_active },
+  { key: "low", label: "Low stock items", test: (r: Row) => r.is_active && n(r.stock) > 0 && n(r.min_stock) > 0 && n(r.stock) <= n(r.min_stock) },
+  { key: "out", label: "Out of stock items", test: (r: Row) => r.is_active && n(r.stock) <= 0 },
+] as const;
 
 type Biz = { name: string; address: string; phone: string; email: string; website: string; taxId: string };
 type Size = "a4" | "a5";
@@ -58,7 +65,7 @@ export function StockSummary({ open, onClose }: { open: boolean; onClose: () => 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["stock-summary"], enabled: open,
     queryFn: async (): Promise<Row[]> => {
-      const { data, error } = await supabase.from("products").select("name,unit,sku,barcode,sale_price,purchase_price,wholesale_price,stock").eq("scope", "pos").eq("is_active", true).order("name").limit(10000);
+      const { data, error } = await supabase.from("products").select("name,unit,sku,barcode,sale_price,purchase_price,wholesale_price,stock,is_active,min_stock").eq("scope", "pos").order("name").limit(10000);
       if (error) throw error;
       return (data ?? []) as Row[];
     },
@@ -77,6 +84,9 @@ export function StockSummary({ open, onClose }: { open: boolean; onClose: () => 
   const [url, setUrl] = useState("");
   const [ask, setAsk] = useState<null | "print" | "pdf" | "xlsx">(null);
   const [sel, setSel] = useState<string[]>(COLS.map((c) => c.key));
+  const [statusSel, setStatusSel] = useState<string[]>(["active"]);
+
+  const filteredRows = useMemo(() => rows.filter((r) => FILTERS.some((f) => statusSel.includes(f.key) && f.test(r))), [rows, statusSel]);
 
   useEffect(() => {
     if (!open || !rows.length || !biz) return;
@@ -109,11 +119,11 @@ export function StockSummary({ open, onClose }: { open: boolean; onClose: () => 
     const kind = ask; setAsk(null);
     if (kind === "xlsx") {
       const X = await import("xlsx");
-      const ws = X.utils.aoa_to_sheet([cols.map((c) => c.label), ...rows.map((r) => cols.map((c) => c.get(r)))]);
+      const ws = X.utils.aoa_to_sheet([cols.map((c) => c.label), ...filteredRows.map((r) => cols.map((c) => c.get(r)))]);
       const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, "Stock"); X.writeFile(wb, `${fname}.xlsx`);
       return;
     }
-    const doc = await buildPdf(rows, cols, biz ?? { name: "", address: "", phone: "", email: "", website: "", taxId: "" }, size);
+    const doc = await buildPdf(filteredRows, cols, biz ?? { name: "", address: "", phone: "", email: "", website: "", taxId: "" }, size);
     if (kind === "pdf") { doc.save(`${fname}.pdf`); return; }
     doc.autoPrint();
     const w = window.open(URL.createObjectURL(doc.output("blob")));
@@ -144,9 +154,14 @@ export function StockSummary({ open, onClose }: { open: boolean; onClose: () => 
             <div className="grid grid-cols-2 gap-2">
               {COLS.map((c) => <label key={c.key} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={sel.includes(c.key)} onChange={(e) => setSel((s) => e.target.checked ? COLS.filter((x) => s.includes(x.key) || x.key === c.key).map((x) => x.key) : s.filter((k) => k !== c.key))} />{c.label}</label>)}
             </div>
+            <p className="mt-3 border-t border-border pt-2 text-sm font-semibold text-foreground">Which items?</p>
+            <div className="mt-1 grid grid-cols-2 gap-2">
+              {FILTERS.map((f) => <label key={f.key} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={statusSel.includes(f.key)} onChange={(e) => setStatusSel((s) => e.target.checked ? [...s, f.key] : s.filter((k) => k !== f.key))} />{f.label}</label>)}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">{filteredRows.length} items selected</p>
             <div className="mt-4 flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setAsk(null)}>Cancel</Button>
-              <Button disabled={!sel.length} onClick={run}>{ask === "print" ? "Print" : ask === "pdf" ? "Download PDF" : "Download Excel"}</Button>
+              <Button disabled={!sel.length || !filteredRows.length} onClick={run}>{ask === "print" ? "Print" : ask === "pdf" ? "Download PDF" : "Download Excel"}</Button>
             </div>
           </div>
         </div>, document.body)}
