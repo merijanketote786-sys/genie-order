@@ -78,6 +78,8 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
     dropRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
   }, [hi]);
   const [discount, setDiscount] = useState("");
+  const [freight, setFreight] = useState("");
+  const [billNo, setBillNo] = useState("");
   const [paid, setPaid] = useState("");
   const [method, setMethod] = useState("Cash");
   const [notes, setNotes] = useState("");
@@ -111,7 +113,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
 
   const lineTotal = (l: Line) => { const b = Math.max(0, num(l.qty) * num(l.rate) - num(l.discount)); return b + (b * num(l.tax)) / 100; };
   const subtotal = lines.reduce((s, l) => s + lineTotal(l), 0);
-  const total = Math.max(0, subtotal - num(discount));
+  const total = Math.max(0, subtotal - num(discount) + num(freight));
   const isCredit = method === "Credit";
   const paidNum = isCredit ? 0 : paid.trim() ? Math.min(num(paid), total) : total;
   const totalQty = lines.reduce((s, l) => s + num(l.qty), 0);
@@ -156,7 +158,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
     } catch (e) { toast.error(e instanceof Error ? e.message : "Product could not be saved"); } finally { setSavingNew(false); }
   };
 
-  const reset = () => { setLines([]); setDiscount(""); setPaid(""); setNotes(""); setRefId(undefined); setEditId(undefined); setDocType("purchase"); setSelectedParty(null); setPartySearch(""); clearEntry(); };
+  const reset = () => { setLines([]); setDiscount(""); setFreight(""); setBillNo(""); setPaid(""); setNotes(""); setRefId(undefined); setEditId(undefined); setDocType("purchase"); setSelectedParty(null); setPartySearch(""); clearEntry(); };
 
   const startReturn = async (id: string) => {
     const r = await getPurchaseItems({ data: { id } });
@@ -173,7 +175,8 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
       kind: "purchase", id: p.id, title: p.doc_type === "purchase" ? "Purchase Invoice" : "Purchase Return", number: p.doc_number, date: p.created_at,
        party: p.supplier_name ? { label: "Party", name: p.supplier_name } : undefined,
       lines: r.items.map((i) => ({ name: i.name, unit: i.unit, qty: i.qty, rate: i.rate, discount: i.discount, taxPct: i.taxPercent, total: i.lineTotal })),
-      totals: [...(p.discount_total ? [{ label: "Discount", value: -p.discount_total }] : []), { label: "Grand Total", value: p.grand_total, bold: true }],
+      meta: p.supplier_bill_no ? [["Supplier bill #", p.supplier_bill_no]] : undefined,
+      totals: [...(p.discount_total ? [{ label: "Discount", value: -p.discount_total }] : []), ...(p.freight ? [{ label: "Bilty / transport", value: p.freight }] : []), { label: "Grand Total", value: p.grand_total, bold: true }],
       payments: p.paid_total ? [{ method: "Paid", amount: p.paid_total }] : [], paid: p.paid_total, balance: p.balance, notes: p.notes ?? undefined,
     } as PrintDoc;
   };
@@ -187,7 +190,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
     const r = await getPurchaseItems({ data: { id: p.id } });
     setDocType(p.doc_type === "return" ? "return" : "purchase"); setSelectedParty(p.supplier_id ? { id: p.supplier_id, source: "supplier", name: p.supplier_name || "Party" } : null); setPartySearch(p.supplier_name ?? ""); setRefId(p.doc_type === "return" ? p.ref_purchase_id ?? undefined : undefined);
     setLines(r.items.map((i) => ({ productId: i.productId ?? undefined, name: i.name, unit: i.unit, qty: String(i.qty), rate: String(i.rate), discount: i.discount ? String(i.discount) : "", tax: String(i.taxPercent), batch: "", expiry: "" })));
-    setDiscount(p.discount_total ? String(p.discount_total) : ""); setPaid(String(p.paid_total)); setNotes(p.notes ?? "");
+    setDiscount(p.discount_total ? String(p.discount_total) : ""); setFreight(p.freight ? String(p.freight) : ""); setBillNo(p.supplier_bill_no ?? ""); setPaid(String(p.paid_total)); setNotes(p.notes ?? "");
     setEditId({ id: p.id, number: p.doc_number });
     window.scrollTo({ top: 0, behavior: "smooth" });
     toast.message(`Editing ${p.doc_number} — saving will replace the old entry`);
@@ -212,7 +215,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
       // Edit: save the new entry FIRST, then cancel the old one — a failed save must never delete the original.
       const resolved = selectedParty ? await ensurePurchaseParty({ data: selectedParty.source === "customer" ? { customerId: selectedParty.id } : { supplierId: selectedParty.id } }) : null;
       const r = await savePurchase({ data: {
-        docType, supplierId: resolved?.id, paid: paidNum, method, discount: num(discount), notes: notes || undefined, refPurchaseId: refId, clientRef: opRef.current,
+        docType, supplierId: resolved?.id, paid: paidNum, method, discount: num(discount), freight: num(freight), supplierBillNo: billNo.trim() || undefined, notes: notes || undefined, refPurchaseId: refId, clientRef: opRef.current,
         items: valid.map((l) => ({ productId: l.productId, name: l.name, unit: l.unit, qty: num(l.qty), rate: num(l.rate), discount: num(l.discount), taxPercent: num(l.tax), batch: l.batch || undefined, expiry: l.expiry || undefined })),
       } });
       if (editId) {
@@ -231,7 +234,8 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
         kind: "purchase", title: docType === "purchase" ? "Purchase Invoice" : "Purchase Return", number: r.number, date: new Date(),
          party: supName ? { label: "Party", name: supName } : undefined,
         lines: valid.map((l) => ({ name: l.name, unit: l.unit, qty: num(l.qty), rate: num(l.rate), discount: num(l.discount), taxPercent: num(l.tax), total: lineTotal(l) })),
-        totals: [...(num(discount) ? [{ label: "Discount", value: -num(discount) }] : []), { label: "Grand Total", value: r.total, bold: true }],
+        meta: billNo.trim() ? [["Supplier bill #", billNo.trim()]] : undefined,
+        totals: [...(num(discount) ? [{ label: "Discount", value: -num(discount) }] : []), ...(num(freight) ? [{ label: "Bilty / transport", value: num(freight) }] : []), { label: "Grand Total", value: r.total, bold: true }],
         payments: paidNum ? [{ method, amount: paidNum }] : [], paid: paidNum, balance: Math.max(0, r.total - paidNum), notes: notes || undefined,
       }, "purchase");
       reset();
@@ -344,10 +348,12 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
             <div className="space-y-2">
               <select className={posInput} value={method} onChange={(e) => setMethod(e.target.value)} aria-label="Payment type">{[...PAY_OPTS, "Credit"].map((m) => <option key={m}>{m}</option>)}</select>
                {isCredit && <p className="text-xs text-muted-foreground">Full amount will be added to the party's balance (payable).</p>}
+              <input className={posInput} value={billNo} maxLength={60} onChange={(e) => setBillNo(e.target.value)} placeholder="Supplier bill / invoice # (optional)" aria-label="Supplier bill number" />
               <textarea className={`${posInput} min-h-20 py-2`} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Description / note" />
             </div>
             <div className="space-y-2 text-sm">
               <label className="flex items-center justify-between gap-3"><span className="text-muted-foreground">Discount (Rs)</span><input className={`${cell} max-w-40 text-right`} value={discount} inputMode="decimal" onChange={(e) => setDiscount(e.target.value)} /></label>
+              <label className="flex items-center justify-between gap-3"><span className="text-muted-foreground">Bilty / transport (Rs)</span><input aria-label="Bilty charges" className={`${cell} max-w-40 text-right`} value={freight} inputMode="decimal" onChange={(e) => setFreight(e.target.value)} /></label>
               <div className="flex items-center justify-between border-t border-border pt-2 text-base"><span className="font-bold">Total</span><b className="text-foreground">{rs(total)}</b></div>
               <label className="flex items-center justify-between gap-3"><span className="text-muted-foreground">{docType === "purchase" ? "Paid" : "Refunded"}</span><input className={`${cell} max-w-40 text-right`} value={isCredit ? "0" : paid} disabled={isCredit} inputMode="decimal" placeholder={String(total)} onChange={(e) => setPaid(e.target.value)} /></label>
               <div className="flex items-center justify-between"><span className="text-muted-foreground">Balance</span><b className={total - paidNum > 0 ? "text-destructive" : ""}>{rs(total - paidNum)}</b></div>
