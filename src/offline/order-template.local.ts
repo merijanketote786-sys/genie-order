@@ -1,11 +1,11 @@
-import { DEFAULT_CONFIRMATION_TEMPLATE, DEFAULT_ORDER_TEMPLATE } from "@/lib/order-template";
+import { defaultTemplateFor, type AnyTemplateKind } from "@/lib/order-template";
 import type { OrderTemplateRow } from "@/lib/order-template.functions";
 import { commit, db, now, uid } from "./store";
 
-type Kind = "order" | "confirmation";
+type Kind = AnyTemplateKind;
 type Arg<T> = { data: T } | undefined;
 
-const fallbackFor = (kind: Kind) => (kind === "confirmation" ? DEFAULT_CONFIRMATION_TEMPLATE : DEFAULT_ORDER_TEMPLATE);
+const fallbackFor = (kind: Kind) => defaultTemplateFor(kind);
 
 function loadAll(kind: Kind) {
   const templates: OrderTemplateRow[] = db()

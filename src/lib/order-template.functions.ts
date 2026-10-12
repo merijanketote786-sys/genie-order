@@ -1,11 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import {
-  DEFAULT_CONFIRMATION_TEMPLATE,
-  DEFAULT_ORDER_TEMPLATE,
-  ORDER_TEMPLATE_MAX_LENGTH,
-} from "@/lib/order-template";
+import { ORDER_TEMPLATE_MAX_LENGTH, defaultTemplateFor } from "@/lib/order-template";
 
 const templateSchema = z
   .string()
@@ -19,7 +15,7 @@ const nameSchema = z
   .min(2, "Enter a template name")
   .max(60, "Name is too long");
 
-const kindSchema = z.enum(["order", "confirmation"]).default("order");
+const kindSchema = z.enum(["order", "confirmation", "order_input", "invoice", "confirmation_input"]).default("order");
 
 export type OrderTemplateRow = {
   id: string;
@@ -28,9 +24,7 @@ export type OrderTemplateRow = {
   isSelected: boolean;
 };
 
-function fallbackFor(kind: string) {
-  return kind === "confirmation" ? DEFAULT_CONFIRMATION_TEMPLATE : DEFAULT_ORDER_TEMPLATE;
-}
+const fallbackFor = (kind: string) => defaultTemplateFor(kind);
 
 async function loadAll(context: { supabase: any; userId: string }, kind: string) {
   const { data, error } = await context.supabase
