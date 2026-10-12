@@ -22,4 +22,4 @@
 - [x] Day Book: cash denomination counter
 - [x] Invoices: direct "Receive Payment" on unpaid bills
 - [x] Purchases: supplier bill # + bilty/transport charges
-- [ ] Parties: date-filtered statement PDF; Expenses voucher print; Reports top-selling; Attendance salary sheet PDF — later
+- [x] Parties statement, expense voucher, best-selling report (already existed); Attendance salary sheet print/PDF added

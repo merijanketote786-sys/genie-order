@@ -50,7 +50,7 @@ function AttendancePage() {
       table: {
         head: ["Name", "Type", "Full", "Half", "Leave", "Absent", "OT hrs", "Per day", "Earned", "Advance", "Paid", "Payable"],
         align: ["l", "l", "r", "r", "r", "r", "r", "r", "r", "r", "r", "r"],
-        rows: rows.map((r) => [r.name, r.salaryType, r.full, r.half, r.leave, r.absent, r.otHours, r.perDay, r.earned, r.advances, r.paid, r.net]),
+        rows: rows.map((r) => [r.name, r.salaryType, String(r.full), String(r.half), String(r.leave), String(r.absent), String(r.otHours), r.perDay, r.earned, r.advances, r.paid, r.net]),
       },
       totals: [
         { label: "Total earned", value: tot.earned },
