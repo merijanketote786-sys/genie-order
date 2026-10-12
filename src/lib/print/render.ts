@@ -5,6 +5,13 @@
 import type { ColKey, DocKind, InvoiceCustomField, InvoiceTextField, PaperFormat, ResolvedCfg, TemplateId } from "@/lib/pos-config";
 import { formatDate, INVOICE_TEXT_FIELDS } from "@/lib/pos-config";
 
+/** Saved ISO timestamps (e.g. 2026-10-12T15:03:57+00:00) ko shop ke date format me dikhao. */
+function docDate(d: Date | string, cfg: ResolvedCfg, withTime: boolean) {
+  if (d instanceof Date) return formatDate(d, cfg, withTime);
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(d)) { const x = new Date(d); if (!Number.isNaN(x.getTime())) return formatDate(x, cfg, withTime); }
+  return d;
+}
+
 export type PrintLine = { name: string; sku?: string; barcode?: string; unit?: string; qty: number; rate: number; discount?: number; taxPct?: number; total: number; note?: string };
 export type PrintTotal = { label: string; value: number; bold?: boolean; neg?: boolean };
 export type PrintDoc = {
@@ -102,7 +109,7 @@ function pageHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, tpl: Tem
   const mg = a5 ? { t: p.a5.marginMm, b: p.a5.marginMm, l: p.a5.marginMm, r: p.a5.marginMm } : { t: L.marginTop, b: L.marginBottom, l: L.marginLeft, r: L.marginRight };
   const cols = colsFor(format, cfg);
   const b = cfg.business;
-  const date = typeof doc.date === "string" ? doc.date : formatDate(doc.date, cfg, f.dateTime);
+  const date = docDate(doc.date, cfg, f.dateTime);
 
   const logo = f.logo && b.logo ? `<img class=logo src="${esc(b.logo)}" alt="">` : "";
   const bizLines = ([ ["address", f.address && b.address], ["phone", f.phone && b.phone && `Ph: ${b.phone}`], ["email", f.email && b.email], ["website", f.website && b.website], ["taxId", f.taxId && b.taxId && `NTN/GST: ${b.taxId}`] ] as const).filter((x) => x[1]);
@@ -215,7 +222,7 @@ function thermalHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, ex: E
   const narrow = widthMm < 70;
   const font = narrow ? Math.min(t.fontPt, 8) : t.fontPt;
   const b = cfg.business;
-  const date = typeof doc.date === "string" ? doc.date : formatDate(doc.date, cfg, f.dateTime);
+  const date = docDate(doc.date, cfg, f.dateTime);
   const kv = (a: string, v: string, cls = "", field?: InvoiceTextField) => `<div class="kv ${cls} ${field ? `fs-${field}` : ""}"><span>${a}</span><span>${v}</span></div>`;
   const lines = (doc.lines ?? [])
     .map((l, i) => `<div class=it><div class="nm fs-item">${i + 1}. ${esc(l.name)}${l.unit && !narrow ? ` <small class=fs-unit>${esc(l.unit)}</small>` : ""}</div><div class=kv><span><span class=fs-qty>${t.showQtyRate ? qtyFmt(l.qty) : `x${qtyFmt(l.qty)}`}</span>${t.showQtyRate ? ` × <span class=fs-rate>${m(l.rate)}</span>${l.discount ? ` <span class=fs-discount>-${m(l.discount)}</span>` : ""}${l.taxPct ? ` <span class=fs-tax>+${l.taxPct}%</span>` : ""}` : ""}</span><span class=fs-amount>${m(l.total)}</span></div>${l.note ? `<div class="note fs-notes">${esc(l.note)}</div>` : ""}</div>`)
