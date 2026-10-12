@@ -20,16 +20,16 @@ import { EXTRACT_EXTENSIONS, extractFileText } from "@/lib/extract.functions";
 export const Route = createFileRoute("/_authenticated/extract")({
   head: () => ({
     meta: [
-      { title: "Extract Bot — Image/PDF to Text" },
+      { title: "Extract Bot — File to Text" },
       {
         name: "description",
         content:
-          "Upload any image or PDF and get the data in accurate text form.",
+          "Upload an Excel, CSV, Word or TXT file and get its data as clean text.",
       },
-      { property: "og:title", content: "Extract Bot — Image/PDF to Text" },
+      { property: "og:title", content: "Extract Bot — File to Text" },
       {
         property: "og:description",
-        content: "Upload an image or PDF and get accurate text instantly.",
+        content: "Upload an Excel, CSV, Word or TXT file and get clean text instantly.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -199,7 +199,7 @@ function ExtractChat() {
   return (
     <AppShell
       title="Extract Bot"
-      subtitle="Image/PDF → accurate text"
+      subtitle="Excel / CSV / Word → text"
       active="/extract"
       onClear={handleClear}
       showClear={messages.length > 0}
@@ -209,8 +209,8 @@ function ExtractChat() {
         icon={FileText}
         eyebrow="Document operations"
         title="Data Extraction"
-        description="Upload an image or PDF, add optional instructions, and review clean extracted text."
-        meta={["Paste", "Images", "PDF", "15 MB max"]}
+        description="Upload an Excel, CSV, Word or TXT file and review its text. No AI is used, so images and PDFs are not supported."
+        meta={["Excel", "CSV", "Word", "15 MB max"]}
       />
       <Conversation className="flex-1">
         <ConversationContent className="gap-4 px-0 pb-3 pt-3 sm:gap-6 sm:pb-4 sm:pt-5">
@@ -300,7 +300,7 @@ function ExtractChat() {
                 void handleSend();
               }
             }}
-            placeholder="Paste image/PDF here, or write an optional instruction"
+            placeholder="Attach an Excel, CSV, Word or TXT file"
             disabled={busy}
             rows={2}
             aria-label="Extraction instructions"
@@ -339,7 +339,7 @@ function ExtractChat() {
           </div>
         </div>
         <p className="mt-2 hidden text-center text-xs text-muted-foreground sm:block">
-          Paste/attach an image or PDF → text will be extracted.
+          Attach an Excel, CSV, Word or TXT file → text will be extracted.
         </p>
       </div>
     </AppShell>
@@ -351,7 +351,7 @@ function EmptyState() {
     <div className="glass-panel mx-auto mt-2 flex w-full max-w-3xl flex-col items-center rounded-2xl border-dashed p-5 text-center sm:p-12">
       <span className="grid size-10 place-items-center rounded-lg bg-accent text-accent-foreground sm:size-12"><FileText className="size-5 sm:size-6" /></span>
       <h3 className="mt-3 font-display text-base font-bold text-foreground sm:mt-4 sm:text-lg">No document selected</h3>
-      <p className="mt-1.5 max-w-md text-[13px] leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">Copy-paste or attach a screenshot, receipt, order slip or PDF to extract readable Urdu, Roman Urdu or English text.</p>
+      <p className="mt-1.5 max-w-md text-[13px] leading-5 text-muted-foreground sm:mt-2 sm:text-sm sm:leading-6">Attach an Excel, CSV, Word or TXT file to read its contents as plain text.</p>
     </div>
   );
 }
