@@ -38,19 +38,33 @@ export function parseCustomerText(text: string): PastedCustomer {
 }
 
 export function CustomerPasteBox({ onApply }: { onApply: (c: PastedCustomer) => void }) {
+  const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const apply = () => {
     const c = parseCustomerText(text);
     if (!Object.values(c).some(Boolean)) return toast.error("Nothing found — use the format: Name: … Phone: …");
     onApply(c);
     setText("");
+    setOpen(false);
     toast.success("Customer details filled");
   };
+  if (!open) {
+    return (
+      <div className="mt-3">
+        <Button type="button" size="sm" variant="outline" onClick={() => setOpen(true)}>
+          <ClipboardPaste /> Paste customer details
+        </Button>
+      </div>
+    );
+  }
   return (
     <div className="mt-3 rounded-lg border border-border bg-muted/40 p-2">
       <div className="mb-1 flex items-center justify-between gap-2">
         <p className="text-xs font-semibold text-foreground">Paste customer details</p>
-        <button type="button" className="text-[11px] text-primary underline" onClick={() => setText(CUSTOMER_FORMAT)}>Insert format</button>
+        <div className="flex gap-3">
+          <button type="button" className="text-[11px] text-primary underline" onClick={() => setText(CUSTOMER_FORMAT)}>Insert format</button>
+          <button type="button" className="text-[11px] text-muted-foreground underline" onClick={() => setOpen(false)}>Close</button>
+        </div>
       </div>
       <textarea
         aria-label="Paste customer details"
