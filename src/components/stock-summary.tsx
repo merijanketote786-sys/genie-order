@@ -154,9 +154,14 @@ export function StockSummary({ open, onClose }: { open: boolean; onClose: () => 
             <div className="grid grid-cols-2 gap-2">
               {COLS.map((c) => <label key={c.key} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={sel.includes(c.key)} onChange={(e) => setSel((s) => e.target.checked ? COLS.filter((x) => s.includes(x.key) || x.key === c.key).map((x) => x.key) : s.filter((k) => k !== c.key))} />{c.label}</label>)}
             </div>
+            <p className="mt-3 border-t border-border pt-2 text-sm font-semibold text-foreground">Which items?</p>
+            <div className="mt-1 grid grid-cols-2 gap-2">
+              {FILTERS.map((f) => <label key={f.key} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={statusSel.includes(f.key)} onChange={(e) => setStatusSel((s) => e.target.checked ? [...s, f.key] : s.filter((k) => k !== f.key))} />{f.label}</label>)}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">{filteredRows.length} items selected</p>
             <div className="mt-4 flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setAsk(null)}>Cancel</Button>
-              <Button disabled={!sel.length} onClick={run}>{ask === "print" ? "Print" : ask === "pdf" ? "Download PDF" : "Download Excel"}</Button>
+              <Button disabled={!sel.length || !filteredRows.length} onClick={run}>{ask === "print" ? "Print" : ask === "pdf" ? "Download PDF" : "Download Excel"}</Button>
             </div>
           </div>
         </div>, document.body)}
