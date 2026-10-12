@@ -21,5 +21,5 @@
 - [x] Billing: customer dues/advance badge next to customer fields
 - [x] Day Book: cash denomination counter
 - [x] Invoices: direct "Receive Payment" on unpaid bills
-- [ ] Purchases: supplier bill # + bilty/transport charges (needs DB change) — next
+- [x] Purchases: supplier bill # + bilty/transport charges
 - [ ] Parties: date-filtered statement PDF; Expenses voucher print; Reports top-selling; Attendance salary sheet PDF — later

@@ -148,6 +148,8 @@ export const savePurchase = createServerFn({ method: "POST" })
       method: z.string().max(30),
       discount: amt,
       notes: z.string().max(1000).optional(),
+      supplierBillNo: z.string().max(60).optional(),
+      freight: amt.optional(),
       refPurchaseId: z.string().uuid().optional(),
       clientRef: z.string().uuid().optional(),
       items: z.array(z.object({ productId: z.string().uuid().optional(), name: z.string().min(1).max(300), unit: z.string().max(40).optional(), qty: z.number().positive().max(1e7), rate: amt, discount: amt, taxPercent: z.number().min(0).max(100), batch: z.string().max(60).optional(), expiry: z.string().max(10).optional() })).min(1).max(300),
@@ -161,9 +163,10 @@ export const savePurchase = createServerFn({ method: "POST" })
     });
     const subtotal = r2(items.reduce((s, i) => s + i.line_total - i.tax_amount, 0));
     const tax = r2(items.reduce((s, i) => s + i.tax_amount, 0));
-    const total = Math.max(0, r2(subtotal + tax - data.discount));
+    const freight = r2(data.freight ?? 0);
+    const total = Math.max(0, r2(subtotal + tax - data.discount + freight));
     const { data: res, error } = await withStore((context.supabase as Sb).rpc("pos_save_purchase", {
-      _p: { client_ref: data.clientRef ?? "", doc_type: data.docType, supplier_id: data.supplierId ?? "", supplier_name: data.supplierName ?? "", subtotal, discount_total: data.discount, tax_total: tax, grand_total: total, paid: data.paid, method: data.method, notes: data.notes ?? "", ref_purchase_id: data.refPurchaseId ?? "", items },
+      _p: { client_ref: data.clientRef ?? "", doc_type: data.docType, supplier_id: data.supplierId ?? "", supplier_name: data.supplierName ?? "", subtotal, discount_total: data.discount, tax_total: tax, grand_total: total, paid: data.paid, method: data.method, notes: data.notes ?? "", supplier_bill_no: data.supplierBillNo ?? "", freight, ref_purchase_id: data.refPurchaseId ?? "", items },
     }));
     if (error || !res) { console.error(error); throw new Error(friendlyDbError(error, "Failed to save purchase.")); }
     return { ...(res as { id: string; number: string }), total };
@@ -173,11 +176,11 @@ export const listPurchases = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ from: z.string().max(40).optional(), to: z.string().max(40).optional() }).parse(d ?? {}))
   .handler(async ({ data, context }) => {
-    let q = (context.supabase as Sb).from("purchases").select("id, doc_number, doc_type, status, payment_status, supplier_id, supplier_name, ref_purchase_id, discount_total, notes, grand_total, paid_total, balance, created_at").neq("status", "cancelled").order("created_at", { ascending: false }).limit(100);
+    let q = (context.supabase as Sb).from("purchases").select("id, doc_number, doc_type, status, payment_status, supplier_id, supplier_name, ref_purchase_id, discount_total, notes, supplier_bill_no, freight, grand_total, paid_total, balance, created_at").neq("status", "cancelled").order("created_at", { ascending: false }).limit(100);
     if (data.from) q = q.gte("created_at", data.from);
     if (data.to) q = q.lte("created_at", data.to);
     const { data: rows } = await q;
-    return { purchases: (rows ?? []).map((p: any) => ({ ...p, discount_total: Number(p.discount_total), grand_total: Number(p.grand_total), paid_total: Number(p.paid_total), balance: Number(p.balance) })) as Array<{ id: string; doc_number: string; doc_type: string; status: string; payment_status: string; supplier_id: string | null; ref_purchase_id: string | null; discount_total: number; notes: string | null; supplier_name: string | null; grand_total: number; paid_total: number; balance: number; created_at: string }> };
+    return { purchases: (rows ?? []).map((p: any) => ({ ...p, discount_total: Number(p.discount_total), freight: Number(p.freight ?? 0), grand_total: Number(p.grand_total), paid_total: Number(p.paid_total), balance: Number(p.balance) })) as Array<{ id: string; doc_number: string; doc_type: string; status: string; payment_status: string; supplier_id: string | null; ref_purchase_id: string | null; discount_total: number; freight: number; supplier_bill_no: string | null; notes: string | null; supplier_name: string | null; grand_total: number; paid_total: number; balance: number; created_at: string }> };
   });
 
 export const getPurchaseItems = createServerFn({ method: "GET" })

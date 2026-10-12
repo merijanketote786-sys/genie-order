@@ -1627,6 +1627,7 @@ export type Database = {
           discount_total: number
           doc_number: string
           doc_type: string
+          freight: number
           grand_total: number
           id: string
           notes: string | null
@@ -1635,6 +1636,7 @@ export type Database = {
           ref_purchase_id: string | null
           status: string
           subtotal: number
+          supplier_bill_no: string | null
           supplier_id: string | null
           supplier_name: string | null
           tax_total: number
@@ -1649,6 +1651,7 @@ export type Database = {
           discount_total?: number
           doc_number: string
           doc_type?: string
+          freight?: number
           grand_total?: number
           id?: string
           notes?: string | null
@@ -1657,6 +1660,7 @@ export type Database = {
           ref_purchase_id?: string | null
           status?: string
           subtotal?: number
+          supplier_bill_no?: string | null
           supplier_id?: string | null
           supplier_name?: string | null
           tax_total?: number
@@ -1671,6 +1675,7 @@ export type Database = {
           discount_total?: number
           doc_number?: string
           doc_type?: string
+          freight?: number
           grand_total?: number
           id?: string
           notes?: string | null
@@ -1679,6 +1684,7 @@ export type Database = {
           ref_purchase_id?: string | null
           status?: string
           subtotal?: number
+          supplier_bill_no?: string | null
           supplier_id?: string | null
           supplier_name?: string | null
           tax_total?: number
