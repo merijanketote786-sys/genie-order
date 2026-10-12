@@ -4,6 +4,7 @@ import { WaTemplateButton } from "@/components/wa-template-button";
 import { ShippingCalcButton } from "@/components/shipping-calc-button";
 import { PosSubnav } from "@/components/pos-subnav";
 import { CustomerPasteBox } from "@/components/customer-paste-box";
+import { ItemsPasteBox } from "@/components/items-paste-box";
 import { toChallan } from "@/components/challan-dialog";
 import { StoreSwitcher, useActiveStore } from "@/components/store-switcher";
 import { usePinPrompt, usePosAccess } from "@/components/pos-access";
@@ -893,6 +894,27 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
           </section>
 
           {/* Sale invoice grid — Vyapar jaisi table: # | ITEM | WEIGHT | SIZE | QTY | UNIT | PRICE/UNIT | AMOUNT */}
+          <ItemsPasteBox onApply={async (items) => {
+            let created = 0;
+            for (const it of items) {
+              const key = it.name.trim().toLowerCase();
+              let p = products.find((x) => x.name.toLowerCase() === key);
+              if (!p) {
+                try {
+                  await createPosProduct({ data: { name: it.name.trim() } });
+                  created++;
+                } catch (e) {
+                  toast.error(`${it.name}: ${e instanceof Error ? e.message : "save failed"}`);
+                  continue;
+                }
+                p = { name: it.name.trim(), unit: it.unit || "Piece", p100: null, p250: null, p500: null, sale: 0, stock: null, customSale: null, customP100: null, customP250: null, customP500: null } as DbProduct;
+                add(p, "sale", { qty: it.qty, price: it.price ?? 0, unit: it.unit });
+              } else {
+                add(p, undefined, { qty: it.qty, price: it.price, unit: it.unit });
+              }
+            }
+            if (created) { qc.invalidateQueries(); toast.success(`${created} new item(s) saved to inventory`); }
+          }} />
           <section className="border-y border-border">
             <div className="overflow-x-auto">
             <div className="md:min-w-[960px]">
