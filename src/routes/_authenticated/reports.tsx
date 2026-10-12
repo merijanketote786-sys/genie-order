@@ -142,6 +142,7 @@ function ReportsPage() {
           </>
         )}
       </div>
+      <StockSummary open={stockOpen} onClose={() => setStockOpen(false)} />
     </AppShell>
   );
 }
