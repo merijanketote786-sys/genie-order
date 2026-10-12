@@ -108,7 +108,7 @@ export function grandTotal(values: ConfirmationValues): string {
   return total.toLocaleString("en-PK");
 }
 
-export function renderConfirmation(template: string, values: ConfirmationValues): string {
+export function renderConfirmation(template: string, values: ConfirmationValues, extras: Record<string, string> = {}): string {
   const map: Record<string, string> = {
     "{{order_number}}": values.orderNumber.trim(),
     "{{date}}": new Date().toLocaleDateString("en-GB"),
@@ -129,6 +129,7 @@ export function renderConfirmation(template: string, values: ConfirmationValues)
   for (const [token, value] of Object.entries(map)) {
     output = output.split(token).join(value);
   }
+  output = output.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, k: string) => extras[k.toLowerCase()] ?? "");
 
   // Khali fields wali lines hata dein (e.g. "Advance: ")
   const lines = output
