@@ -407,6 +407,13 @@
       "when": 1791543538429,
       "tag": "0057_user_settings_access_lock",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1791836353385,
+      "tag": "0058_grant_pos_settings_read",
+      "breakpoints": true
     }
   ]
 }
