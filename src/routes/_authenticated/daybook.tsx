@@ -103,6 +103,7 @@ function DayBookPage() {
                 {Object.entries(data.byMethod).map(([k, v]) => <p key={k} className="flex justify-between border-t border-border py-1.5"><span>{k}</span><b>{rs(v)}</b></p>)}
                 <div className="mt-3 flex items-center gap-2">
                   <input className={posInput} value={counted} inputMode="decimal" onChange={(e) => setCounted(e.target.value)} placeholder="Cash counted in the till" aria-label="Counted cash" />
+                  <DenominationCounter onTotal={(t) => setCounted(String(t))} />
                   {diff != null ? <b className={Math.abs(diff) < 0.01 ? "text-primary" : "text-destructive"}>{Math.abs(diff) < 0.01 ? "Matched" : `${diff > 0 ? "Excess" : "Short"} ${rs(Math.abs(diff))}`}</b> : null}
                 </div>
               </section>
