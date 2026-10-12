@@ -497,7 +497,6 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
   // Payments: sirf ek line aur amount khali = poora us method se
   const payParts: PaymentPart[] = (() => {
     const filled = pays.map((p) => ({ method: p.method, amount: n(p.amount) }));
-    if (pays.length === 1 && !pays[0].amount.trim()) return [{ method: pays[0].method, amount: total }];
     return filled.filter((p) => p.amount > 0);
   })();
   const paidNum = payParts.filter((p) => p.method !== "Credit").reduce((s, p) => s + p.amount, 0);
