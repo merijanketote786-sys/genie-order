@@ -8,9 +8,10 @@ import { ChatComposer, ChatMessage, ChatMessageContent, PlainMessageText } from 
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { ResultCard } from "@/components/result-card";
 import { saveInvoice } from "@/lib/records.functions";
-import { useChat } from "@ai-sdk/react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { DefaultChatTransport, type UIMessage } from "ai";
+import type { UIMessage } from "ai";
+import { formatInvoice, DEFAULT_INVOICE_TEMPLATE, type RateRow } from "@/lib/invoice-format";
+import { OrderTemplateDialog } from "@/components/order-template-dialog";
 import { ScrollToEnd } from "@/components/scroll-to-end";
 import { loadChatHistory, saveChatHistory } from "@/lib/chat-history";
 import { setHandoff, takeHandoff } from "@/lib/handoff";
@@ -47,16 +48,25 @@ export const Route = createFileRoute("/_authenticated/invoice")({
   component: InvoiceChat,
 });
 
-const transport = new DefaultChatTransport({
-  api: "/api/invoice",
-  // Rate list usi user ke workspace se aati hai, isliye token bhejte hain.
-  headers: async (): Promise<Record<string, string>> => {
-    const { supabase } = await import("@/integrations/supabase/client");
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  },
-});
+/** Workspace rate list (rates section), loaded once per page visit. */
+async function loadRates(): Promise<RateRow[]> {
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { data } = await supabase
+    .from("products")
+    .select("name, sale_price, p100_staff_price, p250_staff_price, p500_staff_price, custom_sale_price, custom_p100_price, custom_p250_price, custom_p500_price, unit")
+    .eq("is_active", true)
+    .eq("scope", "rates")
+    .limit(5000);
+  const n = (v: unknown) => (v == null ? null : Number(v));
+  return (data ?? []).map((r) => ({
+    name: r.name,
+    unit: r.unit,
+    sale: n(r.custom_sale_price ?? r.sale_price),
+    p100: n(r.custom_p100_price ?? r.p100_staff_price),
+    p250: n(r.custom_p250_price ?? r.p250_staff_price),
+    p500: n(r.custom_p500_price ?? r.p500_staff_price),
+  }));
+}
 
 function messageText(msg: UIMessage): string {
   return msg.parts
@@ -80,10 +90,26 @@ function InvoiceChat() {
     setComposerText((prev) => `${prev.trimEnd()}${prev.trim() ? "\n" : ""}${block}\n`);
   }, []);
 
-  const { messages, sendMessage, status, setMessages, error } = useChat({
-    transport,
-    onError: (err) => toast.error(err.message || "Something went wrong"),
-  });
+  const [template, setTemplate] = useState(DEFAULT_INVOICE_TEMPLATE);
+  const handleTemplateChange = useCallback((t: string) => setTemplate(t), []);
+  const [messages, setMessages] = useState<UIMessage[]>([]);
+  const [status, setStatus] = useState<"ready" | "submitted">("ready");
+  const error = null as Error | null;
+  const ratesRef = useRef<Promise<RateRow[]> | null>(null);
+
+  const sendMessage = async ({ text }: { text: string }) => {
+    setStatus("submitted");
+    setMessages((m) => [...m, { id: crypto.randomUUID(), role: "user", parts: [{ type: "text", text }] }]);
+    try {
+      ratesRef.current ??= loadRates().catch(() => []);
+      const { output } = formatInvoice(text, template, await ratesRef.current);
+      setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", parts: [{ type: "text", text: output }] }]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not create the invoice");
+    } finally {
+      setStatus("ready");
+    }
+  };
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const hydratedRef = useRef(false);
@@ -97,7 +123,7 @@ function InvoiceChat() {
 
   useEffect(() => {
     if (!hydratedRef.current) return;
-    if (status === "streaming" || status === "submitted") return;
+    if (status === "submitted") return;
     if (messages.length === 0) return;
     saveChatHistory(STORAGE_KEY, messages);
   }, [messages, status]);
@@ -133,7 +159,7 @@ function InvoiceChat() {
     }
   };
 
-  const isBusy = status === "submitted" || status === "streaming";
+  const isBusy = status === "submitted";
 
   const handleSubmit = async ({ text }: { text: string }) => {
     const trimmed = text.trim();
@@ -162,7 +188,7 @@ function InvoiceChat() {
         icon={ReceiptText}
         eyebrow="Billing operations"
         title="Invoice Workspace"
-        description="Create a clean item invoice using live staff rates, then amend it through the same conversation."
+        description="Create a clean item invoice from your own template using live staff rates — no AI."
         meta={["Live rates", "Editable", "WhatsApp ready"]}
       />
       <WorkspaceToolDock>
@@ -205,6 +231,7 @@ function InvoiceChat() {
             {phone ? <Button type="button" variant="ghost" size="icon-sm" onClick={() => updatePhone("")} aria-label="Clear number"><X /></Button> : null}
           </label>
         </WorkspaceTool>
+        <OrderTemplateDialog template={template} onTemplateChange={handleTemplateChange} compact kind="invoice" />
       </WorkspaceToolDock>
       <Conversation className="flex-1">
         <ConversationContent className="gap-4 px-0 pb-3 pt-3 sm:gap-6 sm:pb-4 sm:pt-5">
