@@ -52,7 +52,7 @@ async function buildPdf(rows: Row[], cols: Col[], biz: Biz, size: Size) {
     startY: y + 3, margin: { left: m, right: m, top: m, bottom: m + 8 }, showHead: "everyPage", showFoot: "never",
     didDrawCell: (d) => {
       if (d.section === "body" && d.column.index === 0) { const r = rows[d.row.index]; if (r) pageTotals[d.pageNumber] = (pageTotals[d.pageNumber] ?? 0) + n(r.stock) * n(r.purchase_price); }
-      if (d.section === "body" && d.row.index === rows.length - 1) { lastRowBottom = d.cell.y + d.cell.h; lastRowPage = d.pageNumber; }
+      if (d.section === "body" && d.row.index === rows.length - 1) { lastRowBottom = d.cell.y + d.cell.height; lastRowPage = d.pageNumber; }
     },
     didDrawPage: (d) => {
       const pg = d.pageNumber, H = doc.internal.pageSize.getHeight();
