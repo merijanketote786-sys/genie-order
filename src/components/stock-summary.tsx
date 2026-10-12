@@ -46,10 +46,9 @@ async function buildPdf(rows: Row[], cols: Col[], biz: Biz, size: Size) {
   y += 6; doc.setFont("helvetica", "bold"); doc.setFontSize(size === "a5" ? 10 : 12); doc.text("Stock Summary", m, y);
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.text(`${new Date().toLocaleString("en-PK")} · ${rows.length} items`, W - m, y, { align: "right" });
   const total = rows.reduce((s, r) => s + n(r.stock) * n(r.purchase_price), 0);
-  const hasVal = cols.some((c) => c.key === "value");
   const pageTotals: Record<number, number> = {};
   autoTable(doc, {
-    startY: y + 3, margin: { left: m, right: m, top: m, bottom: m + 8 }, showHead: "everyPage",
+    startY: y + 3, margin: { left: m, right: m, top: m, bottom: m + 8 }, showHead: "everyPage", showFoot: "never",
     didDrawCell: (d) => { if (d.section === "body" && d.column.index === 0) { const r = rows[d.row.index]; if (r) pageTotals[d.pageNumber] = (pageTotals[d.pageNumber] ?? 0) + n(r.stock) * n(r.purchase_price); } },
     didDrawPage: (d) => {
       const pg = d.pageNumber, H = doc.internal.pageSize.getHeight();
