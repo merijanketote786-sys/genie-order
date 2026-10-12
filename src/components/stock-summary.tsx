@@ -6,7 +6,7 @@ import { FullScreenPopup } from "@/components/fullscreen-popup";
 import { Download, FileSpreadsheet, Loader2, Printer, X } from "lucide-react";
 import { createPortal } from "react-dom";
 
-type Row = { name: string; unit: string; sku: string | null; barcode: string | null; sale_price: number; purchase_price: number | null; wholesale_price: number | null; stock: number };
+type Row = { name: string; unit: string; sku: string | null; barcode: string | null; sale_price: number; purchase_price: number | null; wholesale_price: number | null; stock: number; is_active: boolean; min_stock: number | null };
 type Col = { key: string; label: string; num?: boolean; get: (r: Row) => string | number };
 
 const n = (v: number | null | undefined) => Number(v ?? 0);
@@ -22,6 +22,13 @@ const COLS: Col[] = [
   { key: "stock", label: "Stock qty", num: true, get: (r) => n(r.stock) },
   { key: "value", label: "Stock value", num: true, get: (r) => n(r.stock) * n(r.purchase_price) },
 ];
+
+const FILTERS = [
+  { key: "active", label: "Active products", test: (r: Row) => r.is_active },
+  { key: "inactive", label: "Inactive products", test: (r: Row) => !r.is_active },
+  { key: "low", label: "Low stock items", test: (r: Row) => r.is_active && n(r.stock) > 0 && n(r.min_stock) > 0 && n(r.stock) <= n(r.min_stock) },
+  { key: "out", label: "Out of stock items", test: (r: Row) => r.is_active && n(r.stock) <= 0 },
+] as const;
 
 type Biz = { name: string; address: string; phone: string; email: string; website: string; taxId: string };
 type Size = "a4" | "a5";
@@ -58,7 +65,7 @@ export function StockSummary({ open, onClose }: { open: boolean; onClose: () => 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["stock-summary"], enabled: open,
     queryFn: async (): Promise<Row[]> => {
-      const { data, error } = await supabase.from("products").select("name,unit,sku,barcode,sale_price,purchase_price,wholesale_price,stock").eq("scope", "pos").eq("is_active", true).order("name").limit(10000);
+      const { data, error } = await supabase.from("products").select("name,unit,sku,barcode,sale_price,purchase_price,wholesale_price,stock,is_active,min_stock").eq("scope", "pos").order("name").limit(10000);
       if (error) throw error;
       return (data ?? []) as Row[];
     },
