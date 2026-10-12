@@ -20,6 +20,6 @@
 - [x] Move POS section links into a dedicated POS side menu on desktop and mobile
 - [x] Billing: customer dues/advance badge next to customer fields
 - [x] Day Book: cash denomination counter
-- [ ] Invoices: direct "Receive Payment" on unpaid bills — next
+- [x] Invoices: direct "Receive Payment" on unpaid bills
 - [ ] Purchases: supplier bill # + bilty/transport charges (needs DB change) — next
 - [ ] Parties: date-filtered statement PDF; Expenses voucher print; Reports top-selling; Attendance salary sheet PDF — later
