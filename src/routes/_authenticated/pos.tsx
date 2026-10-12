@@ -795,6 +795,11 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
             <div ref={custRef} className="flex flex-wrap items-center gap-2">
               <div className="min-w-[140px] flex-[1.3_1_0%]"><PosCustomerSearch field="name" className={inputCls} value={customerName} onChange={(v) => { setCustomerName(v); setCustomerCityArea(""); setCustomerAddress(""); setCourierServiceName(""); setGoodsAddaName(""); }} onPick={pickCustomer} placeholder="Customer name (Walk-in) · ↑↓ select · Enter pick" /></div>
               <div className="min-w-[110px] flex-[1_1_0%]"><PosCustomerSearch field="phone" className={inputCls} value={customerPhone} onChange={(v) => { setCustomerPhone(v); setCustomerCityArea(""); setCustomerAddress(""); setCourierServiceName(""); setGoodsAddaName(""); }} onPick={pickCustomer} placeholder="Phone · ↑↓ select · Enter pick" /></div>
+              {balance?.found && Math.abs(balance.balance) > 0.009 ? (
+                <span title="Customer outstanding balance before this bill" className={`inline-flex shrink-0 items-center self-center rounded-full border px-3 py-1 text-xs font-semibold ${balance.balance > 0 ? "border-destructive/40 bg-destructive/10 text-destructive" : "border-primary/40 bg-primary/10 text-primary"}`}>
+                  {balance.balance > 0 ? "Dues" : "Advance"}: Rs {money(Math.abs(balance.balance))}
+                </span>
+              ) : null}
               <input aria-label="City / Area" className={`min-w-[100px] flex-[1_1_0%] ${inputCls}`} value={customerCityArea} onChange={(e) => setCustomerCityArea(e.target.value)} placeholder="City / Area" />
               <input aria-label="Customer address" className={`min-w-[150px] flex-[1.4_1_0%] ${inputCls}`} value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="Address (optional)" />
               <input aria-label="Courier service" className={`min-w-[110px] flex-[1_1_0%] ${inputCls}`} value={courierServiceName} onChange={(e) => setCourierServiceName(e.target.value)} placeholder="Courier service" />

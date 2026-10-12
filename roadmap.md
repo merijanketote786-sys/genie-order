@@ -18,3 +18,8 @@
 - [x] Item Manufacturing: per-product raw materials + expenses setup, cost per unit, Manufacture button deducts raw stock
 - [x] COD/CC payment status correctly saved when order confirmed and transferred to Orders (auto-detect on Order page + History shows COD/CC badge)
 - [x] Move POS section links into a dedicated POS side menu on desktop and mobile
+- [x] Billing: customer dues/advance badge next to customer fields
+- [x] Day Book: cash denomination counter
+- [ ] Invoices: direct "Receive Payment" on unpaid bills — next
+- [ ] Purchases: supplier bill # + bilty/transport charges (needs DB change) — next
+- [ ] Parties: date-filtered statement PDF; Expenses voucher print; Reports top-selling; Attendance salary sheet PDF — later

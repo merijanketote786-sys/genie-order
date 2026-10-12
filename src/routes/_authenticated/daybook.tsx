@@ -103,6 +103,7 @@ function DayBookPage() {
                 {Object.entries(data.byMethod).map(([k, v]) => <p key={k} className="flex justify-between border-t border-border py-1.5"><span>{k}</span><b>{rs(v)}</b></p>)}
                 <div className="mt-3 flex items-center gap-2">
                   <input className={posInput} value={counted} inputMode="decimal" onChange={(e) => setCounted(e.target.value)} placeholder="Cash counted in the till" aria-label="Counted cash" />
+                  <DenominationCounter onTotal={(t) => setCounted(String(t))} />
                   {diff != null ? <b className={Math.abs(diff) < 0.01 ? "text-primary" : "text-destructive"}>{Math.abs(diff) < 0.01 ? "Matched" : `${diff > 0 ? "Excess" : "Short"} ${rs(Math.abs(diff))}`}</b> : null}
                 </div>
               </section>
@@ -209,5 +210,41 @@ function EntryDialog({ open, onOpenChange, date, accounts, onSaved }: { open: bo
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+const NOTES = [5000, 1000, 500, 100, 50, 20, 10, 5, 2, 1];
+
+/** Cash note counter — sirf counted cash field bharta hai, koi entry save nahi hoti. */
+function DenominationCounter({ onTotal }: { onTotal: (total: number) => void }) {
+  const [open, setOpen] = useState(false);
+  const [cnt, setCnt] = useState<Record<number, string>>({});
+  const total = NOTES.reduce((s, n) => s + n * (Math.max(0, Math.floor(Number(cnt[n]) || 0))), 0);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="shrink-0 rounded-lg border border-border px-3 py-2 text-xs font-semibold hover:bg-accent">Count notes</button>
+      {open ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4" onClick={() => setOpen(false)}>
+          <div className="w-full max-w-xs rounded-xl border border-border bg-card p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <p className="mb-2 font-bold">Cash denomination count</p>
+            <div className="max-h-[60vh] space-y-1 overflow-y-auto">
+              {NOTES.map((n) => (
+                <div key={n} className="flex items-center gap-2 text-sm">
+                  <span className="w-16 text-right font-semibold">Rs {n}</span>
+                  <span>×</span>
+                  <input aria-label={`Rs ${n} count`} inputMode="numeric" className={`${posInput} w-20`} value={cnt[n] ?? ""} onChange={(e) => setCnt({ ...cnt, [n]: e.target.value.replace(/\D/g, "") })} />
+                  <span className="ml-auto">{rs(n * (Number(cnt[n]) || 0))}</span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 flex justify-between border-t border-border pt-2 font-bold"><span>Total</span><span>{rs(total)}</span></p>
+            <div className="mt-3 flex justify-end gap-2">
+              <button type="button" onClick={() => setOpen(false)} className="rounded-lg border border-border px-3 py-1.5 text-sm">Cancel</button>
+              <button type="button" onClick={() => { onTotal(total); setOpen(false); }} className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground">Use total</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
