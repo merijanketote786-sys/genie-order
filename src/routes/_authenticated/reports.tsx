@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { getReport } from "@/lib/inventory.functions";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Download, FileSpreadsheet, Printer } from "lucide-react";
+import { Boxes, Download, FileSpreadsheet, Printer } from "lucide-react";
+import { StockSummary } from "@/components/stock-summary";
 import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/reports")({
@@ -34,6 +35,7 @@ const PRESETS = [["today", "Today"], ["yesterday", "Yesterday"], ["week", "This 
 
 function ReportsPage() {
   const [[from, to], setRange] = useState<[string, string]>(range("month"));
+  const [stockOpen, setStockOpen] = useState(false);
   const { data, isFetching } = useQuery({ queryKey: ["report", from, to], queryFn: () => getReport({ data: { from, to, tzOffsetMin: new Date().getTimezoneOffset() } }) });
   const s = data?.summary;
 
@@ -79,7 +81,8 @@ function ReportsPage() {
           {PRESETS.map(([k, l]) => <Button key={k} size="sm" variant="outline" onClick={() => setRange(range(k))}>{l}</Button>)}
           <input className={`${posInput} w-40`} type="date" value={from} onChange={(e) => setRange([e.target.value, to])} aria-label="From" />
           <input className={`${posInput} w-40`} type="date" value={to} onChange={(e) => setRange([from, e.target.value])} aria-label="To" />
-          <div className="ml-auto flex gap-2">
+          <div className="ml-auto flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => setStockOpen(true)}><Boxes /> Stock summary</Button>
             <Button size="sm" variant="outline" onClick={() => download("csv")}><Download /> CSV</Button>
             <Button size="sm" variant="outline" onClick={() => download("xlsx")}><FileSpreadsheet /> Excel</Button>
             <Button size="sm" variant="outline" onClick={() => window.print()}><Printer /> Print / PDF</Button>
@@ -139,6 +142,7 @@ function ReportsPage() {
           </>
         )}
       </div>
+      <StockSummary open={stockOpen} onClose={() => setStockOpen(false)} />
     </AppShell>
   );
 }
