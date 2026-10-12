@@ -26,7 +26,6 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 const SHEET_EXT = ["xlsx", "xls", "csv"];
-const DOC_TYPES = ["application/pdf"];
 
 function extOf(name: string) {
   return (name.split(".").pop() ?? "").toLowerCase();

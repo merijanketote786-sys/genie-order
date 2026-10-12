@@ -54,28 +54,50 @@ export const listCouriers = createServerFn({ method: "GET" })
     return { couriers };
   });
 
-const IMPORT_PROMPT = `Aap aik courier rate-sheet extractor hain. Di gayi file me courier ki shipping rate list hai.
-
-Sirf JSON output dein (koi baat nahi, koi code fence nahi) is shape me:
-{
-  "services": [{"id":"standard","label":"Standard Delivery"}],
-  "slabs": [{"serviceId":"standard","zoneId":"within_city","uptoKg":0.5,"rate":85}],
-  "additionalKgRate": 50,
-  "fuelPct": 15,
-  "taxPct": 18,
-  "codPct": 4,
-  "materials": [{"id":"flyer","label":"Small Flyer","rate":15}],
-  "notes": ["file me jo baat clear na thi"]
+/**
+ * Fixed-format courier sheet parser (no AI).
+ * Rows: Service, Zone, Upto Kg, Rate   (Zone: within city / same province / cross province / all)
+ * Extra rows: "Additional Kg Rate, 50" · "Fuel %, 15" · "Tax %, 18" · "COD %, 4" · "Material, Flyer, 15"
+ */
+function parseCourierSheet(text: string) {
+  const num = (v?: string) => Number(String(v ?? "").replace(/[^\d.]/g, ""));
+  const zoneOf = (z: string): string[] | null => {
+    const t = z.toLowerCase();
+    if (/all|any|every/.test(t)) return ["within_city", "same_province", "cross_province"];
+    if (/within|same\s*city|local|city/.test(t)) return ["within_city"];
+    if (/same\s*prov|province\s*same|zone/.test(t)) return ["same_province"];
+    if (/cross|other|national|overland|inter/.test(t)) return ["cross_province"];
+    return null;
+  };
+  const services: { id: string; label: string }[] = [];
+  const slabs: { serviceId: string; zoneId: string; uptoKg: number; rate: number }[] = [];
+  const materials: { id: string; label: string; rate: number }[] = [];
+  let additionalKgRate = 0, fuelPct = 0, taxPct = 0, codPct = 0;
+  for (const raw of text.split(/\r?\n/)) {
+    const cells = raw.split(/\t|,/).map((c) => c.trim().replace(/^"|"$/g, ""));
+    const head = (cells[0] ?? "").toLowerCase();
+    if (!head || head.startsWith("###") || head === "service") continue;
+    if (/additional|extra\s*kg/.test(head)) { additionalKgRate = num(cells[1]); continue; }
+    if (/fuel/.test(head)) { fuelPct = num(cells[1]); continue; }
+    if (/tax|gst/.test(head)) { taxPct = num(cells[1]); continue; }
+    if (/^cod/.test(head)) { codPct = num(cells[1]); continue; }
+    if (/material|packing/.test(head)) {
+      const label = cells[1] ?? "";
+      if (label && num(cells[2]) >= 0) materials.push({ id: label.toLowerCase().replace(/[^a-z0-9]+/g, "_"), label, rate: num(cells[2]) });
+      continue;
+    }
+    const zones = zoneOf(cells[1] ?? "");
+    const upto = num(cells[2]);
+    const rate = num(cells[3]);
+    if (!zones || !(upto > 0) || !(rate > 0)) continue;
+    const label = cells[0]!;
+    const id = label.toLowerCase().replace(/[^a-z0-9]+/g, "_") || "standard";
+    if (!services.some((s) => s.id === id)) services.push({ id, label });
+    for (const zoneId of zones) slabs.push({ serviceId: id, zoneId, uptoKg: upto, rate });
+  }
+  if (!slabs.length) return null;
+  return { services, slabs, additionalKgRate, fuelPct, taxPct, codPct, materials };
 }
-
-Rules:
-- zoneId sirf in me se: "within_city" (same city), "same_province" (same province, different city), "cross_province" (province to province / nationwide). Agar file me sirf aik hi rate ho to teeno zones ke liye same slab likh dein.
-- slabs me "uptoKg" us slab ki upper weight limit hai (kg me). Har service + zone ke liye slabs dein.
-- additionalKgRate = slab ke baad har extra kg ka charge. Na mile to 0.
-- fuelPct / taxPct / codPct percentage numbers hain (15 ka matlab 15%). Na mile to 0.
-- materials optional packaging charges hain (flyer, sticker, box). Na mile to khali array.
-- Sirf wahi numbers jo file me likhe hain — kuch guess mat karein.
-- Agar file me rate table nahi hai to sirf ye likhein: NO_TABLE`;
 
 export const importCourierDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -94,11 +116,11 @@ export const importCourierDocument = createServerFn({ method: "POST" })
     }
 
     const ext = (data.fileName.split(".").pop() ?? "").toLowerCase();
-    const allowed = ["pdf", "xlsx", "xls", "csv", "txt", "docx", "png", "jpg", "jpeg", "webp"];
+    const allowed = ["xlsx", "xls", "csv", "txt", "docx"];
     if (!allowed.includes(ext)) {
       return {
         ok: false as const,
-        message: `".${ext}" files are not supported. Upload PDF, Word (.docx), Excel (.xlsx/.xls), CSV, or an image.`,
+        message: `".${ext}" files are not supported. Upload Word (.docx), Excel (.xlsx/.xls), CSV or TXT.`,
       };
     }
 
@@ -136,56 +158,12 @@ export const importCourierDocument = createServerFn({ method: "POST" })
       return { ok: false as const, message: "The file appears empty — no rate table found." };
     }
 
-    const key = process.env["LOVABLE_API_KEY"];
-    if (!key) return { ok: false as const, message: "AI service is not configured." };
-
-    const content: unknown[] = [
-      { type: "text", text: "Is courier rate sheet ko JSON me convert karein." },
-    ];
-    if (extracted) content.push({ type: "text", text: extracted });
-    else if (ext === "pdf")
-      content.push({ type: "file", file: { filename: data.fileName, file_data: data.dataUrl } });
-    else content.push({ type: "image_url", image_url: { url: data.dataUrl } });
-
-    let text = "";
-    try {
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: IMPORT_PROMPT },
-            { role: "user", content },
-          ],
-        }),
-      });
-      if (res.status === 429)
-        return {
-          ok: false as const,
-          message: "Too many requests right now — please try again shortly.",
-        };
-      if (res.status === 402)
-        return { ok: false as const, message: "AI credits have run out. Please add credits." };
-      if (!res.ok)
-        return { ok: false as const, message: "There was a problem reading the file. Please try again." };
-      const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-      text = json.choices?.[0]?.message?.content ?? "";
-    } catch {
-      return { ok: false as const, message: "There was a problem reading the file. Please try again." };
+    if (!extracted.trim()) {
+      return { ok: false as const, message: "Upload an Excel, CSV, Word or TXT rate sheet in the given format." };
     }
-
-    const cleaned = text.replace(/```[a-z]*/gi, "").replace(/```/g, "").trim();
-    if (!cleaned || /NO_TABLE/i.test(cleaned)) {
-      return { ok: false as const, message: "No courier rate table was found in the file." };
-    }
-    const start = cleaned.indexOf("{");
-    const end = cleaned.lastIndexOf("}");
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(cleaned.slice(start, end + 1));
-    } catch {
-      return { ok: false as const, message: "Could not understand the rate sheet. Please upload a clearer file." };
+    const parsed = parseCourierSheet(extracted);
+    if (!parsed) {
+      return { ok: false as const, message: "No courier rate rows found. Use columns: Service, Zone, Upto Kg, Rate." };
     }
 
     const config = normalizeConfig(parsed);
