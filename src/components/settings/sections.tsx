@@ -9,7 +9,7 @@ import type { PrintDoc } from "@/lib/print/render";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Download, Plus, Printer, RefreshCw, Trash2, Upload } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
