@@ -80,11 +80,33 @@ export function pdfFileName(doc: PrintDoc) {
   return `${(doc.number || doc.title).replace(/[^\w.-]+/g, "_")}.pdf`;
 }
 
+/**
+ * Page ko image banata hai. Pehle browser ki apni text rendering (html-to-image / SVG) use hoti hai —
+ * is se text bilkul print jaisa apni jagah rehta hai (html2canvas iPhone/Safari par text neeche khiska deta tha).
+ * Fail ho to html2canvas fallback.
+ */
+async function snapshot(body: HTMLElement, widthPx: number): Promise<HTMLCanvasElement> {
+  const height = Math.max(1, body.scrollHeight);
+  try {
+    const { toCanvas } = await import("html-to-image");
+    const opts = { pixelRatio: 2, backgroundColor: "#ffffff", width: widthPx, height, canvasWidth: widthPx, canvasHeight: height, skipFonts: true, cacheBust: false };
+    // Safari pehli dafa images/fonts kabhi kabhi miss karta hai — ek warm-up pass.
+    await toCanvas(body, opts).catch(() => null);
+    const c = await toCanvas(body, opts);
+    if (c.width > 0 && c.height > 0) return c;
+    throw new Error("empty canvas");
+  } catch (e) {
+    console.warn("Native PDF snapshot failed, using fallback:", e);
+    const { default: html2canvas } = await import("html2canvas");
+    return html2canvas(body, { scale: 2, backgroundColor: "#ffffff", width: widthPx, windowWidth: widthPx });
+  }
+}
+
 /** PDF ko Blob banata hai (share/download dono ke liye). */
 export async function buildPdfBlob(doc: PrintDoc, cfg: ResolvedCfg, o: { format?: PaperFormat; template?: import("@/lib/pos-config").TemplateId } = {}): Promise<Blob> {
   const format = o.format ?? cfg.printing.defaults[doc.kind];
   const { html, spec } = await renderPrint(doc, cfg, { format, template: o.template, copies: 1 });
-  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
+  const { jsPDF } = await import("jspdf");
   const pxPerMm = 96 / 25.4;
   const frame = document.createElement("iframe");
   frame.style.cssText = `position:fixed;left:-10000px;top:0;width:${Math.ceil(spec.widthMm * pxPerMm)}px;height:2000px;border:0`;
@@ -94,7 +116,9 @@ export async function buildPdfBlob(doc: PrintDoc, cfg: ResolvedCfg, o: { format?
     d.open(); d.write(html); d.close();
     await new Promise((r) => setTimeout(r, 250));
     await Promise.all(Array.from(d.images).map((i) => (i.complete ? null : new Promise((r) => { i.onload = r; i.onerror = r; }))));
-    const canvas = await html2canvas(d.body, { scale: 2, backgroundColor: "#ffffff", width: Math.ceil(spec.widthMm * pxPerMm), windowWidth: Math.ceil(spec.widthMm * pxPerMm) });
+    const widthPx = Math.ceil(spec.widthMm * pxPerMm);
+    frame.style.height = `${Math.max(400, d.body.scrollHeight + 20)}px`;
+    const canvas = await snapshot(d.body, widthPx);
     const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
     const isBlankRows = (y0: number, y1: number) => {
       const step = 4;
