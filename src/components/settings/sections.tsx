@@ -453,6 +453,16 @@ export function BackupSection() {
       qc.invalidateQueries({ queryKey: ["sync-overview"] });
     } catch (e) { toast.error(e instanceof Error ? e.message : "Backup failed"); } finally { setBusy(null); }
   };
+  const importRef = useRef<HTMLInputElement>(null);
+  const importAll = async (f: File) => {
+    setBusy("import");
+    try {
+      const { counts } = await restorePosBackup({ data: { mode: "merge", json: await f.text() } });
+      const total = Object.values(counts).reduce((s, n) => s + Number(n || 0), 0);
+      toast.success(`Backup imported — ${total} records added`);
+      qc.invalidateQueries();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Import failed"); } finally { setBusy(null); }
+  };
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const [mode, setMode] = useState<"merge" | "replace">("merge");
   const [confirmText, setConfirmText] = useState("");
@@ -475,7 +485,12 @@ export function BackupSection() {
         <div className="flex flex-wrap gap-2">
           <Button disabled={!can("settings") || busy === "backup"} onClick={() => backup(true)}><Download /> Save to computer folder</Button>
           <Button variant="outline" disabled={!can("settings") || busy === "backup"} onClick={() => backup(false)}><Download /> Download backup</Button>
+          <Button variant="outline" disabled={!can("settings") || busy === "import"} onClick={() => importRef.current?.click()}>
+            <Upload /> {busy === "import" ? "Importing…" : "Import full backup"}
+          </Button>
+          <input ref={importRef} type="file" accept=".json,application/json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void importAll(f); }} />
         </div>
+        <p className="text-xs text-muted-foreground">Import full backup: choose a POS backup file — all items, parties, sales, purchases, payments, expenses, stock, accounting, attendance and settings are added back. Existing records stay unchanged.</p>
       </div>
       <div className="space-y-2 rounded-lg border border-border p-3">
         <p className="text-sm font-semibold">Restore from backup</p>
