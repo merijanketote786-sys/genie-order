@@ -95,13 +95,30 @@ export async function buildPdfBlob(doc: PrintDoc, cfg: ResolvedCfg, o: { format?
     await new Promise((r) => setTimeout(r, 250));
     await Promise.all(Array.from(d.images).map((i) => (i.complete ? null : new Promise((r) => { i.onload = r; i.onerror = r; }))));
     const canvas = await html2canvas(d.body, { scale: 2, backgroundColor: "#ffffff", width: Math.ceil(spec.widthMm * pxPerMm), windowWidth: Math.ceil(spec.widthMm * pxPerMm) });
-    const contentMm = canvas.height / 2 / pxPerMm;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
+    const isBlankRows = (y0: number, y1: number) => {
+      const step = 4;
+      for (let yy = y0; yy < y1; yy += step) {
+        const row = ctx.getImageData(0, yy, canvas.width, 1).data;
+        for (let i = 0; i < row.length; i += 16) if (row[i] < 245 || row[i + 1] < 245 || row[i + 2] < 245) return false;
+      }
+      return true;
+    };
+    // Last row with ink -> neeche ka khaali safed hissa kaat do
+    let lastInk = canvas.height;
+    for (let yy = canvas.height - 1; yy >= 0; yy -= 4) {
+      if (!isBlankRows(yy, yy + 1)) { lastInk = Math.min(canvas.height, yy + 24); break; }
+      if (yy < 4) lastInk = 1;
+    }
+    const usedH = Math.max(1, lastInk);
+    const contentMm = usedH / 2 / pxPerMm;
     const pageH = spec.heightMm ?? Math.max(40, contentMm);
     const pdf = new jsPDF({ unit: "mm", format: [spec.widthMm, pageH], orientation: spec.widthMm > pageH ? "landscape" : "portrait" });
     const pageCanvasPx = Math.floor(pageH * pxPerMm * 2);
     let y = 0; let first = true;
-    while (y < canvas.height) {
-      const h = Math.min(pageCanvasPx, canvas.height - y);
+    while (y < usedH) {
+      const h = Math.min(pageCanvasPx, usedH - y);
+      if (!first && isBlankRows(y, y + h)) { y += h; continue; }
       const slice = document.createElement("canvas");
       slice.width = canvas.width; slice.height = h;
       slice.getContext("2d")!.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
