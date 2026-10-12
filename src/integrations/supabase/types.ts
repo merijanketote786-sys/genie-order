@@ -2151,6 +2151,16 @@ export type Database = {
         Returns: string
       }
       pos_perms: { Args: { _role: string }; Returns: string[] }
+      pos_receive_sale_payment: {
+        Args: {
+          _amount: number
+          _method: string
+          _note: string
+          _ref?: string
+          _sale: string
+        }
+        Returns: Json
+      }
       pos_request_store: { Args: { _ws: string }; Returns: string }
       pos_restore_backup: {
         Args: { _data: Json; _mode: string }
