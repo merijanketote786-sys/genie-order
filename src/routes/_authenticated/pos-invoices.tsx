@@ -174,7 +174,24 @@ function PosInvoicesPage() {
       sku: i.sku ?? undefined,
       note: i.note ?? undefined,
     }));
-    const payload = JSON.stringify({ cart, notes: s.notes ?? "", customerName: s.customer_name ?? "", customerPhone: s.customer_phone ?? "", delivery: String(Number(s.delivery) || "") });
+    let saved: Record<string, unknown> = {};
+    try {
+      const raw = typeof s.payload === "string" ? JSON.parse(s.payload) : s.payload;
+      if (raw && typeof raw === "object") saved = ((raw as { ui?: unknown }).ui && typeof (raw as { ui?: unknown }).ui === "object" ? (raw as { ui: Record<string, unknown> }).ui : raw) as Record<string, unknown>;
+    } catch { /* ignore */ }
+    const str = (v: unknown) => (typeof v === "string" && v.trim() ? v : undefined);
+    const pays = (s.payments ?? [])
+      .filter((p) => Number(p.amount) > 0)
+      .map((p) => ({ method: p.method, amount: String(Number(p.amount)) }));
+    const payload = JSON.stringify({
+      ...saved,
+      cart: Array.isArray(saved.cart) && (saved.cart as unknown[]).length ? saved.cart : cart,
+      notes: str(saved.notes) ?? s.notes ?? "",
+      customerName: str(saved.customerName) ?? s.customer_name ?? "",
+      customerPhone: str(saved.customerPhone) ?? s.customer_phone ?? "",
+      delivery: str(saved.delivery) ?? String(Number(s.delivery) || ""),
+      pays: pays.length ? pays : undefined,
+    });
     sessionStorage.setItem("pos-open-doc", JSON.stringify({ id: s.id, doc_number: s.doc_number, doc_type: s.doc_type, customer_name: s.customer_name, customer_phone: s.customer_phone, grand_total: s.grand_total, created_at: s.created_at, payload, status: s.status }));
     if (navigateAway) navigate({ to: "/pos" });
     else setEditSale(s);
