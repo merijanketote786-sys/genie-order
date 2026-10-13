@@ -687,7 +687,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
         return [index, Boolean(saved && (saved.value?.trim() || saved.addToTotal))];
       })));
       const savedPays = (ui as { pays?: { method: string; amount: string }[] }).pays;
-      setPays(Array.isArray(savedPays) && savedPays.length ? savedPays.map((p) => ({ method: p.method, amount: String(p.amount ?? "") })) : [{ method: "Cash", amount: "" }]);
+      setPays(Array.isArray(savedPays) && savedPays.length ? savedPays.map((p) => ({ method: p.method as PayMethod, amount: String(p.amount ?? "") })) : [{ method: "Cash", amount: "" }]);
       setManualNumber("");
       setEditing(asInvoice ? { id: d.id, number: d.doc_number } : null);
       setDocsOpen(null);
