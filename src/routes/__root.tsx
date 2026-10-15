@@ -139,6 +139,13 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useEffect(() => {
+    let stop: (() => void) | undefined;
+    let cancelled = false;
+    void import("@/lib/offline-boot").then((m) => { if (!cancelled) stop = m.bootOffline(queryClient); });
+    return () => { cancelled = true; stop?.(); };
+  }, [queryClient]);
+
 
   return (
     <QueryClientProvider client={queryClient}>

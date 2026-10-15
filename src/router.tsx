@@ -7,7 +7,9 @@ export const getRouter = () => {
     defaultOptions: {
       queries: {
         staleTime: 2 * 60 * 1000,
-        gcTime: 30 * 60 * 1000,
+        // Lamba gcTime taa ke device copy (offline) restore ho kar rahe
+        gcTime: 24 * 60 * 60 * 1000,
+        networkMode: "offlineFirst",
         refetchOnWindowFocus: false,
         retry: 1,
       },
