@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Loader2, LogIn } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { storedOfflineUser } from "@/lib/offline-sync";
 import { toast } from "sonner";
 import logo from "@/assets/logo.webp";
 import { GoogleButton } from "@/components/google-button";
@@ -69,6 +70,7 @@ function AuthPage() {
 
   useEffect(() => {
     setMounted(true);
+    if (!navigator.onLine && storedOfflineUser()) { navigate({ to: "/pos", replace: true }); return; }
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) goNext();
     });

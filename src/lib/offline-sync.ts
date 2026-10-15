@@ -153,3 +153,31 @@ export function useOutboxStatus() {
   }, []);
   return s;
 }
+
+// ---------- Offline sign-in ----------
+/** Last signed-in user saved on this device (used only when there is no internet). */
+export function storedOfflineUser(): { id: string; email?: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i) ?? "";
+      if (!/^sb-.*-auth-token$/.test(k)) continue;
+      const v = JSON.parse(localStorage.getItem(k) ?? "null");
+      const u = v?.user ?? v?.currentSession?.user;
+      if (u?.id) return u;
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+/** Offline search: filter an already-downloaded full list instead of asking the server. */
+export function offlineFilter<T extends Record<string, unknown>>(rows: T[] | undefined, q: string, fields: (keyof T)[]) {
+  const t = q.trim().toLowerCase();
+  const digits = t.replace(/\D/g, "");
+  if (!rows) return [];
+  if (!t) return rows;
+  return rows.filter((r) => fields.some((f) => {
+    const v = String(r[f] ?? "").toLowerCase();
+    return v.includes(t) || (digits.length >= 3 && v.replace(/\D/g, "").includes(digits));
+  }));
+}
