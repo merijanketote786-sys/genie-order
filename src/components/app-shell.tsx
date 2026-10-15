@@ -264,7 +264,7 @@ function AppShellInner({
               <p className="truncate text-sm text-muted-foreground">{subtitle}</p>
             </div>
             <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-              {isPos && <OfflineStatus />}
+              <OfflineStatus />
               {!otherLocked && <Button variant="outline" size="sm" asChild className="h-10 shrink-0 border-border bg-card font-semibold"
                 title={isPos ? "Switch to Workspace (press P)" : "Switch to POS (press P)"}>
                 <Link to={isPos ? "/dashboard" : "/pos-dashboard"}>{isPos ? "Workspace" : "POS"}</Link>
