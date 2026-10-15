@@ -5,6 +5,7 @@ import { ALL_DATES, DateRangeFilter, rangeToIso, type DateRange } from "@/compon
 import { Button } from "@/components/ui/button";
 import { cancelPurchase, ensurePurchaseParty, saveSupplier, getPurchaseItems, listProductsLite, listPurchases, listSuppliers, savePurchase } from "@/lib/business.functions";
 import { listCustomerBalances } from "@/lib/ledger.functions";
+import { isOnline, isQueued, runOrQueue } from "@/lib/offline-sync";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { PackagePlus, Trash2, Undo2, Zap, MoreVertical, ReceiptText, Printer, Download, Share2, Pencil, Ban } from "lucide-react";
