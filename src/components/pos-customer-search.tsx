@@ -28,6 +28,7 @@ export function PosCustomerSearch({
   useEffect(() => {
     listRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
   }, [idx]);
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
   useEffect(() => {
     const t = setTimeout(() => setQ(value.trim()), 200);
@@ -36,7 +37,15 @@ export function PosCustomerSearch({
 
   const { data } = useQuery({
     queryKey: ["pos-customers", q],
-    queryFn: () => listCustomers({ data: { search: q || undefined, posOnly: true } }),
+    queryFn: async () => {
+      // Offline: poori downloaded list mein se khud dhoondo.
+      if (!isOnline()) {
+        const all = qc.getQueryData<{ customers: Cust[] }>(["pos-customers", ""]);
+        return { ...(all ?? {}), customers: offlineFilter(all?.customers as unknown as Record<string, unknown>[], q, ["name", "phone"]) as unknown as Cust[] };
+      }
+      return listCustomers({ data: { search: q || undefined, posOnly: true } });
+    },
+    networkMode: "always",
     enabled: open,
     staleTime: 30_000,
   });
