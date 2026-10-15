@@ -5,6 +5,7 @@ import { ALL_DATES, DateRangeFilter, rangeToIso, type DateRange } from "@/compon
 import { Button } from "@/components/ui/button";
 import { cancelPurchase, ensurePurchaseParty, saveSupplier, getPurchaseItems, listProductsLite, listPurchases, listSuppliers, savePurchase } from "@/lib/business.functions";
 import { listCustomerBalances } from "@/lib/ledger.functions";
+import { isOnline, isQueued, runOrQueue } from "@/lib/offline-sync";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { PackagePlus, Trash2, Undo2, Zap, MoreVertical, ReceiptText, Printer, Download, Share2, Pencil, Ban } from "lucide-react";
@@ -213,11 +214,19 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
     setSaving(true);
     try {
       // Edit: save the new entry FIRST, then cancel the old one — a failed save must never delete the original.
-      const resolved = selectedParty ? await ensurePurchaseParty({ data: selectedParty.source === "customer" ? { customerId: selectedParty.id } : { supplierId: selectedParty.id } }) : null;
-      const r = await savePurchase({ data: {
+      const offline = !isOnline();
+      if (offline && editId) throw new Error("Editing a saved purchase needs internet. New purchases can be saved offline.");
+      if (offline && selectedParty && selectedParty.source === "customer") throw new Error("This party must be synced once online before an offline purchase. Choose a supplier or connect to internet.");
+      const resolved = selectedParty
+        ? offline ? { id: selectedParty.id, name: selectedParty.name } : await ensurePurchaseParty({ data: selectedParty.source === "customer" ? { customerId: selectedParty.id } : { supplierId: selectedParty.id } })
+        : null;
+      const purchaseData = {
         docType, supplierId: resolved?.id, paid: paidNum, method, discount: num(discount), freight: num(freight), supplierBillNo: billNo.trim() || undefined, notes: notes || undefined, refPurchaseId: refId, clientRef: opRef.current,
         items: valid.map((l) => ({ productId: l.productId, name: l.name, unit: l.unit, qty: num(l.qty), rate: num(l.rate), discount: num(l.discount), taxPercent: num(l.tax), batch: l.batch || undefined, expiry: l.expiry || undefined })),
-      } });
+      };
+      const out = await runOrQueue<Awaited<ReturnType<typeof savePurchase>>>("purchase", purchaseData as unknown as Record<string, unknown>, { label: docType === "purchase" ? "Purchase" : "Purchase return" });
+      const r = isQueued(out) ? { number: out.number, total: Math.round(total * 100) / 100 } : out;
+      if (isQueued(out)) toast.info(`Offline — ${out.number} saved on this device, will sync when internet returns`);
       if (editId) {
         try {
           await cancelPurchase({ data: { id: editId.id, reason: "Edited — replaced by a new entry" } });

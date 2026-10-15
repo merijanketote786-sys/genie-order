@@ -6,6 +6,7 @@ import { PAY_OPTS, PosSubnav, posInput, rs } from "@/components/pos-subnav";
 import { ALL_DATES, DateRangeFilter, rangeToIso, type DateRange } from "@/components/date-range-filter";
 import { Button } from "@/components/ui/button";
 import { cancelDoc, getSaleForReturn, listProductsLite, listReturns, saveSalesReturn, saveUnlinkedSalesReturn, searchSales } from "@/lib/business.functions";
+import { isQueued, runOrQueue } from "@/lib/offline-sync";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ScanBarcode, Search, Trash2, Undo2, Zap } from "lucide-react";
@@ -143,9 +144,11 @@ function ReturnsPage() {
     lockRef.current = true;
     setSaving(true);
     try {
-      const r = saleId
-        ? await saveSalesReturn({ data: { saleId, mode, method, reason: reason || undefined, lines: lines.map((x) => ({ itemId: x.i.id, qty: x.q })), clientRef: opRef.current } })
-        : await saveUnlinkedSalesReturn({ data: { customerId: customerId ?? undefined, customerName: customerName.trim() || undefined, mode, method, reason: reason || undefined, items: freeLines, clientRef: opRef.current } });
+      const out = saleId
+        ? await runOrQueue<Awaited<ReturnType<typeof saveSalesReturn>>>("salesReturn", { saleId, mode, method, reason: reason || undefined, lines: lines.map((x) => ({ itemId: x.i.id, qty: x.q })), clientRef: opRef.current }, { label: "Sales return" })
+        : await runOrQueue<Awaited<ReturnType<typeof saveUnlinkedSalesReturn>>>("unlinkedReturn", { customerId: customerId ?? undefined, customerName: customerName.trim() || undefined, mode, method, reason: reason || undefined, items: freeLines, clientRef: opRef.current }, { label: "Sales return" });
+      const r = isQueued(out) ? { number: out.number, total: Math.round(total * 100) / 100 } : out;
+      if (isQueued(out)) toast.info(`Offline — ${out.number} saved on this device, will sync when internet returns`);
       opRef.current = newRef();
       toast.success(`Return saved: ${r.number} — ${rs(r.total)}`);
       pc.afterSave({

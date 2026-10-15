@@ -1,0 +1,155 @@
+/**
+ * Offline outbox for POS writes. When the device is offline, a save is stored
+ * on the device (IndexedDB) and replayed through the same server function when
+ * internet returns. Every payload carries a clientRef, so a retry never posts twice.
+ */
+import { get, set } from "idb-keyval";
+import { useEffect, useState } from "react";
+import type { QueryClient } from "@tanstack/react-query";
+import { savePosDoc } from "@/lib/pos.functions";
+import { savePurchase, saveSalesReturn, saveUnlinkedSalesReturn } from "@/lib/business.functions";
+import { getSelectedStoreId, setStoreOverride } from "@/lib/pos-store-client";
+
+export type OutboxKind = "posDoc" | "purchase" | "salesReturn" | "unlinkedReturn";
+export type OutboxItem = {
+  id: string;
+  kind: OutboxKind;
+  label: string;
+  number: string;
+  storeId: string;
+  data: Record<string, unknown>;
+  createdAt: string;
+  error?: string;
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const FNS: Record<OutboxKind, (a: { data: any }) => Promise<unknown>> = {
+  posDoc: savePosDoc,
+  purchase: savePurchase,
+  salesReturn: saveSalesReturn,
+  unlinkedReturn: saveUnlinkedSalesReturn,
+};
+
+const KEY = "pos-outbox-v1";
+const EVT = "pos-outbox-change";
+let syncing = false;
+let qc: QueryClient | null = null;
+
+export async function readOutbox(): Promise<OutboxItem[]> {
+  try { return ((await get(KEY)) as OutboxItem[] | undefined) ?? []; } catch { return []; }
+}
+async function writeOutbox(items: OutboxItem[]) {
+  await set(KEY, items);
+  window.dispatchEvent(new Event(EVT));
+}
+
+export function isOnline() {
+  return typeof navigator === "undefined" ? true : navigator.onLine;
+}
+
+export function isNetworkError(e: unknown) {
+  if (!isOnline()) return true;
+  const msg = e instanceof Error ? e.message : String(e ?? "");
+  return /failed to fetch|networkerror|load failed|network request failed|fetch failed/i.test(msg);
+}
+
+// ---------- Device prefix (offline bill numbers) ----------
+const PREFIX_KEY = "pos-device-prefix";
+const SEQ_KEY = "pos-device-seq";
+export function getDevicePrefix(): string {
+  if (typeof window === "undefined") return "";
+  let p = localStorage.getItem(PREFIX_KEY);
+  if (!p) {
+    p = "D" + Math.random().toString(36).slice(2, 4).toUpperCase();
+    localStorage.setItem(PREFIX_KEY, p);
+  }
+  return p;
+}
+export function setDevicePrefix(p: string) {
+  const v = p.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+  if (v) localStorage.setItem(PREFIX_KEY, v);
+  window.dispatchEvent(new Event(EVT));
+  return v;
+}
+export function nextOfflineNumber(): string {
+  const seq = (Number(localStorage.getItem(SEQ_KEY)) || 0) + 1;
+  localStorage.setItem(SEQ_KEY, String(seq));
+  return `${getDevicePrefix()}-${String(seq).padStart(4, "0")}`;
+}
+
+// ---------- Run now, or queue when offline ----------
+export type Queued = { queued: true; number: string };
+
+export async function runOrQueue<T>(kind: OutboxKind, data: Record<string, unknown>, opts: { label: string; numberField?: string }): Promise<T | Queued> {
+  if (isOnline()) {
+    try { return (await FNS[kind]({ data })) as T; } catch (e) { if (!isNetworkError(e)) throw e; }
+  }
+  const number = opts.numberField && typeof data[opts.numberField] === "string" && data[opts.numberField]
+    ? String(data[opts.numberField])
+    : nextOfflineNumber();
+  const payload = opts.numberField ? { ...data, [opts.numberField]: number } : data;
+  const items = await readOutbox();
+  items.push({ id: crypto.randomUUID(), kind, label: opts.label, number, storeId: getSelectedStoreId(), data: payload, createdAt: new Date().toISOString() });
+  await writeOutbox(items);
+  return { queued: true, number };
+}
+
+export function isQueued(r: unknown): r is Queued {
+  return !!r && typeof r === "object" && (r as Queued).queued === true;
+}
+
+export async function removeOutboxItem(id: string) {
+  await writeOutbox((await readOutbox()).filter((i) => i.id !== id));
+}
+
+export async function flushOutbox(): Promise<{ sent: number; failed: number }> {
+  if (syncing || !isOnline()) return { sent: 0, failed: 0 };
+  syncing = true;
+  window.dispatchEvent(new Event(EVT));
+  let sent = 0, failed = 0;
+  try {
+    for (const item of await readOutbox()) {
+      try {
+        setStoreOverride(item.storeId || null);
+        await FNS[item.kind]({ data: item.data });
+        await writeOutbox((await readOutbox()).filter((i) => i.id !== item.id));
+        sent++;
+      } catch (e) {
+        if (isNetworkError(e)) break;
+        failed++;
+        const msg = e instanceof Error ? e.message : "Sync failed";
+        await writeOutbox((await readOutbox()).map((i) => (i.id === item.id ? { ...i, error: msg } : i)));
+      } finally {
+        setStoreOverride(null);
+      }
+    }
+  } finally {
+    syncing = false;
+    window.dispatchEvent(new Event(EVT));
+    if (sent && qc) void qc.invalidateQueries();
+  }
+  return { sent, failed };
+}
+
+/** Call once on the client: auto-sync on reconnect and every 60s. */
+export function startOfflineSync(queryClient: QueryClient) {
+  qc = queryClient;
+  const run = () => { void flushOutbox(); };
+  window.addEventListener("online", run);
+  const t = window.setInterval(run, 60_000);
+  run();
+  return () => { window.removeEventListener("online", run); window.clearInterval(t); };
+}
+
+export function useOutboxStatus() {
+  const [s, setS] = useState({ online: true, syncing: false, items: [] as OutboxItem[], prefix: "" });
+  useEffect(() => {
+    const load = async () => setS({ online: isOnline(), syncing, items: await readOutbox(), prefix: getDevicePrefix() });
+    void load();
+    window.addEventListener(EVT, load);
+    window.addEventListener("online", load);
+    window.addEventListener("offline", load);
+    return () => { window.removeEventListener(EVT, load); window.removeEventListener("online", load); window.removeEventListener("offline", load); };
+  }, []);
+  return s;
+}
