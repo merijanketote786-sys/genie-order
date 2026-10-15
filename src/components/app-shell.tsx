@@ -1,3 +1,4 @@
+import { OfflineStatus } from "@/components/offline-status";
 import logoUrl from "@/assets/logo.webp";
 import { FontSizeControl } from "@/components/font-size-control";
 import { ThemeToggle } from "@/components/theme-toggle";
