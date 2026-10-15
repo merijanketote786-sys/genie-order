@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SubscriptionBanner } from "@/components/subscription";
+import { storedOfflineUser } from "@/lib/offline-sync";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -13,9 +14,12 @@ export const Route = createFileRoute("/_authenticated")({
   // reload maangta tha). Is liye redirect component gate mein hota hai.
   beforeLoad: async () => {
     if (typeof window === "undefined") return { user: null };
-    const { data, error } = await supabase.auth.getSession();
-    if (error) return { user: null };
-    return { user: data.session?.user ?? null };
+    const offline = typeof navigator !== "undefined" && !navigator.onLine;
+    const { data, error } = await supabase.auth.getSession().catch(() => ({ data: { session: null }, error: true as const }));
+    const user = !error ? data.session?.user ?? null : null;
+    // Internet nahi: pichli dafa ka login is device par istemal karo.
+    if (!user && offline) return { user: storedOfflineUser() as typeof user };
+    return { user };
   },
   component: AuthGate,
 });
@@ -39,6 +43,10 @@ function AuthGate() {
   }, [navigate, router, queryClient]);
   useEffect(() => {
     if (!user) navigate({ to: "/auth", replace: true });
+  }, [user, navigate]);
+  useEffect(() => {
+    // Bina internet app khule to seedha POS billing.
+    if (user && !navigator.onLine && window.location.pathname === "/") navigate({ to: "/pos", replace: true });
   }, [user, navigate]);
   if (!user) return null;
   return <><SubscriptionBanner /><Outlet /></>;

@@ -1,7 +1,8 @@
 import { listCustomers, saveParty } from "@/lib/records.functions";
 import { listSuppliers } from "@/lib/business.functions";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { isOnline, offlineFilter } from "@/lib/offline-sync";
 import { useEffect, useRef, useState } from "react";
 
 type Cust = { supplier?: boolean; id: string; name: string | null; phone: string; city: string | null; address: string | null; courierServiceName: string | null; goodsAddaName: string | null };
@@ -28,6 +29,7 @@ export function PosCustomerSearch({
   useEffect(() => {
     listRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
   }, [idx]);
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
   useEffect(() => {
     const t = setTimeout(() => setQ(value.trim()), 200);
@@ -36,7 +38,15 @@ export function PosCustomerSearch({
 
   const { data } = useQuery({
     queryKey: ["pos-customers", q],
-    queryFn: () => listCustomers({ data: { search: q || undefined, posOnly: true } }),
+    queryFn: async () => {
+      // Offline: poori downloaded list mein se khud dhoondo.
+      if (!isOnline()) {
+        const all = qc.getQueryData<{ customers: Cust[] }>(["pos-customers", ""]);
+        return { ...(all ?? {}), customers: offlineFilter(all?.customers as unknown as Record<string, unknown>[], q, ["name", "phone"]) as unknown as Cust[] };
+      }
+      return listCustomers({ data: { search: q || undefined, posOnly: true } });
+    },
+    networkMode: "always",
     enabled: open,
     staleTime: 30_000,
   });

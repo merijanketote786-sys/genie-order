@@ -153,3 +153,56 @@ export function useOutboxStatus() {
   }, []);
   return s;
 }
+
+// ---------- Offline sign-in ----------
+/** Last signed-in user saved on this device (used only when there is no internet). */
+export function storedOfflineUser(): { id: string; email?: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i) ?? "";
+      if (!/^sb-.*-auth-token$/.test(k)) continue;
+      const v = JSON.parse(localStorage.getItem(k) ?? "null");
+      const u = v?.user ?? v?.currentSession?.user;
+      if (u?.id) return u;
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+/** Offline search: filter an already-downloaded full list instead of asking the server. */
+export function offlineFilter<T extends Record<string, unknown>>(rows: T[] | undefined, q: string, fields: (keyof T)[]) {
+  const t = q.trim().toLowerCase();
+  const digits = t.replace(/\D/g, "");
+  if (!rows) return [];
+  if (!t) return rows;
+  return rows.filter((r) => fields.some((f) => {
+    const v = String(r[f] ?? "").toLowerCase();
+    return v.includes(t) || (digits.length >= 3 && v.replace(/\D/g, "").includes(digits));
+  }));
+}
+
+let lastWarm = 0;
+/** While online, download full lists so search keeps working without internet. */
+export async function warmOfflineData(queryClient: QueryClient) {
+  if (!isOnline() || Date.now() - lastWarm < 5 * 60_000) return;
+  lastWarm = Date.now();
+  const [{ listCustomers }, { getProducts }, biz] = await Promise.all([
+    import("@/lib/records.functions"), import("@/lib/products.functions"), import("@/lib/business.functions"),
+  ]);
+  const opt = { staleTime: 5 * 60_000 };
+  await Promise.allSettled([
+    queryClient.prefetchQuery({ queryKey: ["pos-customers", ""], queryFn: () => listCustomers({ data: { posOnly: true } }), ...opt }),
+    queryClient.prefetchQuery({ queryKey: ["customer-picker", ""], queryFn: () => listCustomers({ data: {} }), ...opt }),
+    queryClient.prefetchQuery({ queryKey: ["suppliers"], queryFn: () => biz.listSuppliers(), ...opt }),
+    queryClient.prefetchQuery({ queryKey: ["pos-products"], queryFn: () => getProducts({ data: { scope: "pos" } }), ...opt }),
+    queryClient.prefetchQuery({ queryKey: ["products-lite"], queryFn: () => biz.listProductsLite(), ...opt }),
+  ]);
+  // Main screens ko offline kholne ke liye pehle se save kar lo (sirf live site par service worker hota hai).
+  try {
+    if ("caches" in window && navigator.serviceWorker?.controller) {
+      const c = await caches.open("hbpos-pages");
+      await Promise.allSettled(["/pos", "/pos-dashboard", "/purchases", "/returns", "/labels", "/auth", "/"].map((u) => c.add(u)));
+    }
+  } catch { /* ignore */ }
+}
