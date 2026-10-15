@@ -170,6 +170,7 @@ function AppShellInner({
     queryFn: () => getMySettings(),
     staleTime: 5 * 60 * 1000,
   });
+  const brand = mine.data?.workspace.businessName?.trim() || "HB POS";
   const userAllowed = mine.data?.settings.allowedSections ?? [];
   const workspaceAllowed = mine.data?.workspace.allowedSections ?? [];
   const visibleTabs = TABS.filter((tab) => isSectionAllowed(tab.to, userAllowed, workspaceAllowed) && !(tab.to === "/pos" && sub?.pos === false));
@@ -189,11 +190,11 @@ function AppShellInner({
       <aside className="hidden min-h-0 flex-col border-r border-border bg-sidebar xl:flex">
         <div className="flex h-20 shrink-0 items-center gap-3 border-b border-sidebar-border px-5">
           <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg border border-sidebar-border bg-card">
-            <img src={logoUrl} alt="HB Chemicals Pakistan" width={40} height={40} className="size-full object-contain" />
+            <img src={logoUrl} alt={brand} width={40} height={40} className="size-full object-contain" />
           </span>
           <div className="min-w-0">
             <p className="truncate text-[10px] font-bold uppercase text-sidebar-muted">{isPos ? "POS" : "Workspace"}</p>
-            <p className="truncate font-display text-base font-bold text-sidebar-foreground">HB Chemicals Pakistan</p>
+            <p className="truncate font-display text-base font-bold text-sidebar-foreground">{brand}</p>
           </div>
         </div>
 
@@ -245,7 +246,7 @@ function AppShellInner({
               <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-card">
                 <img
                   src={logoUrl}
-                  alt="HB Chemicals Pakistan"
+                  alt={brand}
                   width={32}
                   height={32}
                   loading="eager"
@@ -254,7 +255,7 @@ function AppShellInner({
                 />
               </span>
               <div className="min-w-0">
-                <p className="truncate text-[9px] font-bold uppercase text-muted-foreground">HB Chemicals Pakistan</p>
+                <p className="truncate text-[9px] font-bold uppercase text-muted-foreground">{brand}</p>
                  <p className="truncate font-display text-sm font-bold text-foreground">{title}</p>
               </div>
             </div>
