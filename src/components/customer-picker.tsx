@@ -50,6 +50,7 @@ export function CustomerPicker({ onUse, useLabel = "Add" }: Props) {
 
 export function CustomerPickerBody({ onUse, useLabel = "Add" }: Props) {
   const load = useServerFn(listCustomers);
+  const qc = useQueryClient();
   const [term, setTerm] = useState("");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
@@ -61,7 +62,14 @@ export function CustomerPickerBody({ onUse, useLabel = "Add" }: Props) {
 
   const { data, isFetching } = useQuery({
     queryKey: ["customer-picker", search],
-    queryFn: () => load({ data: search ? { search } : {} }),
+    queryFn: async () => {
+      if (!isOnline()) {
+        const all = qc.getQueryData<{ customers: CustomerRow[] }>(["customer-picker", ""]);
+        return { ...(all ?? {}), customers: offlineFilter(all?.customers as unknown as Record<string, unknown>[], search, ["name", "phone", "city"] as never[]) as unknown as CustomerRow[] };
+      }
+      return load({ data: search ? { search } : {} });
+    },
+    networkMode: "always",
     staleTime: 60_000,
     retry: 0,
   });

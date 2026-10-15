@@ -1,7 +1,8 @@
 import { listCustomers, saveParty } from "@/lib/records.functions";
 import { listSuppliers } from "@/lib/business.functions";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { isOnline, offlineFilter } from "@/lib/offline-sync";
 import { useEffect, useRef, useState } from "react";
 
 type Cust = { supplier?: boolean; id: string; name: string | null; phone: string; city: string | null; address: string | null; courierServiceName: string | null; goodsAddaName: string | null };
