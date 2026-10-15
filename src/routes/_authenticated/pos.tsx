@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { getProducts, type DbProduct } from "@/lib/products.functions";
 import { getMySettings } from "@/lib/settings.functions";
 import { closePosDoc, getCustomerBalance, listPosDocs, savePosDoc } from "@/lib/pos.functions";
+import { isOnline, isQueued, runOrQueue } from "@/lib/offline-sync";
 import { saveParty } from "@/lib/records.functions";
 import { createPosProduct } from "@/lib/inventory.functions";
 import { newRef } from "@/lib/pos-errors";
@@ -596,8 +597,8 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
     try {
       const title = kind === "quotation" ? (estimate ? "Estimate" : "Quotation") : "Invoice";
       const r = receipt("{{INVOICE}}", title);
-      const res = await savePosDoc({
-        data: {
+      if (editing?.id && !isOnline()) throw new Error("Editing a saved bill needs internet. New bills can be saved offline.");
+      const posData = {
           docType: kind,
           docNumber: manualNumber.trim() || undefined,
           customerName: r.customerName,
@@ -627,8 +628,12 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
           })),
            ui: { cart, billDiscount, discType, delivery, notes, customerName, customerPhone, customerAddress, customerCityArea, courierServiceName, goodsAddaName, customFields: r.customFields },
           clientRef: docRef.current,
-        },
-      });
+      };
+      const out = await runOrQueue<Awaited<ReturnType<typeof savePosDoc>>>("posDoc", posData as unknown as Record<string, unknown>, { label: kind === "quotation" ? "Estimate" : kind === "held" ? "Held bill" : "Sale", numberField: "docNumber" });
+      const res = isQueued(out)
+        ? { id: undefined as unknown as string, invoiceNumber: out.number, duplicate: false, change: Math.max(0, Math.round((paidNum - total) * 100) / 100) }
+        : out;
+      if (isQueued(out)) toast.info(`Offline — ${out.number} saved on this device, will sync when internet returns`);
       docRef.current = newRef();
       const final = { ...r, invoiceNumber: res.invoiceNumber };
       let savedDoc: PrintDoc | undefined;
