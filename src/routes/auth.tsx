@@ -28,14 +28,14 @@ export const Route = createFileRoute("/auth")({
   },
   head: () => ({
     meta: [
-      { title: "Sign In — OrderBot | HB Chemicals Pakistan" },
+      { title: "Sign In — HBPOS" },
       {
         name: "description",
         content:
-          "HB Chemicals OrderBot staff sign in — access to orders, invoices, extraction and live rates.",
+          "HBPOS staff sign in — access to orders, invoices, extraction and live rates.",
       },
-      { property: "og:title", content: "Sign In — OrderBot | HB Chemicals Pakistan" },
-      { property: "og:description", content: "Staff sign in for OrderBot workspace." },
+      { property: "og:title", content: "Sign In — HBPOS" },
+      { property: "og:description", content: "Staff sign in for HBPOS workspace." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -177,10 +177,10 @@ function AuthPage() {
     <main className="grid min-h-dvh place-items-center bg-background px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <img src={logo} alt="HB Chemicals Pakistan" width={48} height={48} className="h-12 w-auto" />
+          <img src={logo} alt="HB POS" width={48} height={48} className="h-12 w-auto" />
           <div>
-            <h1 className="font-display text-xl font-bold text-foreground">HB Chemicals Pakistan</h1>
-            <p className="text-sm text-muted-foreground">Staff workspace</p>
+            <h1 className="font-display text-xl font-bold text-foreground">HB POS</h1>
+            <p className="text-sm text-muted-foreground">Smart POS & business management</p>
           </div>
         </div>
 

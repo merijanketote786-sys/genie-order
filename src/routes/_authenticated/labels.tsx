@@ -45,13 +45,13 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/labels")({
   head: () => ({
     meta: [
-      { title: "Barcode Labels — HB Chemicals OrderBot" },
+      { title: "Barcode Labels — HBPOS" },
       {
         name: "description",
         content:
           "Design your label — custom text, font size, position and printer profile — then print barcode labels.",
       },
-      { property: "og:title", content: "Barcode Labels — HB Chemicals OrderBot" },
+      { property: "og:title", content: "Barcode Labels — HBPOS" },
       {
         property: "og:description",
         content: "Custom barcode labels: your own text, font size and printer — print instantly.",

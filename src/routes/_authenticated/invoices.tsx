@@ -14,9 +14,9 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/invoices")({
   head: () => ({
     meta: [
-      { title: "Invoice Record — OrderBot" },
+      { title: "Invoice Record — HBPOS" },
       { name: "description", content: "All invoices, payment status and re-download/WhatsApp." },
-      { property: "og:title", content: "Invoice Record — OrderBot" },
+      { property: "og:title", content: "Invoice Record — HBPOS" },
       { property: "og:description", content: "All invoices and their payment status in one place." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

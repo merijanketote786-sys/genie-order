@@ -85,9 +85,9 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/pos")({
   head: () => ({
     meta: [
-      { title: "POS Billing — HB Chemicals Pakistan Workspace" },
+      { title: "POS Billing — HBPOS" },
       { name: "description", content: "Fast POS invoicing for counter and phone sales, stock and receipt printing." },
-      { property: "og:title", content: "POS Billing — HB Chemicals Pakistan Workspace" },
+      { property: "og:title", content: "POS Billing — HBPOS" },
       { property: "og:description", content: "Scan products, create a bill, print receipt." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -513,7 +513,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
 
   const ws = me?.workspace;
   const receipt = (invoiceNumber: string, title = "Invoice"): ReceiptInput => ({
-    business: cfg.business.name || ws?.businessName || "HB Chemicals Pakistan",
+    business: cfg.business.name || ws?.businessName || "HBPOS",
     terms: posCfg.terms || undefined,
     footer: posCfg.receiptFooter || undefined,
     phone: cfg.business.phone || ws?.businessPhone,

@@ -32,13 +32,13 @@ import { Calculator, ClipboardList, CreditCard, FileInput, Languages, MessageSqu
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
-      { title: "Order Format Bot — Instant Order Formatter" },
+      { title: "HBPOS — Smart POS & Business Management" },
       {
         name: "description",
         content:
           "Write an order in any format and instantly get a clean, WhatsApp-ready order format.",
       },
-      { property: "og:title", content: "Order Format Bot — Instant Order Formatter" },
+      { property: "og:title", content: "HBPOS — Smart POS & Business Management" },
       {
         property: "og:description",
         content:
@@ -220,7 +220,7 @@ function OrderChat() {
 
   return (
     <AppShell
-      title="Order Format Bot"
+      title="HBPOS"
       subtitle="Order in any format → clean format"
       active="/"
       onClear={handleClear}

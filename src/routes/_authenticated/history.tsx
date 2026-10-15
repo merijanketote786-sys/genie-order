@@ -13,9 +13,9 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/history")({
   head: () => ({
     meta: [
-      { title: "Order History — OrderBot" },
+      { title: "Order History — HBPOS" },
       { name: "description", content: "All saved orders in one place — search, copy and WhatsApp." },
-      { property: "og:title", content: "Order History — OrderBot" },
+      { property: "og:title", content: "Order History — HBPOS" },
       { property: "og:description", content: "All saved orders in one place." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

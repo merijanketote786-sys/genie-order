@@ -564,7 +564,7 @@ export function ConnectApiCard() {
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = "OrderBot-Rate-Template.csv";
+    a.download = "HBPOS-Rate-Template.csv";
     document.body.appendChild(a);
     a.click();
     a.remove();

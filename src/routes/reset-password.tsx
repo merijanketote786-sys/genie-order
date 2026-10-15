@@ -11,10 +11,10 @@ export const Route = createFileRoute("/reset-password")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Reset Password — OrderBot | HB Chemicals Pakistan" },
-      { name: "description", content: "Set a new password for your OrderBot account." },
-      { property: "og:title", content: "Reset Password — OrderBot" },
-      { property: "og:description", content: "Set a new password for your OrderBot account." },
+      { title: "Reset Password — HBPOS" },
+      { name: "description", content: "Set a new password for your HBPOS account." },
+      { property: "og:title", content: "Reset Password — HBPOS" },
+      { property: "og:description", content: "Set a new password for your HBPOS account." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
