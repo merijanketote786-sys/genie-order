@@ -252,6 +252,7 @@ function FileImport({ devices }: { devices: { id: string; name: string }[] }) {
     const buf = await file.arrayBuffer();
     let r: string[][];
     if (/\.(xlsx|xls)$/i.test(file.name)) {
+      const XLSX = await import("xlsx");
       const wb = XLSX.read(buf, { cellDates: false });
       r = XLSX.utils.sheet_to_json<string[]>(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false, defval: "" }).map((x) => x.map(String));
     } else {
