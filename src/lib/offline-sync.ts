@@ -182,9 +182,11 @@ export function offlineFilter<T extends Record<string, unknown>>(rows: T[] | und
   }));
 }
 
+let lastWarm = 0;
 /** While online, download full lists so search keeps working without internet. */
 export async function warmOfflineData(queryClient: QueryClient) {
-  if (!isOnline()) return;
+  if (!isOnline() || Date.now() - lastWarm < 5 * 60_000) return;
+  lastWarm = Date.now();
   const [{ listCustomers }, { getProducts }, biz] = await Promise.all([
     import("@/lib/records.functions"), import("@/lib/products.functions"), import("@/lib/business.functions"),
   ]);
