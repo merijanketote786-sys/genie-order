@@ -28,7 +28,11 @@ export function useSelectedStoreId(): string {
 }
 
 /** Sends the selected POS store with every server call so stock moves in that store. */
+let storeOverride: string | null = null;
+/** Offline sync replays a queued bill in the store it was made in. */
+export function setStoreOverride(id: string | null) { storeOverride = id; }
+
 export const attachPosStore = createMiddleware({ type: "function" }).client(async ({ next }) => {
-  const id = getSelectedStoreId();
+  const id = storeOverride ?? getSelectedStoreId();
   return next({ headers: id ? { "x-pos-store": id } : {} });
 });
