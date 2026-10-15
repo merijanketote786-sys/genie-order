@@ -64,12 +64,12 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
-      { title: "Admin Panel — HB Chemicals OrderBot" },
+      { title: "Admin Panel — HBPOS" },
       {
         name: "description",
         content: "Manage users, records and app access — owner only.",
       },
-      { property: "og:title", content: "Admin Panel — HB Chemicals OrderBot" },
+      { property: "og:title", content: "Admin Panel — HBPOS" },
       {
         property: "og:description",
         content: "Team accounts, dashboard stats, records control and data export in one place.",

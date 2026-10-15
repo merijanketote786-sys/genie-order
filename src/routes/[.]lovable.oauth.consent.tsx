@@ -77,7 +77,7 @@ function Consent() {
             Give {clientName} access?
           </h1>
           <p className="text-sm text-muted-foreground">
-            {clientName} will be able to access OrderBot's rates, orders, invoices and customers
+            {clientName} will be able to access HBPOS's rates, orders, invoices and customers
             on your behalf.
           </p>
         </div>

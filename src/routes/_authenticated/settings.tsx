@@ -33,12 +33,12 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
     meta: [
-      { title: "Settings — HB Chemicals OrderBot" },
+      { title: "Settings — HBPOS" },
       {
         name: "description",
         content: "Set your profile, order/invoice defaults, courier and data controls.",
       },
-      { property: "og:title", content: "Settings — HB Chemicals OrderBot" },
+      { property: "og:title", content: "Settings — HBPOS" },
       {
         property: "og:description",
         content: "Every user can manage their own settings — theme, defaults and data export.",

@@ -1,6 +1,6 @@
 {
-  "name": "Order Format Bot",
-  "short_name": "OrderBot",
+  "name": "HBPOS",
+  "short_name": "HBPOS",
   "description": "Kisi bhi format ka order paste karo, WhatsApp-ready formatted order foran hasil karo.",
   "start_url": "/",
   "scope": "/",

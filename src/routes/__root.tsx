@@ -78,13 +78,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "Order Format Bot — Instant Order Formatter" },
+      { title: "HBPOS — Smart POS & Business Management" },
       {
         name: "description",
         content: "Kisi bhi format mein order likho aur foran clean, WhatsApp-ready order format hasil karo.",
       },
-      { name: "author", content: "Order Format Bot" },
-      { property: "og:title", content: "Order Format Bot — Instant Order Formatter" },
+      { name: "author", content: "HBPOS" },
+      { property: "og:title", content: "HBPOS — Smart POS & Business Management" },
       {
         property: "og:description",
         content: "Kisi bhi format mein order likho aur foran clean, WhatsApp-ready order format hasil karo.",
@@ -95,8 +95,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "OrderBot" },
-      { name: "twitter:title", content: "Order Format Bot — Instant Order Formatter" },
+      { name: "apple-mobile-web-app-title", content: "HBPOS" },
+      { name: "twitter:title", content: "HBPOS — Smart POS & Business Management" },
       { name: "twitter:description", content: "Kisi bhi format mein order likho aur foran clean, WhatsApp-ready order format hasil karo." },
     ],
 

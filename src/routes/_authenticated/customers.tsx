@@ -11,9 +11,9 @@ import { useState } from "react";
 export const Route = createFileRoute("/_authenticated/customers")({
   head: () => ({
     meta: [
-      { title: "Customers — OrderBot" },
+      { title: "Customers — HBPOS" },
       { name: "description", content: "Customer record: phone, city, address and their past orders." },
-      { property: "og:title", content: "Customers — OrderBot" },
+      { property: "og:title", content: "Customers — HBPOS" },
       { property: "og:description", content: "Customer record and their past orders." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

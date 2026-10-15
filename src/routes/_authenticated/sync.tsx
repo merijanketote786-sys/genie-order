@@ -15,13 +15,13 @@ import { ClipboardPaste, FileScan, FileSpreadsheet, HelpCircle, Plug, RefreshCw,
 export const Route = createFileRoute("/_authenticated/sync")({
   head: () => ({
     meta: [
-      { title: "Vyapar Sync — HB Chemicals OrderBot" },
+      { title: "Vyapar Sync — HBPOS" },
       {
         name: "description",
         content:
           "Upload the Excel or CSV exported from Vyapar to instantly update product rates and stock.",
       },
-      { property: "og:title", content: "Vyapar Sync — HB Chemicals OrderBot" },
+      { property: "og:title", content: "Vyapar Sync — HBPOS" },
       {
         property: "og:description",
         content: "Upload Vyapar's Excel to update rates and stock, and view sync status.",

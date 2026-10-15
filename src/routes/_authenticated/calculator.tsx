@@ -39,13 +39,13 @@ import {
 export const Route = createFileRoute("/_authenticated/calculator")({
   head: () => ({
     meta: [
-      { title: "Courier Rate Calculator — HB Chemicals OrderBot" },
+      { title: "Courier Rate Calculator — HBPOS" },
       {
         name: "description",
         content:
           "PostEx shipping charges calculator: weight slabs, pickup and delivery city zone detection, fuel surcharge, tax, packaging materials and COD fee.",
       },
-      { property: "og:title", content: "Courier Rate Calculator — HB Chemicals OrderBot" },
+      { property: "og:title", content: "Courier Rate Calculator — HBPOS" },
       {
         property: "og:description",
         content:
