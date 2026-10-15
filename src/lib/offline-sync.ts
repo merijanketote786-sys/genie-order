@@ -181,3 +181,26 @@ export function offlineFilter<T extends Record<string, unknown>>(rows: T[] | und
     return v.includes(t) || (digits.length >= 3 && v.replace(/\D/g, "").includes(digits));
   }));
 }
+
+/** While online, download full lists so search keeps working without internet. */
+export async function warmOfflineData(queryClient: QueryClient) {
+  if (!isOnline()) return;
+  const [{ listCustomers }, { getProducts }, biz] = await Promise.all([
+    import("@/lib/records.functions"), import("@/lib/products.functions"), import("@/lib/business.functions"),
+  ]);
+  const opt = { staleTime: 5 * 60_000 };
+  await Promise.allSettled([
+    queryClient.prefetchQuery({ queryKey: ["pos-customers", ""], queryFn: () => listCustomers({ data: { posOnly: true } }), ...opt }),
+    queryClient.prefetchQuery({ queryKey: ["customer-picker", ""], queryFn: () => listCustomers({ data: {} }), ...opt }),
+    queryClient.prefetchQuery({ queryKey: ["suppliers"], queryFn: () => biz.listSuppliers(), ...opt }),
+    queryClient.prefetchQuery({ queryKey: ["pos-products"], queryFn: () => getProducts({ data: { scope: "pos" } }), ...opt }),
+    queryClient.prefetchQuery({ queryKey: ["products-lite"], queryFn: () => biz.listProductsLite(), ...opt }),
+  ]);
+  // Main screens ko offline kholne ke liye pehle se save kar lo (sirf live site par service worker hota hai).
+  try {
+    if ("caches" in window && navigator.serviceWorker?.controller) {
+      const c = await caches.open("hbpos-pages");
+      await Promise.allSettled(["/pos", "/pos-dashboard", "/purchases", "/returns", "/labels", "/auth", "/"].map((u) => c.add(u)));
+    }
+  } catch { /* ignore */ }
+}

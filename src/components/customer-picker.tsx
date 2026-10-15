@@ -3,7 +3,8 @@
  * Search by name / city / phone, select and copy or add directly to the composer.
  */
 import { listCustomers, type CustomerRow } from "@/lib/records.functions";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { isOnline, offlineFilter } from "@/lib/offline-sync";
 import { useServerFn } from "@tanstack/react-start";
 import { ChevronDown, Copy, CornerDownLeft, Loader2, Search, Users } from "lucide-react";
 import { useEffect, useState } from "react";

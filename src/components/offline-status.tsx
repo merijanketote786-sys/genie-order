@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { CloudOff, Cloud, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { flushOutbox, removeOutboxItem, setDevicePrefix, useOutboxStatus } from "@/lib/offline-sync";
+import { flushOutbox, removeOutboxItem, warmOfflineData, setDevicePrefix, useOutboxStatus } from "@/lib/offline-sync";
 
 export function OfflineStatus() {
   const s = useOutboxStatus();
+  const qc = useQueryClient();
+  useEffect(() => { if (s.online) void warmOfflineData(qc); }, [s.online, qc]);
   const [prefix, setPrefix] = useState("");
   const waiting = s.items.length;
   const failed = s.items.filter((i) => i.error).length;
