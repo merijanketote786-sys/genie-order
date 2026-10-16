@@ -25,6 +25,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDaybookRouteImport } from './routes/_authenticated/daybook'
 import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
 import { Route as AuthenticatedExtractRouteImport } from './routes/_authenticated/extract'
+import { Route as AuthenticatedFixedAssetsRouteImport } from './routes/_authenticated/fixed-assets'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
 import { Route as AuthenticatedInvoiceRouteImport } from './routes/_authenticated/invoice'
@@ -134,6 +135,12 @@ const AuthenticatedExtractRoute = AuthenticatedExtractRouteImport.update({
   path: '/extract',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFixedAssetsRoute =
+  AuthenticatedFixedAssetsRouteImport.update({
+    id: '/fixed-assets',
+    path: '/fixed-assets',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
   id: '/history',
   path: '/history',
@@ -290,6 +297,7 @@ export interface FileRoutesByFullPath {
   '/daybook': typeof AuthenticatedDaybookRoute
   '/expenses': typeof AuthenticatedExpensesRoute
   '/extract': typeof AuthenticatedExtractRoute
+  '/fixed-assets': typeof AuthenticatedFixedAssetsRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/invoice': typeof AuthenticatedInvoiceRoute
@@ -333,6 +341,7 @@ export interface FileRoutesByTo {
   '/daybook': typeof AuthenticatedDaybookRoute
   '/expenses': typeof AuthenticatedExpensesRoute
   '/extract': typeof AuthenticatedExtractRoute
+  '/fixed-assets': typeof AuthenticatedFixedAssetsRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/invoice': typeof AuthenticatedInvoiceRoute
@@ -379,6 +388,7 @@ export interface FileRoutesById {
   '/_authenticated/daybook': typeof AuthenticatedDaybookRoute
   '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
   '/_authenticated/extract': typeof AuthenticatedExtractRoute
+  '/_authenticated/fixed-assets': typeof AuthenticatedFixedAssetsRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
   '/_authenticated/invoice': typeof AuthenticatedInvoiceRoute
@@ -426,6 +436,7 @@ export interface FileRouteTypes {
     | '/daybook'
     | '/expenses'
     | '/extract'
+    | '/fixed-assets'
     | '/history'
     | '/inventory'
     | '/invoice'
@@ -469,6 +480,7 @@ export interface FileRouteTypes {
     | '/daybook'
     | '/expenses'
     | '/extract'
+    | '/fixed-assets'
     | '/history'
     | '/inventory'
     | '/invoice'
@@ -514,6 +526,7 @@ export interface FileRouteTypes {
     | '/_authenticated/daybook'
     | '/_authenticated/expenses'
     | '/_authenticated/extract'
+    | '/_authenticated/fixed-assets'
     | '/_authenticated/history'
     | '/_authenticated/inventory'
     | '/_authenticated/invoice'
@@ -671,6 +684,13 @@ declare module '@tanstack/react-router' {
       path: '/extract'
       fullPath: '/extract'
       preLoaderRoute: typeof AuthenticatedExtractRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/fixed-assets': {
+      id: '/_authenticated/fixed-assets'
+      path: '/fixed-assets'
+      fullPath: '/fixed-assets'
+      preLoaderRoute: typeof AuthenticatedFixedAssetsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/history': {
@@ -876,6 +896,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDaybookRoute: typeof AuthenticatedDaybookRoute
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
   AuthenticatedExtractRoute: typeof AuthenticatedExtractRoute
+  AuthenticatedFixedAssetsRoute: typeof AuthenticatedFixedAssetsRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
   AuthenticatedInvoiceRoute: typeof AuthenticatedInvoiceRoute
@@ -910,6 +931,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDaybookRoute: AuthenticatedDaybookRoute,
   AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
   AuthenticatedExtractRoute: AuthenticatedExtractRoute,
+  AuthenticatedFixedAssetsRoute: AuthenticatedFixedAssetsRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
   AuthenticatedInvoiceRoute: AuthenticatedInvoiceRoute,
