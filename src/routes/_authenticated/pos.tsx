@@ -708,9 +708,13 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
       const raw = sessionStorage.getItem("pos-open-doc");
       if (!raw) return;
       sessionStorage.removeItem("pos-open-doc");
-      const d = JSON.parse(raw) as PosDocRow & { doc_type?: string };
+      const d = JSON.parse(raw) as PosDocRow & { doc_type?: string; convert?: boolean };
       openDoc(d, true);
-      if (d.doc_type === "quotation") setEstimate(true);
+      if (d.convert) {
+        // Estimate -> Invoice: invoice gets the estimate's serial number
+        setEstimate(false);
+        setManualNumber(d.doc_number);
+      } else if (d.doc_type === "quotation") setEstimate(true);
     } catch { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

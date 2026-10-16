@@ -13,6 +13,7 @@ import { usePosAccess } from "@/components/pos-access";
 import { FullScreenPopup } from "@/components/fullscreen-popup";
 import { CashCountPanel } from "@/components/money-accounts";
 import { Wallet } from "lucide-react";
+import { askReason } from "@/lib/ask-reason";
 
 export const Route = createFileRoute("/_authenticated/daybook")({
   head: () => ({
@@ -47,7 +48,7 @@ function DayBookPage() {
   const rows = (data?.rows ?? []).filter((r) => !q.trim() || `${r.kind} ${r.method} ${r.note}`.toLowerCase().includes(q.toLowerCase()));
 
   const cancel = async (id: string) => {
-    const reason = window.prompt("Reason for cancelling this entry?");
+    const reason = await askReason("Reason for cancelling this entry?");
     if (reason == null) return;
     try { await cancelCashEntry({ data: { id, reason } }); toast.success("Entry cancelled"); qc.invalidateQueries({ queryKey: ["daybook"] }); }
     catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }

@@ -28,8 +28,10 @@ export function openWhatsAppApp(num: string, text: string) {
 export function waMessage(doc: PrintDoc, business: string) {
   const money = (n: number) => `Rs ${(Math.round((Number(n) || 0) * 100) / 100).toLocaleString("en-PK")}`;
   const date = new Date(doc.date);
-  const out: string[] = [`*${business || "HB Chemicals Pakistan"}*`, `${doc.title} ${doc.number}`.trim(), `Date: ${isNaN(date.getTime()) ? String(doc.date) : date.toLocaleDateString("en-PK")}`];
-  if (doc.party?.name) out.push(`${doc.party.label || "Party"}: ${doc.party.name}`);
+  const out: string[] = [...(business ? [`*${business}*`] : []), `${doc.title} ${doc.number}`.trim(), `Date: ${isNaN(date.getTime()) ? String(doc.date) : date.toLocaleDateString("en-PK")}`];
+  if (doc.party?.name) out.push(`${doc.party.label || "Customer"}: ${doc.party.name}`);
+  if (doc.party?.phone) out.push(`Phone: ${doc.party.phone}`);
+  if (doc.party?.address) out.push(`Address: ${doc.party.address}`);
   if (doc.lines?.length) {
     out.push("");
     doc.lines.slice(0, 40).forEach((l, i) => out.push(`${i + 1}. ${l.name} — ${l.qty}${l.unit ? " " + l.unit : ""} × ${money(l.rate)} = ${money(l.total)}`));
@@ -64,22 +66,25 @@ export async function sharePdf(doc: PrintDoc, cfg: ResolvedCfg, o: { via: "whats
   const name = pdfFileName(doc);
   const title = `${doc.title} ${doc.number}`.trim();
   const file = new File([blob], name, { type: "application/pdf" });
-  const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean };
+  const text = o.via === "whatsapp" ? waMessage(doc, cfg.business.name) : title;
+  const nav = navigator as Navigator & { canShare?: (d: { files: File[]; text?: string }) => boolean };
   const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
-  if (mobile && nav.canShare?.({ files: [file] })) {
+  // Mobile: share sheet sends PDF + full bill text to WhatsApp (no download). PC: customer's chat opens directly with the text.
+  if (mobile && typeof nav.share === "function" && nav.canShare?.({ files: [file] })) {
+    if (o.via === "whatsapp") { try { await navigator.clipboard?.writeText(text); } catch { /* ignore */ } }
     try {
-      await navigator.share({ files: [file], title });
+      await navigator.share({ files: [file], title, text });
+      toast.success(o.via === "whatsapp" ? "Shared — choose WhatsApp and the customer's chat (bill text is also copied)" : "PDF shared — select your email app");
+      return true;
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") return false;
-      throw e;
+      // share failed (e.g. not allowed here) — fall back below
     }
-    toast.success(o.via === "whatsapp" ? "PDF shared — select WhatsApp and the customer's chat" : "PDF shared — select your email app");
-    return true;
   }
   downloadBlob(blob, name);
   if (o.via === "whatsapp") {
-    openWhatsAppApp(waNumber(o.phone), `${title} — PDF downloaded, please attach it here.`);
-    toast.success("PDF downloaded — WhatsApp opened, attach the PDF and send");
+    openWhatsAppApp(waNumber(o.phone), text);
+    toast.success("WhatsApp opened with the bill details — attach the downloaded PDF and send");
   } else {
     const to = o.email?.trim() ? encodeURIComponent(o.email.trim()) : "";
     window.location.href = `mailto:${to}?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`Please find attached ${title} (${name}).`)}`;
@@ -122,7 +127,7 @@ export function WhatsAppSendDialog({ doc, onClose }: { doc: PrintDoc; business?:
           <div className="rounded-xl border border-border bg-surface-2/60 p-3 text-xs text-muted-foreground">
             <p className="font-semibold text-foreground">{doc.title} {doc.number}</p>
             <p className="mt-1">The document will be sent as a <b>PDF file</b>, not as text.</p>
-            <p className="mt-1">On mobile, the share sheet opens — choose WhatsApp and the customer's chat. On PC, the PDF downloads and the installed WhatsApp app opens with the customer's chat — attach the downloaded PDF there.</p>
+            <p className="mt-1">On mobile, the share sheet opens — choose WhatsApp and the customer's chat. On PC, the installed WhatsApp app opens the customer's chat with the full bill details typed in — drag the PDF (saved in Downloads) into the chat and send.</p>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap justify-end gap-2">

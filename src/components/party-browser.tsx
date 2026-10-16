@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PosPage } from "@/routes/_authenticated/pos";
 import { toast } from "sonner";
+import { askReason } from "@/lib/ask-reason";
 
 export type Party = { key: string; name: string; phone: string; kind: string; balance: number; customerId?: string; supplierId?: string; address?: string };
 
@@ -245,7 +246,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   };
 
   const deleteSale = async (r: Row) => {
-    const reason = window.prompt(`Cancel ${r.ref}? Reason (optional):`);
+    const reason = await askReason(`Cancel ${r.ref}? Reason (optional):`);
     if (reason === null) return;
     setTxBusy(true);
     try { await cancelDoc({ data: { id: r.id, reason } }); toast.success(`${r.ref} cancelled`); await refreshLedger(); }

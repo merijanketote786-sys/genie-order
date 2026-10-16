@@ -13,6 +13,7 @@ import { listPosSales, deletePosDoc } from "@/lib/pos.functions";
 import { cancelDoc } from "@/lib/business.functions";
 import type { PrintDoc } from "@/lib/print/render";
 import { toast } from "sonner";
+import { askReason } from "@/lib/ask-reason";
 
 export const Route = createFileRoute("/_authenticated/pos-invoices")({
   head: () => ({
@@ -133,7 +134,7 @@ function PosInvoicesPage() {
   const refresh = () => qc.invalidateQueries({ queryKey: ["pos-sales"] });
 
   const doCancel = async (s: SaleRow) => {
-    const reason = window.prompt(`Cancel ${s.doc_number}? Reason (optional):`) ?? "";
+    const reason = await askReason(`Cancel ${s.doc_number}?`, "Cancel bill");
     if (reason === null) return;
     setBusy(true);
     try {
@@ -192,7 +193,7 @@ function PosInvoicesPage() {
       delivery: str(saved.delivery) ?? String(Number(s.delivery) || ""),
       pays: pays.length ? pays : undefined,
     });
-    sessionStorage.setItem("pos-open-doc", JSON.stringify({ id: s.id, doc_number: s.doc_number, doc_type: s.doc_type, customer_name: s.customer_name, customer_phone: s.customer_phone, grand_total: s.grand_total, created_at: s.created_at, payload, status: s.status }));
+    sessionStorage.setItem("pos-open-doc", JSON.stringify({ id: s.id, doc_number: s.doc_number, doc_type: s.doc_type, customer_name: s.customer_name, customer_phone: s.customer_phone, grand_total: s.grand_total, created_at: s.created_at, payload, status: s.status, convert: navigateAway && s.doc_type === "quotation" }));
     if (navigateAway) navigate({ to: "/pos" });
     else setEditSale(s);
   };
