@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "click.hbpos.app",
+        "sha256_cert_fingerprints": ["B4:E2:BB:DE:F1:5C:1C:E2:2E:44:8A:96:D2:3F:D1:D2:48:72:3D:F3:0F:4C:79:AD:B9:E9:0E:68:E7:D0:25:46"]
+      }
+    }]
