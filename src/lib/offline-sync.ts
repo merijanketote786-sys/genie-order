@@ -10,7 +10,7 @@ import { savePosDoc } from "@/lib/pos.functions";
 import { savePurchase, saveSalesReturn, saveUnlinkedSalesReturn } from "@/lib/business.functions";
 import { getSelectedStoreId, setStoreOverride } from "@/lib/pos-store-client";
 
-export type OutboxKind = "posDoc" | "purchase" | "salesReturn" | "unlinkedReturn";
+export type OutboxKind = "posDoc" | "purchase" | "salesReturn" | "unlinkedReturn" | "raw";
 export type OutboxItem = {
   id: string;
   kind: OutboxKind;
@@ -18,12 +18,14 @@ export type OutboxItem = {
   number: string;
   storeId: string;
   data: Record<string, unknown>;
+  /** kind "raw": the exact server request, replayed with a fresh sign-in token. */
+  raw?: { url: string; body: string; headers: Record<string, string> };
   createdAt: string;
   error?: string;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const FNS: Record<OutboxKind, (a: { data: any }) => Promise<unknown>> = {
+const FNS: Record<Exclude<OutboxKind, "raw">, (a: { data: any }) => Promise<unknown>> = {
   posDoc: savePosDoc,
   purchase: savePurchase,
   salesReturn: saveSalesReturn,
@@ -82,7 +84,7 @@ export type Queued = { queued: true; number: string };
 
 export async function runOrQueue<T>(kind: OutboxKind, data: Record<string, unknown>, opts: { label: string; numberField?: string }): Promise<T | Queued> {
   if (isOnline()) {
-    try { return (await FNS[kind]({ data })) as T; } catch (e) { if (!isNetworkError(e)) throw e; }
+    try { return (await FNS[kind as Exclude<OutboxKind, "raw">]({ data })) as T; } catch (e) { if (!isNetworkError(e)) throw e; }
   }
   const number = opts.numberField && typeof data[opts.numberField] === "string" && data[opts.numberField]
     ? String(data[opts.numberField])
@@ -111,7 +113,8 @@ export async function flushOutbox(): Promise<{ sent: number; failed: number }> {
     for (const item of await readOutbox()) {
       try {
         setStoreOverride(item.storeId || null);
-        await FNS[item.kind]({ data: item.data });
+        if (item.kind === "raw" && item.raw) await replayRaw(item.raw);
+        else await FNS[item.kind as Exclude<OutboxKind, "raw">]({ data: item.data });
         await writeOutbox((await readOutbox()).filter((i) => i.id !== item.id));
         sent++;
       } catch (e) {
@@ -206,3 +209,39 @@ export async function warmOfflineData(queryClient: QueryClient) {
     }
   } catch { /* ignore */ }
 }
+
+// ---------- Generic offline queue for any allowed save (via fetch) ----------
+async function replayRaw(raw: NonNullable<OutboxItem["raw"]>) {
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { data } = await supabase.auth.getSession();
+  const headers = new Headers(raw.headers);
+  if (data.session?.access_token) headers.set("authorization", `Bearer ${data.session.access_token}`);
+  const res = await fetch(raw.url, { method: "POST", body: raw.body, headers });
+  if (!res.ok) {
+    const t = await res.text().catch(() => "");
+    const m = t.match(/"message"\s*:\s*"([^"]{1,200})"/);
+    throw new Error(m?.[1] ?? `Server rejected this entry (${res.status})`);
+  }
+}
+
+/** Custom fetch for server calls: when offline, allowed saves are stored and a "queued" answer is returned. */
+export const offlineFetch: typeof fetch = async (input, init) => {
+  const method = (init?.method ?? "GET").toUpperCase();
+  const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+  const canQueue = method === "POST" && typeof init?.body === "string";
+  if (isOnline() || !canQueue) {
+    try { return await fetch(input, init); } catch (e) { if (!canQueue || !isNetworkError(e)) throw e; }
+  }
+  const { queueLabelFor } = await import("@/lib/offline-registry");
+  const label = queueLabelFor(url);
+  if (!label) throw new Error("No internet — this action needs internet. Please try again when online.");
+  const headers: Record<string, string> = {};
+  new Headers(init?.headers).forEach((v, k) => { if (k !== "authorization") headers[k] = v; });
+  const number = nextOfflineNumber();
+  const items = await readOutbox();
+  items.push({ id: crypto.randomUUID(), kind: "raw", label, number, storeId: headers["x-pos-store"] ?? "", data: {}, raw: { url, body: init!.body as string, headers }, createdAt: new Date().toISOString() });
+  await writeOutbox(items);
+  void import("sonner").then(({ toast }) => toast.info(`No internet — ${label} ${number} saved on this device. It will sync automatically.`));
+  const answer = { queued: true, offline: true, number, invoiceNumber: number, id: "", ok: true };
+  return new Response(JSON.stringify(answer), { status: 200, headers: { "content-type": "application/json" } });
+};

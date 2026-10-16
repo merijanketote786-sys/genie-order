@@ -34,5 +34,6 @@ export function setStoreOverride(id: string | null) { storeOverride = id; }
 
 export const attachPosStore = createMiddleware({ type: "function" }).client(async ({ next }) => {
   const id = storeOverride ?? getSelectedStoreId();
-  return next({ headers: id ? { "x-pos-store": id } : {} });
+  const { offlineFetch } = await import("@/lib/offline-sync");
+  return next({ headers: id ? { "x-pos-store": id } : {}, fetch: offlineFetch });
 });
