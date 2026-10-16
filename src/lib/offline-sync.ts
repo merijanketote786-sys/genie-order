@@ -241,6 +241,7 @@ export const offlineFetch: typeof fetch = async (input, init) => {
   const items = await readOutbox();
   items.push({ id: crypto.randomUUID(), kind: "raw", label, number, storeId: headers["x-pos-store"] ?? "", data: {}, raw: { url, body: init!.body as string, headers }, createdAt: new Date().toISOString() });
   await writeOutbox(items);
+  void import("sonner").then(({ toast }) => toast.info(`No internet — ${label} ${number} saved on this device. It will sync automatically.`));
   const answer = { queued: true, offline: true, number, invoiceNumber: number, id: "", ok: true };
   return new Response(JSON.stringify(answer), { status: 200, headers: { "content-type": "application/json" } });
 };
