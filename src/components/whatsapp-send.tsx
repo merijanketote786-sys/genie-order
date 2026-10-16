@@ -68,8 +68,9 @@ export async function sharePdf(doc: PrintDoc, cfg: ResolvedCfg, o: { via: "whats
   const file = new File([blob], name, { type: "application/pdf" });
   const text = o.via === "whatsapp" ? waMessage(doc, cfg.business.name) : title;
   const nav = navigator as Navigator & { canShare?: (d: { files: File[]; text?: string }) => boolean };
-  // Share sheet (Android, iPhone, Windows Chrome/Edge): PDF + full bill text go straight to WhatsApp — no download.
-  if (typeof nav.share === "function" && nav.canShare?.({ files: [file] })) {
+  const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+  // Mobile: share sheet sends PDF + full bill text to WhatsApp (no download). PC: customer's chat opens directly with the text.
+  if (mobile && typeof nav.share === "function" && nav.canShare?.({ files: [file] })) {
     if (o.via === "whatsapp") { try { await navigator.clipboard?.writeText(text); } catch { /* ignore */ } }
     try {
       await navigator.share({ files: [file], title, text });
