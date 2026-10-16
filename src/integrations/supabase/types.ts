@@ -961,6 +961,57 @@ export type Database = {
         }
         Relationships: []
       }
+      pos_fixed_assets: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          id: string
+          location: string
+          name: string
+          notes: string
+          purchase_cost: number
+          purchase_date: string | null
+          quantity: number
+          serial_number: string
+          status: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          location?: string
+          name: string
+          notes?: string
+          purchase_cost?: number
+          purchase_date?: string | null
+          quantity?: number
+          serial_number?: string
+          status?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          location?: string
+          name?: string
+          notes?: string
+          purchase_cost?: number
+          purchase_date?: string | null
+          quantity?: number
+          serial_number?: string
+          status?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
       pos_member_roles: {
         Row: {
           perms: string[] | null
