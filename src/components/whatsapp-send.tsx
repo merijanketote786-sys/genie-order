@@ -127,7 +127,7 @@ export function WhatsAppSendDialog({ doc, onClose }: { doc: PrintDoc; business?:
           <div className="rounded-xl border border-border bg-surface-2/60 p-3 text-xs text-muted-foreground">
             <p className="font-semibold text-foreground">{doc.title} {doc.number}</p>
             <p className="mt-1">The document will be sent as a <b>PDF file</b>, not as text.</p>
-            <p className="mt-1">On mobile, the share sheet opens — choose WhatsApp and the customer's chat. On PC, the PDF downloads and the installed WhatsApp app opens with the customer's chat — attach the downloaded PDF there.</p>
+            <p className="mt-1">On mobile, the share sheet opens — choose WhatsApp and the customer's chat. On PC, the installed WhatsApp app opens the customer's chat with the full bill details typed in — drag the PDF (saved in Downloads) into the chat and send.</p>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap justify-end gap-2">
