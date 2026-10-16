@@ -41,6 +41,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { toast } from "sonner";
+import { listProductsLite } from "@/lib/business.functions";
 
 export const Route = createFileRoute("/_authenticated/labels")({
   head: () => ({
@@ -82,7 +83,7 @@ const inputCls =
 const smallInput =
   "h-9 w-full rounded-lg border border-input bg-background px-2 text-xs text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/30";
 
-function LabelsPage() {
+export function LabelsPage({ pos = false }: { pos?: boolean } = {}) {
   const loadLabelSettings = useServerFn(getMyLabelSettings);
   const persistLabelSettings = useServerFn(saveMyLabelSettings);
 
@@ -109,6 +110,16 @@ function LabelsPage() {
     queryFn: () => getMySettings(),
     staleTime: 5 * 60_000,
   });
+  const posItems = useQuery({
+    queryKey: ["products-lite"],
+    queryFn: () => listProductsLite(),
+    staleTime: 60_000,
+    enabled: pos,
+  });
+  const itemOptions: ItemOption[] = useMemo(
+    () => (posItems.data?.products ?? []).map((p) => ({ name: p.name, code: p.barcode || p.sku || "", price: p.salePrice ? String(p.salePrice) : "" })),
+    [posItems.data],
+  );
   const business = settings.data?.workspace.businessName?.trim() || "";
   const currency = settings.data?.workspace.currency?.trim() || "Rs";
 
@@ -176,6 +187,19 @@ function LabelsPage() {
         .flatMap((r) => Array.from({ length: Math.max(1, r.qty) }, (_, i) => ({ ...r, key: `${r.id}-${i}` }))),
     [rows],
   );
+
+  useEffect(() => {
+    if (!pos) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p") {
+        e.preventDefault();
+        if (!printLabels.length) { toast.error("Add at least one label to print"); return; }
+        printLabelSheet(printer, printLabels.length);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pos, printLabels, printer]);
 
   const valuesFor = (r: LabelRow): LabelValues => ({
     business,
@@ -262,7 +286,7 @@ function LabelsPage() {
   };
 
   return (
-    <AppShell title="Labels" subtitle="Design your label and print" active="/labels" wide>
+    <AppShell title="Labels" subtitle="Design your label and print" active={pos ? "/pos" : "/labels"} wide>
       <style>{`
         #label-sheet { position: fixed; left: -10000px; top: 0; }
       `}</style>
@@ -739,12 +763,23 @@ function LabelsPage() {
           <section className="rounded-2xl border border-border bg-card p-4">
             <h3 className="font-display text-sm font-bold text-foreground">Manual label</h3>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <input
-                className={`${inputCls} sm:col-span-2`}
-                placeholder="Product name"
-                value={manual.name}
-                onChange={(e) => setManual({ ...manual, name: e.target.value })}
-              />
+              {pos ? (
+                <NameCombo
+                  className={`${inputCls} w-full`}
+                  wrapClass="sm:col-span-2"
+                  value={manual.name}
+                  options={itemOptions}
+                  onChange={(name) => setManual({ ...manual, name })}
+                  onPick={(o) => setManual({ ...manual, name: o.name, code: manual.code || o.code, price: o.price || manual.price })}
+                />
+              ) : (
+                <input
+                  className={`${inputCls} sm:col-span-2`}
+                  placeholder="Product name"
+                  value={manual.name}
+                  onChange={(e) => setManual({ ...manual, name: e.target.value })}
+                />
+              )}
               <input
                 className={inputCls}
                 placeholder="Code (blank = auto)"
@@ -818,13 +853,24 @@ function LabelsPage() {
                 <li key={r.id} className="rounded-2xl border border-border bg-card p-3">
                   <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
                     <div className="grid gap-2 sm:grid-cols-4">
-                      <input
-                        className={`${inputCls} sm:col-span-2`}
-                        placeholder="Product name"
-                        value={r.name}
-                        aria-label="Name"
-                        onChange={(e) => update(r.id, { name: e.target.value })}
-                      />
+                      {pos ? (
+                        <NameCombo
+                          className={`${inputCls} w-full`}
+                          wrapClass="sm:col-span-2"
+                          value={r.name}
+                          options={itemOptions}
+                          onChange={(name) => update(r.id, { name })}
+                          onPick={(o) => update(r.id, { name: o.name, code: r.code || o.code, price: o.price || r.price })}
+                        />
+                      ) : (
+                        <input
+                          className={`${inputCls} sm:col-span-2`}
+                          placeholder="Product name"
+                          value={r.name}
+                          aria-label="Name"
+                          onChange={(e) => update(r.id, { name: e.target.value })}
+                        />
+                      )}
                       <input
                         className={inputCls}
                         placeholder="Barcode code"
@@ -1081,6 +1127,57 @@ function LabelCard({
             fontSize={Math.round(b.textPt * 1.6)}
           />
         </div>
+      ) : null}
+    </div>
+  );
+}
+
+type ItemOption = { name: string; code: string; price: string };
+
+/** POS item name field: click par saare POS items ki list, type karne par filter; custom naam bhi chalta hai. */
+function NameCombo({ value, options, onChange, onPick, className, wrapClass }: {
+  value: string; options: ItemOption[]; onChange: (v: string) => void; onPick: (o: ItemOption) => void; className: string; wrapClass?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [hi, setHi] = useState(0);
+  const q = value.trim().toLowerCase();
+  const list = useMemo(() => (q ? options.filter((o) => o.name.toLowerCase().includes(q) || o.code.toLowerCase().includes(q)) : options).slice(0, 100), [q, options]);
+  const pick = (o: ItemOption) => { onPick(o); setOpen(false); };
+  return (
+    <div className={`relative ${wrapClass ?? ""}`}>
+      <input
+        className={className}
+        placeholder="Product name (choose or type)"
+        aria-label="Product name"
+        value={value}
+        autoComplete="off"
+        onFocus={() => setOpen(true)}
+        onClick={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); setHi(0); }}
+        onKeyDown={(e) => {
+          if (!open || !list.length) return;
+          if (e.key === "ArrowDown") { e.preventDefault(); setHi((h) => Math.min(list.length - 1, h + 1)); }
+          else if (e.key === "ArrowUp") { e.preventDefault(); setHi((h) => Math.max(0, h - 1)); }
+          else if (e.key === "Enter") { e.preventDefault(); pick(list[hi] ?? list[0]!); }
+          else if (e.key === "Escape") setOpen(false);
+        }}
+      />
+      {open && list.length > 0 ? (
+        <ul role="listbox" className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg">
+          {list.map((o, i) => (
+            <li key={`${o.name}-${i}`} role="option" aria-selected={i === hi}>
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); pick(o); }}
+                className={`flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-sm ${i === hi ? "bg-accent text-accent-foreground" : "hover:bg-muted"}`}
+              >
+                <span className="truncate">{o.name}</span>
+                {o.price ? <span className="shrink-0 text-xs text-muted-foreground">{o.price}</span> : null}
+              </button>
+            </li>
+          ))}
+        </ul>
       ) : null}
     </div>
   );
