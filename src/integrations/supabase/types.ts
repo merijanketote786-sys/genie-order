@@ -684,18 +684,21 @@ export type Database = {
       label_settings: {
         Row: {
           config: Json
+          scope: string
           updated_at: string
           user_id: string
           workspace_id: string
         }
         Insert: {
           config?: Json
+          scope?: string
           updated_at?: string
           user_id: string
           workspace_id: string
         }
         Update: {
           config?: Json
+          scope?: string
           updated_at?: string
           user_id?: string
           workspace_id?: string
