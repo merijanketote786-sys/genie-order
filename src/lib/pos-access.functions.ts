@@ -20,12 +20,17 @@ export const getPosAccess = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const sb = context.supabase as Sb;
-    const [{ data: acc }, { data: st }] = await Promise.all([
+    const [{ data: acc }, { data: st }, { data: ws }] = await Promise.all([
       sb.rpc("pos_my_access"),
       sb.from("pos_settings").select("config").maybeSingle(),
+      sb.from("workspace_settings").select("business_name").maybeSingle(),
     ]);
     const a = (acc ?? {}) as { role?: string; perms?: string[]; hasPin?: boolean };
-    return { role: a.role ?? "staff", perms: (a.perms ?? []) as PosPerm[], hasPin: !!a.hasPin, config: ((st?.config ?? {}) as PosConfig) };
+    const config = ((st?.config ?? {}) as PosConfig);
+    // Printouts use the shop's own name: POS business name, else the workspace business name.
+    const wsName = String(ws?.business_name ?? "").trim();
+    if (!config.business?.name?.trim() && !config.receiptBusiness?.trim() && wsName) config.business = { ...(config.business ?? {}), name: wsName } as PosConfig["business"];
+    return { role: a.role ?? "staff", perms: (a.perms ?? []) as PosPerm[], hasPin: !!a.hasPin, config };
   });
 
 export const verifyPosPin = createServerFn({ method: "POST" })

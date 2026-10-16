@@ -193,7 +193,7 @@ function PosInvoicesPage() {
       delivery: str(saved.delivery) ?? String(Number(s.delivery) || ""),
       pays: pays.length ? pays : undefined,
     });
-    sessionStorage.setItem("pos-open-doc", JSON.stringify({ id: s.id, doc_number: s.doc_number, doc_type: s.doc_type, customer_name: s.customer_name, customer_phone: s.customer_phone, grand_total: s.grand_total, created_at: s.created_at, payload, status: s.status }));
+    sessionStorage.setItem("pos-open-doc", JSON.stringify({ id: s.id, doc_number: s.doc_number, doc_type: s.doc_type, customer_name: s.customer_name, customer_phone: s.customer_phone, grand_total: s.grand_total, created_at: s.created_at, payload, status: s.status, convert: navigateAway && s.doc_type === "quotation" }));
     if (navigateAway) navigate({ to: "/pos" });
     else setEditSale(s);
   };
