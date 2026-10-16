@@ -5,11 +5,16 @@ import { assetSchema } from "./fixed-assets";
 export const listFixedAssets = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase.from("pos_fixed_assets")
-      .select("id, name, category, quantity, purchase_cost, purchase_date, serial_number, location, notes, status")
-      .order("name");
-    if (error) throw new Error("Could not load fixed assets. Please try again.");
-    return data ?? [];
+    const rows = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await context.supabase.from("pos_fixed_assets")
+        .select("id, name, category, quantity, purchase_cost, purchase_date, serial_number, location, notes, status")
+        .order("name").order("id").range(offset, offset + 999);
+      if (error) throw new Error("Could not load fixed assets. Please try again.");
+      rows.push(...(data ?? []).map((row) => assetSchema.parse(row)));
+      if (!data || data.length < 1000) break;
+    }
+    return rows;
   });
 
 export const saveFixedAsset = createServerFn({ method: "POST" })

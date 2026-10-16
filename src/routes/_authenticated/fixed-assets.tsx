@@ -63,7 +63,7 @@ function FixedAssetsPage() {
   };
   const guard = useUnsavedGuard(dirty, submit);
   const update = (key: keyof FixedAsset, value: string | number | null) => setForm((f) => f ? { ...f, [key]: value } : f);
-  return <AppShell title="Fixed Assets" active="/pos" wide>
+  return <AppShell title="Fixed Assets" subtitle="Asset register" active="/pos" wide>
     {guard}
     <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-4">
       <div className="flex flex-wrap items-center justify-between gap-3"><h1 className="flex items-center gap-2 text-xl font-bold"><Boxes className="size-5 text-primary" /> Fixed Assets</h1><Button disabled={!editable} onClick={() => open(blankAsset())}><Plus /> Add asset</Button></div>
