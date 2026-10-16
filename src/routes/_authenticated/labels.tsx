@@ -124,8 +124,8 @@ export function LabelsPage({ pos = false }: { pos?: boolean } = {}) {
   const currency = settings.data?.workspace.currency?.trim() || "Rs";
 
   const labelSettings = useQuery({
-    queryKey: ["my-label-settings"],
-    queryFn: () => loadLabelSettings({}),
+    queryKey: ["my-label-settings", pos ? "pos" : "workspace"],
+    queryFn: () => loadLabelSettings({ data: { scope: pos ? "pos" : "workspace" } }),
     staleTime: 5 * 60_000,
   });
 
@@ -134,7 +134,7 @@ export function LabelsPage({ pos = false }: { pos?: boolean } = {}) {
   }, [labelSettings.data]);
 
   const save = useMutation({
-    mutationFn: () => persistLabelSettings({ data: { config } }),
+    mutationFn: () => persistLabelSettings({ data: { scope: pos ? "pos" : "workspace", config } }),
     onSuccess: (res) => {
       if (res.ok) toast.success(res.message);
       else toast.error(res.message);
