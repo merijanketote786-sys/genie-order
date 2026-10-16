@@ -197,7 +197,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
     window.scrollTo({ top: 0, behavior: "smooth" });
     toast.message(`Editing ${p.doc_number} — saving will replace the old entry`);
   });
-  const doCancel = (p: Hist) => {
+  const doCancel = async (p: Hist) => {
     const reason = await askReason(`Cancel ${p.doc_number}? Reason (optional):`);
     if (reason === null) return;
     void run(async () => { await cancelPurchase({ data: { id: p.id, reason } }); toast.success(`${p.doc_number} cancelled`); if (editId?.id === p.id) reset(); refreshAll(); });
