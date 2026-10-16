@@ -435,6 +435,13 @@
       "when": 1792112475594,
       "tag": "0061_label_settings_per_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1792184611440,
+      "tag": "0062_pos_fixed_assets_register",
+      "breakpoints": true
     }
   ]
 }

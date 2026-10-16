@@ -1,4 +1,5 @@
 # Roadmap — Vyapar-style POS
+- [x] POS Fixed Assets: asset register, add/edit/archive, categories, values, permission checks and verification
 - [x] Enable mobile/tablet rotation and verify shared POS/Workspace navigation and popups in both orientations
 - [x] POS backup: save to computer folder/download, restore with merge or replace
 - [ ] Daily automatic Google Drive backup — blocked: Google Drive connection was declined

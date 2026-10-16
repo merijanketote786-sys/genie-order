@@ -9,8 +9,10 @@ import * as prod from "@/lib/products.functions";
 import * as att from "@/lib/attendance.functions";
 import * as stores from "@/lib/stores.functions";
 import * as labels from "@/lib/label-settings.functions";
+import { saveFixedAsset } from "@/lib/fixed-assets.functions";
 
 const LIST: [unknown, string][] = [
+  [saveFixedAsset, "Fixed asset"],
   [inv.updateProductDetails, "Item edit"], [inv.bulkUpdateProducts, "Bulk item update"], [inv.adjustStock, "Stock adjust"], [inv.createPosProduct, "New item"],
   [rec.saveParty, "Party"], [rec.saveOrder, "Order"], [rec.saveInvoice, "Workspace invoice"], [rec.setInvoiceStatus, "Invoice status"],
   [biz.saveSupplier, "Supplier"], [biz.partyPayment, "Party payment"], [biz.receiveSalePayment, "Receive payment"],
