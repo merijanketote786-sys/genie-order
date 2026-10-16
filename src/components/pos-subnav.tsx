@@ -7,7 +7,7 @@ import { usePosAccess } from "@/components/pos-access";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import type { PosPerm } from "@/lib/pos-access.functions";
-import { LayoutDashboard, Landmark, Settings2, BarChart3, Boxes, BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users, FileCheck2, ArrowLeft, Package, CalendarCheck, ClipboardList, GripVertical, Search } from "lucide-react";
+import { LayoutDashboard, Landmark, Settings2, BarChart3, Boxes, BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users, FileCheck2, ArrowLeft, Package, CalendarCheck, ClipboardList, GripVertical, Search, QrCode } from "lucide-react";
 
 const ITEMS = [
   { to: "/pos-dashboard", label: "Dashboard", icon: LayoutDashboard, perm: "view_pos" },
@@ -21,6 +21,7 @@ const ITEMS = [
   { to: "/daybook", label: "Day Book", icon: Notebook, perm: "view_reports" },
   { to: "/inventory", label: "Inventory", icon: Boxes, perm: "edit_stock" },
   { to: "/reports", label: "Reports", icon: BarChart3, perm: "view_reports" },
+  { to: "/pos-labels", label: "Labels", icon: QrCode, perm: "view_pos" },
   { to: "/pos-invoices", label: "Invoices", icon: FileCheck2, perm: "view_pos" },
   { to: "/accounting", label: "Accounting", icon: Landmark, perm: "view_accounting" },
   { to: "/pos-settings", label: "POS Settings", icon: Settings2, perm: "view_pos" },
@@ -37,6 +38,7 @@ const KEYWORDS: Record<string, string> = {
   "/attendance": "attendance labour salary staff",
   "/daybook": "day book daily cash in hand closing",
   "/inventory": "inventory stock bulk update products items csv adjust",
+  "/pos-labels": "labels barcode sticker print",
   "/reports": "reports profit sales report stock summary",
   "/pos-invoices": "invoices estimates delivery challan reprint",
   "/accounting": "accounting ledger bank accounts balance sheet profit loss",
@@ -80,7 +82,7 @@ const FEATURES: { label: string; to: string; kw: string }[] = [
   { label: "Stock adjustment", to: "/inventory", kw: "stock adjust adjustment quantity" },
   { label: "Low / out of stock", to: "/inventory", kw: "low stock min stock out of stock reorder" },
   { label: "Stores / stock transfer", to: "/inventory", kw: "store stores branch transfer" },
-  { label: "Barcode labels", to: "/inventory", kw: "barcode label print sticker" },
+  { label: "Barcode labels", to: "/pos-labels", kw: "barcode label print sticker" },
   { label: "Sales report", to: "/reports", kw: "sales report daily monthly" },
   { label: "Profit & loss", to: "/reports", kw: "profit loss margin p&l" },
   { label: "Stock summary report", to: "/reports", kw: "stock summary value report" },
