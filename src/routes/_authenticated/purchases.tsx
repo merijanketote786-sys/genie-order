@@ -20,6 +20,7 @@ import { usePrintCenter } from "@/components/print-center";
 import { StoreSwitcher, useActiveStore } from "@/components/store-switcher";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { UserPlus } from "lucide-react";
+import { askReason } from "@/lib/ask-reason";
 
 export const Route = createFileRoute("/_authenticated/purchases")({
   head: () => ({
@@ -197,7 +198,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
     toast.message(`Editing ${p.doc_number} — saving will replace the old entry`);
   });
   const doCancel = (p: Hist) => {
-    const reason = window.prompt(`Cancel ${p.doc_number}? Reason (optional):`);
+    const reason = await askReason(`Cancel ${p.doc_number}? Reason (optional):`);
     if (reason === null) return;
     void run(async () => { await cancelPurchase({ data: { id: p.id, reason } }); toast.success(`${p.doc_number} cancelled`); if (editId?.id === p.id) reset(); refreshAll(); });
   };

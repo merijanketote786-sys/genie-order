@@ -15,6 +15,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Download, Plus, Printer, RefreshCw, Trash2 } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
+import { askReason } from "@/lib/ask-reason";
 
 export const Route = createFileRoute("/_authenticated/accounting")({
   head: () => ({
@@ -232,7 +233,7 @@ function Journals({ accounts, canCreate, canPost }: { accounts: Account[]; canCr
   };
   const act = async (id: string, action: "post" | "reverse" | "cancel") => {
     let reason: string | undefined;
-    if (action === "reverse") { const r = prompt("Reason for reversal"); if (r === null) return; reason = r; }
+    if (action === "reverse") { const r = await askReason("Reason for reversal", "Reverse"); if (r === null) return; reason = r; }
     if (action === "cancel" && !confirm("Cancel this draft?")) return;
     try { await journalAction({ data: { id, action, date: today(), reason } }); toast.success("Done"); refresh(); } catch (e) { toast.error(errMsg(e)); }
   };

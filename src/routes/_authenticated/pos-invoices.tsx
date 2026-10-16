@@ -13,6 +13,7 @@ import { listPosSales, deletePosDoc } from "@/lib/pos.functions";
 import { cancelDoc } from "@/lib/business.functions";
 import type { PrintDoc } from "@/lib/print/render";
 import { toast } from "sonner";
+import { askReason } from "@/lib/ask-reason";
 
 export const Route = createFileRoute("/_authenticated/pos-invoices")({
   head: () => ({
@@ -133,7 +134,7 @@ function PosInvoicesPage() {
   const refresh = () => qc.invalidateQueries({ queryKey: ["pos-sales"] });
 
   const doCancel = async (s: SaleRow) => {
-    const reason = window.prompt(`Cancel ${s.doc_number}? Reason (optional):`) ?? "";
+    const reason = await askReason(`Cancel ${s.doc_number}?`, "Cancel bill");
     if (reason === null) return;
     setBusy(true);
     try {
