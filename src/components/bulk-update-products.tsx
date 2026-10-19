@@ -155,7 +155,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
     const ids = targetIds();
     let done = 0, skipped = 0;
     setEdits((e) => {
-      const n = { ...e };
+      const n = { ...e }; done = 0; skipped = 0;
       ids.forEach((id) => {
         const cur = { ...orig[id], ...e[id] };
         let ch = false;
@@ -177,7 +177,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
     }
     let n = 0;
     setEdits((e) => {
-      const out = { ...e };
+      const out = { ...e }; n = 0;
       ids.forEach((id) => {
         const cur = { ...orig[id], ...e[id] };
         let v = applyVal;
