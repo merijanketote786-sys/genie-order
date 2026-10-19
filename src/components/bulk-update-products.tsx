@@ -148,16 +148,50 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
   });
   const dirtyIds = Object.keys(edits).filter((id) => COLS.some((c) => c.k !== "stock_value" && (edits[id][c.k] ?? orig[id][c.k]) !== orig[id][c.k]));
 
+  const targetIds = () => (picked.size ? [...picked] : list.map((p) => p.id));
+  // Recalculate sale / wholesale from purchase price for all visible (or selected) products
+  const applyMarkup = (fields: { sale: boolean; ws: boolean }, pcts = mk) => {
+    if (!fields.sale && !fields.ws) return toast.error("Tick Sale or Wholesale first");
+    const ids = targetIds();
+    let done = 0, skipped = 0;
+    setEdits((e) => {
+      const n = { ...e };
+      ids.forEach((id) => {
+        const cur = { ...orig[id], ...e[id] };
+        let ch = false;
+        if (fields.sale && rowMk[id]?.sale !== false) { const v = priced(cur.purchase_price, pcts.salePct); if (v != null) { cur.sale_price = v; ch = true; } }
+        if (fields.ws && rowMk[id]?.ws !== false) { const v = priced(cur.purchase_price, pcts.wsPct); if (v != null) { cur.wholesale_price = v; ch = true; } }
+        if (ch) { n[id] = cur; done++; } else skipped++;
+      });
+      return n;
+    });
+    setTimeout(() => toast.success(`Prices calculated for ${done} products${skipped ? ` (${skipped} skipped — no purchase price)` : ""} — press Save`), 0);
+  };
+
   const applyAll = () => {
-    const ids = picked.size ? [...picked] : list.map((p) => p.id);
+    const ids = targetIds();
     const col = COLS.find((c) => c.k === applyCol)!;
     if (col.num && applyMode !== "set" && applyVal.trim() === "") return toast.error("Enter a value");
-    ids.forEach((id) => {
-      const r = rowOf(id); let v = applyVal;
-      if (col.num && applyMode !== "set") { const cur = Number(r[applyCol]) || 0, x = Number(applyVal) || 0; v = String(Math.round((applyMode === "pct" ? cur * (1 + x / 100) : cur + x) * 100) / 100); }
-      set(id, applyCol, v);
+    if (applyMode === "cost" && (applyCol === "sale_price" || applyCol === "wholesale_price")) {
+      return applyMarkup(applyCol === "sale_price" ? { sale: true, ws: false } : { sale: false, ws: true }, { ...mk, salePct: applyVal, wsPct: applyVal });
+    }
+    let n = 0;
+    setEdits((e) => {
+      const out = { ...e };
+      ids.forEach((id) => {
+        const cur = { ...orig[id], ...e[id] };
+        let v = applyVal;
+        if (col.num && applyMode !== "set") {
+          const base0 = applyMode === "cost" ? Number(cur.purchase_price) || 0 : Number(cur[applyCol]) || 0, x = Number(applyVal) || 0;
+          v = String(Math.round((applyMode === "add" ? base0 + x : base0 * (1 + x / 100)) * 100) / 100);
+        }
+        cur[applyCol] = v; delete cur.stock_value;
+        if (applyCol === "purchase_price") applyMk(id, cur);
+        out[id] = cur; n++;
+      });
+      return out;
     });
-    toast.success(`Applied to ${ids.length} products — press Save`);
+    setTimeout(() => toast.success(`Applied to ${n} products — press Save`), 0);
   };
 
   const save = async () => {
