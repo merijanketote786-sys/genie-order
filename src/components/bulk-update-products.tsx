@@ -96,7 +96,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
   const [fCat, setFCat] = useState("");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [applyCol, setApplyCol] = useState("sale_price");
-  const [applyMode, setApplyMode] = useState<"set" | "pct" | "add">("set");
+  const [applyMode, setApplyMode] = useState<"set" | "pct" | "add" | "cost">("set");
   const [applyVal, setApplyVal] = useState("");
   const [saving, setSaving] = useState(false);
   const [activeCol, setActiveCol] = useState<string | null>(null);
@@ -148,16 +148,50 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
   });
   const dirtyIds = Object.keys(edits).filter((id) => COLS.some((c) => c.k !== "stock_value" && (edits[id][c.k] ?? orig[id][c.k]) !== orig[id][c.k]));
 
+  const targetIds = () => (picked.size ? [...picked] : list.map((p) => p.id));
+  // Recalculate sale / wholesale from purchase price for all visible (or selected) products
+  const applyMarkup = (fields: { sale: boolean; ws: boolean }, pcts = mk) => {
+    if (!fields.sale && !fields.ws) return toast.error("Tick Sale or Wholesale first");
+    const ids = targetIds();
+    let done = 0, skipped = 0;
+    setEdits((e) => {
+      const n = { ...e }; done = 0; skipped = 0;
+      ids.forEach((id) => {
+        const cur = { ...orig[id], ...e[id] };
+        let ch = false;
+        if (fields.sale && rowMk[id]?.sale !== false) { const v = priced(cur.purchase_price, pcts.salePct); if (v != null) { cur.sale_price = v; ch = true; } }
+        if (fields.ws && rowMk[id]?.ws !== false) { const v = priced(cur.purchase_price, pcts.wsPct); if (v != null) { cur.wholesale_price = v; ch = true; } }
+        if (ch) { n[id] = cur; done++; } else skipped++;
+      });
+      return n;
+    });
+    setTimeout(() => toast.success(`Prices calculated for ${done} products${skipped ? ` (${skipped} skipped — no purchase price)` : ""} — press Save`), 0);
+  };
+
   const applyAll = () => {
-    const ids = picked.size ? [...picked] : list.map((p) => p.id);
+    const ids = targetIds();
     const col = COLS.find((c) => c.k === applyCol)!;
     if (col.num && applyMode !== "set" && applyVal.trim() === "") return toast.error("Enter a value");
-    ids.forEach((id) => {
-      const r = rowOf(id); let v = applyVal;
-      if (col.num && applyMode !== "set") { const cur = Number(r[applyCol]) || 0, x = Number(applyVal) || 0; v = String(Math.round((applyMode === "pct" ? cur * (1 + x / 100) : cur + x) * 100) / 100); }
-      set(id, applyCol, v);
+    if (applyMode === "cost" && (applyCol === "sale_price" || applyCol === "wholesale_price")) {
+      return applyMarkup(applyCol === "sale_price" ? { sale: true, ws: false } : { sale: false, ws: true }, { ...mk, salePct: applyVal, wsPct: applyVal });
+    }
+    let n = 0;
+    setEdits((e) => {
+      const out = { ...e }; n = 0;
+      ids.forEach((id) => {
+        const cur = { ...orig[id], ...e[id] };
+        let v = applyVal;
+        if (col.num && applyMode !== "set") {
+          const base0 = applyMode === "cost" ? Number(cur.purchase_price) || 0 : Number(cur[applyCol]) || 0, x = Number(applyVal) || 0;
+          v = String(Math.round((applyMode === "add" ? base0 + x : base0 * (1 + x / 100)) * 100) / 100);
+        }
+        cur[applyCol] = v; delete cur.stock_value;
+        if (applyCol === "purchase_price") applyMk(id, cur);
+        out[id] = cur; n++;
+      });
+      return out;
     });
-    toast.success(`Applied to ${ids.length} products — press Save`);
+    setTimeout(() => toast.success(`Applied to ${n} products — press Save`), 0);
   };
 
   const save = async () => {
@@ -220,7 +254,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-2 text-sm">
         <span className="text-xs text-muted-foreground">{picked.size ? `${picked.size} selected` : "All visible"} products:</span>
         <select className={`${posInput} w-40`} value={applyCol} onChange={(e) => setApplyCol(e.target.value)} aria-label="Field">{COLS.filter((c) => !["name", "sku", "barcode", "stock_value", "is_active"].includes(c.k)).map((c) => <option key={c.k} value={c.k}>{c.label}</option>)}</select>
-        {COLS.find((c) => c.k === applyCol)?.num ? <select className={`${posInput} w-32`} value={applyMode} onChange={(e) => setApplyMode(e.target.value as "set")} aria-label="Method"><option value="set">This value</option><option value="pct">% increase/decrease</option><option value="add">+/− amount</option></select> : null}
+        {COLS.find((c) => c.k === applyCol)?.num ? <select className={`${posInput} w-32`} value={applyMode} onChange={(e) => setApplyMode(e.target.value as "set")} aria-label="Method"><option value="set">This value</option><option value="pct">% increase/decrease</option><option value="add">+/− amount</option>{applyCol === "sale_price" || applyCol === "wholesale_price" ? <option value="cost">% over purchase price</option> : null}</select> : null}
         {applyCol === "unit" ? <UnitSelect className={`${posInput} w-40`} value={applyVal} onChange={setApplyVal} /> : <input className={`${posInput} w-28`} value={applyVal} onChange={(e) => setApplyVal(e.target.value)} placeholder="Value" />}
         <Button variant="outline" onClick={applyAll}>Apply</Button>
         <label className="ml-auto inline-flex cursor-pointer items-center gap-1 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-accent"><Upload className="size-4" /> Upload Excel / CSV
@@ -269,6 +303,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
         <span className="font-medium text-foreground">Auto price from purchase price:</span>
         <label className="inline-flex items-center gap-1"><input type="checkbox" checked={mk.saleOn} onChange={(e) => { updMk({ saleOn: e.target.checked }); setRowMk((m) => Object.fromEntries(Object.entries(m).map(([id, x]) => [id, { ...x, sale: undefined }]))); }} aria-label="Auto sale price for all" />Sale +<input className={`${posInput} h-8 w-16 px-1 text-right`} value={mk.salePct} inputMode="decimal" onChange={(e) => updMk({ salePct: e.target.value })} aria-label="Sale price percent" />%</label>
         <label className="inline-flex items-center gap-1"><input type="checkbox" checked={mk.wsOn} onChange={(e) => { updMk({ wsOn: e.target.checked }); setRowMk((m) => Object.fromEntries(Object.entries(m).map(([id, x]) => [id, { ...x, ws: undefined }]))); }} aria-label="Auto wholesale price for all" />Wholesale +<input className={`${posInput} h-8 w-16 px-1 text-right`} value={mk.wsPct} inputMode="decimal" onChange={(e) => updMk({ wsPct: e.target.value })} aria-label="Wholesale price percent" />%</label>
+        <Button type="button" size="sm" onClick={() => applyMarkup({ sale: mk.saleOn, ws: mk.wsOn })}>Apply to {picked.size ? `${picked.size} selected` : `all ${list.length} shown`}</Button>
         <span>Untick to type a custom rate. Each product also has its own small tick.</span>
       </div>
       <label className="flex h-10 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
