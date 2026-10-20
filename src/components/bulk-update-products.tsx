@@ -214,7 +214,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
     setSaving(true);
     try {
       for (let i = 0; i < rows.length; i += 500) await bulkUpdateProducts({ data: { rows: rows.slice(i, i + 500) } });
-      toast.success(`${rows.length} products updated`); setEdits({}); onSaved();
+      toast.success(`${rows.length} products updated`); setEdits({}); try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ } onSaved();
     } catch (e) { toast.error(e instanceof Error ? e.message : "Save failed"); } finally { setSaving(false); }
   };
 
@@ -316,7 +316,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
         <span>Untick to type a custom rate. Each product also has its own small tick.</span>
       </div>
       <label className="flex h-10 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
-        <Search className="size-4 text-primary" /><input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search product" />
+        <Search className="size-4 text-primary" /><input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={qRaw} onChange={(e) => setQ(e.target.value)} placeholder="Search product" />
       </label>
       {/* Mobile: one card per product so no field is hidden behind sideways scrolling */}
       <div className="max-h-[60vh] space-y-2 overflow-auto sm:hidden">
