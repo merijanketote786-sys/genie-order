@@ -199,6 +199,7 @@ export async function warmOfflineData(queryClient: QueryClient) {
     queryClient.prefetchQuery({ queryKey: ["customer-picker", ""], queryFn: () => listCustomers({ data: {} }), ...opt }),
     queryClient.prefetchQuery({ queryKey: ["suppliers"], queryFn: () => biz.listSuppliers(), ...opt }),
     queryClient.prefetchQuery({ queryKey: ["pos-products"], queryFn: () => getProducts({ data: { scope: "pos" } }), ...opt }),
+    import("@/lib/inventory.functions").then((m) => queryClient.prefetchQuery({ queryKey: ["inventory"], queryFn: () => m.listInventory(), ...opt })),
     queryClient.prefetchQuery({ queryKey: ["products-lite"], queryFn: () => biz.listProductsLite(), ...opt }),
   ]);
   // Main screens ko offline kholne ke liye pehle se save kar lo (sirf live site par service worker hota hai).

@@ -4,7 +4,7 @@ import { bulkUpdateProducts, deletePosProducts, type InvProduct } from "@/lib/in
 import { UnitSelect } from "@/components/unit-select";
 import { usePosCategories } from "@/lib/pos-catalog";
 import { ChevronDown, Search, Trash2, Upload, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
@@ -86,12 +86,20 @@ function CatPicker({ value, original, options, onPick, label }: { value: string;
   );
 }
 
+const DRAFT_KEY = "pos-bulk-update-draft-v1";
+
 export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSaved }: { products: InvProduct[]; inactiveProducts?: InvProduct[]; onClose: () => void; onSaved: () => void }) {
   // Active + inactive items in one pool so filters can show either
   const pool = useMemo(() => [...products, ...(inactiveProducts ?? [])], [products, inactiveProducts]);
   const orig = useMemo(() => Object.fromEntries(pool.map((p) => [p.id, base(p)])), [pool]);
   const [edits, setEdits] = useState<Record<string, Row>>({});
-  const [q, setQ] = useState("");
+  // Unsaved edits stay on this device (no internet needed) until Save.
+  const [draftReady, setDraftReady] = useState(false);
+  useEffect(() => { try { const v = localStorage.getItem(DRAFT_KEY); if (v) { const d = JSON.parse(v) as Record<string, Row>; const keep = Object.fromEntries(Object.entries(d).filter(([id]) => id in orig)); if (Object.keys(keep).length) { setEdits(keep); toast.info(`${Object.keys(keep).length} unsaved change(s) restored`); } } } catch { /* ignore */ } setDraftReady(true); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => { if (!draftReady) return; const t = window.setTimeout(() => { try { if (Object.keys(edits).length) localStorage.setItem(DRAFT_KEY, JSON.stringify(edits)); else localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ } }, 400); return () => window.clearTimeout(t); }, [edits, draftReady]);
+  const [qRaw, setQ] = useState("");
+  const q = useDeferredValue(qRaw);
   const [fKind, setFKind] = useState("all");
   const [fCat, setFCat] = useState("");
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -196,6 +204,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
 
   const save = async () => {
     if (!dirtyIds.length) return toast.info("No changes");
+    if (typeof navigator !== "undefined" && !navigator.onLine) return toast.error("No internet — your changes are kept on this device. Connect to the internet and press Save.");
     for (const id of dirtyIds) {
       const r = rowOf(id);
       if (!r.name.trim()) return toast.error("Product name cannot be empty");
