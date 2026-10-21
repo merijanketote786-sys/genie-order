@@ -136,11 +136,23 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
   useEffect(() => { try { const v = localStorage.getItem(MK_KEY); if (v) setMk((m) => ({ ...m, ...JSON.parse(v) })); } catch { /* ignore */ } }, []);
   const updMk = (p: Partial<typeof mk>) => setMk((m) => { const n = { ...m, ...p }; try { localStorage.setItem(MK_KEY, JSON.stringify(n)); } catch { /* ignore */ } return n; });
   const [rowMk, setRowMk] = useState<Record<string, { sale?: boolean; ws?: boolean }>>({});
+  // Per-product markup % (overrides the global %). Saved on this device.
+  const RP_KEY = "pos-bulk-row-pct";
+  const [rowPct, setRowPctState] = useState<Record<string, { sale?: string; ws?: string }>>({});
+  useEffect(() => { try { const v = localStorage.getItem(RP_KEY); if (v) setRowPctState(JSON.parse(v)); } catch { /* ignore */ } }, []);
+  const saveRowPct = (fn: (m: Record<string, { sale?: string; ws?: string }>) => Record<string, { sale?: string; ws?: string }>) => setRowPctState((m) => { const n = fn(m); try { localStorage.setItem(RP_KEY, JSON.stringify(n)); } catch { /* ignore */ } return n; });
+  const pctOf = (id: string, f: "sale" | "ws") => { const v = rowPct[id]?.[f]; return v != null && v.trim() !== "" ? v : f === "sale" ? mk.salePct : mk.wsPct; };
   const autoOn = (id: string, f: "sale" | "ws") => rowMk[id]?.[f] ?? (f === "sale" ? mk.saleOn : mk.wsOn);
-  const priced = (pp: string, pct: string) => { const c = Number(pp), x = Number(pct); return pp.trim() === "" || !isFinite(c) || !isFinite(x) ? null : String(Math.round(c * (1 + x / 100) * 100) / 100); };
-  const applyMk = (id: string, cur: Row, only?: "sale" | "ws", force?: { sale?: boolean; ws?: boolean }) => {
-    if (only !== "ws" && (force?.sale ?? autoOn(id, "sale"))) { const v = priced(cur.purchase_price, mk.salePct); if (v != null) cur.sale_price = v; }
-    if (only !== "sale" && (force?.ws ?? autoOn(id, "ws"))) { const v = priced(cur.purchase_price, mk.wsPct); if (v != null) cur.wholesale_price = v; }
+  const priced = (pp: string, pct: string) => { const c = Number(pp), x = Number(pct); return pp.trim() === "" || pct.trim() === "" || !isFinite(c) || !isFinite(x) ? null : String(Math.round(c * (1 + x / 100) * 100) / 100); };
+  const applyMk = (id: string, cur: Row, only?: "sale" | "ws", force?: { sale?: boolean; ws?: boolean }, over?: { sale?: string; ws?: string }) => {
+    if (only !== "ws" && (force?.sale ?? autoOn(id, "sale"))) { const v = priced(cur.purchase_price, over?.sale ?? pctOf(id, "sale")); if (v != null) cur.sale_price = v; }
+    if (only !== "sale" && (force?.ws ?? autoOn(id, "ws"))) { const v = priced(cur.purchase_price, over?.ws ?? pctOf(id, "ws")); if (v != null) cur.wholesale_price = v; }
+  };
+  const setRowPct = (id: string, f: "sale" | "ws", v: string) => {
+    saveRowPct((m) => ({ ...m, [id]: { ...m[id], [f]: v } }));
+    setRowMk((m) => ({ ...m, [id]: { ...m[id], [f]: true } }));
+    const pct = v.trim() !== "" ? v : f === "sale" ? mk.salePct : mk.wsPct;
+    setEdits((e) => { const cur = { ...orig[id], ...e[id] }; applyMk(id, cur, f, { [f]: true }, { [f]: pct }); return { ...e, [id]: cur }; });
   };
   const toggleRowMk = (id: string, f: "sale" | "ws") => {
     const on = !autoOn(id, f);
@@ -157,18 +169,21 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
   const dirtyIds = Object.keys(edits).filter((id) => COLS.some((c) => c.k !== "stock_value" && (edits[id][c.k] ?? orig[id][c.k]) !== orig[id][c.k]));
 
   const targetIds = () => (picked.size ? [...picked] : list.map((p) => p.id));
-  // Recalculate sale / wholesale from purchase price for all visible (or selected) products
-  const applyMarkup = (fields: { sale: boolean; ws: boolean }, pcts = mk) => {
+  // Recalculate sale / wholesale from purchase price for all visible (or selected) products.
+  // Without explicit pcts each product uses its own % (or the global one); with explicit pcts the
+  // same % is applied to every target product and stored as their per-product %.
+  const applyMarkup = (fields: { sale: boolean; ws: boolean }, pcts?: { salePct: string; wsPct: string }) => {
     if (!fields.sale && !fields.ws) return toast.error("Tick Sale or Wholesale first");
     const ids = targetIds();
     let done = 0, skipped = 0;
+    if (pcts) saveRowPct((m) => { const n = { ...m }; ids.forEach((id) => { n[id] = { ...n[id], ...(fields.sale ? { sale: pcts.salePct } : {}), ...(fields.ws ? { ws: pcts.wsPct } : {}) }; }); return n; });
     setEdits((e) => {
       const n = { ...e }; done = 0; skipped = 0;
       ids.forEach((id) => {
         const cur = { ...orig[id], ...e[id] };
         let ch = false;
-        if (fields.sale && rowMk[id]?.sale !== false) { const v = priced(cur.purchase_price, pcts.salePct); if (v != null) { cur.sale_price = v; ch = true; } }
-        if (fields.ws && rowMk[id]?.ws !== false) { const v = priced(cur.purchase_price, pcts.wsPct); if (v != null) { cur.wholesale_price = v; ch = true; } }
+        if (fields.sale && rowMk[id]?.sale !== false) { const v = priced(cur.purchase_price, pcts?.salePct ?? pctOf(id, "sale")); if (v != null) { cur.sale_price = v; ch = true; } }
+        if (fields.ws && rowMk[id]?.ws !== false) { const v = priced(cur.purchase_price, pcts?.wsPct ?? pctOf(id, "ws")); if (v != null) { cur.wholesale_price = v; ch = true; } }
         if (ch) { n[id] = cur; done++; } else skipped++;
       });
       return n;
