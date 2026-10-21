@@ -86,7 +86,7 @@ function CatPicker({ value, original, options, onPick, label }: { value: string;
   );
 }
 
-const DRAFT_KEY = "pos-bulk-update-draft-v1";
+const DRAFT_KEY = "pos-bulk-update-draft-v2";
 
 export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSaved }: { products: InvProduct[]; inactiveProducts?: InvProduct[]; onClose: () => void; onSaved: () => void }) {
   // Active + inactive items in one pool so filters can show either
@@ -95,9 +95,16 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
   const [edits, setEdits] = useState<Record<string, Row>>({});
   // Unsaved edits stay on this device (no internet needed) until Save.
   const [draftReady, setDraftReady] = useState(false);
-  useEffect(() => { try { const v = localStorage.getItem(DRAFT_KEY); if (v) { const d = JSON.parse(v) as Record<string, Row>; const keep = Object.fromEntries(Object.entries(d).filter(([id]) => id in orig)); if (Object.keys(keep).length) { setEdits(keep); toast.info(`${Object.keys(keep).length} unsaved change(s) restored`); } } } catch { /* ignore */ } setDraftReady(true); // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Draft stores only changed fields with the value they were changed from; a field is restored only
+  // if the product still has that original value, so untouched or since-changed fields are never overwritten.
+  useEffect(() => { try { const v = localStorage.getItem(DRAFT_KEY); if (v) { const d = JSON.parse(v) as Record<string, Record<string, { from: string; to: string }>>; const keep: Record<string, Row> = {}; let stale = 0;
+    Object.entries(d).forEach(([id, f]) => { const o = orig[id]; if (!o || typeof f !== "object") return; const row = { ...o }; let ch = false; Object.entries(f).forEach(([k, x]) => { if (!x || typeof x !== "object" || !(k in o)) return; if (o[k] === x.from) { row[k] = x.to; ch = true; } else stale++; }); if (ch) keep[id] = row; });
+    if (Object.keys(keep).length) { setEdits(keep); toast.info(`${Object.keys(keep).length} unsaved change(s) restored${stale ? ` (${stale} skipped — item changed since)` : ""}`); } } } catch { /* ignore */ } setDraftReady(true); // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  useEffect(() => { if (!draftReady) return; const t = window.setTimeout(() => { try { if (Object.keys(edits).length) localStorage.setItem(DRAFT_KEY, JSON.stringify(edits)); else localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ } }, 400); return () => window.clearTimeout(t); }, [edits, draftReady]);
+  useEffect(() => { if (!draftReady) return; const t = window.setTimeout(() => { try {
+    const d: Record<string, Record<string, { from: string; to: string }>> = {};
+    Object.entries(edits).forEach(([id, r]) => { const o = orig[id]; if (!o) return; Object.keys(o).forEach((k) => { if (k !== "stock_value" && r[k] !== undefined && r[k] !== o[k]) (d[id] ??= {})[k] = { from: o[k], to: r[k] }; }); });
+    if (Object.keys(d).length) localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); else localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ } }, 400); return () => window.clearTimeout(t); }, [edits, draftReady, orig]);
   const [qRaw, setQ] = useState("");
   const q = useDeferredValue(qRaw);
   const [fKind, setFKind] = useState("all");
