@@ -6,15 +6,16 @@ async function admin() {
   return supabaseAdmin as any;
 }
 
+/** Device must present its secret token; serial alone is never enough. */
 export async function findDevice(by: { serial?: string | null; token?: string | null }) {
+  const token = (by.token ?? "").trim();
+  if (!/^[A-Za-z0-9_-]{16,128}$/.test(token)) return null;
   const sb = await admin();
-  let q = sb.from("att_devices").select("id, workspace_id");
-  if (by.token) q = q.eq("token", by.token);
-  else if (by.serial) q = q.eq("serial", by.serial.toUpperCase());
-  else return null;
-  const { data } = await q.maybeSingle();
-  if (data) await sb.from("att_devices").update({ last_seen: new Date().toISOString() }).eq("id", data.id);
-  return data as { id: string; workspace_id: string } | null;
+  const { data } = await sb.from("att_devices").select("id, workspace_id, serial").eq("token", token).maybeSingle();
+  if (!data) return null;
+  if (by.serial && data.serial && String(data.serial).toUpperCase() !== by.serial.toUpperCase()) return null;
+  await sb.from("att_devices").update({ last_seen: new Date().toISOString() }).eq("id", data.id);
+  return { id: data.id, workspace_id: data.workspace_id } as { id: string; workspace_id: string };
 }
 
 export function parseAttLog(body: string): Punch[] {
