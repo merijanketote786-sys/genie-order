@@ -22,8 +22,8 @@ const COLS: Col[] = [
   { k: "brand", label: "Brand", w: "w-28" },
   { k: "unit", label: "Unit", w: "w-36" },
   { k: "purchase_price", label: "Purchase price", w: "w-32", num: true },
-  { k: "sale_price", label: "Sale price", w: "w-44", num: true },
-  { k: "wholesale_price", label: "Wholesale price", w: "w-48", num: true },
+  { k: "sale_price", label: "Sale price", w: "w-56", num: true },
+  { k: "wholesale_price", label: "Wholesale price", w: "w-60", num: true },
   { k: "wholesale_min_qty", label: "Min wholesale qty", w: "w-32", num: true },
   { k: "min_sale_price", label: "Min sale price", w: "w-32", num: true },
   { k: "stock", label: "Stock qty", w: "w-24", num: true },
@@ -327,7 +327,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
         <span className="font-medium text-foreground">Auto price from purchase price:</span>
         <label className="inline-flex items-center gap-1"><input type="checkbox" checked={mk.saleOn} onChange={(e) => { updMk({ saleOn: e.target.checked }); setRowMk((m) => Object.fromEntries(Object.entries(m).map(([id, x]) => [id, { ...x, sale: undefined }]))); }} aria-label="Auto sale price for all" />Sale +<input className={`${posInput} h-8 w-16 px-1 text-right`} value={mk.salePct} inputMode="decimal" onChange={(e) => updMk({ salePct: e.target.value })} aria-label="Sale price percent" />%</label>
         <label className="inline-flex items-center gap-1"><input type="checkbox" checked={mk.wsOn} onChange={(e) => { updMk({ wsOn: e.target.checked }); setRowMk((m) => Object.fromEntries(Object.entries(m).map(([id, x]) => [id, { ...x, ws: undefined }]))); }} aria-label="Auto wholesale price for all" />Wholesale +<input className={`${posInput} h-8 w-16 px-1 text-right`} value={mk.wsPct} inputMode="decimal" onChange={(e) => updMk({ wsPct: e.target.value })} aria-label="Wholesale price percent" />%</label>
-        <Button type="button" size="sm" onClick={() => applyMarkup({ sale: mk.saleOn, ws: mk.wsOn })}>Apply to {picked.size ? `${picked.size} selected` : `all ${list.length} shown`}</Button>
+        <Button type="button" size="sm" onClick={() => applyMarkup({ sale: mk.saleOn, ws: mk.wsOn }, { salePct: mk.salePct, wsPct: mk.wsPct })}>Apply to {picked.size ? `${picked.size} selected` : `all ${list.length} shown`}</Button>
         <span>Untick to type a custom rate. Each product also has its own small tick.</span>
       </div>
       <label className="flex h-10 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
@@ -336,7 +336,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
       {/* Mobile: one card per product so no field is hidden behind sideways scrolling */}
       <div className="max-h-[60vh] space-y-2 overflow-auto sm:hidden">
         {list.slice(0, 300).map((p) => { const r = rowOf(p.id); const dirty = dirtyIds.includes(p.id); const numIn = (k: string, lab: string) => (
-          <label key={k} className="block text-[11px] font-medium text-muted-foreground"><span className="flex items-center justify-between gap-1">{lab}{k === "sale_price" || k === "wholesale_price" ? <span className="inline-flex items-center gap-1" title="Auto % from purchase price"><input type="checkbox" className="size-3.5" checked={autoOn(p.id, k === "sale_price" ? "sale" : "ws")} onChange={() => toggleRowMk(p.id, k === "sale_price" ? "sale" : "ws")} aria-label={`Auto ${lab} ${p.name}`} />Auto %</span> : null}</span>
+          <label key={k} className="block text-[11px] font-medium text-muted-foreground"><span className="flex items-center justify-between gap-1">{lab}{k === "sale_price" || k === "wholesale_price" ? <span className="inline-flex items-center gap-1" title="Auto % from purchase price"><input type="checkbox" className="size-3.5" checked={autoOn(p.id, k === "sale_price" ? "sale" : "ws")} onChange={() => toggleRowMk(p.id, k === "sale_price" ? "sale" : "ws")} aria-label={`Auto ${lab} ${p.name}`} /><input className={`${posInput} h-6 w-12 px-1 text-right text-[11px]`} value={rowPct[p.id]?.[k === "sale_price" ? "sale" : "ws"] ?? ""} placeholder={k === "sale_price" ? mk.salePct : mk.wsPct} inputMode="decimal" onChange={(e) => setRowPct(p.id, k === "sale_price" ? "sale" : "ws", e.target.value)} aria-label={`${lab} percent ${p.name}`} />%</span> : null}</span>
             <input className={`${posInput} mt-0.5 h-9 w-full px-2 text-right text-foreground`} value={r[k]} inputMode="decimal" onChange={(e) => set(p.id, k, e.target.value)} aria-label={`${lab} ${p.name}`} />
           </label>);
           return (
@@ -380,7 +380,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
         {list.length > 300 && <p className="py-2 text-center text-xs text-muted-foreground">Showing first 300 — use search or filters to narrow the list.</p>}
       </div>
       <div className="hidden max-h-[60vh] overflow-auto rounded-lg border border-border sm:block">
-        <table className="w-full min-w-[2150px] table-fixed border-collapse text-sm">
+        <table className="w-full min-w-[2300px] table-fixed border-collapse text-sm">
           <colgroup>
             <col className="w-12" />
             {COLS.map((c) => <col key={c.k} className={c.w} />)}
@@ -399,7 +399,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
                   <td key={c.k} onMouseEnter={() => setActiveCol(c.k)} onFocus={() => setActiveCol(c.k)} style={c.k === "name" || dirtyIds.includes(p.id) && activeCol !== c.k ? undefined : tint(i, activeCol === c.k ? 32 : 8)} className={`px-1 py-1 transition-colors ${c.k === "name" ? `sticky left-12 z-10 border-r border-border ${dirtyIds.includes(p.id) ? "bg-accent" : "bg-card"}` : ""}`}>
                     {c.k === "is_active" ? <select className={`${posInput} h-9 w-full px-1 ${r.is_active !== orig[p.id].is_active ? "border-primary" : ""}`} value={r.is_active} onChange={(e) => set(p.id, "is_active", e.target.value)} aria-label={`Active ${p.name}`}><option value="true">Yes</option><option value="false">No</option></select>
                       : c.k === "category" ? <CatPicker value={r.category} original={orig[p.id].category} options={catOptions} onPick={(v) => set(p.id, "category", v)} label={`Category — ${p.name}`} />
-                      : c.k === "sale_price" || c.k === "wholesale_price" ? <div className="flex items-center gap-1"><input type="checkbox" className="size-3.5 shrink-0" title="Auto % from purchase price (untick for custom rate)" checked={autoOn(p.id, c.k === "sale_price" ? "sale" : "ws")} onChange={() => toggleRowMk(p.id, c.k === "sale_price" ? "sale" : "ws")} aria-label={`Auto ${c.label} ${p.name}`} /><input className={`${posInput} h-9 w-full min-w-0 px-2 text-right ${r[c.k] !== orig[p.id][c.k] ? "border-primary" : ""}`} value={r[c.k]} inputMode="decimal" onChange={(e) => set(p.id, c.k, e.target.value)} aria-label={`${c.label} ${p.name}`} /></div>
+                      : c.k === "sale_price" || c.k === "wholesale_price" ? <div className="flex items-center gap-1"><input type="checkbox" className="size-3.5 shrink-0" title="Auto % from purchase price (untick for custom rate)" checked={autoOn(p.id, c.k === "sale_price" ? "sale" : "ws")} onChange={() => toggleRowMk(p.id, c.k === "sale_price" ? "sale" : "ws")} aria-label={`Auto ${c.label} ${p.name}`} /><span className="inline-flex shrink-0 items-center text-[11px] text-muted-foreground"><input className={`${posInput} h-9 w-11 px-1 text-right text-[11px]`} value={rowPct[p.id]?.[c.k === "sale_price" ? "sale" : "ws"] ?? ""} placeholder={c.k === "sale_price" ? mk.salePct : mk.wsPct} inputMode="decimal" title="This product's % over purchase price" onChange={(e) => setRowPct(p.id, c.k === "sale_price" ? "sale" : "ws", e.target.value)} aria-label={`${c.label} percent ${p.name}`} />%</span><input className={`${posInput} h-9 w-full min-w-0 px-2 text-right ${r[c.k] !== orig[p.id][c.k] ? "border-primary" : ""}`} value={r[c.k]} inputMode="decimal" onChange={(e) => set(p.id, c.k, e.target.value)} aria-label={`${c.label} ${p.name}`} /></div>
                       : c.k === "unit" ? <UnitSelect className={`${posInput} h-9 w-full px-1 ${r.unit !== orig[p.id].unit ? "border-primary" : ""}`} value={r.unit} onChange={(v) => set(p.id, "unit", v)} label={`Unit ${p.name}`} /> : <input className={`${posInput} h-9 w-full px-2 ${c.num ? "text-right" : ""} ${c.k !== "stock_value" && r[c.k] !== orig[p.id][c.k] ? "border-primary" : ""}`} value={r[c.k]} inputMode={c.num ? "decimal" : undefined}
                       title={c.k === "stock_value" ? "Changing stock value will auto-calculate the purchase price" : undefined} onChange={(e) => set(p.id, c.k, e.target.value)} aria-label={`${c.label} ${p.name}`} />}
                   </td>
