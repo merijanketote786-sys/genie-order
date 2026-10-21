@@ -868,9 +868,9 @@ function PasswordDialog({ user, onClose }: { user: AdminUserRow | null; onClose:
   });
 
   const reset = useMutation({
-    mutationFn: (email: string) =>
+    mutationFn: (userId: string) =>
       sendPasswordReset({
-        data: { email, redirectTo: `${window.location.origin}/reset-password` },
+        data: { userId, redirectTo: `${window.location.origin}/reset-password` },
       }),
     onSuccess: (res) => (res.ok ? toast.success(res.message) : toast.error(res.message)),
     onError: () => toast.error("Could not send email."),
@@ -922,7 +922,7 @@ function PasswordDialog({ user, onClose }: { user: AdminUserRow | null; onClose:
             variant="outline"
             className="h-11 flex-1 gap-2"
             disabled={reset.isPending || !user?.email}
-            onClick={() => user?.email && reset.mutate(user.email)}
+            onClick={() => user?.email && reset.mutate(user.id)}
           >
             {reset.isPending ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
             Send reset link

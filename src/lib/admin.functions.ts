@@ -37,6 +37,22 @@ async function isAdminUser(supabase: unknown, userId: string) {
   return data === true;
 }
 
+async function isPlatformOwner(supabase: unknown) {
+  const { data } = await (supabase as any).rpc("is_platform_owner");
+  return data === true;
+}
+
+/** Non-owner admins may only act on users inside their own workspace. */
+async function canManageUser(supabase: unknown, callerId: string, targetId: string) {
+  if (await isPlatformOwner(supabase)) return true;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const [{ data: me }, { data: target }] = await Promise.all([
+    supabaseAdmin.from("profiles").select("workspace_id").eq("id", callerId).maybeSingle(),
+    supabaseAdmin.from("profiles").select("workspace_id").eq("id", targetId).maybeSingle(),
+  ]);
+  return Boolean(me?.workspace_id && target?.workspace_id && me.workspace_id === target.workspace_id);
+}
+
 export const getMyAccess = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -74,6 +90,13 @@ export const listAppUsers = createServerFn({ method: "GET" })
     });
     if (error) return { ok: false as const, users: [] as AdminUserRow[], message: error.message };
 
+    const owner = await isPlatformOwner(context.supabase);
+    if (!owner) {
+      const { data: me } = await supabaseAdmin.from("profiles").select("workspace_id").eq("id", context.userId).maybeSingle();
+      const { data: wsRows } = await supabaseAdmin.from("profiles").select("id").eq("workspace_id", me?.workspace_id ?? "00000000-0000-0000-0000-000000000000");
+      const allowed = new Set((wsRows ?? []).map((r) => r.id));
+      authData.users = authData.users.filter((u) => allowed.has(u.id));
+    }
     const ids = authData.users.map((u) => u.id);
     const [{ data: profiles }, { data: roles }, { data: pendingRows }] = await Promise.all([
       supabaseAdmin.from("profiles").select("id, full_name, is_active, workspace_id").in("id", ids),
@@ -124,6 +147,9 @@ export const updateUserAccess = createServerFn({ method: "POST" })
     }
     if (data.userId === context.userId && (data.role === "staff" || data.isActive === false)) {
       return { ok: false as const, message: "You cannot remove your own admin access." };
+    }
+    if (!(await canManageUser(context.supabase, context.userId, data.userId))) {
+      return { ok: false as const, message: "User not found in your workspace." };
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -296,6 +322,9 @@ export const setUserPassword = createServerFn({ method: "POST" })
     if (!(await isAdminUser(context.supabase, context.userId))) {
       return { ok: false as const, message: "Only an admin can make this change." };
     }
+    if (!(await canManageUser(context.supabase, context.userId, data.userId))) {
+      return { ok: false as const, message: "User not found in your workspace." };
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
       password: data.password,
@@ -308,18 +337,25 @@ export const setUserPassword = createServerFn({ method: "POST" })
 export const sendPasswordReset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({ email: z.string().email(), redirectTo: z.string().url() }).parse(data),
+    z.object({ userId: z.string().uuid(), redirectTo: z.string().url() }).parse(data),
   )
   .handler(async ({ data, context }) => {
     if (!(await isAdminUser(context.supabase, context.userId))) {
-      return { ok: false as const, message: "Sirf admin ye kar sakta hai." };
+      return { ok: false as const, message: "Only an admin can do this." };
+    }
+    if (!(await canManageUser(context.supabase, context.userId, data.userId))) {
+      return { ok: false as const, message: "User not found in your workspace." };
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(data.email, {
-      redirectTo: data.redirectTo,
+    const { data: target } = await supabaseAdmin.auth.admin.getUserById(data.userId);
+    const email = target?.user?.email;
+    if (!email) return { ok: false as const, message: "This user has no email address." };
+    const origin = new URL(data.redirectTo).origin;
+    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
+      redirectTo: `${origin}/reset-password`,
     });
     if (error) return { ok: false as const, message: error.message };
-    return { ok: true as const, message: "Reset link email par bhej diya" };
+    return { ok: true as const, message: "Reset link sent by email" };
   });
 
 /** Admin-only: generates the one-click Windows auto-sync installer (.cmd). */
