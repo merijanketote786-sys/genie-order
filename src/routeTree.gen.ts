@@ -53,6 +53,9 @@ import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.
 import { Route as ApiPublicAttendanceRouteImport } from './routes/api/public/attendance'
 import { Route as ApiSyncProductsRouteImport } from './routes/api/sync/products'
 import { Route as ApiPublicSyncProductsRouteImport } from './routes/api/public/sync/products'
+import { Route as TTokenIclockCdataRouteImport } from './routes/t/$token/iclock/cdata'
+import { Route as TTokenIclockDevicecmdRouteImport } from './routes/t/$token/iclock/devicecmd'
+import { Route as TTokenIclockGetrequestRouteImport } from './routes/t/$token/iclock/getrequest'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -280,6 +283,21 @@ const ApiPublicSyncProductsRoute = ApiPublicSyncProductsRouteImport.update({
   path: '/api/public/sync/products',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TTokenIclockCdataRoute = TTokenIclockCdataRouteImport.update({
+  id: '/t/$token/iclock/cdata',
+  path: '/t/$token/iclock/cdata',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TTokenIclockDevicecmdRoute = TTokenIclockDevicecmdRouteImport.update({
+  id: '/t/$token/iclock/devicecmd',
+  path: '/t/$token/iclock/devicecmd',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TTokenIclockGetrequestRoute = TTokenIclockGetrequestRouteImport.update({
+  id: '/t/$token/iclock/getrequest',
+  path: '/t/$token/iclock/getrequest',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -325,6 +343,9 @@ export interface FileRoutesByFullPath {
   '/api/public/attendance': typeof ApiPublicAttendanceRoute
   '/api/sync/products': typeof ApiSyncProductsRoute
   '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
+  '/t/$token/iclock/cdata': typeof TTokenIclockCdataRoute
+  '/t/$token/iclock/devicecmd': typeof TTokenIclockDevicecmdRoute
+  '/t/$token/iclock/getrequest': typeof TTokenIclockGetrequestRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -370,6 +391,9 @@ export interface FileRoutesByTo {
   '/api/public/attendance': typeof ApiPublicAttendanceRoute
   '/api/sync/products': typeof ApiSyncProductsRoute
   '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
+  '/t/$token/iclock/cdata': typeof TTokenIclockCdataRoute
+  '/t/$token/iclock/devicecmd': typeof TTokenIclockDevicecmdRoute
+  '/t/$token/iclock/getrequest': typeof TTokenIclockGetrequestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -417,6 +441,9 @@ export interface FileRoutesById {
   '/api/public/attendance': typeof ApiPublicAttendanceRoute
   '/api/sync/products': typeof ApiSyncProductsRoute
   '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
+  '/t/$token/iclock/cdata': typeof TTokenIclockCdataRoute
+  '/t/$token/iclock/devicecmd': typeof TTokenIclockDevicecmdRoute
+  '/t/$token/iclock/getrequest': typeof TTokenIclockGetrequestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -464,6 +491,9 @@ export interface FileRouteTypes {
     | '/api/public/attendance'
     | '/api/sync/products'
     | '/api/public/sync/products'
+    | '/t/$token/iclock/cdata'
+    | '/t/$token/iclock/devicecmd'
+    | '/t/$token/iclock/getrequest'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -509,6 +539,9 @@ export interface FileRouteTypes {
     | '/api/public/attendance'
     | '/api/sync/products'
     | '/api/public/sync/products'
+    | '/t/$token/iclock/cdata'
+    | '/t/$token/iclock/devicecmd'
+    | '/t/$token/iclock/getrequest'
   id:
     | '__root__'
     | '/_authenticated'
@@ -555,6 +588,9 @@ export interface FileRouteTypes {
     | '/api/public/attendance'
     | '/api/sync/products'
     | '/api/public/sync/products'
+    | '/t/$token/iclock/cdata'
+    | '/t/$token/iclock/devicecmd'
+    | '/t/$token/iclock/getrequest'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -570,6 +606,9 @@ export interface RootRouteChildren {
   ApiPublicAttendanceRoute: typeof ApiPublicAttendanceRoute
   ApiSyncProductsRoute: typeof ApiSyncProductsRoute
   ApiPublicSyncProductsRoute: typeof ApiPublicSyncProductsRoute
+  TTokenIclockCdataRoute: typeof TTokenIclockCdataRoute
+  TTokenIclockDevicecmdRoute: typeof TTokenIclockDevicecmdRoute
+  TTokenIclockGetrequestRoute: typeof TTokenIclockGetrequestRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -882,6 +921,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSyncProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/t/$token/iclock/cdata': {
+      id: '/t/$token/iclock/cdata'
+      path: '/t/$token/iclock/cdata'
+      fullPath: '/t/$token/iclock/cdata'
+      preLoaderRoute: typeof TTokenIclockCdataRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/t/$token/iclock/devicecmd': {
+      id: '/t/$token/iclock/devicecmd'
+      path: '/t/$token/iclock/devicecmd'
+      fullPath: '/t/$token/iclock/devicecmd'
+      preLoaderRoute: typeof TTokenIclockDevicecmdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/t/$token/iclock/getrequest': {
+      id: '/t/$token/iclock/getrequest'
+      path: '/t/$token/iclock/getrequest'
+      fullPath: '/t/$token/iclock/getrequest'
+      preLoaderRoute: typeof TTokenIclockGetrequestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -972,6 +1032,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicAttendanceRoute: ApiPublicAttendanceRoute,
   ApiSyncProductsRoute: ApiSyncProductsRoute,
   ApiPublicSyncProductsRoute: ApiPublicSyncProductsRoute,
+  TTokenIclockCdataRoute: TTokenIclockCdataRoute,
+  TTokenIclockDevicecmdRoute: TTokenIclockDevicecmdRoute,
+  TTokenIclockGetrequestRoute: TTokenIclockGetrequestRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
