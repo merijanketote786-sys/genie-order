@@ -189,7 +189,7 @@ export function DevicesManager({ disabled }: { disabled: boolean }) {
     <div className="space-y-3">
       <h3 className="text-sm font-bold text-foreground">Biometric machines</h3>
       <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground space-y-1">
-        <p><b className="text-foreground">Wi-Fi / LAN machine (ZKTeco & other ADMS / Cloud push machines):</b> in the machine menu open Comm → Cloud Server Setting, set Server address <b className="text-foreground">{origin || "your app address"}</b>, Port <b className="text-foreground">443</b> (HTTPS on) or 80, then add the machine here with its serial number (SN). Punches arrive live.</p>
+        <p><b className="text-foreground">Wi-Fi / LAN machine (ZKTeco & other ADMS / Cloud push machines):</b> in the machine menu open Comm → Cloud Server Setting, add the machine here with its serial number (SN), then set Server address to <b className="text-foreground">{origin || "your app address"}/t/&lt;machine token&gt;</b> (use the Copy link button below), Port <b className="text-foreground">443</b> (HTTPS on). The secret token is required — machines without it are rejected. Punches arrive live.</p>
         <p><b className="text-foreground">USB / offline machine:</b> export the attendance log from the machine (USB pen drive or its software) and upload the file below.</p>
         <p><b className="text-foreground">Other software / middleware:</b> POST JSON to <code>/api/public/attendance</code> with {"{"} token, punches: [{"{"} id, time {"}"}] {"}"} using the machine token.</p>
       </div>
@@ -207,7 +207,8 @@ export function DevicesManager({ disabled }: { disabled: boolean }) {
             <b className="text-foreground">{d.name}</b>
             <span className="text-xs text-muted-foreground">{d.kind === "wifi" ? "Wi-Fi / LAN" : "USB / file"}{d.serial ? ` · SN ${d.serial}` : ""}</span>
             <span className="text-xs text-muted-foreground">{d.lastSeen ? `Last seen ${new Date(d.lastSeen).toLocaleString()}` : "Not connected yet"}</span>
-            <Button size="sm" variant="ghost" className="ml-auto" onClick={() => copy(d.token)}><Copy /> Token</Button>
+            <Button size="sm" variant="ghost" className="ml-auto" onClick={() => copy(`${origin}/t/${d.token}`)}><Copy /> Link</Button>
+            <Button size="sm" variant="ghost" onClick={() => copy(d.token)}><Copy /> Token</Button>
             {!disabled ? <Button size="sm" variant="ghost" aria-label="Remove" onClick={async () => { if (!confirm("Remove this machine?")) return; await deleteDevice({ data: { id: d.id } }); qc.invalidateQueries({ queryKey: ["att-devices"] }); }}><Trash2 /></Button> : null}
           </div>
         ))}
