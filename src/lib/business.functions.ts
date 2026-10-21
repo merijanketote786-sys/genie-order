@@ -46,11 +46,13 @@ export const listSuppliers = createServerFn({ method: "GET" })
 export const saveSupplier = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ id: z.string().uuid().optional(), name: z.string().trim().min(1).max(120), phone: z.string().max(30).optional(), address: z.string().max(300).optional(), openingBalance: z.number().min(-1e9).max(1e9).optional() }).parse(d),
+    z.object({ id: z.string().uuid().optional(), name: z.string().trim().min(1).max(120), phone: z.string().max(30).optional(), address: z.string().max(300).optional(), openingBalance: z.number().finite().min(-1e9).max(1e9).optional() }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const sb = context.supabase as Sb;
-    const row = { name: data.name, phone: data.phone || null, address: data.address || null, opening_balance: data.openingBalance ?? 0 };
+    const row: Record<string, unknown> = { name: data.name, phone: data.phone || null, address: data.address || null };
+    if (data.openingBalance !== undefined) row.opening_balance = Math.round(data.openingBalance * 100) / 100;
+    else if (!data.id) row.opening_balance = 0;
     const q = data.id ? sb.from("suppliers").update(row).eq("id", data.id).select("id").maybeSingle() : sb.from("suppliers").insert(row).select("id").single();
     const { data: saved, error } = await q;
     if (error) throw new Error("Failed to save party");

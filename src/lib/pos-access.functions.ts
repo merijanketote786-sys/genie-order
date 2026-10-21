@@ -176,7 +176,20 @@ export const restorePosBackup = createServerFn({ method: "POST" })
     let parsed: any;
     try { parsed = JSON.parse(data.json); } catch { throw new Error("This is not a valid backup file"); }
     if (!parsed || typeof parsed.tables !== "object") throw new Error("This is not a POS backup file");
-    const payload = { ...parsed.tables, pos_settings_config: parsed.pos_settings_config ?? null };
+    const ALLOWED = ["pos_stores","customers","suppliers","products","pos_store_stock","pos_recipes","pos_sales","pos_sale_items","purchases","purchase_items","pos_payments","expenses","stock_movements","acc_accounts","acc_journals","acc_journal_lines","acc_settings","att_labour","att_days","att_payments"];
+    const payload: Record<string, unknown> = {};
+    for (const k of ALLOWED) {
+      const rows = parsed.tables[k];
+      if (rows == null) continue;
+      if (!Array.isArray(rows)) throw new Error(`Backup table ${k} is invalid`);
+      payload[k] = rows.map((r: unknown) => {
+        if (!r || typeof r !== "object" || Array.isArray(r)) throw new Error(`Backup table ${k} has an invalid row`);
+        const { workspace_id: _w, ...rest } = r as Record<string, unknown>;
+        return rest;
+      });
+    }
+    const cfg = parsed.pos_settings_config;
+    payload.pos_settings_config = cfg && typeof cfg === "object" && !Array.isArray(cfg) ? cfg : null;
     const { data: res, error } = await (context.supabase as Sb).rpc("pos_restore_backup", { _data: payload, _mode: data.mode });
     if (error) throw new Error(error.message.includes("permission") ? "Only admins can restore a backup" : `Restore failed: ${error.message}`);
     return { counts: (res ?? {}) as Record<string, number> };
