@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { csvSafe } from "@/lib/csv-safe";
 import { usePinPrompt, usePosAccess } from "@/components/pos-access";
 import { usePrintCenter } from "@/components/print-center";
 import { POS_ROLES, exportPosBackup, restorePosBackup, listPosMembers, savePosSettings, setPosMemberRole } from "@/lib/pos-access.functions";
@@ -397,7 +398,7 @@ export function UsersSection() {
 
 /* ------------------------------ Backup & data ------------------------------ */
 function csvDownload(name: string, columns: string[], rows: Record<string, string>[]) {
-  const q = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+  const q = (raw: string) => { const v = csvSafe(raw); return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v; };
   const body = [columns.join(","), ...rows.map((r) => columns.map((c) => q(r[c] ?? "")).join(","))].join("\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob(["\ufeff" + body], { type: "text/csv;charset=utf-8" }));
