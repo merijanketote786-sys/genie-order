@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/app-shell";
+import { csvSafe } from "@/lib/csv-safe";
 import { PosSubnav, posInput, rs } from "@/components/pos-subnav";
 import { Button } from "@/components/ui/button";
 import { getReport } from "@/lib/inventory.functions";
@@ -50,7 +51,7 @@ function ReportsPage() {
       LowStock: [["Product", "Stock", "Min"], ...data.lowStock.map((x) => [x.name, x.stock, x.min])],
     };
     if (kind === "csv") {
-      const csv = Object.entries(sheets).map(([n, rows]) => [[n], ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n")).join("\n\n");
+      const csv = Object.entries(sheets).map(([n, rows]) => [[n], ...rows].map((r) => r.map((c) => `"${csvSafe(c).replace(/"/g, '""')}"`).join(",")).join("\n")).join("\n\n");
       const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = `report-${from}-${to}.csv`; a.click();
       return;
     }

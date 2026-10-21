@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/app-shell";
+import { csvSafe } from "@/lib/csv-safe";
 import { MoneyAccountsPanel } from "@/components/money-accounts";
 import { posInput, rs } from "@/components/pos-subnav";
 import { usePosAccess } from "@/components/pos-access";
@@ -51,7 +52,7 @@ const TABS: { id: string; label: string; perm: PosPerm }[] = [
 ];
 
 function csv(name: string, head: string[], rows: (string | number)[][]) {
-  const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+  const esc = (v: string | number) => `"${csvSafe(v).replace(/"/g, '""')}"`;
   const blob = new Blob(["\ufeff" + [head, ...rows].map((r) => r.map(esc).join(",")).join("\n")], { type: "text/csv" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = `${name}.csv`; a.click();

@@ -130,7 +130,8 @@ export const listPosSales = createServerFn({ method: "GET" })
       .in("doc_type", data.estimates ? ["quotation"] : ["sale", "return"])
       .order("created_at", { ascending: false })
       .limit(200);
-    const s = (data.search ?? "").trim();
+    // strip PostgREST filter syntax so search text can only be a plain value
+    const s = (data.search ?? "").replace(/[,()*%\\:"]/g, " ").trim().slice(0, 100);
     if (s) q = q.or(`doc_number.ilike.%${s}%,customer_name.ilike.%${s}%,customer_phone.ilike.%${s}%`);
     if (data.from) q = q.gte("created_at", data.from);
     if (data.to) q = q.lte("created_at", data.to);

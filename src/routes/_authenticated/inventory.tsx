@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/app-shell";
+import { csvSafe } from "@/lib/csv-safe";
 import { MfgGate, useMfgStatus } from "@/components/mfg-gate";
 import { PosSubnav, posInput, rs } from "@/components/pos-subnav";
 import { StoreSwitcher, useActiveStore } from "@/components/store-switcher";
@@ -100,7 +101,7 @@ function InventoryPage() {
   const exportCsv = () => {
     const head = ["Name", "SKU", "Barcode", "Category", "Unit", "Stock", "Min stock", "Purchase price", "Sale price", "Stock value"];
     const rows = list.map((p) => [p.name, p.sku, p.barcode, p.category, p.unit, p.stock, p.minStock ?? "", p.purchasePrice ?? "", p.salePrice, (Math.max(0, p.stock) * (p.purchasePrice ?? 0)).toFixed(2)]);
-    const csv = [head, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const csv = [head, ...rows].map((r) => r.map((c) => `"${csvSafe(c).replace(/"/g, '""')}"`).join(",")).join("\n");
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = "stock-report.csv"; a.click();
   };
 
