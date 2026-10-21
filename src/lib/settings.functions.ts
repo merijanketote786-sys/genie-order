@@ -244,6 +244,11 @@ export const saveMemberSections = createServerFn({ method: "POST" })
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const workspaceId = await workspaceOf(context.supabase, context.userId);
+    const { data: target } = await (supabaseAdmin as unknown as AnySupabase)
+      .from("profiles").select("workspace_id").eq("id", data.userId).maybeSingle();
+    if (!target || (target.workspace_id as string) !== workspaceId || data.userId === context.userId) {
+      return { ok: false as const, message: "This user is not a member of your workspace." };
+    }
     const { error } = await (supabaseAdmin as unknown as AnySupabase)
       .from("user_settings")
       .upsert(
