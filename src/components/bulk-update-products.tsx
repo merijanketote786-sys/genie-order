@@ -281,6 +281,24 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
   }, []);
   const allPicked = list.length > 0 && list.every((p) => picked.has(p.id));
 
+  // Keep the edited column centred: after arrow-key moves, scroll the table horizontally so
+  // the focused cell sits in the middle, clear of the sticky select/name columns.
+  const centerCell = (cell: HTMLElement) => {
+    const scroller = cell.closest<HTMLElement>("[data-bulk-grid]");
+    if (!scroller || getComputedStyle(cell).position === "sticky") return;
+    const sRect = scroller.getBoundingClientRect();
+    const cRect = cell.getBoundingClientRect();
+    const row = cell.closest("tr");
+    const boundary = row ? [...row.querySelectorAll<HTMLElement>(":scope > td")].reduce((m, d) => (d !== cell && getComputedStyle(d).position === "sticky" ? Math.max(m, d.getBoundingClientRect().right) : m), 0) - sRect.left : 0;
+    const left = cRect.left - sRect.left + scroller.scrollLeft;
+    const right = cRect.right - sRect.left + scroller.scrollLeft;
+    const center = (left + right) / 2 - scroller.clientWidth / 2;
+    const min = Math.max(0, right - scroller.clientWidth);
+    const max = Math.max(min, left - boundary - 8);
+    const s = Math.min(Math.max(center, min), max);
+    if (Math.abs(s - scroller.scrollLeft) > 1) scroller.scrollTo({ left: s });
+  };
+
   // Arrow keys move the cursor between editable fields (up/down/left/right)
   const gridKeys = (e: React.KeyboardEvent) => {
     let k = e.key;
