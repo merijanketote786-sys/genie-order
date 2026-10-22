@@ -117,8 +117,9 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const lineTotal = (l: Line) => { const b = Math.max(0, num(l.qty) * num(l.rate) - num(l.discount)); return b + (b * num(l.tax)) / 100; };
   const subtotal = lines.reduce((s, l) => s + lineTotal(l), 0);
   const total = Math.max(0, subtotal - num(discount) + num(freight));
+  const isOrder = docType === "order";
   const isCredit = method === "Credit";
-  const paidNum = isCredit ? 0 : paid.trim() ? Math.min(num(paid), total) : total;
+  const paidNum = isOrder ? 0 : isCredit ? 0 : paid.trim() ? Math.min(num(paid), total) : total;
   const totalQty = lines.reduce((s, l) => s + num(l.qty), 0);
   const set = (i: number, v: Partial<Line>) => setLines((ls) => ls.map((l, j) => (j === i ? { ...l, ...v } : l)));
   const stagedAmount = (() => { const b = Math.max(0, num(sf.qty) * num(sf.rate) - num(sf.discount)); return b + (b * num(sf.tax)) / 100; })();
@@ -161,7 +162,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
     } catch (e) { toast.error(e instanceof Error ? e.message : "Product could not be saved"); } finally { setSavingNew(false); }
   };
 
-  const reset = () => { setLines([]); setDiscount(""); setFreight(""); setBillNo(""); setPaid(""); setNotes(""); setRefId(undefined); setEditId(undefined); setDocType("purchase"); setSelectedParty(null); setPartySearch(""); clearEntry(); };
+  const reset = () => { setLines([]); setDiscount(""); setFreight(""); setBillNo(""); setPaid(""); setNotes(""); setRefId(undefined); setRefOrderId(undefined); setEditId(undefined); setDocType(startDocType ?? "purchase"); setSelectedParty(null); setPartySearch(""); clearEntry(); };
 
   const startReturn = async (id: string) => {
     const r = await getPurchaseItems({ data: { id } });
