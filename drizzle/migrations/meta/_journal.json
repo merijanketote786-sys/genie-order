@@ -484,6 +484,13 @@
       "when": 1792695983562,
       "tag": "0068_pos_party_all_details",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1792702715722,
+      "tag": "0069_bulk_update_store_stock",
+      "breakpoints": true
     }
   ]
 }
