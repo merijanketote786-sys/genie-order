@@ -1,4 +1,5 @@
 # Roadmap — Vyapar-style POS
+- [x] Bulk update items: "Rate by %" master switch — on applies percentage pricing, off stops every percentage-driven rate change (5 tests; live purchase 100→sale 145 on, 200→sale unchanged off, 300→435 back on)
 - [x] POS Purchase Orders: create PO (rate optional) with Order tab, convert to purchase from the list with editable rates/payment, cancel open orders only (6 SQL tests pass; live create PO-00025 → convert PUR-00026 verified, then test data cleaned up)
 - [x] Estimate conversion changes only QT prefix to INV, preserving serial (SQL tests pass; real QT-00054 opens as INV-00054; no financial transaction posted during verification)
 - [x] Add Edit details for each POS party (atomic ID-based saves; real party save/reload verified; balance/link/separation tests pass)
