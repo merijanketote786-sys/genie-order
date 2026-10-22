@@ -340,10 +340,11 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
           <section className="rounded-xl border border-border bg-card">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
             <div className="flex items-center gap-3">
-              <p className="text-lg font-bold text-foreground">{docType === "purchase" ? "Purchase" : "Purchase Return"}</p>
+              <p className="text-lg font-bold text-foreground">{isOrder ? "Purchase Order" : docType === "purchase" ? (refOrderId ? "Order → Purchase" : "Purchase") : "Purchase Return"}</p>
               <div className="inline-flex rounded-full border-2 border-primary p-0.5" role="tablist" aria-label="Document type">
-                <button type="button" role="tab" aria-selected={docType === "purchase"} onClick={() => { if (docType !== "purchase") reset(); }} className={`rounded-full px-4 py-1.5 text-sm font-bold ${docType === "purchase" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Purchase</button>
-                <button type="button" role="tab" aria-selected={docType === "return"} onClick={() => { setDocType("return"); setRefId(undefined); }} className={`rounded-full px-4 py-1.5 text-sm font-bold ${docType === "return" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Return</button>
+                 <button type="button" role="tab" aria-selected={docType === "purchase"} onClick={() => { if (docType !== "purchase") reset(); }} className={`rounded-full px-4 py-1.5 text-sm font-bold ${docType === "purchase" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Purchase</button>
+                <button type="button" role="tab" aria-selected={docType === "order"} onClick={() => { if (docType !== "order") { reset(); setDocType("order"); } }} className={`rounded-full px-4 py-1.5 text-sm font-bold ${docType === "order" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Order</button>
+                <button type="button" role="tab" aria-selected={docType === "return"} onClick={() => { setDocType("return"); setRefId(undefined); setRefOrderId(undefined); }} className={`rounded-full px-4 py-1.5 text-sm font-bold ${docType === "return" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Return</button>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3"><StoreSwitcher /><div className="text-right text-sm text-muted-foreground">Bill date <b className="text-foreground">{today}</b></div></div>
