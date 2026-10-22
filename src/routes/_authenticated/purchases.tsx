@@ -172,6 +172,17 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
     toast.message("Adjust the quantity for the return, then save");
   };
 
+  const startConvert = async (p: Hist) => {
+    const r = await getPurchaseItems({ data: { id: p.id } });
+    setDocType("purchase"); setRefOrderId(p.id);
+    setSelectedParty(p.supplier_id ? { id: p.supplier_id, source: "supplier", name: p.supplier_name || "Party" } : null); setPartySearch(p.supplier_name ?? "");
+    setLines(r.items.map((i) => ({ productId: i.productId ?? undefined, name: i.name, unit: i.unit, qty: String(i.qty), rate: i.rate ? String(i.rate) : "", discount: i.discount ? String(i.discount) : "", tax: String(i.taxPercent), batch: "", expiry: "" })));
+    setDiscount(p.discount_total ? String(p.discount_total) : ""); setFreight(p.freight ? String(p.freight) : ""); setBillNo(p.supplier_bill_no ?? ""); setNotes(p.notes ?? "");
+    setEditId(undefined);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    toast.message(`${p.doc_number} loaded — set rates and save to convert it into a purchase`);
+  };
+
   type Hist = NonNullable<typeof hist>["purchases"][number];
   const loadDoc = async (p: Hist): Promise<PrintDoc> => {
     const r = await getPurchaseItems({ data: { id: p.id } });
