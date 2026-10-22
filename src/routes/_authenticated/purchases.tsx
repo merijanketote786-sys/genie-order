@@ -3,12 +3,12 @@ import { AppShell } from "@/components/app-shell";
 import { PAY_OPTS, PosSubnav, posInput, rs } from "@/components/pos-subnav";
 import { ALL_DATES, DateRangeFilter, rangeToIso, type DateRange } from "@/components/date-range-filter";
 import { Button } from "@/components/ui/button";
-import { cancelPurchase, ensurePurchaseParty, saveSupplier, getPurchaseItems, listProductsLite, listPurchases, listSuppliers, savePurchase } from "@/lib/business.functions";
+import { cancelPurchase, cancelPurchaseOrder, convertPurchaseOrder, ensurePurchaseParty, saveSupplier, getPurchaseItems, listProductsLite, listPurchases, listSuppliers, savePurchase, savePurchaseOrder } from "@/lib/business.functions";
 import { listCustomerBalances } from "@/lib/ledger.functions";
 import { isOnline, isQueued, runOrQueue } from "@/lib/offline-sync";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { PackagePlus, Trash2, Undo2, Zap, MoreVertical, ReceiptText, Printer, Download, Share2, Pencil, Ban } from "lucide-react";
+import { PackagePlus, Trash2, Undo2, Zap, MoreVertical, ReceiptText, Printer, Download, Share2, Pencil, Ban, ClipboardList, ArrowRightLeft } from "lucide-react";
 import { ShareDialog } from "@/components/share-dialog";
 import type { PrintDoc } from "@/lib/print/render";
 import { UnitSelect } from "@/components/unit-select";
@@ -41,7 +41,7 @@ type Staged = { productId?: string; name: string; isNew: boolean };
 const num = (s: string) => Number(s.replace(/[^\d.]/g, "")) || 0;
 const GRID = "mgrid grid grid-cols-[36px_minmax(200px,2.4fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(100px,1fr)_minmax(80px,0.8fr)_minmax(70px,0.7fr)_minmax(110px,1fr)_52px] items-center gap-2";
 
-export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; startDocType?: "purchase" | "return" } = {}) {
+export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; startDocType?: "purchase" | "return" | "order" } = {}) {
   const qc = useQueryClient();
   const pc = usePrintCenter();
   const activeStore = useActiveStore();
@@ -62,8 +62,9 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const { data: prod } = useQuery({ queryKey: ["products-lite"], queryFn: () => listProductsLite(), staleTime: 60_000 });
   const [range, setRange] = useState<DateRange>(ALL_DATES);
   const { data: hist } = useQuery({ queryKey: ["purchases", range], queryFn: () => listPurchases({ data: rangeToIso(range) }) });
-  const [docType, setDocType] = useState<"purchase" | "return">(startDocType ?? "purchase");
+  const [docType, setDocType] = useState<"purchase" | "return" | "order">(startDocType ?? "purchase");
   const [refId, setRefId] = useState<string | undefined>();
+  const [refOrderId, setRefOrderId] = useState<string | undefined>();
   const [partySearch, setPartySearch] = useState("");
   const [partyOpen, setPartyOpen] = useState(false);
   const [partyIndex, setPartyIndex] = useState(0);
@@ -116,8 +117,9 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const lineTotal = (l: Line) => { const b = Math.max(0, num(l.qty) * num(l.rate) - num(l.discount)); return b + (b * num(l.tax)) / 100; };
   const subtotal = lines.reduce((s, l) => s + lineTotal(l), 0);
   const total = Math.max(0, subtotal - num(discount) + num(freight));
+  const isOrder = docType === "order";
   const isCredit = method === "Credit";
-  const paidNum = isCredit ? 0 : paid.trim() ? Math.min(num(paid), total) : total;
+  const paidNum = isOrder ? 0 : isCredit ? 0 : paid.trim() ? Math.min(num(paid), total) : total;
   const totalQty = lines.reduce((s, l) => s + num(l.qty), 0);
   const set = (i: number, v: Partial<Line>) => setLines((ls) => ls.map((l, j) => (j === i ? { ...l, ...v } : l)));
   const stagedAmount = (() => { const b = Math.max(0, num(sf.qty) * num(sf.rate) - num(sf.discount)); return b + (b * num(sf.tax)) / 100; })();
@@ -160,7 +162,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
     } catch (e) { toast.error(e instanceof Error ? e.message : "Product could not be saved"); } finally { setSavingNew(false); }
   };
 
-  const reset = () => { setLines([]); setDiscount(""); setFreight(""); setBillNo(""); setPaid(""); setNotes(""); setRefId(undefined); setEditId(undefined); setDocType("purchase"); setSelectedParty(null); setPartySearch(""); clearEntry(); };
+  const reset = () => { setLines([]); setDiscount(""); setFreight(""); setBillNo(""); setPaid(""); setNotes(""); setRefId(undefined); setRefOrderId(undefined); setEditId(undefined); setDocType(startDocType ?? "purchase"); setSelectedParty(null); setPartySearch(""); clearEntry(); };
 
   const startReturn = async (id: string) => {
     const r = await getPurchaseItems({ data: { id } });
@@ -170,16 +172,27 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
     toast.message("Adjust the quantity for the return, then save");
   };
 
+  const startConvert = async (p: Hist) => {
+    const r = await getPurchaseItems({ data: { id: p.id } });
+    setDocType("purchase"); setRefOrderId(p.id);
+    setSelectedParty(p.supplier_id ? { id: p.supplier_id, source: "supplier", name: p.supplier_name || "Party" } : null); setPartySearch(p.supplier_name ?? "");
+    setLines(r.items.map((i) => ({ productId: i.productId ?? undefined, name: i.name, unit: i.unit, qty: String(i.qty), rate: i.rate ? String(i.rate) : "", discount: i.discount ? String(i.discount) : "", tax: String(i.taxPercent), batch: "", expiry: "" })));
+    setDiscount(p.discount_total ? String(p.discount_total) : ""); setFreight(p.freight ? String(p.freight) : ""); setBillNo(p.supplier_bill_no ?? ""); setNotes(p.notes ?? "");
+    setEditId(undefined);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    toast.message(`${p.doc_number} loaded — set rates and save to convert it into a purchase`);
+  };
+
   type Hist = NonNullable<typeof hist>["purchases"][number];
   const loadDoc = async (p: Hist): Promise<PrintDoc> => {
     const r = await getPurchaseItems({ data: { id: p.id } });
     return {
-      kind: "purchase", id: p.id, title: p.doc_type === "purchase" ? "Purchase Invoice" : "Purchase Return", number: p.doc_number, date: p.created_at,
+      kind: "purchase", id: p.id, title: p.doc_type === "order" ? "Purchase Order" : p.doc_type === "purchase" ? "Purchase Invoice" : "Purchase Return", number: p.doc_number, date: p.created_at,
        party: p.supplier_name ? { label: "Party", name: p.supplier_name } : undefined,
       lines: r.items.map((i) => ({ name: i.name, unit: i.unit, qty: i.qty, rate: i.rate, discount: i.discount, taxPct: i.taxPercent, total: i.lineTotal })),
       meta: p.supplier_bill_no ? [["Supplier bill #", p.supplier_bill_no]] : undefined,
       totals: [...(p.discount_total ? [{ label: "Discount", value: -p.discount_total }] : []), ...(p.freight ? [{ label: "Bilty / transport", value: p.freight }] : []), { label: "Grand Total", value: p.grand_total, bold: true }],
-      payments: p.paid_total ? [{ method: "Paid", amount: p.paid_total }] : [], paid: p.paid_total, balance: p.balance, notes: p.notes ?? undefined,
+      payments: p.doc_type !== "order" && p.paid_total ? [{ method: "Paid", amount: p.paid_total }] : [], paid: p.doc_type === "order" ? 0 : p.paid_total, balance: p.doc_type === "order" ? 0 : p.balance, notes: p.notes ?? undefined,
     } as PrintDoc;
   };
   const run = async (f: () => Promise<void>) => { setBusy(true); try { await f(); } catch (e) { toast.error(e instanceof Error ? e.message : "Action failed"); } finally { setBusy(false); } };
@@ -190,8 +203,8 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   });
   const doEdit = (p: Hist) => run(async () => {
     const r = await getPurchaseItems({ data: { id: p.id } });
-    setDocType(p.doc_type === "return" ? "return" : "purchase"); setSelectedParty(p.supplier_id ? { id: p.supplier_id, source: "supplier", name: p.supplier_name || "Party" } : null); setPartySearch(p.supplier_name ?? ""); setRefId(p.doc_type === "return" ? p.ref_purchase_id ?? undefined : undefined);
-    setLines(r.items.map((i) => ({ productId: i.productId ?? undefined, name: i.name, unit: i.unit, qty: String(i.qty), rate: String(i.rate), discount: i.discount ? String(i.discount) : "", tax: String(i.taxPercent), batch: "", expiry: "" })));
+    setDocType(p.doc_type === "return" ? "return" : p.doc_type === "order" ? "order" : "purchase"); setSelectedParty(p.supplier_id ? { id: p.supplier_id, source: "supplier", name: p.supplier_name || "Party" } : null); setPartySearch(p.supplier_name ?? ""); setRefId(p.doc_type === "return" ? p.ref_purchase_id ?? undefined : undefined); setRefOrderId(undefined);
+    setLines(r.items.map((i) => ({ productId: i.productId ?? undefined, name: i.name, unit: i.unit, qty: String(i.qty), rate: p.doc_type === "order" && !i.rate ? "" : String(i.rate), discount: i.discount ? String(i.discount) : "", tax: String(i.taxPercent), batch: "", expiry: "" })));
     setDiscount(p.discount_total ? String(p.discount_total) : ""); setFreight(p.freight ? String(p.freight) : ""); setBillNo(p.supplier_bill_no ?? ""); setPaid(String(p.paid_total)); setNotes(p.notes ?? "");
     setEditId({ id: p.id, number: p.doc_number });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -200,7 +213,11 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const doCancel = async (p: Hist) => {
     const reason = await askReason(`Cancel ${p.doc_number}? Reason (optional):`);
     if (reason === null) return;
-    void run(async () => { await cancelPurchase({ data: { id: p.id, reason } }); toast.success(`${p.doc_number} cancelled`); if (editId?.id === p.id) reset(); refreshAll(); });
+    void run(async () => {
+      if (p.doc_type === "order") await cancelPurchaseOrder({ data: { id: p.id, reason } });
+      else await cancelPurchase({ data: { id: p.id, reason } });
+      toast.success(`${p.doc_number} cancelled`); if (editId?.id === p.id) reset(); refreshAll();
+    });
   };
 
   const lockRef = useRef(false);
@@ -208,14 +225,72 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const save = async () => {
     const valid = lines.filter((l) => l.name.trim() && num(l.qty) > 0);
     if (!valid.length) return toast.error("Enter at least one item");
-    if (activeStore.isAllStores) return toast.error("Select a specific store before saving a purchase");
-    if (paidNum < total && !selectedParty) return toast.error("Select a party for a credit purchase");
     if (lockRef.current) return;
     lockRef.current = true;
     setSaving(true);
     try {
-      // Edit: save the new entry FIRST, then cancel the old one — a failed save must never delete the original.
       const offline = !isOnline();
+      const itemRows = valid.map((l) => ({ productId: l.productId, name: l.name, unit: l.unit, qty: num(l.qty), rate: num(l.rate), discount: num(l.discount), taxPercent: num(l.tax), batch: l.batch || undefined, expiry: l.expiry || undefined }));
+
+      // Convert an open purchase order into a real purchase (needs internet —
+      // it moves stock, posts payment and accounting).
+      if (refOrderId && docType === "purchase") {
+        if (offline) throw new Error("Converting an order to a purchase needs internet.");
+        const resolved = selectedParty
+          ? await ensurePurchaseParty({ data: selectedParty.source === "customer" ? { customerId: selectedParty.id } : { supplierId: selectedParty.id } })
+          : null;
+        const r = await convertPurchaseOrder({ data: {
+          orderId: refOrderId, supplierId: resolved?.id, supplierName: resolved?.name,
+          paid: paidNum, method, discount: num(discount), freight: num(freight), supplierBillNo: billNo.trim() || undefined, notes: notes || undefined,
+          items: itemRows,
+        } });
+        toast.success(`Purchase saved: ${r.number} — ${rs(r.total)}`);
+        const supName = selectedParty?.name ?? resolved?.name;
+        pc.afterSave({
+          kind: "purchase", title: "Purchase Invoice", number: r.number, date: new Date(),
+          party: supName ? { label: "Party", name: supName } : undefined,
+          lines: valid.map((l) => ({ name: l.name, unit: l.unit, qty: num(l.qty), rate: num(l.rate), discount: num(l.discount), taxPercent: num(l.tax), total: lineTotal(l) })),
+          meta: billNo.trim() ? [["Supplier bill #", billNo.trim()]] : undefined,
+          totals: [...(num(discount) ? [{ label: "Discount", value: -num(discount) }] : []), ...(num(freight) ? [{ label: "Bilty / transport", value: num(freight) }] : []), { label: "Grand Total", value: r.total, bold: true }],
+          payments: paidNum ? [{ method, amount: paidNum }] : [], paid: paidNum, balance: Math.max(0, r.total - paidNum), notes: notes || undefined,
+        }, "purchase");
+        reset();
+        ["purchases", "suppliers", "customer-balances", "products", "products-lite"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+        return;
+      }
+
+      // Purchase order: rate optional, no stock, no payment, no accounting.
+      if (isOrder) {
+        if (offline && selectedParty && selectedParty.source === "customer") throw new Error("This party must be synced once online before an offline order. Choose a supplier or connect to internet.");
+        const resolved = selectedParty
+          ? offline ? { id: selectedParty.id, name: selectedParty.name } : await ensurePurchaseParty({ data: selectedParty.source === "customer" ? { customerId: selectedParty.id } : { supplierId: selectedParty.id } })
+          : null;
+        const orderData = {
+          supplierId: resolved?.id, supplierName: resolved?.name, discount: num(discount), freight: num(freight), supplierBillNo: billNo.trim() || undefined, notes: notes || undefined, clientRef: opRef.current,
+          items: itemRows.map((i) => ({ ...i, rate: i.rate || undefined })),
+        };
+        const out = await runOrQueue<Awaited<ReturnType<typeof savePurchaseOrder>>>("purchaseOrder", orderData as unknown as Record<string, unknown>, { label: "Purchase order" });
+        const r = isQueued(out) ? { number: out.number, total: Math.round(total * 100) / 100 } : out;
+        if (isQueued(out)) toast.info(`Offline — ${out.number} saved on this device, will sync when internet returns`);
+        if (editId) {
+          try {
+            await cancelPurchaseOrder({ data: { id: editId.id, reason: "Edited — replaced by a new order" } });
+          } catch (ce) {
+            toast.error(`New order saved as ${r.number}, but the old order ${editId.number} could not be cancelled — cancel it manually from the list.`);
+            console.error("cancel after order edit failed", ce);
+          }
+        }
+        opRef.current = newRef();
+        setEditId(undefined);
+        toast.success(`Purchase order saved: ${r.number}${r.total ? ` — ${rs(r.total)}` : ""}`);
+        reset();
+        ["purchases", "suppliers", "customer-balances"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+        return;
+      }
+
+      if (activeStore.isAllStores) throw new Error("Select a specific store before saving a purchase");
+      if (paidNum < total && !selectedParty) throw new Error("Select a party for a credit purchase");
+      // Edit: save the new entry FIRST, then cancel the old one — a failed save must never delete the original.
       if (offline && editId) throw new Error("Editing a saved purchase needs internet. New purchases can be saved offline.");
       if (offline && selectedParty && selectedParty.source === "customer") throw new Error("This party must be synced once online before an offline purchase. Choose a supplier or connect to internet.");
       const resolved = selectedParty
@@ -265,10 +340,11 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
           <section className="rounded-xl border border-border bg-card">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
             <div className="flex items-center gap-3">
-              <p className="text-lg font-bold text-foreground">{docType === "purchase" ? "Purchase" : "Purchase Return"}</p>
+              <p className="text-lg font-bold text-foreground">{isOrder ? "Purchase Order" : docType === "purchase" ? (refOrderId ? "Order → Purchase" : "Purchase") : "Purchase Return"}</p>
               <div className="inline-flex rounded-full border-2 border-primary p-0.5" role="tablist" aria-label="Document type">
-                <button type="button" role="tab" aria-selected={docType === "purchase"} onClick={() => { if (docType !== "purchase") reset(); }} className={`rounded-full px-4 py-1.5 text-sm font-bold ${docType === "purchase" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Purchase</button>
-                <button type="button" role="tab" aria-selected={docType === "return"} onClick={() => { setDocType("return"); setRefId(undefined); }} className={`rounded-full px-4 py-1.5 text-sm font-bold ${docType === "return" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Return</button>
+                 <button type="button" role="tab" aria-selected={docType === "purchase"} onClick={() => { if (docType !== "purchase") reset(); }} className={`rounded-full px-4 py-1.5 text-sm font-bold ${docType === "purchase" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Purchase</button>
+                <button type="button" role="tab" aria-selected={docType === "order"} onClick={() => { if (docType !== "order") { reset(); setDocType("order"); } }} className={`rounded-full px-4 py-1.5 text-sm font-bold ${docType === "order" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Order</button>
+                <button type="button" role="tab" aria-selected={docType === "return"} onClick={() => { setDocType("return"); setRefId(undefined); setRefOrderId(undefined); }} className={`rounded-full px-4 py-1.5 text-sm font-bold ${docType === "return" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Return</button>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3"><StoreSwitcher /><div className="text-right text-sm text-muted-foreground">Bill date <b className="text-foreground">{today}</b></div></div>
@@ -356,8 +432,12 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
 
           <div className="grid gap-4 p-4 md:grid-cols-2">
             <div className="space-y-2">
-              <select className={posInput} value={method} onChange={(e) => setMethod(e.target.value)} aria-label="Payment type">{[...PAY_OPTS, "Credit"].map((m) => <option key={m}>{m}</option>)}</select>
-               {isCredit && <p className="text-xs text-muted-foreground">Full amount will be added to the party's balance (payable).</p>}
+              {isOrder ? <p className="rounded-md border border-border bg-surface-2 px-3 py-2 text-xs text-muted-foreground">This is a purchase order — stock, party balance and accounting update only when you convert it into a purchase.</p> : (
+                <>
+                  <select className={posInput} value={method} onChange={(e) => setMethod(e.target.value)} aria-label="Payment type">{[...PAY_OPTS, "Credit"].map((m) => <option key={m}>{m}</option>)}</select>
+                  {isCredit && <p className="text-xs text-muted-foreground">Full amount will be added to the party's balance (payable).</p>}
+                </>
+              )}
               <input className={posInput} value={billNo} maxLength={60} onChange={(e) => setBillNo(e.target.value)} placeholder="Supplier bill / invoice # (optional)" aria-label="Supplier bill number" />
               <textarea className={`${posInput} min-h-20 py-2`} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Description / note" />
             </div>
@@ -365,11 +445,15 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
               <label className="flex items-center justify-between gap-3"><span className="text-muted-foreground">Discount (Rs)</span><input className={`${cell} max-w-40 text-right`} value={discount} inputMode="decimal" onChange={(e) => setDiscount(e.target.value)} /></label>
               <label className="flex items-center justify-between gap-3"><span className="text-muted-foreground">Bilty / transport (Rs)</span><input aria-label="Bilty charges" className={`${cell} max-w-40 text-right`} value={freight} inputMode="decimal" onChange={(e) => setFreight(e.target.value)} /></label>
               <div className="flex items-center justify-between border-t border-border pt-2 text-base"><span className="font-bold">Total</span><b className="text-foreground">{rs(total)}</b></div>
-              <label className="flex items-center justify-between gap-3"><span className="text-muted-foreground">{docType === "purchase" ? "Paid" : "Refunded"}</span><input className={`${cell} max-w-40 text-right`} value={isCredit ? "0" : paid} disabled={isCredit} inputMode="decimal" placeholder={String(total)} onChange={(e) => setPaid(e.target.value)} /></label>
-              <div className="flex items-center justify-between"><span className="text-muted-foreground">Balance</span><b className={total - paidNum > 0 ? "text-destructive" : ""}>{rs(total - paidNum)}</b></div>
+              {isOrder ? null : (
+                <>
+                  <label className="flex items-center justify-between gap-3"><span className="text-muted-foreground">{docType === "purchase" ? "Paid" : "Refunded"}</span><input className={`${cell} max-w-40 text-right`} value={isCredit ? "0" : paid} disabled={isCredit} inputMode="decimal" placeholder={String(total)} onChange={(e) => setPaid(e.target.value)} /></label>
+                  <div className="flex items-center justify-between"><span className="text-muted-foreground">Balance</span><b className={total - paidNum > 0 ? "text-destructive" : ""}>{rs(total - paidNum)}</b></div>
+                </>
+              )}
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={reset}>Clear</Button>
-                <Button size="lg" disabled={saving || !lines.length} onClick={save}><PackagePlus /> {docType === "purchase" ? "Save (stock +)" : "Save return (stock −)"}</Button>
+                <Button size="lg" disabled={saving || !lines.length} onClick={save}><PackagePlus /> {isOrder ? "Save order (no stock)" : refOrderId ? "Convert & save (stock +)" : docType === "purchase" ? "Save (stock +)" : "Save return (stock −)"}</Button>
               </div>
               <p className="text-right text-[11px] text-muted-foreground">Enter: add item · Tab: next field · Esc: clear row · Ctrl+S: save</p>
             </div>
@@ -387,7 +471,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
               <tbody>
                 {(hist?.purchases ?? []).map((p) => (
                   <tr key={p.id} className="border-t border-border">
-                    <td className="py-1.5 font-semibold">{p.doc_number}</td><td>{p.doc_type === "purchase" ? "Purchase" : "Return"}</td><td>{p.supplier_name}</td>
+                    <td className="py-1.5 font-semibold">{p.doc_number}</td><td>{p.doc_type === "order" ? (p.status === "converted" ? "Order → Purchase" : "Order") : p.doc_type === "purchase" ? "Purchase" : "Return"}</td><td>{p.supplier_name}</td>
                     <td>{rs(p.grand_total)}</td><td>{rs(p.paid_total)}</td><td>{rs(p.balance)}</td><td className="text-xs">{new Date(p.created_at).toLocaleString("en-PK")}</td>
                     <td className="relative text-right">
                       <button type="button" title="Actions" aria-label={`Actions for ${p.doc_number}`} disabled={busy} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); const h = 330; setMenuPos({ top: r.bottom + h > window.innerHeight ? Math.max(8, r.top - h) : r.bottom + 4, right: Math.max(8, window.innerWidth - r.right) }); setMenuFor(menuFor === p.id ? null : p.id); }} className="rounded-lg border border-border p-1.5 hover:bg-accent disabled:opacity-50"><MoreVertical className="size-4" /></button>
@@ -400,9 +484,10 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
                               [<Printer key="b" className="size-4" />, "Reprint", () => run(async () => { await pc.print(await loadDoc(p), { reprint: true }); })],
                               [<Download key="c" className="size-4" />, "PDF", () => run(async () => { await pc.pdf(await loadDoc(p)); })],
                               [<Share2 key="d" className="size-4" />, "Share", () => doShare(p)],
-                              [<Pencil key="e" className="size-4" />, "Edit", () => doEdit(p)],
+                              ...(p.doc_type === "order" && p.status !== "open" ? [] : [[<Pencil key="e" className="size-4" />, "Edit", () => doEdit(p)]]),
                               ...(p.doc_type === "purchase" ? [[<Undo2 key="f" className="size-4" />, "Return", () => startReturn(p.id)]] : []),
-                              [<Ban key="g" className="size-4" />, "Cancel", () => doCancel(p), true],
+                              ...(p.doc_type === "order" && p.status === "open" ? [[<ArrowRightLeft key="h" className="size-4" />, "Convert to purchase", () => run(() => startConvert(p))]] : []),
+                              ...(p.doc_type === "order" && p.status !== "open" ? [] : [[<Ban key="g" className="size-4" />, "Cancel", () => doCancel(p), true]]),
                             ] as [React.ReactNode, string, () => void, boolean?][]).map(([icon, label, fn, danger]) => (
                               <button key={label} type="button" onClick={() => { setMenuFor(null); fn(); }} className={`flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent ${danger ? "text-destructive" : "text-foreground"}`}>{icon} {label}</button>
                             ))}

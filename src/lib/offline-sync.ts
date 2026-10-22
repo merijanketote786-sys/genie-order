@@ -7,10 +7,10 @@ import { get, set } from "idb-keyval";
 import { useEffect, useState } from "react";
 import type { QueryClient } from "@tanstack/react-query";
 import { savePosDoc } from "@/lib/pos.functions";
-import { savePurchase, saveSalesReturn, saveUnlinkedSalesReturn } from "@/lib/business.functions";
+import { savePurchase, savePurchaseOrder, saveSalesReturn, saveUnlinkedSalesReturn } from "@/lib/business.functions";
 import { getSelectedStoreId, setStoreOverride } from "@/lib/pos-store-client";
 
-export type OutboxKind = "posDoc" | "purchase" | "salesReturn" | "unlinkedReturn" | "raw";
+export type OutboxKind = "posDoc" | "purchase" | "purchaseOrder" | "salesReturn" | "unlinkedReturn" | "raw";
 export type OutboxItem = {
   id: string;
   kind: OutboxKind;
@@ -28,6 +28,7 @@ export type OutboxItem = {
 const FNS: Record<Exclude<OutboxKind, "raw">, (a: { data: any }) => Promise<unknown>> = {
   posDoc: savePosDoc,
   purchase: savePurchase,
+  purchaseOrder: savePurchaseOrder,
   salesReturn: saveSalesReturn,
   unlinkedReturn: saveUnlinkedSalesReturn,
 };

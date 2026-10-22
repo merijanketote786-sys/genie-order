@@ -1687,6 +1687,7 @@ export type Database = {
           notes: string | null
           paid_total: number
           payment_status: string
+          ref_order_id: string | null
           ref_purchase_id: string | null
           status: string
           subtotal: number
@@ -1711,6 +1712,7 @@ export type Database = {
           notes?: string | null
           paid_total?: number
           payment_status?: string
+          ref_order_id?: string | null
           ref_purchase_id?: string | null
           status?: string
           subtotal?: number
@@ -1735,6 +1737,7 @@ export type Database = {
           notes?: string | null
           paid_total?: number
           payment_status?: string
+          ref_order_id?: string | null
           ref_purchase_id?: string | null
           status?: string
           subtotal?: number
@@ -1746,6 +1749,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "purchases_ref_order_id_fkey"
+            columns: ["ref_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "purchases_ref_purchase_id_fkey"
             columns: ["ref_purchase_id"]
@@ -2145,6 +2155,10 @@ export type Database = {
         Args: { _id: string; _reason: string }
         Returns: undefined
       }
+      pos_cancel_purchase_order: {
+        Args: { _id: string; _reason: string }
+        Returns: undefined
+      }
       pos_cancel_sale: {
         Args: { _id: string; _reason: string }
         Returns: undefined
@@ -2162,6 +2176,7 @@ export type Database = {
         Returns: string
       }
       pos_close_doc: { Args: { _id: string }; Returns: undefined }
+      pos_convert_purchase_order: { Args: { _p: Json }; Returns: Json }
       pos_create_product: { Args: { _p: Json }; Returns: string }
       pos_default_store: { Args: { _ws: string }; Returns: string }
       pos_delete_doc: { Args: { _id: string }; Returns: undefined }
@@ -2263,6 +2278,7 @@ export type Database = {
         Returns: undefined
       }
       pos_save_purchase: { Args: { _p: Json }; Returns: Json }
+      pos_save_purchase_order: { Args: { _p: Json }; Returns: Json }
       pos_save_recipe: { Args: { _p: Json }; Returns: string }
       pos_save_sale: { Args: { _p: Json }; Returns: Json }
       pos_save_settings: {
