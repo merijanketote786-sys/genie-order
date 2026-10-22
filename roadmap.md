@@ -33,4 +33,4 @@
 - [x] Parties statement, expense voucher, best-selling report (already existed); Attendance salary sheet print/PDF added
 
 - [x] Expenses: store select, store-to-store transfer, custom expense name
-- [ ] Multi-firm (separate businesses per login) — waiting on user answers
+- [x] Multi-firm: one owner login, separate staff per firm, subscription from first firm
