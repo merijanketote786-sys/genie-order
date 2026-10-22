@@ -7,7 +7,7 @@ import { get, set } from "idb-keyval";
 import { useEffect, useState } from "react";
 import type { QueryClient } from "@tanstack/react-query";
 import { savePosDoc } from "@/lib/pos.functions";
-import { savePurchase, saveSalesReturn, saveUnlinkedSalesReturn } from "@/lib/business.functions";
+import { savePurchase, savePurchaseOrder, saveSalesReturn, saveUnlinkedSalesReturn } from "@/lib/business.functions";
 import { getSelectedStoreId, setStoreOverride } from "@/lib/pos-store-client";
 
 export type OutboxKind = "posDoc" | "purchase" | "salesReturn" | "unlinkedReturn" | "raw";
