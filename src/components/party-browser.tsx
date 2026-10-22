@@ -7,7 +7,7 @@ import { getCustomerLedger, getPartyStatementItems, listCustomerBalances, saveCu
 import { cancelDoc, deletePartyPayment, getPurchaseItems, getSupplierLedger, listSuppliers, partyPayment, saveSupplier } from "@/lib/business.functions";
 import { getSaleForEdit } from "@/lib/pos.functions";
 import { saveParty } from "@/lib/records.functions";
-import { editPosPartyDetails } from "@/lib/pos-party.functions";
+import { editPosPartyDetails, getPosPartyDetails } from "@/lib/pos-party.functions";
 import { usePosAccess } from "@/components/pos-access";
 import { rs } from "@/components/pos-subnav";
 import { newRef } from "@/lib/pos-errors";
@@ -43,6 +43,8 @@ const label = (kind: string, c: Opt) => {
 };
 
 /** Shared Parties browser. Set enabled=false inside dialogs until they open. */
+type PartyForm = { name: string; phone: string; address: string; city: string; email: string; courier: string; adda: string; creditLimit: string };
+
 export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   const qc = useQueryClient();
   const pc = usePrintCenter();
@@ -58,7 +60,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   const [saving, setSaving] = useState(false);
 
   // Edit POS party details by existing IDs, never upsert by phone.
-  const [form, setForm] = useState<{ name: string; phone: string; address: string } | null>(null);
+  const [form, setForm] = useState<PartyForm | null>(null);
   const [editBusy, setEditBusy] = useState(false);
 
   // Payment
@@ -128,7 +130,10 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
 
   const openEditDetails = (p: Party) => {
     setSel(p); setStOpen(false); setAdjOpen(false);
-    setForm({ name: p.name, phone: p.phone, address: p.address ?? "" });
+    setForm({ name: p.name, phone: p.phone, address: p.address ?? "", city: "", email: "", courier: "", adda: "", creditLimit: "" });
+    getPosPartyDetails({ data: { customerId: p.customerId, supplierId: p.supplierId } })
+      .then((d) => setForm((f) => (f ? { ...f, ...d } : f)))
+      .catch(() => {});
   };
 
   const savePartyForm = async () => {
@@ -136,9 +141,9 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
     if (!form.name.trim()) { toast.error("Party name is required"); return; }
     setEditBusy(true);
     try {
-      const details = await editPosPartyDetails({ data: { customerId: sel.customerId, supplierId: sel.supplierId, ...form } });
+      const details = await editPosPartyDetails({ data: { customerId: sel.customerId, supplierId: sel.supplierId, ...form, creditLimit: form.creditLimit.trim() ? Number(form.creditLimit) : null } });
       const digits = details.phone.replace(/\D/g, "");
-      setSel({ ...sel, ...details, key: digits.length >= 7 ? `p${tail(details.phone)}` : sel.customerId ? `c${sel.customerId}` : `s${sel.supplierId}` });
+      setSel({ ...sel, name: details.name, phone: details.phone, address: details.address, key: digits.length >= 7 ? `p${tail(details.phone)}` : sel.customerId ? `c${sel.customerId}` : `s${sel.supplierId}` });
       toast.success("Party details saved");
       setForm(null);
       await Promise.all(["customer-balances", "suppliers", "party-ledger-c", "party-ledger-s", "customers", "pos-customers", "pos-balance"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
@@ -443,6 +448,14 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
                   <label className="text-xs text-muted-foreground">Name<input className={inputCls} disabled={editBusy} maxLength={120} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Party name *" /></label>
                   <label className="text-xs text-muted-foreground">Phone<input className={inputCls} disabled={editBusy} maxLength={30} inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></label>
                   <label className="text-xs text-muted-foreground sm:col-span-2">Address<input className={inputCls} disabled={editBusy} maxLength={300} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></label>
+                  {sel?.customerId ? (<>
+                    <label className="text-xs text-muted-foreground">City / Area<input className={inputCls} disabled={editBusy} maxLength={80} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></label>
+                    <label className="text-xs text-muted-foreground">Email<input className={inputCls} disabled={editBusy} maxLength={160} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
+                    <label className="text-xs text-muted-foreground">Courier service<input className={inputCls} disabled={editBusy} maxLength={120} value={form.courier} onChange={(e) => setForm({ ...form, courier: e.target.value })} /></label>
+                    <label className="text-xs text-muted-foreground">Goods adda<input className={inputCls} disabled={editBusy} maxLength={120} value={form.adda} onChange={(e) => setForm({ ...form, adda: e.target.value })} /></label>
+                    <label className="text-xs text-muted-foreground">Credit limit (blank = none)<input className={inputCls} disabled={editBusy} inputMode="decimal" value={form.creditLimit} onChange={(e) => setForm({ ...form, creditLimit: e.target.value.replace(/[^\d.]/g, "") })} /></label>
+                  </>) : null}
+                  <p className="text-[11px] text-muted-foreground sm:col-span-2">Opening / previous balance is changed with the Adjust balance button.</p>
                   <div className="flex gap-2 sm:col-span-2"><Button size="sm" disabled={editBusy} onClick={savePartyForm}>{editBusy ? "Saving…" : "Save details"}</Button><Button size="sm" variant="ghost" disabled={editBusy} onClick={() => setForm(null)}>Cancel</Button></div>
                 </div>
               ) : null}
