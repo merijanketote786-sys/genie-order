@@ -259,10 +259,10 @@ export const getPurchaseItems = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const sb = context.supabase as Sb;
     const [{ data: p }, { data: items }] = await Promise.all([
-      sb.from("purchases").select("id, doc_number, supplier_id, supplier_name").eq("id", data.id).maybeSingle(),
+      sb.from("purchases").select("id, doc_number, doc_type, status, supplier_id, supplier_name, supplier_bill_no, notes, discount_total, freight").eq("id", data.id).maybeSingle(),
       sb.from("purchase_items").select("product_id, name, unit, qty, rate, discount, tax_percent, line_total").eq("purchase_id", data.id),
     ]);
-    return { purchase: p as { id: string; doc_number: string; supplier_id: string | null; supplier_name: string | null } | null, items: ((items ?? []) as any[]).map((i: any): { productId: string | null; name: string; unit: string; qty: number; rate: number; discount: number; taxPercent: number; lineTotal: number } => ({ productId: i.product_id as string | null, name: i.name as string, unit: (i.unit ?? "") as string, qty: Number(i.qty), rate: Number(i.rate), discount: Number(i.discount), taxPercent: Number(i.tax_percent), lineTotal: Number(i.line_total) })) };
+    return { purchase: p as { id: string; doc_number: string; doc_type: string; status: string; supplier_id: string | null; supplier_name: string | null; supplier_bill_no: string | null; notes: string | null; discount_total: number; freight: number } | null, items: ((items ?? []) as any[]).map((i: any): { productId: string | null; name: string; unit: string; qty: number; rate: number; discount: number; taxPercent: number; lineTotal: number } => ({ productId: i.product_id as string | null, name: i.name as string, unit: (i.unit ?? "") as string, qty: Number(i.qty), rate: Number(i.rate), discount: Number(i.discount), taxPercent: Number(i.tax_percent), lineTotal: Number(i.line_total) })) };
   });
 
 /* ---------------------------- Sales returns ---------------------------- */
