@@ -16,7 +16,7 @@ export const listSuppliers = createServerFn({ method: "GET" })
     const sb = context.supabase as Sb;
     const [{ data: sups }, { data: purs }, { data: pays }] = await Promise.all([
       sb.from("suppliers").select("id, name, phone, address, opening_balance, is_active").eq("is_active", true).order("name"),
-      sb.from("purchases").select("supplier_id, doc_type, grand_total, paid_total").neq("status", "cancelled"),
+      sb.from("purchases").select("supplier_id, doc_type, grand_total, paid_total").neq("status", "cancelled").neq("doc_type", "order"),
       sb.from("pos_payments").select("supplier_id, amount, kind, purchase_id").in("kind", ["supplier_payment", "purchase_refund"]).eq("status", "completed"),
     ]);
     const bal = new Map<string, number>();
@@ -110,7 +110,7 @@ export const getSupplierLedger = createServerFn({ method: "GET" })
     type E = { date: string; ref: string; kind: string; debit: number; credit: number; id: string; entity: "purchase" | "payment"; standalone: boolean };
     const rows: E[] = [];
     for (const p of purs ?? []) {
-      if (p.status === "cancelled") continue;
+      if (p.status === "cancelled" || p.doc_type === "order") continue;
       if (p.doc_type === "purchase") rows.push({ date: p.created_at, ref: p.doc_number, kind: "Purchase", debit: 0, credit: Number(p.grand_total), id: p.id, entity: "purchase", standalone: true });
       else rows.push({ date: p.created_at, ref: p.doc_number, kind: "Purchase return", debit: Number(p.grand_total), credit: 0, id: p.id, entity: "purchase", standalone: true });
     }
