@@ -471,7 +471,7 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
               <tbody>
                 {(hist?.purchases ?? []).map((p) => (
                   <tr key={p.id} className="border-t border-border">
-                    <td className="py-1.5 font-semibold">{p.doc_number}</td><td>{p.doc_type === "purchase" ? "Purchase" : "Return"}</td><td>{p.supplier_name}</td>
+                    <td className="py-1.5 font-semibold">{p.doc_number}</td><td>{p.doc_type === "order" ? (p.status === "converted" ? "Order → Purchase" : "Order") : p.doc_type === "purchase" ? "Purchase" : "Return"}</td><td>{p.supplier_name}</td>
                     <td>{rs(p.grand_total)}</td><td>{rs(p.paid_total)}</td><td>{rs(p.balance)}</td><td className="text-xs">{new Date(p.created_at).toLocaleString("en-PK")}</td>
                     <td className="relative text-right">
                       <button type="button" title="Actions" aria-label={`Actions for ${p.doc_number}`} disabled={busy} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); const h = 330; setMenuPos({ top: r.bottom + h > window.innerHeight ? Math.max(8, r.top - h) : r.bottom + 4, right: Math.max(8, window.innerWidth - r.right) }); setMenuFor(menuFor === p.id ? null : p.id); }} className="rounded-lg border border-border p-1.5 hover:bg-accent disabled:opacity-50"><MoreVertical className="size-4" /></button>
