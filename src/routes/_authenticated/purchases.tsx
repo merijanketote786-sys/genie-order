@@ -225,14 +225,72 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const save = async () => {
     const valid = lines.filter((l) => l.name.trim() && num(l.qty) > 0);
     if (!valid.length) return toast.error("Enter at least one item");
-    if (activeStore.isAllStores) return toast.error("Select a specific store before saving a purchase");
-    if (paidNum < total && !selectedParty) return toast.error("Select a party for a credit purchase");
     if (lockRef.current) return;
     lockRef.current = true;
     setSaving(true);
     try {
-      // Edit: save the new entry FIRST, then cancel the old one — a failed save must never delete the original.
       const offline = !isOnline();
+      const itemRows = valid.map((l) => ({ productId: l.productId, name: l.name, unit: l.unit, qty: num(l.qty), rate: num(l.rate), discount: num(l.discount), taxPercent: num(l.tax), batch: l.batch || undefined, expiry: l.expiry || undefined }));
+
+      // Convert an open purchase order into a real purchase (needs internet —
+      // it moves stock, posts payment and accounting).
+      if (refOrderId && docType === "purchase") {
+        if (offline) throw new Error("Converting an order to a purchase needs internet.");
+        const resolved = selectedParty
+          ? await ensurePurchaseParty({ data: selectedParty.source === "customer" ? { customerId: selectedParty.id } : { supplierId: selectedParty.id } })
+          : null;
+        const r = await convertPurchaseOrder({ data: {
+          orderId: refOrderId, supplierId: resolved?.id, supplierName: resolved?.name,
+          paid: paidNum, method, discount: num(discount), freight: num(freight), supplierBillNo: billNo.trim() || undefined, notes: notes || undefined,
+          items: itemRows,
+        } });
+        toast.success(`Purchase saved: ${r.number} — ${rs(r.total)}`);
+        const supName = selectedParty?.name ?? resolved?.name;
+        pc.afterSave({
+          kind: "purchase", title: "Purchase Invoice", number: r.number, date: new Date(),
+          party: supName ? { label: "Party", name: supName } : undefined,
+          lines: valid.map((l) => ({ name: l.name, unit: l.unit, qty: num(l.qty), rate: num(l.rate), discount: num(l.discount), taxPercent: num(l.tax), total: lineTotal(l) })),
+          meta: billNo.trim() ? [["Supplier bill #", billNo.trim()]] : undefined,
+          totals: [...(num(discount) ? [{ label: "Discount", value: -num(discount) }] : []), ...(num(freight) ? [{ label: "Bilty / transport", value: num(freight) }] : []), { label: "Grand Total", value: r.total, bold: true }],
+          payments: paidNum ? [{ method, amount: paidNum }] : [], paid: paidNum, balance: Math.max(0, r.total - paidNum), notes: notes || undefined,
+        }, "purchase");
+        reset();
+        ["purchases", "suppliers", "customer-balances", "products", "products-lite"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+        return;
+      }
+
+      // Purchase order: rate optional, no stock, no payment, no accounting.
+      if (isOrder) {
+        if (offline && selectedParty && selectedParty.source === "customer") throw new Error("This party must be synced once online before an offline order. Choose a supplier or connect to internet.");
+        const resolved = selectedParty
+          ? offline ? { id: selectedParty.id, name: selectedParty.name } : await ensurePurchaseParty({ data: selectedParty.source === "customer" ? { customerId: selectedParty.id } : { supplierId: selectedParty.id } })
+          : null;
+        const orderData = {
+          supplierId: resolved?.id, supplierName: resolved?.name, discount: num(discount), freight: num(freight), supplierBillNo: billNo.trim() || undefined, notes: notes || undefined, clientRef: opRef.current,
+          items: itemRows.map((i) => ({ ...i, rate: i.rate || undefined })),
+        };
+        const out = await runOrQueue<Awaited<ReturnType<typeof savePurchaseOrder>>>("purchaseOrder", orderData as unknown as Record<string, unknown>, { label: "Purchase order" });
+        const r = isQueued(out) ? { number: out.number, total: Math.round(total * 100) / 100 } : out;
+        if (isQueued(out)) toast.info(`Offline — ${out.number} saved on this device, will sync when internet returns`);
+        if (editId) {
+          try {
+            await cancelPurchaseOrder({ data: { id: editId.id, reason: "Edited — replaced by a new order" } });
+          } catch (ce) {
+            toast.error(`New order saved as ${r.number}, but the old order ${editId.number} could not be cancelled — cancel it manually from the list.`);
+            console.error("cancel after order edit failed", ce);
+          }
+        }
+        opRef.current = newRef();
+        setEditId(undefined);
+        toast.success(`Purchase order saved: ${r.number}${r.total ? ` — ${rs(r.total)}` : ""}`);
+        reset();
+        ["purchases", "suppliers", "customer-balances"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+        return;
+      }
+
+      if (activeStore.isAllStores) throw new Error("Select a specific store before saving a purchase");
+      if (paidNum < total && !selectedParty) throw new Error("Select a party for a credit purchase");
+      // Edit: save the new entry FIRST, then cancel the old one — a failed save must never delete the original.
       if (offline && editId) throw new Error("Editing a saved purchase needs internet. New purchases can be saved offline.");
       if (offline && selectedParty && selectedParty.source === "customer") throw new Error("This party must be synced once online before an offline purchase. Choose a supplier or connect to internet.");
       const resolved = selectedParty
