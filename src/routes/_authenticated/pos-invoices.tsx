@@ -23,6 +23,8 @@ export const Route = createFileRoute("/_authenticated/pos-invoices")({
       { name: "description", content: "POS billing invoice records: reprint, PDF and share." },
       { property: "og:title", content: "POS Invoices — HB Chemicals Pakistan" },
       { property: "og:description", content: "POS billing invoice records: reprint, PDF and share." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: PosInvoicesPage,
