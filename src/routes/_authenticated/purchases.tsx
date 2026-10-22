@@ -484,8 +484,9 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
                               [<Printer key="b" className="size-4" />, "Reprint", () => run(async () => { await pc.print(await loadDoc(p), { reprint: true }); })],
                               [<Download key="c" className="size-4" />, "PDF", () => run(async () => { await pc.pdf(await loadDoc(p)); })],
                               [<Share2 key="d" className="size-4" />, "Share", () => doShare(p)],
-                              [<Pencil key="e" className="size-4" />, "Edit", () => doEdit(p)],
+                              ...(p.doc_type === "order" && p.status !== "open" ? [] : [[<Pencil key="e" className="size-4" />, "Edit", () => doEdit(p)]]),
                               ...(p.doc_type === "purchase" ? [[<Undo2 key="f" className="size-4" />, "Return", () => startReturn(p.id)]] : []),
+                              ...(p.doc_type === "order" && p.status === "open" ? [[<ArrowRightLeft key="h" className="size-4" />, "Convert to purchase", () => run(() => startConvert(p))]] : []),
                               [<Ban key="g" className="size-4" />, "Cancel", () => doCancel(p), true],
                             ] as [React.ReactNode, string, () => void, boolean?][]).map(([icon, label, fn, danger]) => (
                               <button key={label} type="button" onClick={() => { setMenuFor(null); fn(); }} className={`flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent ${danger ? "text-destructive" : "text-foreground"}`}>{icon} {label}</button>
