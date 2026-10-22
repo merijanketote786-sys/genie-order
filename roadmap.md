@@ -1,4 +1,6 @@
 # Roadmap — Vyapar-style POS
+- [x] Estimate conversion changes only QT prefix to INV, preserving serial (SQL tests pass; real QT-00054 opens as INV-00054; no financial transaction posted during verification)
+- [x] Add Edit details for each POS party (atomic ID-based saves; real party save/reload verified; balance/link/separation tests pass)
 - [x] Preserve POS estimate numbers on edit/conversion and allow staff estimate deletion with workspace/security guards (7 SQL tests; signed-in existing estimate edit/save verified)
 - [x] Rename POS delivery challans to D-O and make customer details optional across all D-O outputs
 - [x] POS Fixed Assets: asset register, add/edit/archive, categories, values, permission checks and verification

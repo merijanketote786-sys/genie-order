@@ -56,7 +56,7 @@ export const savePosDoc = createServerFn({ method: "POST" })
     const { data: prods } = names.length ? await supabase.from("products").select("id, name").eq("scope", "pos").in("name", names) : { data: [] };
     const idOf = new Map<string, string>((prods ?? []).map((p: { id: string; name: string }) => [p.name, p.id]));
 
-    const { data: res, error } = await withStore(supabase.rpc("pos_save_doc_v2", {
+    const { data: res, error } = await withStore(supabase.rpc("pos_save_doc_v3", {
       _p: {
         doc_type: data.docType,
         doc_number: data.docNumber ?? "",

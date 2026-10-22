@@ -6,6 +6,7 @@ import { PosSubnav } from "@/components/pos-subnav";
 import { CustomerPasteBox } from "@/components/customer-paste-box";
 import { ItemsPasteBox } from "@/components/items-paste-box";
 import { toChallan } from "@/lib/print/do";
+import { estimateInvoiceNumber } from "@/lib/pos-doc-number";
 import { StoreSwitcher, useActiveStore } from "@/components/store-switcher";
 import { usePinPrompt, usePosAccess } from "@/components/pos-access";
 import { AppShell } from "@/components/app-shell";
@@ -168,6 +169,9 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
   const [manualNumber, setManualNumber] = useState("");
   const [docsOpen, setDocsOpen] = useState<"held" | "quotation" | null>(null);
   const [estimate, setEstimate] = useState(false);
+  const displayedNumber = editing?.docType === "quotation"
+    ? (estimate ? editing.number : estimateInvoiceNumber(editing.number))
+    : manualNumber.trim();
   const payRef = useRef<HTMLDivElement>(null);
   const pickCustomer = (c: { name: string | null; phone: string; city: string | null; address: string | null; courierServiceName: string | null; goodsAddaName: string | null }) => {
     setCustomerName(c.name ?? "");
@@ -600,7 +604,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
       if (editing?.id && !isOnline()) throw new Error("Editing a saved bill needs internet. New bills can be saved offline.");
       const posData = {
           docType: kind,
-          docNumber: editing?.docType === "quotation" ? editing.number : manualNumber.trim() || undefined,
+          docNumber: editing?.docType === "quotation" ? (kind === "sale" ? estimateInvoiceNumber(editing.number) : editing.number) : manualNumber.trim() || undefined,
           customerName: r.customerName,
           phone: r.customerPhone,
           subtotal,
@@ -694,7 +698,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
       const savedPays = (ui as { pays?: { method: string; amount: string }[] }).pays;
       setPays(Array.isArray(savedPays) && savedPays.length ? savedPays.map((p) => ({ method: p.method as PayMethod, amount: String(p.amount ?? "") })) : [{ method: "Cash", amount: "" }]);
       const docType = (d as PosDocRow & { doc_type?: string }).doc_type ?? (docsOpen === "quotation" ? "quotation" : "held");
-      setManualNumber(docType === "quotation" ? d.doc_number : "");
+      setManualNumber(docType === "quotation" ? (asInvoice ? estimateInvoiceNumber(d.doc_number) : d.doc_number) : "");
       setEditing(asInvoice || docType === "quotation" ? { id: d.id, number: d.doc_number, docType } : null);
       if (docType === "quotation") setEstimate(!asInvoice);
       setDocsOpen(null);
@@ -713,9 +717,9 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
       const d = JSON.parse(raw) as PosDocRow & { doc_type?: string; convert?: boolean };
       openDoc(d, true);
       if (d.convert) {
-        // Estimate -> Invoice: invoice gets the estimate's serial number
+        // Estimate -> Invoice: replace only the QT prefix, retaining the serial.
         setEstimate(false);
-        setManualNumber(d.doc_number);
+        setManualNumber(estimateInvoiceNumber(d.doc_number));
       } else if (d.doc_type === "quotation") setEstimate(true);
     } catch { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -789,11 +793,11 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-6">
             <h1 className="text-lg font-bold text-foreground">{estimate ? "Estimate" : "Sale"}</h1>
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground sm:gap-3">
-              <span>{editing ? `Invoice ${editing.number}` : "New invoice"}</span>
+              <span>{editing ? `${estimate ? "Estimate" : "Invoice"} ${displayedNumber || editing.number}` : "New invoice"}</span>
               <input
                 aria-label="Invoice number (optional)"
                 className="h-8 w-32 rounded-md border border-input bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                value={manualNumber}
+                value={editing?.docType === "quotation" ? displayedNumber : manualNumber}
                 readOnly={editing?.docType === "quotation"}
                 onChange={(e) => setManualNumber(e.target.value)}
                 placeholder="Invoice # (auto)"
@@ -850,7 +854,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
             <div className="mt-6 flex w-fit max-w-full gap-1 rounded-lg border-2 border-primary bg-muted p-1.5 shadow-sm" role="group" aria-label="Document type">
               <Button type="button" size="sm" variant={estimate ? "ghost" : "default"} aria-pressed={!estimate} onClick={() => setEstimate(false)} className="min-w-24 shadow-sm">Invoice</Button>
               <Button type="button" size="sm" variant={estimate ? "default" : "ghost"} aria-pressed={estimate} onClick={() => setEstimate(true)} className="min-w-24 shadow-sm">Estimate</Button>
-              <Button type="button" size="sm" variant="ghost" disabled={!cart.length} onClick={() => pc.preview(toChallan(receiptToDoc(receipt(editing?.number || manualNumber.trim() || "Draft"), { date: new Date() })), false)} className="min-w-24 shadow-sm">D-O</Button>
+              <Button type="button" size="sm" variant="ghost" disabled={!cart.length} onClick={() => pc.preview(toChallan(receiptToDoc(receipt(displayedNumber || editing?.number || "Draft"), { date: new Date() })), false)} className="min-w-24 shadow-sm">D-O</Button>
             </div>
             <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+E</K> switch Invoice / Estimate</p>
             <BarcodeScannerDialog
@@ -1242,7 +1246,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
               <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("held", false)}><Pause /> Hold (F10)</Button>
               <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("quotation", false)}><FileText /> Quotation</Button>
             </div>
-            <WaTemplateButton disabled={!cart.length} getReceipt={() => receipt(editing?.number || manualNumber.trim() || "Draft")} />
+            <WaTemplateButton disabled={!cart.length} getReceipt={() => receipt(displayedNumber || editing?.number || "Draft")} />
             <p className="text-[11px] text-muted-foreground"><K>Ctrl+S</K> / <K>F9</K> save + print · <K>Ctrl+Enter</K> save without print · <K>Ctrl+Shift+H</K> hold · <K>Alt+N</K> new bill</p>
             <div className="grid grid-cols-3 gap-2">
               <Button variant="ghost" size="sm" onClick={() => setDocsOpen("held")}><FolderOpen /> Held bills</Button>

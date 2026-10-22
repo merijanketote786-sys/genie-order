@@ -2,6 +2,7 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
+import { estimateInvoiceNumber } from "./pos-doc-number";
 
 const ws = "10000000-0000-4000-8000-000000000001";
 const id = "10000000-0000-4000-8000-000000000002";
@@ -24,14 +25,14 @@ async function setup() {
     CREATE TABLE public.audit_log(workspace_id uuid,action text,entity text,entity_id uuid,details jsonb,created_by uuid);
     INSERT INTO public.pos_sales(id,workspace_id,doc_type,doc_number,status,payment_status,grand_total) VALUES('${id}','${ws}','quotation','QT-00053','completed','quotation',12500);
   `);
-  for (const file of ["0063_add_estimate_save_delete_functions.sql", "0064_clarify_estimate_cost_variable.sql"]) {
+  for (const file of ["0063_add_estimate_save_delete_functions.sql", "0064_clarify_estimate_cost_variable.sql", "0065_pos_conversion_prefix_and_party_details.sql"]) {
     await db.exec(readFileSync(new URL(`../../drizzle/migrations/${file}`, import.meta.url), "utf8"));
   }
   return db;
 }
 async function save(db: PGlite, docType = "quotation", clientRef?: string) {
   const input = { convert_from_id: id, doc_type: docType, doc_number: "NEW-NUMBER", grand_total: 12500, subtotal: 12500, items: [{ name: "Test item", qty: 1, stock_qty: 1, rate: 12500, line_total: 12500 }], client_ref: clientRef };
-  return (await db.query<{ result: { id: string; number: string; duplicate?: boolean } }>("select public.pos_save_doc_v2($1::jsonb) result", [JSON.stringify(input)])).rows[0]?.result;
+  return (await db.query<{ result: { id: string; number: string; duplicate?: boolean } }>("select public.pos_save_doc_v3($1::jsonb) result", [JSON.stringify(input)])).rows[0]?.result;
 }
 test("estimate edit retains QT-00053 and its identity rather than inserting another estimate", async () => {
   const db = await setup();
@@ -44,8 +45,11 @@ test("estimate edit retains QT-00053 and its identity rather than inserting anot
     assert.equal((await db.query("select * from pos_payments")).rows.length, 0);
   } finally { await db.close(); }
 });
-test("conversion supplies the locked estimate number even when a different number is submitted", async () => {
-  const db = await setup(); try { assert.equal((await save(db, "sale"))?.number, "QT-00053"); } finally { await db.close(); }
+test("conversion replaces QT with INV and preserves 00053 even when a different number is submitted", async () => {
+  const db = await setup(); try {
+    assert.equal((await save(db, "sale"))?.number, "INV-00053");
+    assert.equal(estimateInvoiceNumber("QT-00053"), "INV-00053");
+  } finally { await db.close(); }
 });
 test("sales staff without edit_sale or admin can delete estimates and receive an audit entry", async () => {
   const db = await setup(); try {
