@@ -491,6 +491,13 @@
       "when": 1792702715722,
       "tag": "0069_bulk_update_store_stock",
       "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1792706858223,
+      "tag": "0070_expense_store",
+      "breakpoints": true
     }
   ]
 }
