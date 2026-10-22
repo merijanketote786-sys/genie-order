@@ -10,7 +10,7 @@ import { savePosDoc } from "@/lib/pos.functions";
 import { savePurchase, savePurchaseOrder, saveSalesReturn, saveUnlinkedSalesReturn } from "@/lib/business.functions";
 import { getSelectedStoreId, setStoreOverride } from "@/lib/pos-store-client";
 
-export type OutboxKind = "posDoc" | "purchase" | "salesReturn" | "unlinkedReturn" | "raw";
+export type OutboxKind = "posDoc" | "purchase" | "purchaseOrder" | "salesReturn" | "unlinkedReturn" | "raw";
 export type OutboxItem = {
   id: string;
   kind: OutboxKind;
