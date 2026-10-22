@@ -184,7 +184,13 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
     if (k === "purchase_price" || k === "stock_value") applyMk(id, cur);
     return { ...e, [id]: cur };
   });
-  const dirtyIds = Object.keys(edits).filter((id) => COLS.some((c) => c.k !== "stock_value" && (edits[id][c.k] ?? orig[id][c.k]) !== orig[id][c.k]));
+  const dirtyIds = useMemo(() => Object.keys(edits).filter((id) => COLS.some((c) => c.k !== "stock_value" && (edits[id][c.k] ?? orig[id][c.k]) !== orig[id][c.k])), [edits, orig]);
+  const dirtySet = useMemo(() => new Set(dirtyIds), [dirtyIds]);
+  const [limit, setLimit] = useState(80);
+  useEffect(() => { setLimit(80); }, [q, fKind, fCat]);
+  const moreRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { const el = moreRef.current; if (!el) return; const ob = new IntersectionObserver((en) => { if (en.some((x) => x.isIntersecting)) setLimit((l) => l + 80); }, { rootMargin: "300px" }); ob.observe(el); return () => ob.disconnect(); }, [limit, list.length]);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const targetIds = () => (picked.size ? [...picked] : list.map((p) => p.id));
   // Recalculate sale / wholesale from purchase price for all visible (or selected) products.
@@ -262,12 +268,25 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
   };
 
   const guardNode = useUnsavedGuard(dirtyIds.length > 0, save);
+  const saveRef = useRef(save); saveRef.current = save;
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key.toLowerCase() === "s") { e.preventDefault(); void saveRef.current(); }
+      else if (mod && e.key.toLowerCase() === "f") { e.preventDefault(); searchRef.current?.focus(); searchRef.current?.select(); }
+      else if (e.key === "/" && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement)) { e.preventDefault(); searchRef.current?.focus(); }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, []);
   const allPicked = list.length > 0 && list.every((p) => picked.has(p.id));
 
   // Arrow keys move the cursor between editable fields (up/down/left/right)
   const gridKeys = (e: React.KeyboardEvent) => {
-    const k = e.key;
+    let k = e.key;
+    if (k === "Enter" && (e.target as HTMLElement).tagName === "INPUT") k = e.shiftKey ? "ArrowUp" : "ArrowDown";
     if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(k)) return;
+    if ((k === "ArrowUp" || k === "ArrowDown") && (e.target as HTMLElement).tagName === "SELECT" && e.key !== "Enter" && !e.altKey) return;
     const t = e.target as HTMLElement;
     if (t.tagName !== "INPUT" && t.tagName !== "SELECT") return;
     const td = t.closest("td"), tr = t.closest("tr"), body = tr?.parentElement;
@@ -279,18 +298,32 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
       if (k === "ArrowLeft" && !atStart) return;
       if (k === "ArrowRight" && !atEnd) return;
     }
+    if (e.key === "Enter" || k === "ArrowLeft" || k === "ArrowRight" || k === "ArrowUp" || k === "ArrowDown") {
+      // Several inputs can share one cell (auto tick, %, rate): move within the cell first.
+      const inCell = [...td.querySelectorAll<HTMLElement>("input:not([disabled]), select:not([disabled])")];
+      const ii = inCell.indexOf(t);
+      if (e.key !== "Enter" && (k === "ArrowLeft" || k === "ArrowRight") && inCell.length > 1) {
+        const nx = inCell[ii + (k === "ArrowRight" ? 1 : -1)];
+        if (nx) { e.preventDefault(); nx.focus(); if (nx instanceof HTMLInputElement && nx.type !== "checkbox") nx.select(); return; }
+      }
+    }
     const rows = [...body.querySelectorAll(":scope > tr")];
+    if (k === "ArrowDown" && rows.indexOf(tr) >= rows.length - 3) setLimit((l) => l + 80);
     const ri = rows.indexOf(tr), ci = [...tr.children].indexOf(td);
     const nri = k === "ArrowUp" ? ri - 1 : k === "ArrowDown" ? ri + 1 : ri;
     const nci = k === "ArrowLeft" ? ci - 1 : k === "ArrowRight" ? ci + 1 : ci;
-    const target = rows[nri]?.children[nci]?.querySelector<HTMLElement>("input, select, button");
+    const cellInputs = [...(rows[nri]?.children[nci]?.querySelectorAll<HTMLElement>("input:not([disabled]), select:not([disabled]), button") ?? [])];
+    const same = td.querySelectorAll("input:not([disabled]), select:not([disabled])");
+    const pos = [...same].indexOf(t);
+    const target = (nri !== ri && cellInputs[pos >= 0 ? pos : 0]) || (k === "ArrowLeft" ? cellInputs[cellInputs.length - 1] : cellInputs[cellInputs.length - 1 >= 0 ? (k === "ArrowRight" ? 0 : cellInputs.length - 1) : 0]);
     if (target) { e.preventDefault(); target.focus(); if (target.tagName === "INPUT") (target as HTMLInputElement).select(); }
   };
   return (
     <section className="space-y-2 rounded-xl border border-border bg-card p-3">
       {guardNode}
       <div className="flex flex-wrap items-center gap-2">
-        <p className="mr-auto font-bold text-foreground">Bulk update items <span className="text-xs font-normal text-muted-foreground">{dirtyIds.length} changed</span></p>
+        <p className="mr-auto font-bold text-foreground">Bulk update items <span className="text-xs font-normal text-muted-foreground">{dirtyIds.length} changed</span>
+          <span className="ml-2 hidden text-[11px] font-normal text-muted-foreground lg:inline">Keys: / search · Enter next row · Shift+Enter up · arrows move · Ctrl+S save</span></p>
         <Button variant="destructive" onClick={() => del([...picked])} disabled={!picked.size || saving}><Trash2 /> Delete ({picked.size})</Button>
         <Button variant="outline" onClick={() => setEdits({})} disabled={!dirtyIds.length || saving}>Reset</Button>
         <Button onClick={save} disabled={saving || !dirtyIds.length}>{saving ? "Saving..." : `Save (${dirtyIds.length})`}</Button>
@@ -353,11 +386,11 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
         <span>{mk.pctOn ? "Untick to type a custom rate. Each product also has its own small tick." : "Rate by % is off — no rate is calculated from a percentage. Type rates directly, or use This value / +/− amount."}</span>
       </div>
       <label className="flex h-10 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
-        <Search className="size-4 text-primary" /><input className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={qRaw} onChange={(e) => setQ(e.target.value)} placeholder="Search product" />
+        <Search className="size-4 text-primary" /><input className="min-w-0 flex-1 bg-transparent text-sm outline-none" ref={searchRef} value={qRaw} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === "ArrowDown") { e.preventDefault(); const el = document.querySelector<HTMLInputElement>("[data-bulk-grid] tbody tr td:nth-child(3) input, [data-bulk-grid] tbody tr input:not([type=checkbox])"); el?.focus(); el?.select(); } }} placeholder="Search product (press / or Ctrl+F) — Enter jumps to the list" aria-label="Search product" />
       </label>
       {/* Mobile: one card per product so no field is hidden behind sideways scrolling */}
       <div className="max-h-[60vh] space-y-2 overflow-auto sm:hidden">
-        {list.slice(0, 300).map((p) => { const r = rowOf(p.id); const dirty = dirtyIds.includes(p.id); const numIn = (k: string, lab: string) => (
+        {list.slice(0, Math.min(limit, 300)).map((p) => { const r = rowOf(p.id); const dirty = dirtySet.has(p.id); const numIn = (k: string, lab: string) => (
           <label key={k} className="block text-[11px] font-medium text-muted-foreground"><span className="flex items-center justify-between gap-1">{lab}{k === "sale_price" || k === "wholesale_price" ? <span className="inline-flex items-center gap-1" title="Auto % from purchase price"><input type="checkbox" className="size-3.5" disabled={!mk.pctOn} checked={autoOn(p.id, k === "sale_price" ? "sale" : "ws")} onChange={() => toggleRowMk(p.id, k === "sale_price" ? "sale" : "ws")} aria-label={`Auto ${lab} ${p.name}`} /><input className={`${posInput} h-6 w-12 px-1 text-right text-[11px]`} disabled={!mk.pctOn} value={rowPct[p.id]?.[k === "sale_price" ? "sale" : "ws"] ?? ""} placeholder={k === "sale_price" ? mk.salePct : mk.wsPct} inputMode="decimal" onChange={(e) => setRowPct(p.id, k === "sale_price" ? "sale" : "ws", e.target.value)} aria-label={`${lab} percent ${p.name}`} />%</span> : null}</span>
             <input className={`${posInput} mt-0.5 h-9 w-full px-2 text-right text-foreground`} value={r[k]} inputMode="decimal" onChange={(e) => set(p.id, k, e.target.value)} aria-label={`${lab} ${p.name}`} />
           </label>);
@@ -399,9 +432,10 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
             </div>
           );
         })}
-        {list.length > 300 && <p className="py-2 text-center text-xs text-muted-foreground">Showing first 300 — use search or filters to narrow the list.</p>}
+        {list.length > Math.min(limit, 300) && <p className="py-2 text-center text-xs text-muted-foreground">{limit < 300 ? "Scroll for more…" : "Showing first 300 — use search or filters to narrow the list."}</p>}
+        {limit < Math.min(list.length, 300) && <div ref={limit < 300 ? moreRef : undefined} className="h-1 sm:hidden" />}
       </div>
-      <div className="hidden max-h-[60vh] overflow-auto rounded-lg border border-border sm:block">
+      <div data-bulk-grid className="hidden max-h-[60vh] overflow-auto rounded-lg border border-border sm:block">
         <table className="w-full min-w-[2300px] table-fixed border-collapse text-sm">
           <colgroup>
             <col className="w-12" />
@@ -413,12 +447,12 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
             {COLS.map((c, i) => <th key={c.k} style={c.k === "name" ? undefined : tint(i, activeCol === c.k ? 45 : 18)} className={`truncate px-2 py-2 transition-colors ${activeCol === c.k ? "text-foreground" : ""} ${c.k === "name" ? "sticky left-12 z-20 border-r border-border bg-card" : ""}`} title={c.label}>{c.k === "sale_price" || c.k === "wholesale_price" ? <MkHead label={c.label} on={c.k === "sale_price" ? mk.saleOn : mk.wsOn} pct={c.k === "sale_price" ? mk.salePct : mk.wsPct} onOn={(v) => { updMk(c.k === "sale_price" ? { saleOn: v } : { wsOn: v }); setRowMk((m) => Object.fromEntries(Object.entries(m).map(([id, x]) => [id, { ...x, [c.k === "sale_price" ? "sale" : "ws"]: undefined }]))); }} onPct={(v) => updMk(c.k === "sale_price" ? { salePct: v } : { wsPct: v })} disabled={!mk.pctOn} /> : c.label}</th>)}
             <th className="px-2 py-2">Delete</th>
           </tr></thead>
-          <tbody onKeyDown={gridKeys} onMouseLeave={() => setActiveCol(null)} onBlur={() => setActiveCol(null)}>
-            {list.slice(0, 1000).map((p) => { const r = rowOf(p.id); return (
-              <tr key={p.id} className={`border-t border-border ${dirtyIds.includes(p.id) ? "bg-accent" : ""}`}>
-                <td className={`sticky left-0 z-10 px-2 py-1 ${dirtyIds.includes(p.id) ? "bg-accent" : "bg-card"}`}><input type="checkbox" checked={picked.has(p.id)} onChange={() => setPicked((s) => { const n = new Set(s); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; })} aria-label={`Select ${p.name}`} /></td>
+          <tbody onKeyDown={gridKeys} onBlur={() => setActiveCol(null)}>
+            {list.slice(0, limit).map((p) => { const r = rowOf(p.id); return (
+              <tr key={p.id} className={`border-t border-border ${dirtySet.has(p.id) ? "bg-accent" : ""}`}>
+                <td className={`sticky left-0 z-10 px-2 py-1 ${dirtySet.has(p.id) ? "bg-accent" : "bg-card"}`}><input type="checkbox" checked={picked.has(p.id)} onChange={() => setPicked((s) => { const n = new Set(s); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; })} aria-label={`Select ${p.name}`} /></td>
                 {COLS.map((c, i) => (
-                  <td key={c.k} onMouseEnter={() => setActiveCol(c.k)} onFocus={() => setActiveCol(c.k)} style={c.k === "name" || dirtyIds.includes(p.id) && activeCol !== c.k ? undefined : tint(i, activeCol === c.k ? 32 : 8)} className={`px-1 py-1 transition-colors ${c.k === "name" ? `sticky left-12 z-10 border-r border-border ${dirtyIds.includes(p.id) ? "bg-accent" : "bg-card"}` : ""}`}>
+                  <td key={c.k} onFocus={() => setActiveCol(c.k)} style={c.k === "name" || dirtySet.has(p.id) && activeCol !== c.k ? undefined : tint(i, activeCol === c.k ? 32 : 8)} className={`px-1 py-1 transition-colors ${c.k === "name" ? `sticky left-12 z-10 border-r border-border ${dirtySet.has(p.id) ? "bg-accent" : "bg-card"}` : ""}`}>
                     {c.k === "is_active" ? <select className={`${posInput} h-9 w-full px-1 ${r.is_active !== orig[p.id].is_active ? "border-primary" : ""}`} value={r.is_active} onChange={(e) => set(p.id, "is_active", e.target.value)} aria-label={`Active ${p.name}`}><option value="true">Yes</option><option value="false">No</option></select>
                       : c.k === "category" ? <CatPicker value={r.category} original={orig[p.id].category} options={catOptions} onPick={(v) => set(p.id, "category", v)} label={`Category — ${p.name}`} />
                       : c.k === "sale_price" || c.k === "wholesale_price" ? <div className="flex items-center gap-1"><input type="checkbox" className="size-3.5 shrink-0" disabled={!mk.pctOn} title="Auto % from purchase price (untick for custom rate)" checked={autoOn(p.id, c.k === "sale_price" ? "sale" : "ws")} onChange={() => toggleRowMk(p.id, c.k === "sale_price" ? "sale" : "ws")} aria-label={`Auto ${c.label} ${p.name}`} /><span className="inline-flex shrink-0 items-center text-[11px] text-muted-foreground"><input className={`${posInput} h-9 w-11 px-1 text-right text-[11px]`} disabled={!mk.pctOn} value={rowPct[p.id]?.[c.k === "sale_price" ? "sale" : "ws"] ?? ""} placeholder={c.k === "sale_price" ? mk.salePct : mk.wsPct} inputMode="decimal" title="This product's % over purchase price" onChange={(e) => setRowPct(p.id, c.k === "sale_price" ? "sale" : "ws", e.target.value)} aria-label={`${c.label} percent ${p.name}`} />%</span><input className={`${posInput} h-9 w-full min-w-0 px-2 text-right ${r[c.k] !== orig[p.id][c.k] ? "border-primary" : ""}`} value={r[c.k]} inputMode="decimal" onChange={(e) => set(p.id, c.k, e.target.value)} aria-label={`${c.label} ${p.name}`} /></div>
@@ -431,6 +465,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
             ); })}
           </tbody>
         </table>
+        {list.length > limit && <div ref={moreRef} className="py-2 text-center text-xs text-muted-foreground"><Button size="sm" variant="ghost" onClick={() => setLimit((l) => l + 200)}>Show more ({list.length - limit} left)</Button></div>}
       </div>
       <p className="text-xs text-muted-foreground">Changing stock qty records the difference in the stock ledger as "Bulk update". Stock value = stock × purchase price; changing the value auto-derives the purchase price. Total value: {rs(list.reduce((s, p) => s + (Number(rowOf(p.id).stock_value) || 0), 0))}</p>
     </section>
