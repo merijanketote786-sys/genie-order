@@ -164,7 +164,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
   const [customFieldValues, setCustomFieldValues] = useState<Record<number, string>>({});
   const [customFieldTotals, setCustomFieldTotals] = useState<Record<number, boolean>>({});
   const [customFieldOn, setCustomFieldOn] = useState<Record<number, boolean>>({});
-  const [editing, setEditing] = useState<{ id: string; number: string } | null>(null);
+  const [editing, setEditing] = useState<{ id: string; number: string; docType?: string } | null>(null);
   const [manualNumber, setManualNumber] = useState("");
   const [docsOpen, setDocsOpen] = useState<"held" | "quotation" | null>(null);
   const [estimate, setEstimate] = useState(false);
@@ -600,7 +600,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
       if (editing?.id && !isOnline()) throw new Error("Editing a saved bill needs internet. New bills can be saved offline.");
       const posData = {
           docType: kind,
-          docNumber: manualNumber.trim() || undefined,
+          docNumber: editing?.docType === "quotation" ? editing.number : manualNumber.trim() || undefined,
           customerName: r.customerName,
           phone: r.customerPhone,
           subtotal,
@@ -693,8 +693,10 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
       })));
       const savedPays = (ui as { pays?: { method: string; amount: string }[] }).pays;
       setPays(Array.isArray(savedPays) && savedPays.length ? savedPays.map((p) => ({ method: p.method as PayMethod, amount: String(p.amount ?? "") })) : [{ method: "Cash", amount: "" }]);
-      setManualNumber("");
-      setEditing(asInvoice ? { id: d.id, number: d.doc_number } : null);
+      const docType = (d as PosDocRow & { doc_type?: string }).doc_type ?? (docsOpen === "quotation" ? "quotation" : "held");
+      setManualNumber(docType === "quotation" ? d.doc_number : "");
+      setEditing(asInvoice || docType === "quotation" ? { id: d.id, number: d.doc_number, docType } : null);
+      if (docType === "quotation") setEstimate(!asInvoice);
       setDocsOpen(null);
       toast.success(`${d.doc_number} opened — now Save`);
     } catch {
@@ -792,6 +794,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
                 aria-label="Invoice number (optional)"
                 className="h-8 w-32 rounded-md border border-input bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                 value={manualNumber}
+                readOnly={editing?.docType === "quotation"}
                 onChange={(e) => setManualNumber(e.target.value)}
                 placeholder="Invoice # (auto)"
                 title="Leave empty for automatic number, or type your own invoice number"
