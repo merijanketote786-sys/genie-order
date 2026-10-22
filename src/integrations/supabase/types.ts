@@ -587,6 +587,7 @@ export type Database = {
           id: string
           method: string
           status: string
+          store_id: string | null
           workspace_id: string
         }
         Insert: {
@@ -601,6 +602,7 @@ export type Database = {
           id?: string
           method?: string
           status?: string
+          store_id?: string | null
           workspace_id?: string
         }
         Update: {
@@ -615,9 +617,18 @@ export type Database = {
           id?: string
           method?: string
           status?: string
+          store_id?: string | null
           workspace_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "expenses_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "pos_stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invoices: {
         Row: {

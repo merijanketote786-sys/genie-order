@@ -31,3 +31,6 @@
 - [x] Invoices: direct "Receive Payment" on unpaid bills
 - [x] Purchases: supplier bill # + bilty/transport charges
 - [x] Parties statement, expense voucher, best-selling report (already existed); Attendance salary sheet print/PDF added
+
+- [x] Expenses: store select, store-to-store transfer, custom expense name
+- [ ] Multi-firm (separate businesses per login) — waiting on user answers
