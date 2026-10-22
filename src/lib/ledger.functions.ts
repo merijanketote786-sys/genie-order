@@ -23,7 +23,7 @@ async function customerFlows(sb: Sb, customerId?: string) {
   return { sales: (sales ?? []) as any[], pays: (pays ?? []) as any[] };
 }
 
-export type CustomerBal = { id: string; name: string; phone: string; city: string; opening: number; creditLimit: number | null; sales: number; paid: number; balance: number };
+export type CustomerBal = { id: string; name: string; phone: string; city: string; address: string; opening: number; creditLimit: number | null; sales: number; paid: number; balance: number };
 
 export const listCustomerBalances = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -31,7 +31,7 @@ export const listCustomerBalances = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const sb = context.supabase as Sb;
     const [{ data: custs }, flows] = await Promise.all([
-      sb.from("customers").select("id, name, phone, city, opening_balance, credit_limit, pos_scoped").order("name").limit(5000),
+      sb.from("customers").select("id, name, phone, city, address, opening_balance, credit_limit, pos_scoped").order("name").limit(5000),
       customerFlows(sb),
     ]);
     const agg = new Map<string, { sales: number; paid: number; bal: number }>();
@@ -42,7 +42,7 @@ export const listCustomerBalances = createServerFn({ method: "GET" })
     const posIds = data.posOnly ? new Set<string>([...flows.sales.map((s) => s.customer_id), ...flows.pays.map((p) => p.customer_id)]) : null;
     const customers: CustomerBal[] = ((custs ?? []) as any[]).filter((c) => !posIds || c.pos_scoped || posIds.has(c.id)).map((c) => {
       const a = agg.get(c.id) ?? { sales: 0, paid: 0, bal: 0 };
-      return { id: c.id, name: c.name ?? "", phone: c.phone ?? "", city: c.city ?? "", opening: Number(c.opening_balance ?? 0), creditLimit: c.credit_limit == null ? null : Number(c.credit_limit), sales: r2(a.sales), paid: r2(a.paid), balance: r2(Number(c.opening_balance ?? 0) + a.bal) };
+      return { id: c.id, name: c.name ?? "", phone: c.phone ?? "", city: c.city ?? "", address: c.address ?? "", opening: Number(c.opening_balance ?? 0), creditLimit: c.credit_limit == null ? null : Number(c.credit_limit), sales: r2(a.sales), paid: r2(a.paid), balance: r2(Number(c.opening_balance ?? 0) + a.bal) };
     });
     return { customers };
   });

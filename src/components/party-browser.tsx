@@ -7,6 +7,7 @@ import { getCustomerLedger, getPartyStatementItems, listCustomerBalances, saveCu
 import { cancelDoc, deletePartyPayment, getPurchaseItems, getSupplierLedger, listSuppliers, partyPayment, saveSupplier } from "@/lib/business.functions";
 import { getSaleForEdit } from "@/lib/pos.functions";
 import { saveParty } from "@/lib/records.functions";
+import { editPosPartyDetails } from "@/lib/pos-party.functions";
 import { usePosAccess } from "@/components/pos-access";
 import { rs } from "@/components/pos-subnav";
 import { newRef } from "@/lib/pos-errors";
@@ -56,8 +57,9 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   const [addPhone, setAddPhone] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // Edit supplier
-  const [form, setForm] = useState<{ name: string; phone: string; address: string; opening: string } | null>(null);
+  // Edit POS party details by existing IDs, never upsert by phone.
+  const [form, setForm] = useState<{ name: string; phone: string; address: string } | null>(null);
+  const [editBusy, setEditBusy] = useState(false);
 
   // Payment
   const [dir, setDir] = useState<"in" | "out">("in");
@@ -91,7 +93,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
   for (const x of c.data?.customers ?? []) {
     const digits = x.phone.replace(/\D/g, "");
     const k = digits.length >= 7 ? `p${tail(x.phone)}` : `c${x.id}`;
-    map.set(k, { key: k, name: x.name || x.phone || "No name", phone: x.phone, kind: "Customer", balance: x.balance, customerId: x.id });
+    map.set(k, { key: k, name: x.name || x.phone || "No name", phone: x.phone, kind: "Customer", balance: x.balance, customerId: x.id, address: x.address });
   }
   const supplierCounts = new Map<string, number>();
   for (const x of s.data?.suppliers ?? []) { const digits = x.phone.replace(/\D/g, ""); if (digits.length >= 7) { const k = `p${tail(x.phone)}`; supplierCounts.set(k, (supplierCounts.get(k) ?? 0) + 1); } }
@@ -124,14 +126,24 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
     setSaving(false);
   };
 
-  const saveSupplierForm = async () => {
-    if (!sel?.supplierId || !form?.name.trim()) return;
+  const openEditDetails = (p: Party) => {
+    setSel(p); setStOpen(false); setAdjOpen(false);
+    setForm({ name: p.name, phone: p.phone, address: p.address ?? "" });
+  };
+
+  const savePartyForm = async () => {
+    if (!sel || !form || editBusy) return;
+    if (!form.name.trim()) { toast.error("Party name is required"); return; }
+    setEditBusy(true);
     try {
-      await saveSupplier({ data: { id: sel.supplierId, name: form.name, phone: form.phone, address: form.address, openingBalance: Number(form.opening) || 0 } });
-      toast.success("Party saved");
+      const details = await editPosPartyDetails({ data: { customerId: sel.customerId, supplierId: sel.supplierId, ...form } });
+      const digits = details.phone.replace(/\D/g, "");
+      setSel({ ...sel, ...details, key: digits.length >= 7 ? `p${tail(details.phone)}` : sel.customerId ? `c${sel.customerId}` : `s${sel.supplierId}` });
+      toast.success("Party details saved");
       setForm(null);
-      await Promise.all([qc.invalidateQueries({ queryKey: ["suppliers"] }), qc.invalidateQueries({ queryKey: ["party-ledger-s"] })]);
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+      await Promise.all(["customer-balances", "suppliers", "party-ledger-c", "party-ledger-s", "customers", "pos-customers", "pos-balance"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not save party details"); }
+    finally { setEditBusy(false); }
   };
 
   const openAdjust = () => {
@@ -380,14 +392,15 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
             {loading ? <li className="py-4 text-center text-xs text-muted-foreground">Loading parties…</li> : null}
             {!loading && !list.length ? <li className="py-4 text-center text-xs text-muted-foreground">No parties found — press "New".</li> : null}
             {list.map((p) => (
-              <li key={p.key}>
-                <button type="button" onClick={() => { setSel(p); setForm(null); setStOpen(false); }} className={`flex w-full items-center justify-between gap-2 rounded-lg border p-2 text-left text-sm ${sel?.key === p.key ? "border-primary bg-accent" : "border-border"}`}>
+              <li key={p.key} className={`flex items-center gap-1 rounded-lg border p-1 ${sel?.key === p.key ? "border-primary bg-accent" : "border-border"}`}>
+                <Button type="button" variant="ghost" onClick={() => { setSel(p); setForm(null); setStOpen(false); }} className="h-auto min-w-0 flex-1 justify-between gap-2 p-1 text-left text-sm">
                   <span className="min-w-0">
                     <b className="block truncate text-foreground">{p.name}</b>
                      <span className="block truncate text-xs text-muted-foreground">{p.phone || "No phone"}</span>
                   </span>
                   <span className={`shrink-0 text-sm font-semibold ${p.balance > 0 ? "text-success" : "text-destructive"}`}>{rs(Math.abs(p.balance))}</span>
-                </button>
+                </Button>
+                <Button type="button" size="icon-sm" variant="ghost" disabled={editBusy} onClick={() => openEditDetails(p)} aria-label={`Edit details for ${p.name}`} title="Edit details"><Pencil className="size-4" /></Button>
               </li>
             ))}
           </ul>
@@ -404,7 +417,7 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
                 </div>
                 <span className={`text-sm font-bold ${sel.balance > 0 ? "text-success" : "text-destructive"}`}>{sel.balance > 0 ? "To receive" : "To pay"} {rs(Math.abs(sel.balance))}</span>
                 <div className="flex flex-wrap gap-2">
-                  {sel.supplierId ? <Button size="sm" variant="outline" onClick={() => { const sup = (s.data?.suppliers ?? []).find((x) => x.id === sel.supplierId); setForm({ name: sup?.name ?? sel.name, phone: sup?.phone ?? sel.phone, address: sup?.address ?? "", opening: String(sup?.openingBalance ?? 0) }); }}><Pencil className="size-4" /> Edit</Button> : null}
+                  <Button size="sm" variant="outline" disabled={editBusy} onClick={() => openEditDetails(sel)}><Pencil className="size-4" /> Edit details</Button>
                   <Button size="sm" variant="outline" onClick={openAdjust}><Scale className="size-4" /> Adjust balance</Button>
                   <Button size="sm" variant="outline" onClick={() => setStOpen((o) => !o)}><FileText className="size-4" /> Statement</Button>
                 </div>
@@ -427,11 +440,10 @@ export function PartyBrowser({ enabled = true }: { enabled?: boolean }) {
 
               {form ? (
                 <div className="grid gap-2 rounded-lg border border-primary p-2 sm:grid-cols-2">
-                   <input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Party name *" />
-                  <input className={inputCls} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Phone" />
-                  <input className={inputCls} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Address" />
-                  <input className={inputCls} value={form.opening} inputMode="decimal" onChange={(e) => setForm({ ...form, opening: e.target.value })} placeholder="Opening balance (we owe)" />
-                  <div className="flex gap-2 sm:col-span-2"><Button size="sm" onClick={saveSupplierForm}>Save</Button><Button size="sm" variant="ghost" onClick={() => setForm(null)}>Cancel</Button></div>
+                  <label className="text-xs text-muted-foreground">Name<input className={inputCls} disabled={editBusy} maxLength={120} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Party name *" /></label>
+                  <label className="text-xs text-muted-foreground">Phone<input className={inputCls} disabled={editBusy} maxLength={30} inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></label>
+                  <label className="text-xs text-muted-foreground sm:col-span-2">Address<input className={inputCls} disabled={editBusy} maxLength={300} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></label>
+                  <div className="flex gap-2 sm:col-span-2"><Button size="sm" disabled={editBusy} onClick={savePartyForm}>{editBusy ? "Saving…" : "Save details"}</Button><Button size="sm" variant="ghost" disabled={editBusy} onClick={() => setForm(null)}>Cancel</Button></div>
                 </div>
               ) : null}
 
