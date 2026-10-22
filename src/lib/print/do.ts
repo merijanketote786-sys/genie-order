@@ -13,11 +13,14 @@ export function toChallan(doc: PrintDoc): PrintDoc {
   };
 }
 
-export function doOutput(doc: PrintDoc, includeCustomer: boolean): PrintDoc {
-  if (doc.title !== "D-O" || includeCustomer) return doc;
+export function doOutput(doc: PrintDoc, includeCustomer: boolean, includeDelivery = true): PrintDoc {
+  if (doc.title !== "D-O" || (includeCustomer && includeDelivery)) return doc;
   return {
     ...doc,
-    party: undefined,
-    meta: doc.meta?.filter(([label]) => label !== "City / Area"),
+    party: includeCustomer ? doc.party : undefined,
+    meta: doc.meta?.filter(([label]) =>
+      (includeCustomer || label !== "City / Area") &&
+      (includeDelivery || (label !== "Courier service" && label !== "Goods adda")),
+    ),
   };
 }

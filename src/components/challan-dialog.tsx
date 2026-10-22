@@ -13,7 +13,8 @@ export function ChallanDialog({ doc, onClose, onPrint, onPdf }: { doc: PrintDoc;
   const [d, setD] = useState<PrintDoc>(doc);
   const [editing, setEditing] = useState(false);
   const [includeCustomer, setIncludeCustomer] = useState(true);
-  const output = doOutput({ ...d, title: "D-O" }, includeCustomer);
+  const [includeDelivery, setIncludeDelivery] = useState(true);
+  const output = doOutput({ ...d, title: "D-O" }, includeCustomer, includeDelivery);
   const setParty = (k: "name" | "phone" | "address", v: string) => setD((x) => ({ ...x, party: { label: "Deliver To", ...x.party, [k]: v } }));
   const text = () => [
     `*D-O ${d.number}*`,
@@ -38,6 +39,7 @@ export function ChallanDialog({ doc, onClose, onPrint, onPdf }: { doc: PrintDoc;
         <DialogHeader><DialogTitle>D-O {d.number}</DialogTitle></DialogHeader>
         <div className="space-y-3 text-sm">
           <label className="flex items-center gap-2"><Switch checked={includeCustomer} onCheckedChange={setIncludeCustomer} aria-label="Print customer details" />Print customer details</label>
+          <label className="flex items-center gap-2"><Switch checked={includeDelivery} onCheckedChange={setIncludeDelivery} aria-label="Print delivery method" />Print delivery method</label>
           {editing ? (
             <div className="grid gap-2">
               <input className={inp} value={d.number} onChange={(e) => setD((x) => ({ ...x, number: e.target.value }))} aria-label="D-O number" placeholder="D-O number" />

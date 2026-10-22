@@ -70,7 +70,8 @@ function PrintPreviewDialog({ doc, onClose, onPrint, onPdf }: { doc: PrintDoc; o
   const [wa, setWa] = useState(false);
   const [mail, setMail] = useState(false);
   const [includeCustomer, setIncludeCustomer] = useState(true);
-  const output = useMemo(() => doOutput(doc, includeCustomer), [doc, includeCustomer]);
+  const [includeDelivery, setIncludeDelivery] = useState(true);
+  const output = useMemo(() => doOutput(doc, includeCustomer, includeDelivery), [doc, includeCustomer, includeDelivery]);
   const boxRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [scale, setScale] = useState(1);
@@ -104,7 +105,10 @@ function PrintPreviewDialog({ doc, onClose, onPrint, onPdf }: { doc: PrintDoc; o
           <label className="flex items-center gap-1 text-xs text-muted-foreground">Copies<input className="h-9 w-14 rounded-md border border-border bg-background px-2 text-sm" inputMode="numeric" value={copies} onChange={(e) => setCopies(e.target.value.replace(/\D/g, "").slice(0, 2))} aria-label="Copies" /></label>
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Cancel"><X /></Button>
         </div>
-        {doc.title === "D-O" && <label className="flex items-center gap-2 border-b border-border px-3 py-2 text-sm text-foreground"><Switch checked={includeCustomer} onCheckedChange={setIncludeCustomer} aria-label="Print customer details" />Print customer details</label>}
+        {doc.title === "D-O" && <div className="flex flex-wrap gap-x-6 gap-y-2 border-b border-border px-3 py-2 text-sm text-foreground">
+          <label className="flex items-center gap-2"><Switch checked={includeCustomer} onCheckedChange={setIncludeCustomer} aria-label="Print customer details" />Print customer details</label>
+          <label className="flex items-center gap-2"><Switch checked={includeDelivery} onCheckedChange={setIncludeDelivery} aria-label="Print delivery method" />Print delivery method</label>
+        </div>}
         <div ref={boxRef} className="min-h-0 flex-1 overflow-auto bg-muted p-3">
           <div className="mx-auto bg-background shadow-lg" style={{ width: spec.widthMm * PX_PER_MM * scale, height: (spec.heightMm ? spec.heightMm * PX_PER_MM : frameH) * scale, overflow: "hidden" }}>
             {html ? (
