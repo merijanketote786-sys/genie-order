@@ -286,6 +286,23 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
         opRef.current = newRef();
         setEditId(undefined);
         toast.success(`Purchase order saved: ${r.number}${r.total ? ` — ${rs(r.total)}` : ""}`);
+        const savedId = isQueued(out) ? undefined : (out as { id?: string }).id;
+        const orderDoc = {
+          kind: "purchase", id: savedId, title: "Purchase Order", number: r.number, date: new Date(),
+          party: resolved?.name ? { label: "Party", name: resolved.name } : undefined,
+          lines: valid.map((l) => ({ name: l.name, unit: l.unit, qty: num(l.qty), rate: num(l.rate), discount: num(l.discount), taxPct: num(l.tax), total: lineTotal(l) })),
+          meta: billNo.trim() ? [["Supplier bill #", billNo.trim()]] : undefined,
+          totals: [...(num(discount) ? [{ label: "Discount", value: -num(discount) }] : []), ...(num(freight) ? [{ label: "Bilty / transport", value: num(freight) }] : []), { label: "Grand Total", value: r.total, bold: true }],
+          payments: [], paid: 0, balance: 0, notes: notes || undefined,
+        } as PrintDoc;
+        const savedHist = savedId ? ({
+          id: savedId, doc_number: r.number, doc_type: "order", status: "open", supplier_id: resolved?.id ?? null, supplier_name: resolved?.name ?? "",
+          discount_total: num(discount), freight: num(freight), supplier_bill_no: billNo.trim() || null, notes: notes || null, paid_total: 0, balance: 0, grand_total: r.total, created_at: new Date().toISOString(), ref_purchase_id: null,
+        } as unknown as Hist) : null;
+        pc.preview(orderDoc, false, savedHist ? [
+          { label: "Edit", icon: <Pencil className="size-4" />, onClick: () => doEdit(savedHist) },
+          { label: "Cancel order", icon: <Ban className="size-4" />, danger: true, onClick: () => doCancel(savedHist) },
+        ] : undefined);
         reset();
         ["purchases", "suppliers", "customer-balances"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
         return;

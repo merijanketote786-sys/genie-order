@@ -19,7 +19,7 @@ const PX_PER_MM = 96 / 25.4;
  */
 export function usePrintCenter() {
   const { cfg } = usePosAccess();
-  const [previewDoc, setPreviewDoc] = useState<{ doc: PrintDoc; reprint: boolean } | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{ doc: PrintDoc; reprint: boolean; actions?: PreviewAction[] } | null>(null);
 
   const report = useCallback(async (doc: PrintDoc, reprint: boolean, res: { via: string; printer?: string; error?: string }) => {
     if (res.error) {
@@ -43,7 +43,7 @@ export function usePrintCenter() {
     try { await downloadPdf(doc, cfg, o); } catch { toast.error("PDF could not be created. Please try again."); }
   }, [cfg]);
 
-  const preview = useCallback((doc: PrintDoc, reprint = false) => setPreviewDoc({ doc, reprint }), []);
+  const preview = useCallback((doc: PrintDoc, reprint = false, actions?: PreviewAction[]) => setPreviewDoc({ doc, reprint, actions }), []);
 
   /** Based on settings: auto = print directly, ask = preview, never = nothing. */
   const afterSave = useCallback((doc: PrintDoc, behaviorKey: "pos" | "sale" | "quotation" | "return" | "purchase" | "receipt") => {
@@ -53,13 +53,16 @@ export function usePrintCenter() {
   }, [cfg, print, preview]);
 
   const node: ReactNode = previewDoc ? (
-    <PrintPreviewDialog doc={previewDoc.doc} onClose={() => setPreviewDoc(null)} onPrint={async (output, o) => { await print(output, { ...o, reprint: previewDoc.reprint }); setPreviewDoc(null); }} onPdf={(output, o) => pdf(output, o)} />
+    <PrintPreviewDialog doc={previewDoc.doc} actions={previewDoc.actions} onClose={() => setPreviewDoc(null)} onPrint={async (output, o) => { await print(output, { ...o, reprint: previewDoc.reprint }); setPreviewDoc(null); }} onPdf={(output, o) => pdf(output, o)} />
   ) : null;
 
   return { cfg, print, pdf, preview, afterSave, node };
 }
 
-function PrintPreviewDialog({ doc, onClose, onPrint, onPdf }: { doc: PrintDoc; onClose: () => void; onPrint: (doc: PrintDoc, o: { format: PaperFormat; template: TemplateId; copies: number }) => Promise<void>; onPdf: (doc: PrintDoc, o: { format: PaperFormat; template: TemplateId }) => Promise<void> }) {
+/** Extra buttons shown in the preview footer (e.g. Edit / Cancel for a just-saved document). */
+export type PreviewAction = { label: string; icon?: ReactNode; danger?: boolean; onClick: () => void };
+
+function PrintPreviewDialog({ doc, actions, onClose, onPrint, onPdf }: { doc: PrintDoc; actions?: PreviewAction[]; onClose: () => void; onPrint: (doc: PrintDoc, o: { format: PaperFormat; template: TemplateId; copies: number }) => Promise<void>; onPdf: (doc: PrintDoc, o: { format: PaperFormat; template: TemplateId }) => Promise<void> }) {
   const { cfg } = usePosAccess();
   const [format, setFormat] = useState<PaperFormat>(cfg.printing.defaults[doc.kind]);
   const [template, setTemplate] = useState<TemplateId>(cfg.printing.templates[cfg.printing.defaults[doc.kind]]);
@@ -129,6 +132,7 @@ function PrintPreviewDialog({ doc, onClose, onPrint, onPdf }: { doc: PrintDoc; o
           <p className="mr-auto text-xs text-muted-foreground">
             {bridge && printer?.deviceName ? `Desktop app: will go directly to "${printer.deviceName}"` : printer ? `Saved printer: ${printer.name} — select this same printer in the print window (the browser remembers it)` : "Select a printer in the print window · Margins: None · Scale: 100%"}
           </p>
+          {actions?.map((a) => <Button key={a.label} variant={a.danger ? "destructive" : "outline"} onClick={() => { onClose(); a.onClick(); }}>{a.icon} {a.label}</Button>)}
           <Button variant="outline" onClick={() => setWa(true)}><MessageCircle /> WhatsApp</Button>
           <Button variant="outline" onClick={() => setMail(true)}><Mail /> Email PDF</Button>
           <Button variant="outline" disabled={busy} onClick={async () => { setBusy(true); await onPdf(output, { format, template }); setBusy(false); }}><Download /> Save PDF</Button>
