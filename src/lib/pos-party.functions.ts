@@ -15,7 +15,8 @@ export const editPosPartyDetails = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const phone = data.phone ? normalizePhone(data.phone) : "";
     if (data.phone && !phone) throw new Error("Enter a valid phone number");
-    const { error } = await context.supabase.rpc("pos_edit_party_details", {
+    // Generated RPC types omit nullable arguments; SQL accepts NULL for either side.
+    const { error } = await (context.supabase as any).rpc("pos_edit_party_details", {
       _customer: data.customerId ?? null,
       _supplier: data.supplierId ?? null,
       _details: { name: data.name, phone: phone ?? "", address: data.address },
