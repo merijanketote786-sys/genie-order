@@ -463,6 +463,13 @@
       "when": 1792670849455,
       "tag": "0065_pos_conversion_prefix_and_party_details",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1792676851726,
+      "tag": "0066_purchase_orders",
+      "breakpoints": true
     }
   ]
 }
