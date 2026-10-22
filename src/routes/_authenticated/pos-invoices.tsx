@@ -15,6 +15,30 @@ import type { PrintDoc } from "@/lib/print/render";
 import { toChallan } from "@/lib/print/do";
 import { toast } from "sonner";
 import { askReason } from "@/lib/ask-reason";
+import { WaTemplateButton } from "@/components/wa-template-button";
+import { usePosAccess } from "@/components/pos-access";
+import type { ReceiptInput } from "@/lib/pos";
+
+function saleToReceipt(s: SaleRow, business: string): ReceiptInput {
+  const ui = s.payload?.ui ?? s.payload;
+  return {
+    business,
+    invoiceNumber: s.doc_number,
+    title: s.doc_type === "quotation" ? "Quotation" : s.doc_type === "return" ? "Sale Return" : "Invoice",
+    date: new Date(s.created_at).toLocaleDateString("en-PK"),
+    customerName: s.customer_name ?? undefined,
+    customerPhone: s.customer_phone ?? undefined,
+    customerAddress: ui?.customerAddress,
+    customerCityArea: ui?.customerCityArea,
+    lines: s.items.map((it, i) => ({ key: String(i), name: it.name, unit: it.unit ?? "", rateType: "sale", price: Number(it.rate), qty: Number(it.qty), discount: Number(it.discount) || 0 }) as ReceiptInput["lines"][number]),
+    billDiscount: Math.max(0, Number(s.discount_total) - s.items.reduce((a, it) => a + (Number(it.discount) || 0), 0)),
+    delivery: Number(s.delivery) || 0,
+    payMode: s.payments.map((p) => p.method).join("+") || "Credit",
+    paid: Number(s.paid_total) || 0,
+    notes: s.notes ?? undefined,
+    currency: "PKR",
+  };
+}
 
 export const Route = createFileRoute("/_authenticated/pos-invoices")({
   head: () => ({
@@ -121,6 +145,8 @@ function shareText(s: SaleRow): string {
 
 function PosInvoicesPage() {
   const pc = usePrintCenter();
+  const { cfg } = usePosAccess();
+  const business = cfg.business.name || "HBPOS";
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
@@ -266,6 +292,7 @@ function PosInvoicesPage() {
                     {Number(s.balance) > 0 ? <> · Balance <b className="text-destructive">{rs(Number(s.balance))}</b></> : null}
                   </div>
                 </div>
+                <WaTemplateButton compact label={`WhatsApp message for ${s.doc_number}`} getReceipt={() => saleToReceipt(s, business)} />
                 <div className="relative">
                   <button
                     title="Actions"
