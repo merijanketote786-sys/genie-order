@@ -15,6 +15,7 @@ function handlers(file: string) {
     if (id === "@tanstack/react-start") return { createServerFn: () => builder };
     if (id.includes("auth-middleware")) return { requireSupabaseAuth: {} };
     if (id.includes("pos-store.server")) return { withStore: (q: unknown) => q };
+    if (id === "./pos-errors") return { friendlyDbError: (_e: unknown, fallback: string) => fallback };
     if (id === "zod") return { z };
     throw new Error(`Unexpected import ${id}`);
   };
