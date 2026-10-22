@@ -3,12 +3,12 @@ import { AppShell } from "@/components/app-shell";
 import { PAY_OPTS, PosSubnav, posInput, rs } from "@/components/pos-subnav";
 import { ALL_DATES, DateRangeFilter, rangeToIso, type DateRange } from "@/components/date-range-filter";
 import { Button } from "@/components/ui/button";
-import { cancelPurchase, ensurePurchaseParty, saveSupplier, getPurchaseItems, listProductsLite, listPurchases, listSuppliers, savePurchase } from "@/lib/business.functions";
+import { cancelPurchase, cancelPurchaseOrder, convertPurchaseOrder, ensurePurchaseParty, saveSupplier, getPurchaseItems, listProductsLite, listPurchases, listSuppliers, savePurchase, savePurchaseOrder } from "@/lib/business.functions";
 import { listCustomerBalances } from "@/lib/ledger.functions";
 import { isOnline, isQueued, runOrQueue } from "@/lib/offline-sync";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { PackagePlus, Trash2, Undo2, Zap, MoreVertical, ReceiptText, Printer, Download, Share2, Pencil, Ban } from "lucide-react";
+import { PackagePlus, Trash2, Undo2, Zap, MoreVertical, ReceiptText, Printer, Download, Share2, Pencil, Ban, ClipboardList, ArrowRightLeft } from "lucide-react";
 import { ShareDialog } from "@/components/share-dialog";
 import type { PrintDoc } from "@/lib/print/render";
 import { UnitSelect } from "@/components/unit-select";
@@ -41,7 +41,7 @@ type Staged = { productId?: string; name: string; isNew: boolean };
 const num = (s: string) => Number(s.replace(/[^\d.]/g, "")) || 0;
 const GRID = "mgrid grid grid-cols-[36px_minmax(200px,2.4fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(100px,1fr)_minmax(80px,0.8fr)_minmax(70px,0.7fr)_minmax(110px,1fr)_52px] items-center gap-2";
 
-export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; startDocType?: "purchase" | "return" } = {}) {
+export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; startDocType?: "purchase" | "return" | "order" } = {}) {
   const qc = useQueryClient();
   const pc = usePrintCenter();
   const activeStore = useActiveStore();
@@ -62,8 +62,9 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const { data: prod } = useQuery({ queryKey: ["products-lite"], queryFn: () => listProductsLite(), staleTime: 60_000 });
   const [range, setRange] = useState<DateRange>(ALL_DATES);
   const { data: hist } = useQuery({ queryKey: ["purchases", range], queryFn: () => listPurchases({ data: rangeToIso(range) }) });
-  const [docType, setDocType] = useState<"purchase" | "return">(startDocType ?? "purchase");
+  const [docType, setDocType] = useState<"purchase" | "return" | "order">(startDocType ?? "purchase");
   const [refId, setRefId] = useState<string | undefined>();
+  const [refOrderId, setRefOrderId] = useState<string | undefined>();
   const [partySearch, setPartySearch] = useState("");
   const [partyOpen, setPartyOpen] = useState(false);
   const [partyIndex, setPartyIndex] = useState(0);
