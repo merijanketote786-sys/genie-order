@@ -1,4 +1,5 @@
 # Roadmap — Vyapar-style POS
+- [x] Rename POS delivery challans to D-O and make customer details optional across all D-O outputs
 - [x] POS Fixed Assets: asset register, add/edit/archive, categories, values, permission checks and verification
 - [x] Enable mobile/tablet rotation and verify shared POS/Workspace navigation and popups in both orientations
 - [x] POS backup: save to computer folder/download, restore with merge or replace

@@ -1,4 +1,6 @@
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { doOutput } from "@/lib/print/do";
 import { usePosAccess } from "@/components/pos-access";
 import { FORMAT_LABEL, TEMPLATE_LABEL, type PaperFormat, type TemplateId } from "@/lib/pos-config";
 import { logPosEvent } from "@/lib/print-admin.functions";
@@ -6,7 +8,7 @@ import { downloadPdf, printBridge, printDocument, resolvePrinter } from "@/lib/p
 import { renderPrint, type PrintDoc } from "@/lib/print/render";
 import { Download, Loader2, Mail, MessageCircle, Printer, X } from "lucide-react";
 import { EmailSendDialog, WhatsAppSendDialog } from "@/components/whatsapp-send";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 const PX_PER_MM = 96 / 25.4;
@@ -51,13 +53,13 @@ export function usePrintCenter() {
   }, [cfg, print, preview]);
 
   const node: ReactNode = previewDoc ? (
-    <PrintPreviewDialog doc={previewDoc.doc} onClose={() => setPreviewDoc(null)} onPrint={async (o) => { await print(previewDoc.doc, { ...o, reprint: previewDoc.reprint }); setPreviewDoc(null); }} onPdf={(o) => pdf(previewDoc.doc, o)} />
+    <PrintPreviewDialog doc={previewDoc.doc} onClose={() => setPreviewDoc(null)} onPrint={async (output, o) => { await print(output, { ...o, reprint: previewDoc.reprint }); setPreviewDoc(null); }} onPdf={(output, o) => pdf(output, o)} />
   ) : null;
 
   return { cfg, print, pdf, preview, afterSave, node };
 }
 
-function PrintPreviewDialog({ doc, onClose, onPrint, onPdf }: { doc: PrintDoc; onClose: () => void; onPrint: (o: { format: PaperFormat; template: TemplateId; copies: number }) => Promise<void>; onPdf: (o: { format: PaperFormat; template: TemplateId }) => Promise<void> }) {
+function PrintPreviewDialog({ doc, onClose, onPrint, onPdf }: { doc: PrintDoc; onClose: () => void; onPrint: (doc: PrintDoc, o: { format: PaperFormat; template: TemplateId; copies: number }) => Promise<void>; onPdf: (doc: PrintDoc, o: { format: PaperFormat; template: TemplateId }) => Promise<void> }) {
   const { cfg } = usePosAccess();
   const [format, setFormat] = useState<PaperFormat>(cfg.printing.defaults[doc.kind]);
   const [template, setTemplate] = useState<TemplateId>(cfg.printing.templates[cfg.printing.defaults[doc.kind]]);
@@ -67,6 +69,8 @@ function PrintPreviewDialog({ doc, onClose, onPrint, onPdf }: { doc: PrintDoc; o
   const [busy, setBusy] = useState(false);
   const [wa, setWa] = useState(false);
   const [mail, setMail] = useState(false);
+  const [includeCustomer, setIncludeCustomer] = useState(true);
+  const output = useMemo(() => doOutput(doc, includeCustomer), [doc, includeCustomer]);
   const boxRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [scale, setScale] = useState(1);
@@ -75,9 +79,9 @@ function PrintPreviewDialog({ doc, onClose, onPrint, onPdf }: { doc: PrintDoc; o
   useEffect(() => { setTemplate(cfg.printing.templates[format]); }, [format, cfg]);
   useEffect(() => {
     let live = true;
-    renderPrint(doc, cfg, { format, template, copies: 1 }).then((r) => { if (live) { setHtml(r.html); setSpec(r.spec); } });
+    renderPrint(output, cfg, { format, template, copies: 1 }).then((r) => { if (live) { setHtml(r.html); setSpec(r.spec); } });
     return () => { live = false; };
-  }, [doc, cfg, format, template]);
+  }, [output, cfg, format, template]);
   useEffect(() => {
     const w = boxRef.current?.clientWidth ?? 600;
     setScale(Math.min(1, (w - 24) / (spec.widthMm * PX_PER_MM)));
@@ -100,6 +104,7 @@ function PrintPreviewDialog({ doc, onClose, onPrint, onPdf }: { doc: PrintDoc; o
           <label className="flex items-center gap-1 text-xs text-muted-foreground">Copies<input className="h-9 w-14 rounded-md border border-border bg-background px-2 text-sm" inputMode="numeric" value={copies} onChange={(e) => setCopies(e.target.value.replace(/\D/g, "").slice(0, 2))} aria-label="Copies" /></label>
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Cancel"><X /></Button>
         </div>
+        {doc.title === "D-O" && <label className="flex items-center gap-2 border-b border-border px-3 py-2 text-sm text-foreground"><Switch checked={includeCustomer} onCheckedChange={setIncludeCustomer} aria-label="Print customer details" />Print customer details</label>}
         <div ref={boxRef} className="min-h-0 flex-1 overflow-auto bg-muted p-3">
           <div className="mx-auto bg-background shadow-lg" style={{ width: spec.widthMm * PX_PER_MM * scale, height: (spec.heightMm ? spec.heightMm * PX_PER_MM : frameH) * scale, overflow: "hidden" }}>
             {html ? (
@@ -122,13 +127,13 @@ function PrintPreviewDialog({ doc, onClose, onPrint, onPdf }: { doc: PrintDoc; o
           </p>
           <Button variant="outline" onClick={() => setWa(true)}><MessageCircle /> WhatsApp</Button>
           <Button variant="outline" onClick={() => setMail(true)}><Mail /> Email PDF</Button>
-          <Button variant="outline" disabled={busy} onClick={async () => { setBusy(true); await onPdf({ format, template }); setBusy(false); }}><Download /> Save PDF</Button>
-          <Button disabled={busy} onClick={async () => { setBusy(true); await onPrint({ format, template, copies: Math.max(1, Number(copies) || 1) }); setBusy(false); }}><Printer /> Print</Button>
+          <Button variant="outline" disabled={busy} onClick={async () => { setBusy(true); await onPdf(output, { format, template }); setBusy(false); }}><Download /> Save PDF</Button>
+          <Button disabled={busy} onClick={async () => { setBusy(true); await onPrint(output, { format, template, copies: Math.max(1, Number(copies) || 1) }); setBusy(false); }}><Printer /> Print</Button>
           <Button variant="ghost" onClick={onClose}>Close</Button>
         </div>
       </div>
-      {wa && <WhatsAppSendDialog doc={doc} business={cfg.business.name} onClose={() => setWa(false)} />}
-      {mail && <EmailSendDialog doc={doc} onClose={() => setMail(false)} />}
+      {wa && <WhatsAppSendDialog doc={output} business={cfg.business.name} onClose={() => setWa(false)} />}
+      {mail && <EmailSendDialog doc={output} onClose={() => setMail(false)} />}
     </div>
   );
 }
