@@ -21,6 +21,7 @@ import { StoreSwitcher, useActiveStore } from "@/components/store-switcher";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { UserPlus } from "lucide-react";
 import { askReason } from "@/lib/ask-reason";
+import { purchaseSaveError } from "@/lib/purchase-save-guard";
 
 export const Route = createFileRoute("/_authenticated/purchases")({
   head: () => ({
@@ -225,6 +226,8 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const save = async () => {
     const valid = lines.filter((l) => l.name.trim() && num(l.qty) > 0);
     if (!valid.length) return toast.error("Enter at least one item");
+    const saveError = purchaseSaveError(docType, activeStore.isAllStores, paidNum, total, !!selectedParty);
+    if (saveError) return toast.error(saveError);
     if (lockRef.current) return;
     lockRef.current = true;
     setSaving(true);
@@ -288,8 +291,6 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
         return;
       }
 
-      if (activeStore.isAllStores) throw new Error("Select a specific store before saving a purchase");
-      if (paidNum < total && !selectedParty) throw new Error("Select a party for a credit purchase");
       // Edit: save the new entry FIRST, then cancel the old one — a failed save must never delete the original.
       if (offline && editId) throw new Error("Editing a saved purchase needs internet. New purchases can be saved offline.");
       if (offline && selectedParty && selectedParty.source === "customer") throw new Error("This party must be synced once online before an offline purchase. Choose a supplier or connect to internet.");

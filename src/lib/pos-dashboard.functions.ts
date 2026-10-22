@@ -34,7 +34,7 @@ export const getPosDashboard = createServerFn({ method: "GET" })
     const [sales, items, purchases, expenses, pays, products, balSales, balPurch] = await Promise.all([
       sb.from("pos_sales").select("id, doc_type, doc_number, status, payment_status, customer_name, grand_total, balance, cost_total, created_at").gte("created_at", since).order("created_at", { ascending: false }).limit(10000),
       sb.from("pos_sale_items").select("name, qty, line_total, sale_id, pos_sales!inner(created_at, doc_type, status)").gte("pos_sales.created_at", since).eq("pos_sales.doc_type", "sale").neq("pos_sales.status", "cancelled").limit(20000),
-      sb.from("purchases").select("id, doc_type, doc_number, status, supplier_name, grand_total, created_at").gte("created_at", since).neq("status", "cancelled").limit(10000),
+      sb.from("purchases").select("id, doc_type, doc_number, status, supplier_name, grand_total, created_at").in("doc_type", ["purchase", "return"]).gte("created_at", since).neq("status", "cancelled").limit(10000),
       sb.from("expenses").select("amount, expense_date, created_at, status").gte("created_at", since).neq("status", "cancelled").limit(10000),
       sb.from("pos_payments").select("direction, method, amount, created_at").eq("status", "completed").gte("created_at", since).limit(20000),
       sb.from("products").select("name, stock, min_stock, purchase_price, sale_price, is_active").eq("scope", "pos").eq("is_active", true).limit(5000),

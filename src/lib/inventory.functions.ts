@@ -97,7 +97,7 @@ export const getReport = createServerFn({ method: "GET" })
     const end = new Date(Date.parse(`${data.to}T00:00:00Z`) + data.tzOffsetMin * 60000 + 86400000).toISOString();
     const [{ data: sales }, { data: purs }, { data: pays }, { data: exps }, { data: prods }, { data: profs }] = await Promise.all([
       sb.from("pos_sales").select("id, doc_type, grand_total, paid_total, balance, discount_total, tax_total, customer_name, created_by, created_at").in("doc_type", ["sale", "return"]).neq("status", "cancelled").gte("created_at", start).lt("created_at", end).limit(20000),
-      sb.from("purchases").select("doc_type, grand_total, paid_total").neq("status", "cancelled").gte("created_at", start).lt("created_at", end).limit(20000),
+      sb.from("purchases").select("doc_type, grand_total, paid_total").in("doc_type", ["purchase", "return"]).neq("status", "cancelled").gte("created_at", start).lt("created_at", end).limit(20000),
       sb.from("pos_payments").select("direction, method, amount, kind").eq("status", "completed").gte("created_at", start).lt("created_at", end).limit(50000),
       sb.from("expenses").select("category, amount").eq("status", "completed").gte("expense_date", data.from).lte("expense_date", data.to).limit(20000),
       sb.from("products").select("id, name, category, purchase_price, stock, min_stock, sale_price").eq("is_active", true).eq("scope", "pos").limit(5000),

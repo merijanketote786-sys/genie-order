@@ -332,7 +332,7 @@ export const getPayables = createServerFn({ method: "GET" })
     const sb = context.supabase as Sb;
     const [{ data: sups }, { data: purs }, { data: pays }, st] = await Promise.all([
       sb.from("suppliers").select("id, name, opening_balance, created_at").limit(20000),
-      sb.from("purchases").select("supplier_id, doc_type, doc_number, grand_total, created_at").neq("status", "cancelled").not("supplier_id", "is", null).limit(50000),
+      sb.from("purchases").select("supplier_id, doc_type, doc_number, grand_total, created_at").in("doc_type", ["purchase", "return"]).neq("status", "cancelled").not("supplier_id", "is", null).limit(50000),
       sb.from("pos_payments").select("supplier_id, direction, amount").eq("status", "completed").not("supplier_id", "is", null).limit(50000),
       loadSettings(sb),
     ]);
