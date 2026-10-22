@@ -1,3 +1,4 @@
+import { FirmSwitcher } from "@/components/firm-switcher";
 import { useMySubscription } from "@/components/subscription";
 import { useEffect, useRef, useState } from "react";
 import { ItemsDialog } from "@/components/items-dialog";
@@ -184,6 +185,7 @@ export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-4" aria-label="POS navigation">
+        <FirmSwitcher />
         <div className="relative mb-3">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-sidebar-muted" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search features..." aria-label="Search POS features"

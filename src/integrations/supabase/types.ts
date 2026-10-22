@@ -972,6 +972,30 @@ export type Database = {
         }
         Relationships: []
       }
+      pos_firms: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          root_id: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          name: string
+          owner_id: string
+          root_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          root_id?: string
+        }
+        Relationships: []
+      }
       pos_fixed_assets: {
         Row: {
           category: string
@@ -2136,6 +2160,7 @@ export type Database = {
         Returns: undefined
       }
       current_workspace: { Args: never; Returns: string }
+      firm_root: { Args: { _ws: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2188,6 +2213,7 @@ export type Database = {
       }
       pos_close_doc: { Args: { _id: string }; Returns: undefined }
       pos_convert_purchase_order: { Args: { _p: Json }; Returns: Json }
+      pos_create_firm: { Args: { _name: string }; Returns: string }
       pos_create_product: { Args: { _p: Json }; Returns: string }
       pos_default_store: { Args: { _ws: string }; Returns: string }
       pos_delete_doc: { Args: { _id: string }; Returns: undefined }
@@ -2203,6 +2229,7 @@ export type Database = {
         Returns: string
       }
       pos_is_admin: { Args: never; Returns: boolean }
+      pos_list_firms: { Args: never; Returns: Json }
       pos_list_stores: { Args: never; Returns: Json }
       pos_log_event: {
         Args: {
@@ -2251,6 +2278,10 @@ export type Database = {
           _sale: string
         }
         Returns: Json
+      }
+      pos_rename_firm: {
+        Args: { _id: string; _name: string }
+        Returns: undefined
       }
       pos_request_store: { Args: { _ws: string }; Returns: string }
       pos_restore_backup: {
@@ -2311,6 +2342,7 @@ export type Database = {
         Returns: undefined
       }
       pos_set_mfg_pin: { Args: { _pin: string }; Returns: undefined }
+      pos_switch_firm: { Args: { _id: string }; Returns: undefined }
       pos_transfer_stock: {
         Args: { _from: string; _items: Json; _note: string; _to: string }
         Returns: number
