@@ -38,7 +38,7 @@ test("estimate edit retains QT-00053 and its identity rather than inserting anot
   try {
     const result = await save(db);
     assert.equal(result?.number, "QT-00053"); assert.equal(result?.id, id);
-    const rows = (await db.query("select doc_number,status,grand_total from pos_sales")).rows;
+    const rows = (await db.query<{ doc_number: string; status: string; grand_total: string }>("select doc_number,status,grand_total from pos_sales")).rows;
     assert.equal(rows.length, 1); assert.equal(rows[0]?.status, "completed");
     assert.equal((await db.query("select * from pos_sale_items")).rows.length, 1);
     assert.equal((await db.query("select * from pos_payments")).rows.length, 0);
@@ -51,7 +51,7 @@ test("sales staff without edit_sale or admin can delete estimates and receive an
   const db = await setup(); try {
     await db.query("select public.pos_delete_doc_v2($1::uuid)", [id]);
     assert.equal((await db.query("select * from pos_sales")).rows.length, 0);
-    assert.equal((await db.query("select action from audit_log")).rows[0]?.action, "delete");
+    assert.equal((await db.query<{ action: string }>("select action from audit_log")).rows[0]?.action, "delete");
   } finally { await db.close(); }
 });
 test("staff cannot delete invoices", async () => {
