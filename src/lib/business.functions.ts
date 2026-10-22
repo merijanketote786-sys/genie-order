@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { friendlyDbError } from "./pos-errors";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 const amt = z.number().min(0).max(1e9);
 const r2 = (x: number) => Math.round(x * 100) / 100;
@@ -209,6 +210,7 @@ export const convertPurchaseOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => orderPayload.extend({ orderId: z.string().uuid(), paid: amt, method: z.string().max(30) }).parse(d))
   .handler(async ({ data, context }) => {
+    if (getRequestHeader("x-pos-store") === "all-stores") throw new Error("Select a specific store before saving a purchase");
     const { items, subtotal, tax, total } = orderTotals(data.items);
     const { data: res, error } = await withStore((context.supabase as Sb).rpc("pos_convert_purchase_order", {
       _p: {

@@ -134,7 +134,7 @@ export const getDayBook = createServerFn({ method: "GET" })
       sb.from("pos_cash_entries").select("direction, amount").eq("status", "completed").eq("method", "Cash").lt("entry_date", data.date).limit(50000),
       sb.from("pos_cash_entries").select("id, direction, method, category, party, amount, note, status, created_at, account_id").eq("entry_date", data.date).order("created_at"),
       sb.from("pos_sales").select("doc_type, doc_number, customer_name, grand_total, paid_total, balance, created_at").in("doc_type", ["sale", "return"]).neq("status", "cancelled").gte("created_at", start).lt("created_at", end).order("created_at"),
-      sb.from("purchases").select("doc_type, doc_number, supplier_name, grand_total, paid_total, balance, created_at").neq("status", "cancelled").gte("created_at", start).lt("created_at", end).order("created_at"),
+      sb.from("purchases").select("doc_type, doc_number, supplier_name, grand_total, paid_total, balance, created_at").in("doc_type", ["purchase", "return"]).neq("status", "cancelled").gte("created_at", start).lt("created_at", end).order("created_at"),
       sb.from("acc_accounts").select("id, code, name, type").eq("is_active", true).order("code"),
     ]);
     const manSum = ((manBefore ?? []) as any[]).reduce((s, m) => s + (m.direction === "in" ? 1 : -1) * Number(m.amount), 0);

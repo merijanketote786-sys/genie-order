@@ -2,6 +2,7 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
+import { purchaseSaveError } from "./purchase-save-guard";
 
 const ws = "10000000-0000-4000-8000-000000000001";
 const uid = "10000000-0000-4000-8000-000000000002";
@@ -37,6 +38,7 @@ async function setup() {
     INSERT INTO public.products VALUES('${prod}','${ws}', 100);
   `);
   await db.exec(readFileSync(new URL("../../drizzle/migrations/0066_purchase_orders.sql", import.meta.url), "utf8"));
+  await db.exec(readFileSync(new URL("../../drizzle/migrations/0067_purchase_order_conversion_safety.sql", import.meta.url), "utf8"));
   return db;
 }
 
@@ -120,5 +122,35 @@ test("duplicate client_ref returns the same order instead of inserting again", a
     const b = await saveOrder(db, 10, ref);
     assert.equal(a?.id, b?.id); assert.equal(b?.duplicate, true);
     assert.equal((await db.query("select * from purchases")).rows.length, 1);
+  } finally { await db.close(); }
+});
+
+test("All stores blocks actual purchases including conversion, but permits non-stock orders", async () => {
+  assert.equal(purchaseSaveError("purchase", true, 50, 50, true), "Select a specific store before saving a purchase");
+  assert.equal(purchaseSaveError("order", true, 0, 50, false), null);
+  const db = await setup(); try {
+    const order = await saveOrder(db, 10);
+    assert.ok(order);
+    await db.query("select set_config('request.headers', $1, false)", [JSON.stringify({ "x-pos-store": "all-stores" })]);
+    await assert.rejects(convert(db, order.id, 50), /Select a specific store/);
+    assert.equal((await db.query("select * from test_moves")).rows.length, 0);
+    assert.equal((await db.query("select * from purchases where doc_type='purchase'")).rows.length, 0);
+    assert.equal((await db.query<{status: string}>("select status from purchases")).rows[0]?.status, "open");
+  } finally { await db.close(); }
+});
+
+test("unpaid conversion without a supplier is rejected atomically; fully paid cash is allowed", async () => {
+  assert.equal(purchaseSaveError("purchase", false, 20, 50, false), "Select a party for a credit purchase");
+  const db = await setup(); try {
+    const order = await saveOrder(db, 10);
+    assert.ok(order);
+    await db.query("update purchases set supplier_id = null where id = $1", [order.id]);
+    const input = { order_id: order.id, grand_total: 50, paid: 20, items: orderInput(10).items };
+    await assert.rejects(db.query("select public.pos_convert_purchase_order($1::jsonb)", [JSON.stringify(input)]), /Select a party/);
+    assert.equal((await db.query("select * from test_moves")).rows.length, 0);
+    assert.equal((await db.query("select * from pos_payments")).rows.length, 0);
+    assert.equal((await db.query<{status: string}>("select status from purchases")).rows[0]?.status, "open");
+    await db.query("select public.pos_convert_purchase_order($1::jsonb)", [JSON.stringify({ ...input, paid: 50 })]);
+    assert.equal((await db.query("select * from purchases where doc_type='purchase'")).rows.length, 1);
   } finally { await db.close(); }
 });
