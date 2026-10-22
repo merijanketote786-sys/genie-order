@@ -2165,6 +2165,7 @@ export type Database = {
       pos_create_product: { Args: { _p: Json }; Returns: string }
       pos_default_store: { Args: { _ws: string }; Returns: string }
       pos_delete_doc: { Args: { _id: string }; Returns: undefined }
+      pos_delete_doc_v2: { Args: { _id: string }; Returns: undefined }
       pos_delete_products: { Args: { _ids: string[] }; Returns: number }
       pos_delete_recipe: { Args: { _product: string }; Returns: undefined }
       pos_find_customer: {
@@ -2251,6 +2252,7 @@ export type Database = {
         Returns: undefined
       }
       pos_save_cash_entry: { Args: { _p: Json }; Returns: string }
+      pos_save_doc_v2: { Args: { _p: Json }; Returns: Json }
       pos_save_printers: {
         Args: { _defaults: Json; _printers: Json }
         Returns: undefined

@@ -442,6 +442,20 @@
       "when": 1792184611440,
       "tag": "0062_pos_fixed_assets_register",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1792670073783,
+      "tag": "0063_add_estimate_save_delete_functions",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1792670102380,
+      "tag": "0064_clarify_estimate_cost_variable",
+      "breakpoints": true
     }
   ]
 }
