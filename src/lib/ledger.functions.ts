@@ -89,21 +89,47 @@ export const EXPENSE_CATEGORIES = ["Rent", "Electricity", "Gas", "Salary", "Tran
 
 export const listExpenses = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ from: z.string().max(10), to: z.string().max(10) }).parse(d))
+  .inputValidator((d: unknown) => z.object({ from: z.string().max(10), to: z.string().max(10), storeId: z.string().uuid().optional() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { data: rows } = await (context.supabase as Sb).from("expenses").select("id, category, amount, expense_date, method, description, status, created_at").gte("expense_date", data.from).lte("expense_date", data.to).order("expense_date", { ascending: false }).order("created_at", { ascending: false }).limit(1000);
-    return { expenses: ((rows ?? []) as any[]).map((r) => ({ id: r.id as string, category: r.category as string, amount: Number(r.amount), date: r.expense_date as string, method: r.method as string, description: (r.description ?? "") as string, status: r.status as string })) };
+    const sb = context.supabase as Sb;
+    let q = sb.from("expenses").select("id, category, amount, expense_date, method, description, status, created_at, store_id").gte("expense_date", data.from).lte("expense_date", data.to);
+    if (data.storeId) q = q.eq("store_id", data.storeId);
+    const [{ data: rows }, { data: cats }] = await Promise.all([
+      q.order("expense_date", { ascending: false }).order("created_at", { ascending: false }).limit(1000),
+      sb.from("expenses").select("category").order("created_at", { ascending: false }).limit(5000),
+    ]);
+    const used = Array.from(new Set(((cats ?? []) as any[]).map((c) => String(c.category)))).filter((c) => !EXPENSE_CATEGORIES.includes(c)).sort();
+    return {
+      categories: [...EXPENSE_CATEGORIES, ...used],
+      expenses: ((rows ?? []) as any[]).map((r) => ({ id: r.id as string, category: r.category as string, amount: Number(r.amount), date: r.expense_date as string, method: r.method as string, description: (r.description ?? "") as string, status: r.status as string, storeId: (r.store_id ?? null) as string | null })),
+    };
   });
 
 export const saveExpense = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ category: z.string().trim().min(1).max(60), amount: z.number().positive().max(1e9), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), method: z.string().max(30), description: z.string().max(500).optional(), clientRef: z.string().uuid().optional() }).parse(d))
+  .inputValidator((d: unknown) => z.object({ category: z.string().trim().min(1).max(60), amount: z.number().positive().max(1e9), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), method: z.string().max(30), description: z.string().max(500).optional(), clientRef: z.string().uuid().optional(), storeId: z.string().uuid().optional() }).parse(d))
   .handler(async ({ data, context }) => {
     const sb = context.supabase as Sb;
-    const { data: row, error } = await sb.from("expenses").insert({ category: data.category, amount: data.amount, expense_date: data.date, method: data.method, description: data.description || null, client_ref: data.clientRef ?? null }).select("id").single();
+    const { data: row, error } = await sb.from("expenses").insert({ category: data.category, amount: data.amount, expense_date: data.date, method: data.method, description: data.description || null, client_ref: data.clientRef ?? null, store_id: data.storeId ?? null }).select("id").single();
     if (error?.code === "23505") return { ok: true, duplicate: true };
     if (error) throw new Error(friendlyDbError(error, "Failed to save expense."));
-    await sb.from("audit_log").insert({ action: "create", entity: "expense", entity_id: row.id, details: { amount: data.amount, category: data.category } }).then(() => null, () => null);
+    await sb.from("audit_log").insert({ action: "create", entity: "expense", entity_id: row.id, details: { amount: data.amount, category: data.category, store_id: data.storeId ?? null } }).then(() => null, () => null);
+    return { ok: true };
+  });
+
+/** Move an expense to another store of the same business (no accounting change). */
+export const moveExpenseStore = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), storeId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as Sb;
+    const { data: cur } = await sb.from("expenses").select("store_id, status").eq("id", data.id).maybeSingle();
+    if (!cur) throw new Error("Expense not found");
+    if (cur.status === "cancelled") throw new Error("Cancelled expenses cannot be moved");
+    if (cur.store_id === data.storeId) return { ok: true };
+    const { error } = await sb.from("expenses").update({ store_id: data.storeId }).eq("id", data.id);
+    if (error) throw new Error(friendlyDbError(error, "Could not move expense."));
+    await sb.from("audit_log").insert({ action: "transfer", entity: "expense", entity_id: data.id, details: { from_store: cur.store_id, to_store: data.storeId } }).then(() => null, () => null);
     return { ok: true };
   });
 
