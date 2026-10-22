@@ -5,7 +5,7 @@ import { ShippingCalcButton } from "@/components/shipping-calc-button";
 import { PosSubnav } from "@/components/pos-subnav";
 import { CustomerPasteBox } from "@/components/customer-paste-box";
 import { ItemsPasteBox } from "@/components/items-paste-box";
-import { toChallan } from "@/components/challan-dialog";
+import { toChallan } from "@/lib/print/do";
 import { StoreSwitcher, useActiveStore } from "@/components/store-switcher";
 import { usePinPrompt, usePosAccess } from "@/components/pos-access";
 import { AppShell } from "@/components/app-shell";
@@ -847,7 +847,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
             <div className="mt-6 flex w-fit max-w-full gap-1 rounded-lg border-2 border-primary bg-muted p-1.5 shadow-sm" role="group" aria-label="Document type">
               <Button type="button" size="sm" variant={estimate ? "ghost" : "default"} aria-pressed={!estimate} onClick={() => setEstimate(false)} className="min-w-24 shadow-sm">Invoice</Button>
               <Button type="button" size="sm" variant={estimate ? "default" : "ghost"} aria-pressed={estimate} onClick={() => setEstimate(true)} className="min-w-24 shadow-sm">Estimate</Button>
-              <Button type="button" size="sm" variant="ghost" disabled={!cart.length} onClick={() => pc.preview(toChallan(receiptToDoc(receipt(editing?.number || manualNumber.trim() || "Draft"), { date: new Date() })), false)} className="min-w-24 shadow-sm">Delivery Challan</Button>
+              <Button type="button" size="sm" variant="ghost" disabled={!cart.length} onClick={() => pc.preview(toChallan(receiptToDoc(receipt(editing?.number || manualNumber.trim() || "Draft"), { date: new Date() })), false)} className="min-w-24 shadow-sm">D-O</Button>
             </div>
             <p className="mt-1 text-[11px] text-muted-foreground"><K>Alt+E</K> switch Invoice / Estimate</p>
             <BarcodeScannerDialog

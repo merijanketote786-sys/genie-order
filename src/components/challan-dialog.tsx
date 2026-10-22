@@ -3,51 +3,44 @@ import { Download, Pencil, Printer, Share2, Check } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import type { PrintDoc } from "@/lib/print/render";
-
-/** Turns any invoice/estimate doc into a delivery challan: quantities only, no prices/totals. */
-export function toChallan(doc: PrintDoc): PrintDoc {
-  return {
-    ...doc,
-    kind: "pos",
-    title: "Delivery Challan",
-    number: doc.number.startsWith("DC-") ? doc.number : `DC-${doc.number}`,
-    party: { label: "Deliver To", name: doc.party?.name, phone: doc.party?.phone, address: doc.party?.address },
-    lines: (doc.lines ?? []).map((l) => ({ ...l, rate: 0, discount: 0, taxPct: 0, total: 0 })),
-    totals: [], payments: [], paid: 0, balance: 0, customFields: undefined,
-  };
-}
+import { doOutput } from "@/lib/print/do";
+import { Switch } from "@/components/ui/switch";
+export { toChallan } from "@/lib/print/do";
 
 const inp = "h-9 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground";
 
 export function ChallanDialog({ doc, onClose, onPrint, onPdf }: { doc: PrintDoc; onClose: () => void; onPrint: (d: PrintDoc) => void; onPdf: (d: PrintDoc) => void }) {
   const [d, setD] = useState<PrintDoc>(doc);
   const [editing, setEditing] = useState(false);
+  const [includeCustomer, setIncludeCustomer] = useState(true);
+  const output = doOutput({ ...d, title: "D-O" }, includeCustomer);
   const setParty = (k: "name" | "phone" | "address", v: string) => setD((x) => ({ ...x, party: { label: "Deliver To", ...x.party, [k]: v } }));
   const text = () => [
-    `*Delivery Challan ${d.number}*`,
+    `*D-O ${d.number}*`,
     new Date(d.date).toLocaleDateString("en-PK"),
-    d.party?.name ? `Deliver to: ${d.party.name}` : "",
-    d.party?.phone ? `Phone: ${d.party.phone}` : "",
-    d.party?.address ? `Address: ${d.party.address}` : "",
-    ...(d.meta ?? []).map(([k, v]) => `${k}: ${v}`),
+    output.party?.name ? `Deliver to: ${output.party.name}` : "",
+    output.party?.phone ? `Phone: ${output.party.phone}` : "",
+    output.party?.address ? `Address: ${output.party.address}` : "",
+    ...(output.meta ?? []).map(([k, v]) => `${k}: ${v}`),
     "",
     ...(d.lines ?? []).map((l, i) => `${i + 1}. ${l.name} ${l.unit ?? ""} x ${l.qty}`),
     d.notes ? `\nNote: ${d.notes}` : "",
   ].filter((l) => l !== "").join("\n");
   const share = async () => {
     const t = text();
-    if (navigator.share) { try { await navigator.share({ title: `Delivery Challan ${d.number}`, text: t }); return; } catch { /* cancelled */ } }
+    if (navigator.share) { try { await navigator.share({ title: `D-O ${d.number}`, text: t }); return; } catch { /* cancelled */ } }
     const ph = (d.party?.phone ?? "").replace(/\D/g, "").replace(/^0/, "92");
     window.open(`https://wa.me/${ph}?text=${encodeURIComponent(t)}`, "_blank");
   };
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader><DialogTitle>Delivery Challan {d.number}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>D-O {d.number}</DialogTitle></DialogHeader>
         <div className="space-y-3 text-sm">
+          <label className="flex items-center gap-2"><Switch checked={includeCustomer} onCheckedChange={setIncludeCustomer} aria-label="Print customer details" />Print customer details</label>
           {editing ? (
             <div className="grid gap-2">
-              <input className={inp} value={d.number} onChange={(e) => setD((x) => ({ ...x, number: e.target.value }))} aria-label="Challan number" placeholder="Challan number" />
+              <input className={inp} value={d.number} onChange={(e) => setD((x) => ({ ...x, number: e.target.value }))} aria-label="D-O number" placeholder="D-O number" />
               <input className={inp} value={d.party?.name ?? ""} onChange={(e) => setParty("name", e.target.value)} placeholder="Deliver to" aria-label="Deliver to" />
               <input className={inp} value={d.party?.phone ?? ""} onChange={(e) => setParty("phone", e.target.value)} placeholder="Phone" aria-label="Phone" />
               <input className={inp} value={d.party?.address ?? ""} onChange={(e) => setParty("address", e.target.value)} placeholder="Address" aria-label="Address" />
@@ -74,9 +67,9 @@ export function ChallanDialog({ doc, onClose, onPrint, onPdf }: { doc: PrintDoc;
           </table>
           {editing ? <textarea className={`${inp} h-16 py-1`} value={d.notes ?? ""} onChange={(e) => setD((x) => ({ ...x, notes: e.target.value }))} placeholder="Note" aria-label="Note" /> : d.notes ? <p className="text-xs text-muted-foreground">Note: {d.notes}</p> : null}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Button onClick={() => onPrint(d)}><Printer /> Print</Button>
+            <Button onClick={() => onPrint(output)}><Printer /> Print</Button>
             <Button variant="outline" onClick={share}><Share2 /> Share</Button>
-            <Button variant="outline" onClick={() => onPdf(d)}><Download /> Save</Button>
+            <Button variant="outline" onClick={() => onPdf(output)}><Download /> Save</Button>
             <Button variant="outline" onClick={() => setEditing((v) => !v)}>{editing ? <><Check /> Done</> : <><Pencil /> Edit</>}</Button>
           </div>
         </div>

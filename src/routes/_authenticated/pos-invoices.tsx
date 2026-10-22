@@ -12,6 +12,7 @@ import { ShareDialog } from "@/components/share-dialog";
 import { listPosSales, deletePosDoc } from "@/lib/pos.functions";
 import { cancelDoc } from "@/lib/business.functions";
 import type { PrintDoc } from "@/lib/print/render";
+import { toChallan } from "@/lib/print/do";
 import { toast } from "sonner";
 import { askReason } from "@/lib/ask-reason";
 
@@ -80,13 +81,13 @@ function saleToDoc(s: SaleRow): PrintDoc {
   };
 }
 
-/** Delivery challan — print-only document, koi transaction nahi banta. */
+/** D-O — print-only document, koi transaction nahi banta. */
 function challanDoc(s: SaleRow): PrintDoc {
   const delivery = s.payload?.ui ?? s.payload;
-  return {
+  return toChallan({
     kind: "pos",
     id: s.id,
-    title: "Delivery Challan",
+    title: "D-O",
     number: `DC-${s.doc_number}`,
     date: s.created_at,
     party: { label: "Deliver To", name: s.customer_name ?? undefined, phone: s.customer_phone ?? undefined, address: [delivery?.customerAddress, delivery?.customerCityArea].filter(Boolean).join(", ") || undefined },
@@ -97,7 +98,7 @@ function challanDoc(s: SaleRow): PrintDoc {
     paid: 0,
     balance: 0,
     notes: s.notes ?? undefined,
-  };
+  });
 }
 
 function shareText(s: SaleRow): string {
@@ -283,7 +284,7 @@ function PosInvoicesPage() {
                         {s.doc_type === "sale" && Number(s.balance) > 0 ? item(s, <Wallet className="size-4" />, "Receive Payment", () => setReceive(s)) : null}
                         {item(s, <Pencil className="size-4" />, "Edit", () => openInBilling(s, false))}
                         {isEstimate ? item(s, <FileInput className="size-4" />, "Convert to Invoice", () => openInBilling(s, true)) : null}
-                        {item(s, <Truck className="size-4" />, "Convert to Delivery Challan", () => pc.preview(challanDoc(s), false))}
+                        {item(s, <Truck className="size-4" />, "Convert to D-O", () => pc.preview(challanDoc(s), false))}
                         {!isEstimate ? item(s, <Ban className="size-4" />, "Cancel", () => void doCancel(s), true) : null}
                         {isEstimate ? item(s, <Trash2 className="size-4" />, "Delete", () => void doDelete(s), true) : null}
                       </div>
