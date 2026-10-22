@@ -104,13 +104,13 @@ function ExpensesPage() {
 
         <section className="space-y-3 rounded-xl border border-border bg-card p-3">
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <select className={`${posInput} w-44`} value={filterStore} onChange={(e) => setFilterStore(e.target.value)} aria-label="Filter by store">
+            <select className={`${posInput} w-44!`} value={filterStore} onChange={(e) => setFilterStore(e.target.value)} aria-label="Filter by store">
               <option value="">All stores</option>
               {allStores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
-            <input className={`${posInput} w-40`} type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From" />
+            <input className={`${posInput} w-40!`} type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From" />
             <span>to</span>
-            <input className={`${posInput} w-40`} type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="To" />
+            <input className={`${posInput} w-40!`} type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="To" />
             <b className="ml-auto text-foreground">Total: {rs(active.reduce((s, r) => s + r.amount, 0))}</b>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -126,7 +126,7 @@ function ExpensesPage() {
                     <td className="whitespace-nowrap text-right">
                       {moving?.id === r.id ? (
                         <span className="inline-flex items-center gap-1">
-                          <select className={`${posInput} h-8 w-36`} value={moving.storeId} onChange={(e) => setMoving({ id: r.id, storeId: e.target.value })} aria-label="Move to store">
+                          <select className={`${posInput} h-8! w-36!`} value={moving.storeId} onChange={(e) => setMoving({ id: r.id, storeId: e.target.value })} aria-label="Move to store">
                             {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                           </select>
                           <Button size="sm" onClick={move} disabled={moving.storeId === r.storeId}>Move</Button>
