@@ -231,13 +231,12 @@ export const cancelPurchaseOrder = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-function orderTotals(items: Array<{ qty: number; rate?: number; discount?: number; taxPercent?: number }>) {
-  const rows = items.map((i) => {
+function orderTotals(items: z.infer<typeof orderItem>[]) {
+  const out = items.map((i) => {
     const base = Math.max(0, i.qty * (i.rate ?? 0) - (i.discount ?? 0));
     const tax = r2((base * (i.taxPercent ?? 0)) / 100);
-    return { product_id: "", name: "", unit: "", qty: i.qty, rate: r2(i.rate ?? 0), discount: r2(i.discount ?? 0), tax_percent: i.taxPercent ?? 0, tax_amount: tax, line_total: r2(base + tax) };
+    return { product_id: i.productId ?? "", name: i.name, unit: i.unit ?? "", qty: i.qty, rate: r2(i.rate ?? 0), discount: r2(i.discount ?? 0), tax_percent: i.taxPercent ?? 0, tax_amount: tax, line_total: r2(base + tax), batch: i.batch ?? "", expiry: i.expiry ?? "" };
   });
-  const out = items.map((i, n) => ({ product_id: (i as { productId?: string }).productId ?? "", name: (i as { name: string }).name, unit: (i as { unit?: string }).unit ?? "", qty: i.qty, rate: r2(i.rate ?? 0), discount: r2(i.discount ?? 0), tax_percent: i.taxPercent ?? 0, tax_amount: rows[n].tax_amount, line_total: rows[n].line_total, batch: (i as { batch?: string }).batch ?? "", expiry: (i as { expiry?: string }).expiry ?? "" }));
   const subtotal = r2(out.reduce((s, i) => s + i.line_total - i.tax_amount, 0));
   const tax = r2(out.reduce((s, i) => s + i.tax_amount, 0));
   return { items: out, subtotal, tax, total: r2(subtotal + tax) };
