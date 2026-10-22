@@ -316,7 +316,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
     const same = td.querySelectorAll("input:not([disabled]), select:not([disabled]), button:not([disabled])");
     const pos = [...same].indexOf(t);
     const target = nri !== ri ? cellInputs[pos >= 0 ? Math.min(pos, cellInputs.length - 1) : 0] : k === "ArrowLeft" ? cellInputs[cellInputs.length - 1] : cellInputs[0];
-    if (target) { e.preventDefault(); target.focus(); if (target.tagName === "INPUT") (target as HTMLInputElement).select(); }
+    if (target) { e.preventDefault(); target.focus(); if (target.tagName === "INPUT") (target as HTMLInputElement).select(); centerCell(target.closest("td") ?? target); }
   };
   return (
     <section className="space-y-2 rounded-xl border border-border bg-card p-3">
