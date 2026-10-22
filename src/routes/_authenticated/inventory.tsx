@@ -126,7 +126,7 @@ function InventoryPage() {
           <Button variant={bulk ? "secondary" : "default"} disabled={activeStore.isAllStores} onClick={() => setBulk((b) => !b)}><Table2 /> {bulk ? "Close bulk update" : "Bulk update items"}</Button>
         </div>
         {adding ? <NewPosProduct onClose={() => setAdding(false)} onSaved={() => { setAdding(false); refresh(); }} /> : null}
-        {bulk ? <BulkUpdateProducts products={all} inactiveProducts={data?.inactive ?? []} onClose={() => setBulk(false)} onSaved={refresh} /> : null}
+        {bulk ? <BulkUpdateProducts products={all} inactiveProducts={(data?.inactive ?? []).map((p) => (activeStore.stock ? { ...p, stock: activeStore.stock.byId[p.id] ?? 0 } : p))} onClose={() => setBulk(false)} onSaved={refresh} /> : null}
         <div className={`grid gap-3 lg:grid-cols-[1.2fr_1fr] ${bulk ? "hidden" : ""}`}>
           <section className="space-y-2 rounded-xl border border-border bg-card p-3">
             <div className="flex flex-wrap gap-2">
