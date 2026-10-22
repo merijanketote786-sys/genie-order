@@ -174,6 +174,75 @@ export const savePurchase = createServerFn({ method: "POST" })
     return { ...(res as { id: string; number: string }), total };
   });
 
+/* --------------------------- Purchase orders --------------------------- */
+
+const orderItem = z.object({ productId: z.string().uuid().optional(), name: z.string().min(1).max(300), unit: z.string().max(40).optional(), qty: z.number().positive().max(1e7), rate: amt.optional(), discount: amt.optional(), taxPercent: z.number().min(0).max(100).optional(), batch: z.string().max(60).optional(), expiry: z.string().max(10).optional() });
+const orderPayload = z.object({
+  supplierId: z.string().uuid().optional(),
+  supplierName: z.string().max(120).optional(),
+  discount: amt.optional(),
+  freight: amt.optional(),
+  notes: z.string().max(1000).optional(),
+  supplierBillNo: z.string().max(60).optional(),
+  items: z.array(orderItem).min(1).max(300),
+});
+
+/** Save a purchase order — rate optional, no stock / payment / accounting. */
+export const savePurchaseOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => orderPayload.extend({ clientRef: z.string().uuid().optional() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { items, subtotal, tax, total } = orderTotals(data.items);
+    const { data: res, error } = await withStore((context.supabase as Sb).rpc("pos_save_purchase_order", {
+      _p: {
+        client_ref: data.clientRef ?? "", doc_type: "order", supplier_id: data.supplierId ?? "", supplier_name: data.supplierName ?? "",
+        subtotal, discount_total: data.discount ?? 0, tax_total: tax, grand_total: total, notes: data.notes ?? "",
+        supplier_bill_no: data.supplierBillNo ?? "", freight: data.freight ?? 0, items,
+      },
+    }));
+    if (error || !res) { console.error(error); throw new Error(friendlyDbError(error, "Failed to save purchase order.")); }
+    return { ...(res as { id: string; number: string }), total };
+  });
+
+/** Convert an open order into a real purchase with editable rates/paid etc. */
+export const convertPurchaseOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => orderPayload.extend({ orderId: z.string().uuid(), paid: amt, method: z.string().max(30) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { items, subtotal, tax, total } = orderTotals(data.items);
+    const { data: res, error } = await withStore((context.supabase as Sb).rpc("pos_convert_purchase_order", {
+      _p: {
+        order_id: data.orderId, supplier_id: data.supplierId ?? "", supplier_name: data.supplierName ?? "",
+        subtotal, discount_total: data.discount ?? 0, tax_total: tax, grand_total: total, paid: data.paid, method: data.method,
+        notes: data.notes ?? "", supplier_bill_no: data.supplierBillNo ?? "", freight: data.freight ?? 0, items,
+      },
+    }));
+    if (error || !res) { console.error(error); throw new Error(friendlyDbError(error, "Failed to convert purchase order.")); }
+    return { ...(res as { id: string; number: string }), total };
+  });
+
+/** Cancel an open order — no stock, payment or accounting effects. */
+export const cancelPurchaseOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), reason: z.string().max(300).default("") }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await withStore((context.supabase as Sb).rpc("pos_cancel_purchase_order" as never, { _id: data.id, _reason: data.reason } as never));
+    if (error) throw new Error(friendlyDbError(error, "Failed to cancel purchase order."));
+    return { ok: true };
+  });
+
+function orderTotals(items: Array<{ qty: number; rate?: number; discount?: number; taxPercent?: number }>) {
+  const rows = items.map((i) => {
+    const base = Math.max(0, i.qty * (i.rate ?? 0) - (i.discount ?? 0));
+    const tax = r2((base * (i.taxPercent ?? 0)) / 100);
+    return { product_id: "", name: "", unit: "", qty: i.qty, rate: r2(i.rate ?? 0), discount: r2(i.discount ?? 0), tax_percent: i.taxPercent ?? 0, tax_amount: tax, line_total: r2(base + tax) };
+  });
+  const out = items.map((i, n) => ({ product_id: (i as { productId?: string }).productId ?? "", name: (i as { name: string }).name, unit: (i as { unit?: string }).unit ?? "", qty: i.qty, rate: r2(i.rate ?? 0), discount: r2(i.discount ?? 0), tax_percent: i.taxPercent ?? 0, tax_amount: rows[n].tax_amount, line_total: rows[n].line_total, batch: (i as { batch?: string }).batch ?? "", expiry: (i as { expiry?: string }).expiry ?? "" }));
+  const subtotal = r2(out.reduce((s, i) => s + i.line_total - i.tax_amount, 0));
+  const tax = r2(out.reduce((s, i) => s + i.tax_amount, 0));
+  return { items: out, subtotal, tax, total: r2(subtotal + tax) };
+}
+
 export const listPurchases = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ from: z.string().max(40).optional(), to: z.string().max(40).optional() }).parse(d ?? {}))
