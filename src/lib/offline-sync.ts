@@ -28,6 +28,7 @@ export type OutboxItem = {
 const FNS: Record<Exclude<OutboxKind, "raw">, (a: { data: any }) => Promise<unknown>> = {
   posDoc: savePosDoc,
   purchase: savePurchase,
+  purchaseOrder: savePurchaseOrder,
   salesReturn: saveSalesReturn,
   unlinkedReturn: saveUnlinkedSalesReturn,
 };
