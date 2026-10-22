@@ -432,8 +432,12 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
 
           <div className="grid gap-4 p-4 md:grid-cols-2">
             <div className="space-y-2">
-              <select className={posInput} value={method} onChange={(e) => setMethod(e.target.value)} aria-label="Payment type">{[...PAY_OPTS, "Credit"].map((m) => <option key={m}>{m}</option>)}</select>
-               {isCredit && <p className="text-xs text-muted-foreground">Full amount will be added to the party's balance (payable).</p>}
+              {isOrder ? <p className="rounded-md border border-border bg-surface-2 px-3 py-2 text-xs text-muted-foreground">This is a purchase order — stock, party balance and accounting update only when you convert it into a purchase.</p> : (
+                <>
+                  <select className={posInput} value={method} onChange={(e) => setMethod(e.target.value)} aria-label="Payment type">{[...PAY_OPTS, "Credit"].map((m) => <option key={m}>{m}</option>)}</select>
+                  {isCredit && <p className="text-xs text-muted-foreground">Full amount will be added to the party's balance (payable).</p>}
+                </>
+              )}
               <input className={posInput} value={billNo} maxLength={60} onChange={(e) => setBillNo(e.target.value)} placeholder="Supplier bill / invoice # (optional)" aria-label="Supplier bill number" />
               <textarea className={`${posInput} min-h-20 py-2`} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Description / note" />
             </div>
@@ -441,11 +445,15 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
               <label className="flex items-center justify-between gap-3"><span className="text-muted-foreground">Discount (Rs)</span><input className={`${cell} max-w-40 text-right`} value={discount} inputMode="decimal" onChange={(e) => setDiscount(e.target.value)} /></label>
               <label className="flex items-center justify-between gap-3"><span className="text-muted-foreground">Bilty / transport (Rs)</span><input aria-label="Bilty charges" className={`${cell} max-w-40 text-right`} value={freight} inputMode="decimal" onChange={(e) => setFreight(e.target.value)} /></label>
               <div className="flex items-center justify-between border-t border-border pt-2 text-base"><span className="font-bold">Total</span><b className="text-foreground">{rs(total)}</b></div>
-              <label className="flex items-center justify-between gap-3"><span className="text-muted-foreground">{docType === "purchase" ? "Paid" : "Refunded"}</span><input className={`${cell} max-w-40 text-right`} value={isCredit ? "0" : paid} disabled={isCredit} inputMode="decimal" placeholder={String(total)} onChange={(e) => setPaid(e.target.value)} /></label>
-              <div className="flex items-center justify-between"><span className="text-muted-foreground">Balance</span><b className={total - paidNum > 0 ? "text-destructive" : ""}>{rs(total - paidNum)}</b></div>
+              {isOrder ? null : (
+                <>
+                  <label className="flex items-center justify-between gap-3"><span className="text-muted-foreground">{docType === "purchase" ? "Paid" : "Refunded"}</span><input className={`${cell} max-w-40 text-right`} value={isCredit ? "0" : paid} disabled={isCredit} inputMode="decimal" placeholder={String(total)} onChange={(e) => setPaid(e.target.value)} /></label>
+                  <div className="flex items-center justify-between"><span className="text-muted-foreground">Balance</span><b className={total - paidNum > 0 ? "text-destructive" : ""}>{rs(total - paidNum)}</b></div>
+                </>
+              )}
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={reset}>Clear</Button>
-                <Button size="lg" disabled={saving || !lines.length} onClick={save}><PackagePlus /> {docType === "purchase" ? "Save (stock +)" : "Save return (stock −)"}</Button>
+                <Button size="lg" disabled={saving || !lines.length} onClick={save}><PackagePlus /> {isOrder ? "Save order (no stock)" : refOrderId ? "Convert & save (stock +)" : docType === "purchase" ? "Save (stock +)" : "Save return (stock −)"}</Button>
               </div>
               <p className="text-right text-[11px] text-muted-foreground">Enter: add item · Tab: next field · Esc: clear row · Ctrl+S: save</p>
             </div>
