@@ -9,6 +9,8 @@ import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
 import { BulkCsvImport, parseCsv, detectTable } from "@/components/bulk-csv-import";
+import { Switch } from "@/components/ui/switch";
+import { applyPctRates, priced } from "@/lib/bulk-pricing";
 
 const TINTS = ["--chart-1", "--chart-2", "--chart-3", "--chart-4", "--chart-5", "--primary", "--success", "--warning"];
 const tint = (i: number, pct: number) => ({ backgroundColor: `color-mix(in oklab, var(${TINTS[i % TINTS.length]}) ${pct}%, var(--card))` });
@@ -43,7 +45,7 @@ const base = (p: InvProduct): Row => ({
 const MK_KEY = "pos-bulk-markup";
 const val = (r: Row) => { const s = Number(r.stock) || 0, c = Number(r.purchase_price) || 0; return r.purchase_price === "" ? "" : String(Math.round(Math.max(0, s) * c * 100) / 100); };
 
-function MkHead({ label, on, pct, onOn, onPct }: { label: string; on: boolean; pct: string; onOn: (v: boolean) => void; onPct: (v: string) => void }) {
+function MkHead({ label, on, pct, onOn, onPct, disabled }: { label: string; on: boolean; pct: string; onOn: (v: boolean) => void; onPct: (v: string) => void; disabled?: boolean }) {
   return (
     <div className="flex items-center gap-1 normal-case">
       <input type="checkbox" checked={on} onChange={(e) => onOn(e.target.checked)} aria-label={`Auto ${label} for all`} title="Auto % from purchase price for all products" />
@@ -139,7 +141,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
   }, [pool, q, fKind, fCat]);
   const rowOf = (id: string): Row => { const r = { ...orig[id], ...edits[id] }; return { ...r, stock_value: edits[id]?.stock_value ?? val(r) }; };
   // Auto pricing from purchase price: sale = purchase + sale%, wholesale = purchase + wholesale%
-  const [mk, setMk] = useState({ salePct: "45", wsPct: "15", saleOn: true, wsOn: true });
+  const [mk, setMk] = useState({ salePct: "45", wsPct: "15", saleOn: true, wsOn: true, pctOn: true });
   useEffect(() => { try { const v = localStorage.getItem(MK_KEY); if (v) setMk((m) => ({ ...m, ...JSON.parse(v) })); } catch { /* ignore */ } }, []);
   const updMk = (p: Partial<typeof mk>) => setMk((m) => { const n = { ...m, ...p }; try { localStorage.setItem(MK_KEY, JSON.stringify(n)); } catch { /* ignore */ } return n; });
   const [rowMk, setRowMk] = useState<Record<string, { sale?: boolean; ws?: boolean }>>({});
@@ -150,18 +152,27 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
   const saveRowPct = (fn: (m: Record<string, { sale?: string; ws?: string }>) => Record<string, { sale?: string; ws?: string }>) => setRowPctState((m) => { const n = fn(m); try { localStorage.setItem(RP_KEY, JSON.stringify(n)); } catch { /* ignore */ } return n; });
   const pctOf = (id: string, f: "sale" | "ws") => { const v = rowPct[id]?.[f]; return v != null && v.trim() !== "" ? v : f === "sale" ? mk.salePct : mk.wsPct; };
   const autoOn = (id: string, f: "sale" | "ws") => rowMk[id]?.[f] ?? (f === "sale" ? mk.saleOn : mk.wsOn);
-  const priced = (pp: string, pct: string) => { const c = Number(pp), x = Number(pct); return pp.trim() === "" || pct.trim() === "" || !isFinite(c) || !isFinite(x) ? null : String(Math.round(c * (1 + x / 100) * 100) / 100); };
+  // Percentage rates go through the shared rule so the "Rate by %" switch can turn the
+  // whole feature off: applyPctRates returns the row untouched whenever the switch is off.
   const applyMk = (id: string, cur: Row, only?: "sale" | "ws", force?: { sale?: boolean; ws?: boolean }, over?: { sale?: string; ws?: string }) => {
-    if (only !== "ws" && (force?.sale ?? autoOn(id, "sale"))) { const v = priced(cur.purchase_price, over?.sale ?? pctOf(id, "sale")); if (v != null) cur.sale_price = v; }
-    if (only !== "sale" && (force?.ws ?? autoOn(id, "ws"))) { const v = priced(cur.purchase_price, over?.ws ?? pctOf(id, "ws")); if (v != null) cur.wholesale_price = v; }
+    const n = applyPctRates(cur, {
+      on: mk.pctOn,
+      sale: only !== "ws" && (force?.sale ?? autoOn(id, "sale")),
+      ws: only !== "sale" && (force?.ws ?? autoOn(id, "ws")),
+      salePct: over?.sale ?? pctOf(id, "sale"),
+      wsPct: over?.ws ?? pctOf(id, "ws"),
+    });
+    cur.sale_price = n.sale_price; cur.wholesale_price = n.wholesale_price;
   };
   const setRowPct = (id: string, f: "sale" | "ws", v: string) => {
+    if (!mk.pctOn) return;
     saveRowPct((m) => ({ ...m, [id]: { ...m[id], [f]: v } }));
     setRowMk((m) => ({ ...m, [id]: { ...m[id], [f]: true } }));
     const pct = v.trim() !== "" ? v : f === "sale" ? mk.salePct : mk.wsPct;
     setEdits((e) => { const cur = { ...orig[id], ...e[id] }; applyMk(id, cur, f, { [f]: true }, { [f]: pct }); return { ...e, [id]: cur }; });
   };
   const toggleRowMk = (id: string, f: "sale" | "ws") => {
+    if (!mk.pctOn) return;
     const on = !autoOn(id, f);
     setRowMk((m) => ({ ...m, [id]: { ...m[id], [f]: on } }));
     if (on) setEdits((e) => { const cur = { ...orig[id], ...e[id] }; applyMk(id, cur, f, { [f]: true }); return { ...e, [id]: cur }; });
@@ -180,6 +191,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
   // Without explicit pcts each product uses its own % (or the global one); with explicit pcts the
   // same % is applied to every target product and stored as their per-product %.
   const applyMarkup = (fields: { sale: boolean; ws: boolean }, pcts?: { salePct: string; wsPct: string }) => {
+    if (!mk.pctOn) return toast.error("Rate by % is off — switch it on to apply percentage pricing");
     if (!fields.sale && !fields.ws) return toast.error("Tick Sale or Wholesale first");
     const ids = targetIds();
     let done = 0, skipped = 0;
@@ -188,9 +200,10 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
       const n = { ...e }; done = 0; skipped = 0;
       ids.forEach((id) => {
         const cur = { ...orig[id], ...e[id] };
-        let ch = false;
-        if (fields.sale && rowMk[id]?.sale !== false) { const v = priced(cur.purchase_price, pcts?.salePct ?? pctOf(id, "sale")); if (v != null) { cur.sale_price = v; ch = true; } }
-        if (fields.ws && rowMk[id]?.ws !== false) { const v = priced(cur.purchase_price, pcts?.wsPct ?? pctOf(id, "ws")); if (v != null) { cur.wholesale_price = v; ch = true; } }
+        const was = { sale: cur.sale_price, ws: cur.wholesale_price };
+        const r2 = applyPctRates(cur, { on: true, sale: fields.sale && rowMk[id]?.sale !== false, ws: fields.ws && rowMk[id]?.ws !== false, salePct: pcts?.salePct ?? pctOf(id, "sale"), wsPct: pcts?.wsPct ?? pctOf(id, "ws") });
+        cur.sale_price = r2.sale_price; cur.wholesale_price = r2.wholesale_price;
+        const ch = cur.sale_price !== was.sale || cur.wholesale_price !== was.ws;
         if (ch) { n[id] = cur; done++; } else skipped++;
       });
       return n;
@@ -202,6 +215,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
     const ids = targetIds();
     const col = COLS.find((c) => c.k === applyCol)!;
     if (col.num && applyMode !== "set" && applyVal.trim() === "") return toast.error("Enter a value");
+    if (!mk.pctOn && (applyMode === "pct" || applyMode === "cost")) return toast.error("Rate by % is off — switch it on to use the percentage methods");
     if (applyMode === "cost" && (applyCol === "sale_price" || applyCol === "wholesale_price")) {
       return applyMarkup(applyCol === "sale_price" ? { sale: true, ws: false } : { sale: false, ws: true }, { ...mk, salePct: applyVal, wsPct: applyVal });
     }
