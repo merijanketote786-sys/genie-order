@@ -4,7 +4,7 @@ import { bulkUpdateProducts, deletePosProducts, type InvProduct } from "@/lib/in
 import { UnitSelect } from "@/components/unit-select";
 import { usePosCategories } from "@/lib/pos-catalog";
 import { ChevronDown, Search, Trash2, Upload, X } from "lucide-react";
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
@@ -315,7 +315,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
     const cellInputs = [...(rows[nri]?.children[nci]?.querySelectorAll<HTMLElement>("input:not([disabled]), select:not([disabled]), button") ?? [])];
     const same = td.querySelectorAll("input:not([disabled]), select:not([disabled])");
     const pos = [...same].indexOf(t);
-    const target = (nri !== ri && cellInputs[pos >= 0 ? pos : 0]) || (k === "ArrowLeft" ? cellInputs[cellInputs.length - 1] : cellInputs[cellInputs.length - 1 >= 0 ? (k === "ArrowRight" ? 0 : cellInputs.length - 1) : 0]);
+    const target = nri !== ri ? cellInputs[pos >= 0 ? Math.min(pos, cellInputs.length - 1) : 0] : k === "ArrowLeft" ? cellInputs[cellInputs.length - 1] : cellInputs[0];
     if (target) { e.preventDefault(); target.focus(); if (target.tagName === "INPUT") (target as HTMLInputElement).select(); }
   };
   return (
