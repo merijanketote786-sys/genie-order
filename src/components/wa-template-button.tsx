@@ -47,7 +47,7 @@ function render(body: string, r: ReceiptInput) {
   return body.replace(/\{\{\s*(\w+)\s*\}\}/g, (m, k) => (k in map ? map[k] : m));
 }
 
-export function WaTemplateButton({ getReceipt, disabled }: { getReceipt: () => ReceiptInput; disabled?: boolean }) {
+export function WaTemplateButton({ getReceipt, disabled, compact, label }: { getReceipt: () => ReceiptInput; disabled?: boolean; compact?: boolean; label?: string }) {
   const [st, setSt] = useState<Stored>({ enabled: false, selected: null, templates: [] });
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<Tpl | null>(null);
@@ -113,6 +113,11 @@ export function WaTemplateButton({ getReceipt, disabled }: { getReceipt: () => R
 
   return (
     <>
+      {compact ? (
+        <button type="button" title="WhatsApp message" aria-label={label ?? "WhatsApp message"} onClick={openPopup} className="rounded-lg border border-border p-2 text-primary hover:bg-accent">
+          <MessageCircle className="size-4" />
+        </button>
+      ) : (
       <div className="flex items-center gap-2">
         <label className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground" title="Enable WhatsApp message button">
           <input type="checkbox" className="size-4 accent-primary" checked={st.enabled} onChange={(e) => void persist({ ...st, enabled: e.target.checked })} />
@@ -120,6 +125,7 @@ export function WaTemplateButton({ getReceipt, disabled }: { getReceipt: () => R
         </label>
         <Button variant="outline" className="flex-1" disabled={!st.enabled} onClick={openPopup}><MessageCircle /> WhatsApp message</Button>
       </div>
+      )}
       {open ? createPortal(
         <div className="fixed inset-0 z-[100] grid place-items-center bg-foreground/40 p-3" onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
           <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border bg-card shadow-xl">
