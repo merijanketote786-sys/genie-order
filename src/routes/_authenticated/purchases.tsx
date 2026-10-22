@@ -187,12 +187,12 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const loadDoc = async (p: Hist): Promise<PrintDoc> => {
     const r = await getPurchaseItems({ data: { id: p.id } });
     return {
-      kind: "purchase", id: p.id, title: p.doc_type === "purchase" ? "Purchase Invoice" : "Purchase Return", number: p.doc_number, date: p.created_at,
+      kind: "purchase", id: p.id, title: p.doc_type === "order" ? "Purchase Order" : p.doc_type === "purchase" ? "Purchase Invoice" : "Purchase Return", number: p.doc_number, date: p.created_at,
        party: p.supplier_name ? { label: "Party", name: p.supplier_name } : undefined,
       lines: r.items.map((i) => ({ name: i.name, unit: i.unit, qty: i.qty, rate: i.rate, discount: i.discount, taxPct: i.taxPercent, total: i.lineTotal })),
       meta: p.supplier_bill_no ? [["Supplier bill #", p.supplier_bill_no]] : undefined,
       totals: [...(p.discount_total ? [{ label: "Discount", value: -p.discount_total }] : []), ...(p.freight ? [{ label: "Bilty / transport", value: p.freight }] : []), { label: "Grand Total", value: p.grand_total, bold: true }],
-      payments: p.paid_total ? [{ method: "Paid", amount: p.paid_total }] : [], paid: p.paid_total, balance: p.balance, notes: p.notes ?? undefined,
+      payments: p.doc_type !== "order" && p.paid_total ? [{ method: "Paid", amount: p.paid_total }] : [], paid: p.doc_type === "order" ? 0 : p.paid_total, balance: p.doc_type === "order" ? 0 : p.balance, notes: p.notes ?? undefined,
     } as PrintDoc;
   };
   const run = async (f: () => Promise<void>) => { setBusy(true); try { await f(); } catch (e) { toast.error(e instanceof Error ? e.message : "Action failed"); } finally { setBusy(false); } };
@@ -203,8 +203,8 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   });
   const doEdit = (p: Hist) => run(async () => {
     const r = await getPurchaseItems({ data: { id: p.id } });
-    setDocType(p.doc_type === "return" ? "return" : "purchase"); setSelectedParty(p.supplier_id ? { id: p.supplier_id, source: "supplier", name: p.supplier_name || "Party" } : null); setPartySearch(p.supplier_name ?? ""); setRefId(p.doc_type === "return" ? p.ref_purchase_id ?? undefined : undefined);
-    setLines(r.items.map((i) => ({ productId: i.productId ?? undefined, name: i.name, unit: i.unit, qty: String(i.qty), rate: String(i.rate), discount: i.discount ? String(i.discount) : "", tax: String(i.taxPercent), batch: "", expiry: "" })));
+    setDocType(p.doc_type === "return" ? "return" : p.doc_type === "order" ? "order" : "purchase"); setSelectedParty(p.supplier_id ? { id: p.supplier_id, source: "supplier", name: p.supplier_name || "Party" } : null); setPartySearch(p.supplier_name ?? ""); setRefId(p.doc_type === "return" ? p.ref_purchase_id ?? undefined : undefined); setRefOrderId(undefined);
+    setLines(r.items.map((i) => ({ productId: i.productId ?? undefined, name: i.name, unit: i.unit, qty: String(i.qty), rate: p.doc_type === "order" && !i.rate ? "" : String(i.rate), discount: i.discount ? String(i.discount) : "", tax: String(i.taxPercent), batch: "", expiry: "" })));
     setDiscount(p.discount_total ? String(p.discount_total) : ""); setFreight(p.freight ? String(p.freight) : ""); setBillNo(p.supplier_bill_no ?? ""); setPaid(String(p.paid_total)); setNotes(p.notes ?? "");
     setEditId({ id: p.id, number: p.doc_number });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -213,7 +213,11 @@ export function PurchasesPage({ embedded, startDocType }: { embedded?: boolean; 
   const doCancel = async (p: Hist) => {
     const reason = await askReason(`Cancel ${p.doc_number}? Reason (optional):`);
     if (reason === null) return;
-    void run(async () => { await cancelPurchase({ data: { id: p.id, reason } }); toast.success(`${p.doc_number} cancelled`); if (editId?.id === p.id) reset(); refreshAll(); });
+    void run(async () => {
+      if (p.doc_type === "order") await cancelPurchaseOrder({ data: { id: p.id, reason } });
+      else await cancelPurchase({ data: { id: p.id, reason } });
+      toast.success(`${p.doc_number} cancelled`); if (editId?.id === p.id) reset(); refreshAll();
+    });
   };
 
   const lockRef = useRef(false);
