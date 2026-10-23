@@ -1,4 +1,5 @@
 # Roadmap — Vyapar-style POS
+- [ ] Hide admin-disabled POS/Workspace everywhere and open the allowed module directly, including direct links and active sessions
 - [x] Monitoring: exclude purchase orders from dashboard/reports/day book/payables and enforce store/credit-party checks during conversion (37 tests pass; signed-in UI and conversion server rejection verified without saving financial records)
 - [x] Bulk update items: "Rate by %" master switch — on applies percentage pricing, off stops every percentage-driven rate change (5 tests; live purchase 100→sale 145 on, 200→sale unchanged off, 300→435 back on)
 - [x] POS Purchase Orders: create PO (rate optional) with Order tab, convert to purchase from the list with editable rates/payment, cancel open orders only (6 SQL tests pass; live create PO-00025 → convert PUR-00026 verified, then test data cleaned up)
