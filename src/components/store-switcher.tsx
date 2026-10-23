@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowRightLeft, Plus, Settings2, Store, Trash2, Warehouse } from "lucide-react";
+import { ArrowRightLeft, Building2, Plus, Settings2, Store, Trash2, Warehouse } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { getAllStoresStock, getStoreStock, listStores, saveStore, setCommonProducts, transferStock, type PosStore } from "@/lib/stores.functions";
+import { getAllStoresStock, getStoreStock, listFirmStores, listStores, saveStore, setCommonProducts, transferFirmStock, transferStock, type PosStore } from "@/lib/stores.functions";
 import { listInventory } from "@/lib/inventory.functions";
 import { ALL_STORES_ID, setSelectedStoreId, useSelectedStoreId } from "@/lib/pos-store-client";
+
+type Firm = { id: string; name: string; current: boolean; has_pin: boolean };
+const rpc = supabase.rpc.bind(supabase) as unknown as (fn: string, args?: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
 
 const inp = "h-9 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground";
 
