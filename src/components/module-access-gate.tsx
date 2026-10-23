@@ -5,7 +5,7 @@ import { useMySubscription } from "@/components/subscription";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { SignOutButton } from "@/components/sign-out-button";
-import { moduleRedirect, routeModule } from "@/lib/module-access";
+import { accessGateReady, moduleRedirect, routeModule } from "@/lib/module-access";
 
 /** Keep restricted pages unmounted, including restored sessions and direct links. */
 export function ModuleAccessGate({ children }: { children: ReactNode }) {
@@ -37,7 +37,8 @@ export function ModuleAccessGate({ children }: { children: ReactNode }) {
     return () => { cancelled = true; if (channel) void supabase.removeChannel(channel); };
   }, [queryClient]);
 
-  const ready = !!access.data && (offline || access.isFetchedAfterMount) && (!access.isError || offline);
+  // Once access data is known, a failed background refetch (weak Wi-Fi) must not wipe the screen.
+  const ready = accessGateReady(!!access.data, offline, access.isFetchedAfterMount);
   const destination = ready && access.data ? moduleRedirect(pathname, access.data) : null;
   const module = routeModule(pathname);
   const blocked = ready && access.data && (module === "pos" ? access.data.pos === false : module === "workspace" ? access.data.workspace === false : false);

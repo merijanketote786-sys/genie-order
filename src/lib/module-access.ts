@@ -31,3 +31,8 @@ export function applyModuleMarkers<T extends ModuleAccess>(access: T, markers: s
     workspace: access.workspace !== false && !markers.includes("!ws"),
   };
 }
+
+/** Gate stays open once access data is known; a failed background refetch must not unmount the page. */
+export function accessGateReady(hasData: boolean, offline: boolean, fetchedAfterMount: boolean): boolean {
+  return hasData && (offline || fetchedAfterMount);
+}
