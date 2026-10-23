@@ -505,6 +505,13 @@
       "when": 1792707298342,
       "tag": "0071_multi_firm",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1792719461552,
+      "tag": "0072_correct_platform_owner_staff_identity",
+      "breakpoints": true
     }
   ]
 }
