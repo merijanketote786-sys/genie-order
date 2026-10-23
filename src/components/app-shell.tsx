@@ -98,6 +98,7 @@ type AppShellProps = {
     | "/admin";
   onClear?: () => void;
   showClear?: boolean;
+  posContext?: boolean;
   children: ReactNode;
 };
 
@@ -107,6 +108,7 @@ function AppShellInner({
   active,
   onClear,
   showClear,
+  posContext,
   children,
   wide,
 }: AppShellProps & { wide?: boolean }) {
@@ -114,7 +116,7 @@ function AppShellInner({
   const [posMenuOpen, setPosMenuOpen] = useState(false);
   const navigate = useNavigate();
   const sub = useMySubscription().data;
-  const isPos = active === "/pos" || active === "/accounting" || (active === "/admin" && sub?.workspace === false && sub.pos !== false);
+  const isPos = posContext === true || active === "/pos" || active === "/accounting" || (active === "/admin" && sub?.workspace === false && sub.pos !== false);
   const sideLocked = !!sub && (isPos ? sub.pos === false : sub.workspace === false);
   const otherLocked = !!sub && (isPos ? sub.workspace === false : sub.pos === false);
   useEffect(() => {

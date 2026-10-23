@@ -62,6 +62,7 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin")({
+  validateSearch: (search: Record<string, unknown>): { from?: "pos" } => ({ from: search.from === "pos" ? "pos" : undefined }),
   head: () => ({
     meta: [
       { title: "Admin Panel — HBPOS" },
@@ -82,6 +83,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 function AdminPage() {
+  const { from } = Route.useSearch();
   const access = useQuery({ queryKey: ["my-access"], queryFn: () => getMyAccess() });
   const isOwner = access.data?.isOwner === true;
   const [section, setSection] = useState<
@@ -96,7 +98,7 @@ function AdminPage() {
   ];
 
   return (
-    <AppShell title="Admin Panel" subtitle="Users, records and access control" active="/admin" wide>
+    <AppShell title="Admin Panel" subtitle="Users, records and access control" active="/admin" posContext={from === "pos"} wide>
       <div className="shrink-0 pt-3 sm:pt-4">
         <WorkspaceHeader
           icon={Users}
