@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SubscriptionBanner } from "@/components/subscription";
 import { storedOfflineUser } from "@/lib/offline-sync";
+import { ModuleAccessGate } from "@/components/module-access-gate";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -44,10 +45,6 @@ function AuthGate() {
   useEffect(() => {
     if (!user) navigate({ to: "/auth", replace: true });
   }, [user, navigate]);
-  useEffect(() => {
-    // Bina internet app khule to seedha POS billing.
-    if (user && !navigator.onLine && window.location.pathname === "/") navigate({ to: "/pos", replace: true });
-  }, [user, navigate]);
   if (!user) return null;
-  return <><SubscriptionBanner /><Outlet /></>;
+  return <ModuleAccessGate><SubscriptionBanner /><Outlet /></ModuleAccessGate>;
 }

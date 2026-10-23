@@ -4,31 +4,38 @@ import { toast } from "sonner";
 import { Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { applyModuleMarkers } from "@/lib/module-access";
 
 const sb = supabase as any;
 type MySub = { active: boolean; expires_at: string | null; owner: boolean; pos?: boolean; workspace?: boolean };
 type SubRow = { workspace_id: string; email: string | null; name: string | null; business: string | null; created_at: string; expires_at: string | null; pos_enabled: boolean; ws_enabled: boolean };
 
-export function useMySubscription() {
+export function useMySubscription(enabled = true) {
   return useQuery({
     queryKey: ["my-subscription"],
+    enabled,
     queryFn: async () => {
       const { data, error } = await sb.rpc("my_subscription");
-      if (error) return null;
+      if (error || !data) throw new Error("Could not check module access");
       const s = { ...(data as MySub) };
       // Per-user POS / Workspace access set by the admin (markers in allowed_sections)
       if (!s.owner) {
-        const { data: u } = await supabase.auth.getUser();
+        const { data: u, error: userError } = await supabase.auth.getUser();
+        if (userError || !u.user) throw new Error("Could not check module access");
         if (u.user) {
-          const { data: row } = await sb.from("user_settings").select("allowed_sections").eq("user_id", u.user.id).maybeSingle();
+          const { data: row, error: settingsError } = await sb.from("user_settings").select("allowed_sections").eq("user_id", u.user.id).maybeSingle();
+          if (settingsError) throw new Error("Could not check module access");
           const list: string[] = Array.isArray(row?.allowed_sections) ? row.allowed_sections : [];
-          if (list.includes("!pos")) s.pos = false;
-          if (list.includes("!ws")) s.workspace = false;
+          return applyModuleMarkers(s, list);
         }
       }
       return s;
     },
     staleTime: 60_000,
+    refetchInterval: 10_000,
+    refetchOnWindowFocus: "always",
+    refetchOnMount: "always",
+    retry: 1,
   });
 }
 
