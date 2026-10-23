@@ -12,6 +12,11 @@ export function routeModule(pathname: string): "pos" | "workspace" | "shared" {
   return POS_PATHS.has(path) ? "pos" : "workspace";
 }
 
+export function moduleEntryAllowed(pathname: string, access: ModuleAccess): boolean {
+  const module = routeModule(pathname);
+  return module === "shared" || (module === "pos" ? access.pos !== false : access.workspace !== false);
+}
+
 export function moduleRedirect(pathname: string, access: ModuleAccess): "/pos-dashboard" | "/dashboard" | null {
   const module = routeModule(pathname);
   if (module === "workspace" && access.workspace === false && access.pos !== false) return "/pos-dashboard";

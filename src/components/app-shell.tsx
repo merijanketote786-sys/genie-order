@@ -37,7 +37,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getMyAccess } from "@/lib/admin.functions";
 import { getMySettings } from "@/lib/settings.functions";
 import { isSectionAllowed } from "@/lib/settings";
-import { routeModule } from "@/lib/module-access";
+import { moduleEntryAllowed } from "@/lib/module-access";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
 /** Jab koi page popup ke andar render ho to shell (nav/header) nahi dikhta. */
@@ -175,10 +175,11 @@ function AppShellInner({
   const brand = mine.data?.workspace.businessName?.trim() || "HB POS";
   const userAllowed = mine.data?.settings.allowedSections ?? [];
   const workspaceAllowed = mine.data?.workspace.allowedSections ?? [];
-  const visibleTabs = TABS.filter((tab) => isSectionAllowed(tab.to, userAllowed, workspaceAllowed) && !!sub && (routeModule(tab.to) === "pos" ? sub.pos !== false : sub.workspace !== false));
+  const visibleTabs = TABS.filter((tab) => isSectionAllowed(tab.to, userAllowed, workspaceAllowed) && !!sub && moduleEntryAllowed(tab.to, sub));
+  const settingsTabs = sub && moduleEntryAllowed(SETTINGS_TAB.to, sub) ? [SETTINGS_TAB] : [];
   const tabs = access.data?.isOwner
-    ? [...visibleTabs, SETTINGS_TAB, ADMIN_TAB]
-    : [...visibleTabs, SETTINGS_TAB];
+    ? [...visibleTabs, ...settingsTabs, ADMIN_TAB]
+    : [...visibleTabs, ...settingsTabs];
   const primaryTabs = visibleTabs.slice(0, 4);
 
   return (
@@ -292,8 +293,8 @@ function AppShellInner({
                 size="icon"
                 onClick={() => window.location.reload()}
                   className="size-10 shrink-0 border-border bg-card max-[380px]:hidden"
-                title="Refresh workspace (your data stays safe)"
-                aria-label="Refresh workspace"
+                title="Refresh app (your data stays safe)"
+                aria-label="Refresh app"
               >
                 <RefreshCw className="h-4 w-4" />
               </Button>

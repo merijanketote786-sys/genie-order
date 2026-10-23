@@ -58,9 +58,10 @@ export const getMyAccess = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase, userId, claims } = context;
 
-    const [isAdmin, profile] = await Promise.all([
+    const [isAdmin, profile, isOwner] = await Promise.all([
       isAdminUser(supabase, userId),
       supabase.from("profiles").select("full_name, is_active").eq("id", userId).maybeSingle(),
+      isPlatformOwner(supabase),
     ]);
 
     const email = (claims as Record<string, unknown>)["email"];
@@ -69,7 +70,7 @@ export const getMyAccess = createServerFn({ method: "GET" })
 
     return {
       isAdmin,
-      isOwner: emailStr.toLowerCase() === OWNER_EMAIL,
+      isOwner,
       isActive: profile.data?.is_active !== false,
       email: emailStr,
       fullName: profile.data?.full_name ?? "",
