@@ -519,6 +519,13 @@
       "when": 1792722530633,
       "tag": "0073_firm_pin_and_firm_stock_transfer",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1792790827428,
+      "tag": "0074_fix_main_firm_pin_set",
+      "breakpoints": true
     }
   ]
 }
