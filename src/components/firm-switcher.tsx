@@ -87,7 +87,7 @@ export function FirmSwitcher() {
           {firms.map((f) => <option key={f.id} value={f.id}>{f.name}{f.has_pin ? " 🔒" : ""}</option>)}
         </select>
       </div>
-      <Button size="icon-sm" variant="outline" aria-label="Firm PIN" title="Set or remove a firm PIN lock" onClick={() => setLockOpen(true)}><Lock /></Button>
+      <Button size="icon-sm" variant="outline" aria-label="Firm PIN lock settings" title="Set or remove a firm PIN lock" onClick={() => setLockOpen(true)}><Lock /></Button>
       <Button size="icon-sm" variant="outline" aria-label="Add firm" title="Add a new firm" onClick={() => { setName(""); setNewPin(""); setOpen(true); }}><Plus /></Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
