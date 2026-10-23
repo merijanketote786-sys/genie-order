@@ -45,6 +45,31 @@ export const transferStock = createServerFn({ method: "POST" })
     return { count: n as number };
   });
 
+/** Active stores of another firm owned by the same user (for firm-to-firm transfer). */
+export const listFirmStores = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ firmId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: stores, error } = await (context.supabase as Sb).rpc("pos_list_firm_stores", { _firm: data.firmId });
+    if (error) throw new Error(error.message || "Failed to load firm stores");
+    return (stores ?? []) as PosStore[];
+  });
+
+/** Transfer stock between stores of two different firms owned by the same user. */
+export const transferFirmStock = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({
+    from: z.string().uuid(), to: z.string().uuid(), note: z.string().max(200),
+    items: z.array(z.object({ productId: z.string().uuid(), qty: z.number().positive().max(1e7) })).min(1).max(500),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: n, error } = await (context.supabase as Sb).rpc("pos_transfer_firm_stock", {
+      _from_store: data.from, _to_store: data.to, _note: data.note, _items: data.items.map((i) => ({ product_id: i.productId, qty: i.qty })),
+    });
+    if (error) throw new Error(error.message || "Transfer failed");
+    return { count: n as number };
+  });
+
 /** Per-store stock + product visibility (when products are not common between stores). */
 export const getStoreStock = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
