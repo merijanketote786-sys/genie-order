@@ -37,6 +37,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getMyAccess } from "@/lib/admin.functions";
 import { getMySettings } from "@/lib/settings.functions";
 import { isSectionAllowed } from "@/lib/settings";
+import { routeModule } from "@/lib/module-access";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
 /** Jab koi page popup ke andar render ho to shell (nav/header) nahi dikhta. */
@@ -174,7 +175,7 @@ function AppShellInner({
   const brand = mine.data?.workspace.businessName?.trim() || "HB POS";
   const userAllowed = mine.data?.settings.allowedSections ?? [];
   const workspaceAllowed = mine.data?.workspace.allowedSections ?? [];
-  const visibleTabs = TABS.filter((tab) => isSectionAllowed(tab.to, userAllowed, workspaceAllowed) && !(tab.to === "/pos" && sub?.pos === false));
+  const visibleTabs = TABS.filter((tab) => isSectionAllowed(tab.to, userAllowed, workspaceAllowed) && !!sub && (routeModule(tab.to) === "pos" ? sub.pos !== false : sub.workspace !== false));
   const tabs = access.data?.isOwner
     ? [...visibleTabs, SETTINGS_TAB, ADMIN_TAB]
     : [...visibleTabs, SETTINGS_TAB];
