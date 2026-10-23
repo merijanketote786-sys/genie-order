@@ -1,8 +1,24 @@
 import { describe, test } from "node:test";
 import { strict as assert } from "node:assert";
-import { applyModuleMarkers, moduleRedirect, routeModule } from "./module-access";
+import { applyModuleMarkers, moduleEntryAllowed, moduleRedirect, routeModule } from "./module-access";
 
 describe("Admin module access", () => {
+  test("Workspace revocation hides every workspace entry, including personal Settings", () => {
+    const access = applyModuleMarkers({ pos: true, workspace: true }, ["!ws"]);
+    for (const path of ["/", "/dashboard", "/invoice", "/confirmation", "/extract", "/rates", "/calculator", "/history", "/invoices", "/customers", "/labels", "/sync", "/settings"]) {
+      assert.equal(moduleEntryAllowed(path, access), false, path);
+    }
+    assert.equal(moduleEntryAllowed("/pos-settings", access), true);
+    assert.equal(moduleEntryAllowed("/admin", access), true);
+  });
+  test("POS revocation hides every POS entry while Workspace remains available", () => {
+    const access = applyModuleMarkers({ pos: true, workspace: true }, ["!pos"]);
+    for (const path of ["/pos", "/pos-dashboard", "/returns", "/purchases", "/parties", "/suppliers", "/ledger", "/expenses", "/attendance", "/daybook", "/inventory", "/fixed-assets", "/reports", "/pos-labels", "/pos-invoices", "/accounting", "/pos-settings", "/item-manufacturing"]) {
+      assert.equal(moduleEntryAllowed(path, access), false, path);
+    }
+    assert.equal(moduleEntryAllowed("/settings", access), true);
+    assert.equal(moduleEntryAllowed("/dashboard", access), true);
+  });
   test("Workspace disabled: root and every Workspace page open POS directly", () => {
     const access = applyModuleMarkers({ pos: true, workspace: true }, ["!ws"]);
     assert.equal(access.workspace, false);
