@@ -161,6 +161,7 @@ export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
     setQ("");
     if (k === "items") setItemsOpen(true);
     else if (k === "attendance-mark") setAttOpen(true);
+    else if (k === "/admin") { void navigate({ to: "/admin", search: { from: "pos" } }); onNavigate?.(); }
     else { void navigate({ to: k }); onNavigate?.(); }
   };
   orderRef.current = sortByOrder(ALL_KEYS, order);

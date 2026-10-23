@@ -35,7 +35,7 @@ function GuidePage() {
       <div className="mb-6 flex items-center gap-3"><BookOpen className="size-7 text-primary" /><h2 className="font-display text-2xl font-bold">App Guide</h2></div>
       <form className="flex gap-2" onSubmit={(event) => { event.preventDefault(); ask(question); }}>
         <div className="relative min-w-0 flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input ref={input} value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ask about billing, stock, purchases..." aria-label="Your app question" maxLength={500} className="h-12 pl-9" /></div>
-        <Button type="submit" disabled={!question.trim()} className="h-12"><Send className="size-4" /><span className="hidden sm:inline">Ask</span></Button>
+        <Button type="submit" aria-label="Ask" disabled={!question.trim()} className="h-12"><Send className="size-4" /><span className="hidden sm:inline">Ask</span></Button>
       </form>
       {asked && <section className="mt-6 border-y border-border py-5" aria-label="Question answers" aria-live="polite">
         <div className="mb-4 flex items-start justify-between gap-3"><h3 className="min-w-0 break-words font-semibold">{asked}</h3><Button variant="ghost" size="icon" aria-label="Clear question" onClick={() => { setAsked(""); setQuestion(""); input.current?.focus(); }}><X className="size-4" /></Button></div>
