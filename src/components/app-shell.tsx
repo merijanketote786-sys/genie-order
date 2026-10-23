@@ -112,9 +112,9 @@ function AppShellInner({
 }: AppShellProps & { wide?: boolean }) {
   const [navHidden, setNavHidden] = useState(false);
   const [posMenuOpen, setPosMenuOpen] = useState(false);
-  const isPos = active === "/pos" || active === "/accounting";
   const navigate = useNavigate();
   const sub = useMySubscription().data;
+  const isPos = active === "/pos" || active === "/accounting" || (active === "/admin" && sub?.workspace === false && sub.pos !== false);
   const sideLocked = !!sub && (isPos ? sub.pos === false : sub.workspace === false);
   const otherLocked = !!sub && (isPos ? sub.workspace === false : sub.pos === false);
   useEffect(() => {
@@ -181,6 +181,10 @@ function AppShellInner({
     ? [...visibleTabs, ...settingsTabs, ADMIN_TAB]
     : [...visibleTabs, ...settingsTabs];
   const primaryTabs = visibleTabs.slice(0, 4);
+
+  // Subscription observers can update before the outer gate commits its redirect.
+  // Do not flash the revoked module's shell during that transition.
+  if (sideLocked) return null;
 
   return (
     <div
