@@ -3,7 +3,7 @@ export type ModuleAccess = { pos?: boolean; workspace?: boolean };
 const POS_PATHS = new Set([
   "/pos", "/pos-dashboard", "/returns", "/purchases", "/parties", "/suppliers",
   "/ledger", "/expenses", "/attendance", "/daybook", "/inventory", "/fixed-assets",
-  "/reports", "/pos-labels", "/pos-invoices", "/accounting", "/pos-settings", "/item-manufacturing",
+  "/reports", "/pos-labels", "/pos-invoices", "/accounting", "/pos-settings", "/item-manufacturing", "/pos-guide",
 ]);
 
 export function routeModule(pathname: string): "pos" | "workspace" | "shared" {

@@ -5,10 +5,12 @@ import { ItemsDialog } from "@/components/items-dialog";
 import { AttendanceDialog } from "@/components/attendance";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { usePosAccess } from "@/components/pos-access";
+import { useQuery } from "@tanstack/react-query";
+import { getMyAccess } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import type { PosPerm } from "@/lib/pos-access.functions";
-import { LayoutDashboard, Landmark, Settings2, BarChart3, Boxes, BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users, FileCheck2, ArrowLeft, Package, CalendarCheck, ClipboardList, GripVertical, Search, QrCode } from "lucide-react";
+import { LayoutDashboard, Landmark, Settings2, BarChart3, Boxes, BookOpen, Notebook, Receipt, Truck, Undo2, ShoppingCart, Users, FileCheck2, ArrowLeft, Package, CalendarCheck, ClipboardList, GripVertical, Search, QrCode, CircleHelp, Shield } from "lucide-react";
 
 const ITEMS = [
   { to: "/pos-dashboard", label: "Dashboard", icon: LayoutDashboard, perm: "view_pos" },
@@ -30,6 +32,8 @@ const ITEMS = [
 ] as const satisfies ReadonlyArray<{ to: string; label: string; icon: unknown; perm: PosPerm }>;
 
 const KEYWORDS: Record<string, string> = {
+  "/pos-guide": "guide help faq question answer app support madad sawal jawab",
+  "/admin": "admin users access permissions",
   "/pos-dashboard": "home quick actions overview summary units categories cash in hand",
   "/pos": "sale bill billing new sale invoice counter checkout",
   "/returns": "sale return refund credit note purchase return",
@@ -108,7 +112,7 @@ const FEATURES: { label: string; to: string; kw: string }[] = [
 const LABELS: Record<string, string> = { items: "Items", "attendance-mark": "Mark attendance" };
 
 const ORDER_KEY = "pos-sidebar-order";
-const ALL_KEYS = [...ITEMS.map((i) => i.to as string), "items", "attendance-mark"];
+const ALL_KEYS = [...ITEMS.map((i) => i.to as string), "items", "attendance-mark", "/pos-guide", "/admin"];
 
 function sortByOrder(keys: string[], order: string[]) {
   const pos = (k: string) => { const i = order.indexOf(k); return i < 0 ? 1000 + ALL_KEYS.indexOf(k) : i; };
@@ -119,6 +123,7 @@ function sortByOrder(keys: string[], order: string[]) {
 export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { can, config } = usePosAccess();
   const subscription = useMySubscription().data;
+  const adminAccess = useQuery({ queryKey: ["my-access"], queryFn: () => getMyAccess(), staleTime: 5 * 60 * 1000 }).data;
   const wsAllowed = !!subscription && subscription.workspace !== false;
   const attOn = (config as unknown as { attendance?: { enabled?: boolean } }).attendance?.enabled !== false;
   const [attOpen, setAttOpen] = useState(false);
@@ -140,11 +145,13 @@ export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
   }, []);
 
   const visible = [
+    "/pos-guide",
+    ...(adminAccess?.isOwner === true ? ["/admin"] : []),
     ...ITEMS.filter((i) => can(i.perm) && (i.to !== "/attendance" || attOn)).map((i) => i.to as string),
     ...(can("view_pos") ? ["items"] : []),
     ...(attOn && can("manage_expenses") ? ["attendance-mark"] : []),
   ];
-  const label = (k: string) => LABELS[k] ?? ITEMS.find((x) => x.to === k)?.label ?? k;
+  const label = (k: string) => k === "/pos-guide" ? "Guide" : k === "/admin" ? "Admin" : LABELS[k] ?? ITEMS.find((x) => x.to === k)?.label ?? k;
   const ql = q.trim().toLowerCase();
   const keys = sortByOrder(visible, order).filter((k) => !ql || `${label(k)} ${KEYWORDS[k] ?? ""}`.toLowerCase().includes(ql));
   const words = ql.split(/\s+/).filter(Boolean);
@@ -196,12 +203,18 @@ export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
         {ql && !keys.length && !featHits.length ? <p className="px-3 text-xs text-sidebar-muted">No feature found</p> : null}
         {keys.map((k) => {
           let body: React.ReactNode;
-          if (k === "items") {
+          if (k === "/admin" || k === "/pos-guide") {
+            const Icon = k === "/admin" ? Shield : CircleHelp;
+            body = <Button asChild variant="ghost" className={`${rowCls} ${pathname === k ? "bg-sidebar-accent text-sidebar-accent-foreground" : idle} justify-start`}>
+              <Link to={k} search={k === "/admin" ? { from: "pos" } : {}} onClick={() => { setQ(""); onNavigate?.(); }} aria-current={pathname === k ? "page" : undefined}><Icon className="size-4 shrink-0" />{label(k)}</Link>
+            </Button>;
+          } else if (k === "items") {
             body = <button type="button" onClick={() => openKey("items")} className={`${rowCls} ${idle} text-left`}><Package className="size-4 shrink-0" /> Items</button>;
           } else if (k === "attendance-mark") {
             body = <button type="button" onClick={() => openKey("attendance-mark")} className={`${rowCls} ${idle} text-left`}><CalendarCheck className="size-4 shrink-0" /> Mark attendance</button>;
           } else {
-            const i = ITEMS.find((x) => x.to === k)!;
+            const i = ITEMS.find((x) => x.to === k);
+            if (!i) return null;
             const active = pathname === i.to;
             body = (
               <Link to={i.to} onClick={() => { setQ(""); onNavigate?.(); }} aria-current={active ? "page" : undefined}
