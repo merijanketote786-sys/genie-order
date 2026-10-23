@@ -978,6 +978,7 @@ export type Database = {
           id: string
           name: string
           owner_id: string
+          pin_hash: string | null
           root_id: string
         }
         Insert: {
@@ -985,6 +986,7 @@ export type Database = {
           id: string
           name: string
           owner_id: string
+          pin_hash?: string | null
           root_id: string
         }
         Update: {
@@ -992,6 +994,7 @@ export type Database = {
           id?: string
           name?: string
           owner_id?: string
+          pin_hash?: string | null
           root_id?: string
         }
         Relationships: []
@@ -2229,6 +2232,7 @@ export type Database = {
         Returns: string
       }
       pos_is_admin: { Args: never; Returns: boolean }
+      pos_list_firm_stores: { Args: { _firm: string }; Returns: Json }
       pos_list_firms: { Args: never; Returns: Json }
       pos_list_stores: { Args: never; Returns: Json }
       pos_log_event: {
@@ -2333,6 +2337,10 @@ export type Database = {
       }
       pos_save_unlinked_return: { Args: { _p: Json }; Returns: Json }
       pos_set_common_products: { Args: { _on: boolean }; Returns: undefined }
+      pos_set_firm_pin: {
+        Args: { _firm: string; _pin: string }
+        Returns: undefined
+      }
       pos_set_member_perms: {
         Args: { _perms: string[]; _user: string }
         Returns: undefined
@@ -2342,7 +2350,19 @@ export type Database = {
         Returns: undefined
       }
       pos_set_mfg_pin: { Args: { _pin: string }; Returns: undefined }
-      pos_switch_firm: { Args: { _id: string }; Returns: undefined }
+      pos_switch_firm: {
+        Args: { _id: string; _pin?: string }
+        Returns: undefined
+      }
+      pos_transfer_firm_stock: {
+        Args: {
+          _from_store: string
+          _items: Json
+          _note: string
+          _to_store: string
+        }
+        Returns: number
+      }
       pos_transfer_stock: {
         Args: { _from: string; _items: Json; _note: string; _to: string }
         Returns: number

@@ -512,6 +512,13 @@
       "when": 1792719461552,
       "tag": "0072_correct_platform_owner_staff_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1792722530633,
+      "tag": "0073_firm_pin_and_firm_stock_transfer",
+      "breakpoints": true
     }
   ]
 }
