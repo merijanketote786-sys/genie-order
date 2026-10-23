@@ -131,16 +131,31 @@ function TransferTab({ onDone }: { onDone: () => void }) {
   const qc = useQueryClient();
   const { data } = useStores();
   const stores = (data?.stores ?? []).filter((s) => s.isActive);
+  const { data: firmsData } = useQuery({
+    queryKey: ["pos-firms"],
+    queryFn: async () => { const { data: d, error } = await rpc("pos_list_firms"); if (error) throw new Error(error.message); return (d ?? []) as Firm[]; },
+    staleTime: 60_000,
+  });
+  const firms = firmsData ?? [];
+  const currentFirm = firms.find((f) => f.current);
+  const otherFirms = firms.filter((f) => !f.current);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [toFirm, setToFirm] = useState("");
   const [q, setQ] = useState("");
   const [note, setNote] = useState("");
   const [items, setItems] = useState<Array<{ id: string; name: string; unit: string; qty: string }>>([]);
   const [busy, setBusy] = useState(false);
+  const { data: firmStores } = useQuery({
+    queryKey: ["firm-stores", toFirm],
+    queryFn: () => listFirmStores({ data: { firmId: toFirm } }),
+    enabled: !!toFirm,
+  });
+  const targetStores = toFirm ? (firmStores ?? []) : stores;
   useEffect(() => {
     if (!from && stores.length) setFrom(stores[0].id);
-    if (!to && stores.length > 1) setTo(stores[1].id);
-  }, [stores, from, to]);
+    if (!to && targetStores.length) setTo(targetStores[0].id);
+  }, [stores, targetStores, from, to]);
   const { data: inv } = useQuery({ queryKey: ["inventory"], queryFn: () => listInventory() });
   const { data: st } = useQuery({ queryKey: ["store-stock", from], queryFn: () => getStoreStock({ data: { storeId: from } }), enabled: !!from });
   const matches = useMemo(() => {
@@ -151,22 +166,34 @@ function TransferTab({ onDone }: { onDone: () => void }) {
   const have = (id: string) => st?.byId[id] ?? 0;
   const submit = async () => {
     const list = items.map((i) => ({ productId: i.id, qty: Number(i.qty) })).filter((i) => i.qty > 0);
-    if (!from || !to || from === to) return toast.error("From aur To store alag select karein");
+    if (!from || !to) return toast.error("From aur To store select karein");
+    if (!toFirm && from === to) return toast.error("From aur To store alag select karein");
     if (!list.length) return toast.error("Items add karein");
     setBusy(true);
     try {
-      const r = await transferStock({ data: { from, to, note, items: list } });
-      toast.success(`${r.count} items transferred`);
-      ["store-stock", "inventory", "stock-ledger"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+      const r = toFirm
+        ? await transferFirmStock({ data: { from, to, note, items: list } })
+        : await transferStock({ data: { from, to, note, items: list } });
+      toast.success(`${r.count} items transferred${toFirm ? " to the other firm" : ""}`);
+      ["store-stock", "inventory", "stock-ledger", "firm-stores"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
       setItems([]); onDone();
     } catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
   };
-  if (stores.length < 2) return <p className="py-6 text-center text-sm text-muted-foreground">Transfer ke liye pehle kam az kam 2 stores/godowns add karein.</p>;
+  if (stores.length < 2 && !otherFirms.length) return <p className="py-6 text-center text-sm text-muted-foreground">Transfer ke liye pehle kam az kam 2 stores/godowns add karein.</p>;
   return (
     <div className="space-y-3">
+      {otherFirms.length ? (
+        <label className="block text-xs text-muted-foreground">To firm
+          <select className={inp} value={toFirm} onChange={(e) => { setToFirm(e.target.value); setTo(""); }} aria-label="To firm">
+            <option value="">{currentFirm?.name ?? "This firm"} (this firm)</option>
+            {otherFirms.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+          </select>
+          {toFirm ? <span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><Building2 className="size-3" /> Doosri firm mein transfer: item wahan na mile to apne aap ban jayega.</span> : null}
+        </label>
+      ) : null}
       <div className="grid grid-cols-2 gap-2">
         <label className="text-xs text-muted-foreground">From<select className={inp} value={from} onChange={(e) => setFrom(e.target.value)}>{stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
-        <label className="text-xs text-muted-foreground">To<select className={inp} value={to} onChange={(e) => setTo(e.target.value)}>{stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+        <label className="text-xs text-muted-foreground">To<select className={inp} value={to} onChange={(e) => setTo(e.target.value)}>{targetStores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
       </div>
       <div className="relative">
         <input className={inp} placeholder="Search product to transfer" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search product" />
