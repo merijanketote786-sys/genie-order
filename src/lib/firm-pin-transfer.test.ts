@@ -44,6 +44,7 @@ async function setup() {
     INSERT INTO public.pos_store_stock VALUES('${OWNER}', '${STORE_A}', '${PROD_A}', 20);
   `);
   await db.exec(readFileSync(new URL("../../drizzle/migrations/0073_firm_pin_and_firm_stock_transfer.sql", import.meta.url), "utf8"));
+  await db.exec(readFileSync(new URL("../../drizzle/migrations/0074_fix_main_firm_pin_set.sql", import.meta.url), "utf8"));
   return db;
 }
 
@@ -99,5 +100,19 @@ test("firm-to-firm transfer rejects same-firm target and insufficient stock", as
     await assert.rejects(() => db.query("SELECT public.pos_transfer_firm_stock($1, $2, $3, $4)", [STORE_A, STORE_A, items, "x"]), /Same firm/);
     const big = JSON.stringify([{ product_id: PROD_A, qty: 999 }]);
     await assert.rejects(() => db.query("SELECT public.pos_transfer_firm_stock($1, $2, $3, $4)", [STORE_A, STORE_B, big, "x"]), /Stock kam hai/);
+  } finally { await db.close(); }
+});
+
+test("PIN set on the main firm works before any second firm exists", async () => {
+  const db = await setup();
+  try {
+    // Simulate a fresh owner: no pos_firms row for the main firm yet.
+    await db.query("DELETE FROM public.pos_firms WHERE id=$1", [OWNER]);
+    await db.query("SELECT public.pos_set_firm_pin($1, $2)", [OWNER, "5555"]);
+    const r = await db.query<{ pin_hash: string | null }>("SELECT pin_hash FROM public.pos_firms WHERE id=$1", [OWNER]);
+    assert.equal(r.rows.length, 1, "main firm row must be created");
+    assert.notEqual(r.rows[0].pin_hash, null, "PIN must actually be stored");
+    await assert.rejects(() => db.query("SELECT public.pos_switch_firm($1)", [OWNER]), /Firm PIN required/);
+    await db.query("SELECT public.pos_switch_firm($1, $2)", [OWNER, "5555"]);
   } finally { await db.close(); }
 });
