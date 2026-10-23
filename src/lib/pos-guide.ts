@@ -13,7 +13,7 @@ const aliases: Record<string, string> = {
 };
 const stopWords = new Set("how do i a an the to in on for of is can my we what why when where and or it this that please me mujhe ka ki ke ko ma mein mai hai ha ho se kar kro kr kya kese kaise kis k ky liye aur apni hum ham bana bna karein करें कैसे मुझे है में को का की के और क्या मैं हम".split(/\s+/));
 export function guideWords(text: string): string[] {
-  return [...new Set(text.toLowerCase().normalize("NFKC").replace(/[^\p{L}\p{N}%]+/gu, " ").split(/\s+/).map((word) => aliases[word] ?? word).filter((word) => word && !stopWords.has(word)))];
+  return [...new Set(text.toLowerCase().normalize("NFKC").replace(/[^\p{L}\p{M}\p{N}%]+/gu, " ").split(/\s+/).map((word) => aliases[word] ?? word).filter((word) => word && !stopWords.has(word)))];
 }
 export function availableFaqs(faqs: GuideFaq[], access: ModuleAccess): GuideFaq[] {
   return faqs.filter((faq) => faq.module === "pos" ? access.pos !== false : access.workspace !== false);
