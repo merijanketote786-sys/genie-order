@@ -1,6 +1,6 @@
 import { describe, test } from "node:test";
 import { strict as assert } from "node:assert";
-import { applyModuleMarkers, moduleEntryAllowed, moduleRedirect, routeModule } from "./module-access";
+import { accessGateReady, applyModuleMarkers, moduleEntryAllowed, moduleRedirect, routeModule } from "./module-access";
 
 describe("Admin module access", () => {
   test("Workspace revocation hides every workspace entry, including personal Settings", () => {
@@ -40,5 +40,14 @@ describe("Admin module access", () => {
     assert.equal(moduleRedirect("/pos", { pos: false, workspace: false }), null);
     assert.equal(moduleRedirect("/invoice", { pos: true, workspace: true }), null);
     assert.equal(routeModule("/pos/"), "pos");
+  });
+  test("a failed background access check keeps the page mounted once data is known", () => {
+    // Cached access data + a failed refetch while still online must NOT unmount the page.
+    assert.equal(accessGateReady(true, false, true), true);
+    // Offline with data: page stays mounted.
+    assert.equal(accessGateReady(true, true, true), true);
+    // No data yet: show loading / error screen.
+    assert.equal(accessGateReady(false, false, true), false);
+    assert.equal(accessGateReady(false, false, false), false);
   });
 });
