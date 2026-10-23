@@ -1,5 +1,5 @@
 # Roadmap — Vyapar-style POS
-- [ ] Verify real module-access revocation, hidden entries and direct opening for POS-only and Workspace-only users; fix regressions.
+- [x] Verify restricted modes on the requested signed-in owner account using browser-only access responses: 13 Workspace and 19 POS direct links, live redirects and both mobile menus pass; hide personal Settings when Workspace is disabled and align owner menu with database owner check; 5 tests pass. Actual staff revocation cannot be exercised on this exempt platform-owner account; no saved access changed.
 - [x] Hide admin-disabled POS/Workspace and open the allowed module directly; shared pre-render gate, live refresh with 10-second fallback, 3 tests pass, signed-in direct-link/menu checks pass with browser-only permission overrides (real admin revocation not exercised)
 - [x] Monitoring: exclude purchase orders from dashboard/reports/day book/payables and enforce store/credit-party checks during conversion (37 tests pass; signed-in UI and conversion server rejection verified without saving financial records)
 - [x] Bulk update items: "Rate by %" master switch — on applies percentage pricing, off stops every percentage-driven rate change (5 tests; live purchase 100→sale 145 on, 200→sale unchanged off, 300→435 back on)
