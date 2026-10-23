@@ -1,4 +1,5 @@
 # Roadmap — Vyapar-style POS
+- [ ] Add authorized Admin entry in POS and a ready-answer Guide for all POS users; verify question matching and navigation.
 - [x] Verify restricted modes: 13 Workspace and 19 POS direct links, live redirects and mobile menus pass with browser-only responses. Corrected the staff account's erroneous platform-owner exemption; real saved !ws now redirects /invoice to POS with Workspace/Settings/owner menu absent. No saved access changed; 7 tests pass.
 - [x] Hide admin-disabled POS/Workspace and open the allowed module directly; shared pre-render gate, live refresh with 10-second fallback, 3 tests pass, signed-in direct-link/menu checks pass with browser-only permission overrides (real admin revocation not exercised)
 - [x] Monitoring: exclude purchase orders from dashboard/reports/day book/payables and enforce store/credit-party checks during conversion (37 tests pass; signed-in UI and conversion server rejection verified without saving financial records)
