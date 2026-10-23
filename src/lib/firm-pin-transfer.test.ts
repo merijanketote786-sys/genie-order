@@ -27,7 +27,7 @@ async function setup() {
     CREATE TABLE auth.users(id uuid, created_at timestamptz DEFAULT now());
     CREATE TABLE public.audit_log(workspace_id uuid, action text, entity text, entity_id uuid, details jsonb, created_by uuid);
     CREATE TABLE public.pos_stores(id uuid PRIMARY KEY, workspace_id uuid, name text, kind text, is_default boolean, is_active boolean, created_at timestamptz DEFAULT now());
-    CREATE TABLE public.products(id uuid PRIMARY KEY, workspace_id uuid, name text, normalized_name text, unit text, sale_price numeric DEFAULT 0, wholesale_price numeric DEFAULT 0, purchase_price numeric DEFAULT 0, p100_staff_price numeric, p250_staff_price numeric, p500_staff_price numeric, tax_percent numeric, min_stock numeric, scope text, store_id uuid, stock numeric DEFAULT 0, is_active boolean DEFAULT true, updated_at timestamptz DEFAULT now());
+    CREATE TABLE public.products(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), workspace_id uuid, name text, normalized_name text, unit text, sale_price numeric DEFAULT 0, wholesale_price numeric DEFAULT 0, purchase_price numeric DEFAULT 0, p100_staff_price numeric, p250_staff_price numeric, p500_staff_price numeric, tax_percent numeric, min_stock numeric, scope text, store_id uuid, stock numeric DEFAULT 0, is_active boolean DEFAULT true, updated_at timestamptz DEFAULT now());
     CREATE TABLE public.pos_store_stock(workspace_id uuid, store_id uuid, product_id uuid, qty numeric, UNIQUE(store_id, product_id));
     CREATE TABLE public.stock_movements(workspace_id uuid, product_id uuid, kind text, qty numeric, ref_id uuid, note text, created_by uuid, store_id uuid);
 
