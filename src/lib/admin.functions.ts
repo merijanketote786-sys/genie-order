@@ -236,7 +236,7 @@ export const adoptAppUser = createServerFn({ method: "POST" })
       supabaseAdmin.auth.admin.getUserById(data.userId),
     ]);
     const em = (authUser?.user?.email ?? "").toLowerCase();
-    if (em === "hhtraders008@gmail.com" || em === "merijanketote786@gmail.com") return { ok: false as const, message: "Owner accounts cannot be moved." };
+    if (em === OWNER_EMAIL) return { ok: false as const, message: "Owner accounts cannot be moved." };
     if (!me?.workspace_id || !target) return { ok: false as const, message: "User not found." };
     if (target.workspace_id === me.workspace_id) return { ok: false as const, message: "User is already in your workspace." };
     const ws = me.workspace_id;
@@ -265,7 +265,7 @@ export const detachAppUser = createServerFn({ method: "POST" })
       supabaseAdmin.auth.admin.getUserById(data.userId),
     ]);
     const em = (authUser?.user?.email ?? "").toLowerCase();
-    if (em === "hhtraders008@gmail.com" || em === "merijanketote786@gmail.com") return { ok: false as const, message: "Owner accounts cannot be moved." };
+    if (em === OWNER_EMAIL) return { ok: false as const, message: "Owner accounts cannot be moved." };
     if (!target) return { ok: false as const, message: "User not found." };
     if (target.workspace_id === data.userId) return { ok: false as const, message: "User already has a separate account." };
     const ws = data.userId;
