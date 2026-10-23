@@ -94,7 +94,7 @@ test("firm-to-firm transfer rejects same-firm target and insufficient stock", as
   const db = await setup();
   try {
     const items = JSON.stringify([{ product_id: PROD_A, qty: 5 }]);
-    await assert.rejects(() => db.query("SELECT public.pos_transfer_firm_stock($1, $2, $3, $4)", [STORE_A, STORE_A, items, "x"]), /Store not found/);
+    await assert.rejects(() => db.query("SELECT public.pos_transfer_firm_stock($1, $2, $3, $4)", [STORE_A, STORE_A, items, "x"]), /Same firm/);
     const big = JSON.stringify([{ product_id: PROD_A, qty: 999 }]);
     await assert.rejects(() => db.query("SELECT public.pos_transfer_firm_stock($1, $2, $3, $4)", [STORE_A, STORE_B, big, "x"]), /Stock kam hai/);
   } finally { await db.close(); }
