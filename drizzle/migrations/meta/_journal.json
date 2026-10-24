@@ -526,6 +526,20 @@
       "when": 1792790827428,
       "tag": "0074_fix_main_firm_pin_set",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1792850883869,
+      "tag": "0075_keep_pos_invoice_saves_in_pos",
+      "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1792851286461,
+      "tag": "0076_keep_pos_payment_updates_in_pos",
+      "breakpoints": true
     }
   ]
 }
