@@ -80,3 +80,27 @@ test("removing Workspace mirror does not bypass disabled POS access", async () =
     assert.equal((await db.query("select * from pos_sales")).rows.length, 0);
   } finally { await db.close(); }
 });
+
+test("receiving full payment on a legacy POS invoice does not require Workspace access", async () => {
+  const db = await setup();
+  try {
+    await db.exec(`
+      ALTER TABLE public.pos_sales ADD paid_total numeric DEFAULT 0;
+      CREATE FUNCTION public.pos_receive_sale_payment(_sale uuid,_amount numeric,_method text,_note text,_ref uuid) RETURNS jsonb LANGUAGE plpgsql AS $function$
+      DECLARE s record; nb numeric := 0;
+      BEGIN
+        SELECT * INTO s FROM public.pos_sales WHERE id=_sale;
+        UPDATE public.pos_sales SET paid_total=_amount WHERE id=_sale;
+  IF nb <= 0.005 AND s.invoice_id IS NOT NULL THEN
+    UPDATE public.invoices SET payment_status = 'paid', paid_at = now() WHERE id = s.invoice_id;
+  END IF;
+        RETURN jsonb_build_object('paid_total',_amount);
+      END $function$;
+    `);
+    await db.exec(readFileSync(new URL("../../drizzle/migrations/0076_keep_pos_payment_updates_in_pos.sql", import.meta.url), "utf8"));
+    const id = "10000000-0000-4000-8000-000000000001";
+    await db.query("insert into pos_sales(id,invoice_id,status) values($1,$1,'completed')", [id]);
+    await db.query("select pos_receive_sale_payment($1,100,'Cash','',null)", [id]);
+    assert.equal(Number((await db.query<{ paid_total: string }>("select paid_total from pos_sales")).rows[0]?.paid_total), 100);
+  } finally { await db.close(); }
+});
