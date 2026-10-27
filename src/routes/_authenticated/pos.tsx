@@ -1137,7 +1137,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
               </div>
 
               {cart.map((l, i) => (
-                <CartRow key={l.key} index={i + 1} line={l} focus={focusKey === l.key} onFocused={() => setFocusKey(null)} onDone={() => scanRef.current?.focus()} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} taxRates={cfg.tax.enabled ? cfg.tax.rates : []} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
+                <CartRow key={l.key} index={i + 1} line={l} focus={focusKey === l.key} onFocused={() => setFocusKey(null)} onDone={() => scanRef.current?.focus()} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} taxRates={cfg.tax.enabled ? cfg.tax.rates : []} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} onEditItem={(name) => setEditItem(name)} />
               ))}
 
               <div className="flex items-center justify-between gap-2 border-t border-border bg-surface px-3 py-2 text-xs text-muted-foreground">
@@ -1289,7 +1289,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
 }
 
 /** Cart ki ek line — #, item, weight, size, qty, unit, rate, discount, tax, note aur total sab manually likhe ja sakte hain. */
-function CartRow({ index, line, focus, onFocused, onDone, onPatch, onRemove, lockPrice = false, lockDisc = false, onUnlock, taxRates = [] }: { index: number; line: CartLine; focus?: boolean; onFocused?: () => void; onDone?: () => void; onPatch: (key: string, v: Partial<CartLine>) => void; onRemove: () => void; lockPrice?: boolean; lockDisc?: boolean; onUnlock?: () => void; taxRates?: { name: string; pct: number }[] }) {
+function CartRow({ index, line, focus, onFocused, onDone, onPatch, onRemove, lockPrice = false, lockDisc = false, onUnlock, taxRates = [], onEditItem }: { index: number; line: CartLine; focus?: boolean; onFocused?: () => void; onDone?: () => void; onPatch: (key: string, v: Partial<CartLine>) => void; onRemove: () => void; lockPrice?: boolean; lockDisc?: boolean; onUnlock?: () => void; taxRates?: { name: string; pct: number }[]; onEditItem?: (name: string) => void }) {
   const [totalText, setTotalText] = useState<string | null>(null);
   const [qtyText, setQtyText] = useState<string | null>(null);
   const [showNote, setShowNote] = useState(!!line.note);
@@ -1310,7 +1310,10 @@ function CartRow({ index, line, focus, onFocused, onDone, onPatch, onRemove, loc
       <div className="mrow-sale mgrid grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] items-center text-sm">
         <div className="px-1 text-center text-xs font-semibold text-muted-foreground">{index}</div>
         <div className="min-w-0 px-2 py-2">
-          <p className="truncate font-semibold text-foreground" title={line.name}>{line.name}{isWholesale(line) ? <span className="ml-2 rounded bg-primary/15 px-1.5 py-0.5 align-middle text-[10px] font-bold uppercase text-primary">Wholesale</span> : null}</p>
+          <div className="flex items-start justify-between gap-1.5">
+            <p className="min-w-0 truncate font-semibold text-foreground" title={line.name}>{line.name}{isWholesale(line) ? <span className="ml-2 rounded bg-primary/15 px-1.5 py-0.5 align-middle text-[10px] font-bold uppercase text-primary">Wholesale</span> : null}</p>
+            <button type="button" aria-label={`Edit ${line.name}`} title="Edit item details" className="shrink-0 rounded-sm p-1 text-muted-foreground hover:bg-background hover:text-foreground" onClick={() => onEditItem?.(line.name)}><Pencil className="size-4" /></button>
+          </div>
           <div className="flex items-center gap-2">
             <Button size="sm" variant="ghost" className="h-6 px-0 text-xs text-muted-foreground" onClick={() => setShowNote((v) => !v)}><StickyNote className="size-3" /> {line.note ? "Edit note" : "Add note"}</Button>
             {line.priceManual ? <Button size="sm" variant="ghost" className="h-6 px-0 text-xs text-muted-foreground" onClick={() => onPatch(line.key, { priceManual: false })}>Auto rate</Button> : null}
