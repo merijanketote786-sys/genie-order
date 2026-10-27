@@ -68,7 +68,7 @@ export const getDetailedReport = createServerFn({method:"GET"})
       const privateKeys=new Set(["cost","profit","costValue","saleValue"]);
       output.columns=output.columns.filter(c=>!privateKeys.has(c.key));
       output.rows=output.rows.map(r=>Object.fromEntries(Object.entries(r).filter(([k])=>!privateKeys.has(k))));
-      output.totals=output.totals.filter(t=>!["Cost","Profit","CostValue","SaleValue"].includes(t.label));
+      output.totals=output.totals.filter(t=>!["Cost","Profit","Cost value","Sale value"].includes(t.label));
     }
     return {...output,options:{products:s.products.map(p=>({id:p.id,name:p.name})),parties:[...s.customers.map(p=>({id:`c:${p.id}`,name:`${p.name || p.phone} (Customer)`})),...s.suppliers.map(p=>({id:`s:${p.id}`,name:`${p.name} (Supplier)`}))],accounts:s.accounts.filter(a=>a.system_key === "bank" || a.is_payment).map(a=>({id:a.id,name:a.name})),categories:[...new Set(s.products.map(p=>p.category || "Uncategorized"))].sort(),methods:[...new Set([...s.payments,...s.expenses,...s.cash].map(p=>p.method))].sort()}};
   });
