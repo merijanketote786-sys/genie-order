@@ -1,4 +1,6 @@
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
+import { ProductEditDialog } from "@/components/product-edit-dialog";
+import { PosTabs } from "@/components/pos-tabs";
 import { PosCustomerSearch } from "@/components/pos-customer-search";
 import { WaTemplateButton } from "@/components/wa-template-button";
 import { ShippingCalcButton } from "@/components/shipping-calc-button";
@@ -46,7 +48,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { BarcodeScannerDialog } from "@/components/barcode-scanner";
-import { Minus, Plus, Printer, ScanBarcode, Trash2, MessageCircle, LayoutGrid, ReceiptText, Save, StickyNote, Pause, FileText, FolderOpen, RotateCcw, Download, Share2, X, UserPlus, Keyboard, Zap } from "lucide-react";
+import { Minus, Plus, Printer, ScanBarcode, Trash2, MessageCircle, LayoutGrid, ReceiptText, Save, StickyNote, Pause, FileText, FolderOpen, RotateCcw, Download, Share2, X, UserPlus, Keyboard, Zap, Pencil } from "lucide-react";
 
 type PosDocRow = { id: string; doc_number: string; customer_name: string | null; customer_phone: string | null; grand_total: number; created_at: string; payload: string | null; status: string };
 
@@ -81,7 +83,7 @@ function DocsList({ kind, onClose, onOpen }: { kind: "held" | "quotation"; onClo
     </div>
   );
 }
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/pos")({
@@ -95,7 +97,7 @@ export const Route = createFileRoute("/_authenticated/pos")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: PosPage,
+  component: () => <PosTabs Page={PosPage} />,
 });
 
 const LINKS_KEY = "pos-barcode-links:v1";
@@ -118,7 +120,12 @@ const n = (v: string) => {
 /** Quantity badalte hi rate khud sale/wholesale me switch ho jati hai. */
 const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
 
- export function PosPage({ onSaved }: { onSaved?: (doc?: PrintDoc) => void } = {}) {
+ const BareShell = ({ children }: { children?: ReactNode; [k: string]: unknown }) => <>{children}</>;
+
+ export function PosPage({ onSaved, tabbed = false, active = true }: { onSaved?: (doc?: PrintDoc) => void; tabbed?: boolean; active?: boolean } = {}) {
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  const [editItem, setEditItem] = useState<string | null>(null);
    // Phone-width hint: field placeholders shorten so they stay readable on a narrow bill card.
    const [phone, setPhone] = useState(false);
    useEffect(() => {
@@ -449,6 +456,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
     let buf = "";
     let lastAt = 0;
     const onKey = (e: KeyboardEvent) => {
+      if (!activeRef.current) return;
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
       const t = Date.now();
@@ -734,6 +742,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
   keysRef.current = { checkout, reset, setEstimate, setPartyOpen, setDocsOpen, setGuideOpen, setCart };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (!activeRef.current) return;
       const k = keysRef.current;
       const key = e.key.toLowerCase();
       const act = (fn: () => void) => { e.preventDefault(); e.stopPropagation(); fn(); };
@@ -779,10 +788,12 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
     } catch { /* user ne cancel kiya */ }
   };
 
+  const Shell = tabbed ? BareShell : AppShell;
   return (
-    <AppShell title="POS Billing" subtitle="Counter + phone sales" active="/pos" wide>
+    <Shell title="POS Billing" subtitle="Counter + phone sales" active="/pos" wide>
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
-        <PosSubnav />
+        {tabbed ? null : <PosSubnav />}
+        <ProductEditDialog name={editItem} onClose={() => setEditItem(null)} />
         {guideOpen ? <ShortcutGuide onClose={() => setGuideOpen(false)} /> : null}
         {pinNode}
         {pc.node}
@@ -1113,7 +1124,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
                       onMouseEnter={() => setHi(i)}
                       className={`cursor-pointer rounded-sm border-b border-border px-3 py-2 text-sm last:border-b-0 ${i === hi ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"}`}
                     >
-                      <span className="block font-semibold text-foreground">{p.name}</span>
+                      <span className="flex items-start justify-between gap-2"><span className="block font-semibold text-foreground">{p.name}</span><button type="button" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setEditItem(p.name); setDropOpen(false); }} aria-label={`Edit ${p.name}`} title="Edit item details" className="shrink-0 rounded-sm p-1 text-muted-foreground hover:bg-background hover:text-foreground"><Pencil className="size-4" /></button></span>
                        <span className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 sm:grid-cols-3 lg:grid-cols-6">
                          {detail.map(([label, value]) => <span key={label} className="min-w-0 text-xs"><span className="block text-[10px] text-muted-foreground">{label}</span><span className={`block break-words font-medium tabular-nums ${label === "Stock qty" && p.stock != null && p.stock < 0 ? "font-bold text-destructive" : "text-foreground"}`}>{value}</span></span>)}
                        </span>
@@ -1273,7 +1284,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
           </section>
         </div>
       </div>
-    </AppShell>
+    </Shell>
   );
 }
 
