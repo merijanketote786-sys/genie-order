@@ -17,7 +17,7 @@ const tint = (i: number, pct: number) => ({ backgroundColor: `color-mix(in oklab
 
 type Col = { k: string; label: string; w: string; num?: boolean };
 const COLS: Col[] = [
-  { k: "name", label: "Product name", w: "w-64" },
+  { k: "name", label: "Product name", w: "w-36 sm:w-64" },
   { k: "sku", label: "Item code", w: "w-28" },
   { k: "barcode", label: "Barcode", w: "w-32" },
   { k: "category", label: "Category", w: "w-32" },
@@ -406,54 +406,7 @@ export function BulkUpdateProducts({ products, inactiveProducts, onClose, onSave
       <label className="flex h-10 items-center gap-2 rounded-lg border border-border px-3 focus-within:border-primary">
         <Search className="size-4 text-primary" /><input className="min-w-0 flex-1 bg-transparent text-sm outline-none" ref={searchRef} value={qRaw} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === "ArrowDown") { e.preventDefault(); const el = document.querySelector<HTMLInputElement>("[data-bulk-grid] tbody tr td:nth-child(3) input, [data-bulk-grid] tbody tr input:not([type=checkbox])"); el?.focus(); el?.select(); } }} placeholder="Search product (press / or Ctrl+F) — Enter jumps to the list" aria-label="Search product" />
       </label>
-      {/* Mobile: one card per product so no field is hidden behind sideways scrolling */}
-      <div className="max-h-[60vh] space-y-2 overflow-auto sm:hidden">
-        {list.slice(0, Math.min(limit, 300)).map((p) => { const r = rowOf(p.id); const dirty = dirtySet.has(p.id); const numIn = (k: string, lab: string) => (
-          <label key={k} className={`${k === "sale_price" || k === "wholesale_price" ? "col-span-2 " : ""}block text-[11px] font-medium text-muted-foreground`}><span className="flex items-center justify-between gap-1">{lab}{k === "sale_price" || k === "wholesale_price" ? <span className="inline-flex items-center gap-1" title="Auto % from purchase price"><input type="checkbox" className="size-3.5" disabled={!mk.pctOn} checked={autoOn(p.id, k === "sale_price" ? "sale" : "ws")} onChange={() => toggleRowMk(p.id, k === "sale_price" ? "sale" : "ws")} aria-label={`Auto ${lab} ${p.name}`} /><input className={`${posInput} h-6 w-12 px-1 text-right text-[11px]`} disabled={!mk.pctOn} value={rowPct[p.id]?.[k === "sale_price" ? "sale" : "ws"] ?? ""} placeholder={k === "sale_price" ? mk.salePct : mk.wsPct} inputMode="decimal" onChange={(e) => setRowPct(p.id, k === "sale_price" ? "sale" : "ws", e.target.value)} aria-label={`${lab} percent ${p.name}`} />%</span> : null}</span>
-            <input className={`${posInput} mt-0.5 h-9 w-full px-2 text-right text-foreground`} value={r[k]} inputMode="decimal" onChange={(e) => set(p.id, k, e.target.value)} aria-label={`${lab} ${p.name}`} />
-          </label>);
-          return (
-            <div key={p.id} className={`rounded-lg border border-border p-2 ${dirty ? "bg-accent" : "bg-card"}`}>
-              <div className="flex items-center gap-2">
-                <input type="checkbox" checked={picked.has(p.id)} onChange={() => setPicked((s) => { const n = new Set(s); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; })} aria-label={`Select ${p.name}`} />
-                <p className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">{p.name}</p>
-                <Button variant="ghost" size="icon" onClick={() => del([p.id])} aria-label={`Delete ${p.name}`}><Trash2 className="text-destructive" /></Button>
-              </div>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                <label className="col-span-2 block text-[11px] font-medium text-muted-foreground">Category
-                  <div className="mt-0.5"><CatPicker value={r.category} original={orig[p.id].category} options={catOptions} onPick={(v) => set(p.id, "category", v)} label={`Category — ${p.name}`} /></div>
-                </label>
-                <label className="block text-[11px] font-medium text-muted-foreground">Unit
-                  <div className="mt-0.5"><UnitSelect className={`${posInput} h-9 w-full px-1`} value={r.unit} onChange={(v) => set(p.id, "unit", v)} label={`Unit ${p.name}`} /></div>
-                </label>
-                <label className="block text-[11px] font-medium text-muted-foreground">Active
-                  <select className={`${posInput} mt-0.5 h-9 w-full px-1`} value={r.is_active} onChange={(e) => set(p.id, "is_active", e.target.value)} aria-label={`Active ${p.name}`}><option value="true">Yes</option><option value="false">No</option></select>
-                </label>
-                {numIn("purchase_price", "Purchase price")}
-                {numIn("sale_price", "Sale price")}
-                {numIn("wholesale_price", "Wholesale price")}
-                {numIn("wholesale_min_qty", "Min wholesale qty")}
-                {numIn("min_sale_price", "Min sale price")}
-                {numIn("stock", "Stock qty")}
-                {numIn("min_stock", "Min stock")}
-                {numIn("tax_percent", "Tax %")}
-                <label className="block text-[11px] font-medium text-muted-foreground">Item code
-                  <input className={`${posInput} mt-0.5 h-9 w-full px-2`} value={r.sku} onChange={(e) => set(p.id, "sku", e.target.value)} aria-label={`Item code ${p.name}`} />
-                </label>
-                <label className="block text-[11px] font-medium text-muted-foreground">Barcode
-                  <input className={`${posInput} mt-0.5 h-9 w-full px-2`} value={r.barcode} onChange={(e) => set(p.id, "barcode", e.target.value)} aria-label={`Barcode ${p.name}`} />
-                </label>
-                <label className="col-span-2 block text-[11px] font-medium text-muted-foreground">Brand
-                  <input className={`${posInput} mt-0.5 h-9 w-full px-2`} value={r.brand} onChange={(e) => set(p.id, "brand", e.target.value)} aria-label={`Brand ${p.name}`} />
-                </label>
-              </div>
-            </div>
-          );
-        })}
-        {list.length > Math.min(limit, 300) && <p className="py-2 text-center text-xs text-muted-foreground">{limit < 300 ? "Scroll for more…" : "Showing first 300 — use search or filters to narrow the list."}</p>}
-        {limit < Math.min(list.length, 300) && <div ref={limit < 300 ? moreRef : undefined} className="h-1 sm:hidden" />}
-      </div>
-      <div data-bulk-grid className="hidden max-h-[60vh] overflow-auto rounded-lg border border-border sm:block">
+      <div data-bulk-grid className="max-h-[70vh] overflow-auto overscroll-contain rounded-lg border border-border [-webkit-overflow-scrolling:touch]">
         <table className="w-full min-w-[2300px] table-fixed border-collapse text-sm">
           <colgroup>
             <col className="w-12" />
