@@ -17,7 +17,7 @@ const tint = (i: number, pct: number) => ({ backgroundColor: `color-mix(in oklab
 
 type Col = { k: string; label: string; w: string; num?: boolean };
 const COLS: Col[] = [
-  { k: "name", label: "Product name", w: "w-64" },
+  { k: "name", label: "Product name", w: "w-36 sm:w-64" },
   { k: "sku", label: "Item code", w: "w-28" },
   { k: "barcode", label: "Barcode", w: "w-32" },
   { k: "category", label: "Category", w: "w-32" },
