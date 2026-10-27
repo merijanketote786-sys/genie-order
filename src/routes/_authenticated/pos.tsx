@@ -97,7 +97,7 @@ export const Route = createFileRoute("/_authenticated/pos")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: PosTabs,
+  component: () => <PosTabs Page={PosPage} />,
 });
 
 const LINKS_KEY = "pos-barcode-links:v1";
