@@ -1137,7 +1137,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
               </div>
 
               {cart.map((l, i) => (
-                <CartRow key={l.key} index={i + 1} line={l} focus={focusKey === l.key} onFocused={() => setFocusKey(null)} onDone={() => scanRef.current?.focus()} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} taxRates={cfg.tax.enabled ? cfg.tax.rates : []} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} />
+                <CartRow key={l.key} index={i + 1} line={l} focus={focusKey === l.key} onFocused={() => setFocusKey(null)} onDone={() => scanRef.current?.focus()} lockPrice={lockPrice} lockDisc={lockDisc} onUnlock={unlock} onPatch={patch} taxRates={cfg.tax.enabled ? cfg.tax.rates : []} onRemove={() => setCart((p) => p.filter((x) => x.key !== l.key))} onEditItem={(name) => setEditItem(name)} />
               ))}
 
               <div className="flex items-center justify-between gap-2 border-t border-border bg-surface px-3 py-2 text-xs text-muted-foreground">
