@@ -1289,7 +1289,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
 }
 
 /** Cart ki ek line — #, item, weight, size, qty, unit, rate, discount, tax, note aur total sab manually likhe ja sakte hain. */
-function CartRow({ index, line, focus, onFocused, onDone, onPatch, onRemove, lockPrice = false, lockDisc = false, onUnlock, taxRates = [] }: { index: number; line: CartLine; focus?: boolean; onFocused?: () => void; onDone?: () => void; onPatch: (key: string, v: Partial<CartLine>) => void; onRemove: () => void; lockPrice?: boolean; lockDisc?: boolean; onUnlock?: () => void; taxRates?: { name: string; pct: number }[] }) {
+function CartRow({ index, line, focus, onFocused, onDone, onPatch, onRemove, lockPrice = false, lockDisc = false, onUnlock, taxRates = [], onEditItem }: { index: number; line: CartLine; focus?: boolean; onFocused?: () => void; onDone?: () => void; onPatch: (key: string, v: Partial<CartLine>) => void; onRemove: () => void; lockPrice?: boolean; lockDisc?: boolean; onUnlock?: () => void; taxRates?: { name: string; pct: number }[]; onEditItem?: (name: string) => void }) {
   const [totalText, setTotalText] = useState<string | null>(null);
   const [qtyText, setQtyText] = useState<string | null>(null);
   const [showNote, setShowNote] = useState(!!line.note);
