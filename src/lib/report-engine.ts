@@ -101,7 +101,7 @@ export function buildReport(id: ReportId, s: ReportSources, f: ReportFilter): Re
   const paymentAll = s.payments.filter(p => p.status === "completed" && beforeEnd(p.created_at) && (!f.method || p.method === f.method) && (!f.storeId || movementStore.get(p.sale_id ?? p.purchase_id) === f.storeId));
   if (id === "parties" || id === "party-statement") {
     notes.push("Balances include full saved invoice totals, returns and completed payments once. Customer and supplier balances remain separate. Opening is before the selected start date.");
-    const parties = [...s.customers.map(p => ({...p,key:`c:${p.id}`,role:"Customer"})),...s.suppliers.map(p => ({...p,key:`s:${p.id}`,role:"Supplier"}))].filter(p => !f.party || p.key === f.party);
+    const parties: SourceRow[] = [...s.customers.map(p => ({...p,key:`c:${p.id}`,role:"Customer"})),...s.suppliers.map(p => ({...p,key:`s:${p.id}`,role:"Supplier"}))].filter(p => !f.party || p.key === f.party);
     const rows: ReportRow[] = [];
     for (const p of parties) {
       let balance = f.storeId ? 0 : num(p.opening_balance);
@@ -123,7 +123,7 @@ export function buildReport(id: ReportId, s: ReportSources, f: ReportFilter): Re
     notes.push("Cash movements use completed payments, expenses and manual entries, not invoice totals. Internal cash/bank transfers are excluded from combined cashflow. Unattributed standalone payments/manual entries are omitted under a concrete store.");
     const filtered = flowRows.filter(r => String(r.date) >= f.from);
     const opening = round(flowRows.filter(r => String(r.date) < f.from).reduce((n,r) => n+num(r.received)-num(r.paid),0));
-    if (id === "transactions") return result([...docRows(sales,"Sale"),...docRows(purchases,"Purchase"),...filtered.map(r => ({...r,document:"",amount:num(r.received)-num(r.paid)}))].sort((a,b)=>a.date.localeCompare(b.date)),["date","document","type","party","amount"]);
+    if (id === "transactions") return result([...docRows(sales,"Sale"),...docRows(purchases,"Purchase"),...filtered.map(r => ({...r,document:"",amount:num(r.received)-num(r.paid)}))].sort((a,b)=>String((a as ReportRow).date).localeCompare(String((b as ReportRow).date))),["date","document","type","party","amount"]);
     const rows = id === "cashflow" ? group(filtered,["activity","method"],["received","paid"]) : filtered;
     const out = result(rows,id === "cashflow" ? ["activity","method","received","paid"] : ["date","type","party","method","received","paid"],["received","paid"]);
     out.totals.push({label:"Opening recorded cash",value:opening},{label:"Closing recorded cash",value:round(opening+filtered.reduce((n,r)=>n+num(r.received)-num(r.paid),0))});

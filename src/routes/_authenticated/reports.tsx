@@ -35,7 +35,7 @@ function dates(preset:string):[string,string] {
 function ReportsPage(){
   const {can}=usePosAccess(); const [selected,setSelected]=useState<ReportId|null>(null); const [search,setSearch]=useState("");
   const groups=REPORT_GROUPS.map(g=>({...g,reports:g.reports.filter(([id,label])=>can(reportPermission(id) as PosPerm) && label.toLowerCase().includes(search.toLowerCase()))})).filter(g=>g.reports.length);
-  return <AppShell title="Reports" subtitle="POS business reports" active="/reports" wide>
+  return <AppShell title="Reports" subtitle="POS business reports" active="/pos" wide>
     <div className="min-h-0 flex-1 overflow-y-auto pb-8 pt-3">
       {!can("view_reports") ? <p className="p-6 text-muted-foreground">You do not have permission to view reports.</p> : selected ? <ReportView key={selected} id={selected} onBack={()=>setSelected(null)}/> : <>
         <div className="relative mb-5 max-w-lg"><Search className="absolute left-3 top-3 size-4 text-muted-foreground"/><input className={`${posInput} w-full pl-9`} aria-label="Search reports" placeholder="Search reports" value={search} onChange={e=>setSearch(e.target.value)}/></div>
