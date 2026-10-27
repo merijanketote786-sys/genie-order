@@ -83,7 +83,7 @@ function DocsList({ kind, onClose, onOpen }: { kind: "held" | "quotation"; onClo
     </div>
   );
 }
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/pos")({
@@ -120,7 +120,7 @@ const n = (v: string) => {
 /** Quantity badalte hi rate khud sale/wholesale me switch ho jati hai. */
 const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
 
- const BareShell = ({ children }: { children?: React.ReactNode; [k: string]: unknown }) => <>{children}</>;
+ const BareShell = ({ children }: { children?: ReactNode; [k: string]: unknown }) => <>{children}</>;
 
  export function PosPage({ onSaved, tabbed = false, active = true }: { onSaved?: (doc?: PrintDoc) => void; tabbed?: boolean; active?: boolean } = {}) {
   const activeRef = useRef(active);
@@ -788,6 +788,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
     } catch { /* user ne cancel kiya */ }
   };
 
+  const Shell = tabbed ? BareShell : AppShell;
   return (
     <Shell title="POS Billing" subtitle="Counter + phone sales" active="/pos" wide>
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-8 pt-3">
@@ -1283,7 +1284,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
           </section>
         </div>
       </div>
-    </AppShell>
+    </Shell>
   );
 }
 
