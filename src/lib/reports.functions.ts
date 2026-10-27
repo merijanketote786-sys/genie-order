@@ -12,7 +12,7 @@ export const getDetailedReport = createServerFn({method:"GET"})
   .inputValidator((d:unknown)=>reportInput.parse(d))
   .handler(async ({data,context})=>{
     const sb = context.supabase;
-    for (const perm of new Set(["view_reports",reportPermission(data.id),...(["bank","balance-sheet"].includes(data.id) ? ["view_accounting"] : [])])) {
+    for (const perm of new Set(["view_reports",reportPermission(data.id),...(data.id === "pnl" ? ["view_pnl"] : []),...(["bank","balance-sheet"].includes(data.id) ? ["view_accounting"] : [])])) {
       const {data:allowed,error} = await sb.rpc("pos_can",{_perm:perm});
       if(error || !allowed) throw new Error("You do not have permission to view this report.");
     }

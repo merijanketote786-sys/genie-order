@@ -34,7 +34,7 @@ function dates(preset:string):[string,string] {
 
 function ReportsPage(){
   const {can}=usePosAccess(); const [selected,setSelected]=useState<ReportId|null>(null); const [search,setSearch]=useState("");
-  const groups=REPORT_GROUPS.map(g=>({...g,reports:g.reports.filter(([id,label])=>can(reportPermission(id) as PosPerm) && label.toLowerCase().includes(search.toLowerCase()))})).filter(g=>g.reports.length);
+  const groups=REPORT_GROUPS.map(g=>({...g,reports:g.reports.filter(([id,label])=>can(reportPermission(id) as PosPerm) && (id !== "pnl" || can("view_pnl")) && (!["bank","balance-sheet"].includes(id) || can("view_accounting")) && label.toLowerCase().includes(search.toLowerCase()))})).filter(g=>g.reports.length);
   return <AppShell title="Reports" subtitle="POS business reports" active="/pos" wide>
     <div className="min-h-0 flex-1 overflow-y-auto pb-8 pt-3">
       {!can("view_reports") ? <p className="p-6 text-muted-foreground">You do not have permission to view reports.</p> : selected ? <ReportView key={selected} id={selected} onBack={()=>setSelected(null)}/> : <>
@@ -50,7 +50,7 @@ function ReportsPage(){
 function ReportView({id,onBack}:{id:ReportId;onBack:()=>void}){
   const [[from,to],setDates]=useState<[string,string]>(()=>dates("month"));
   const [storeId,setStore]=useState(""); const [party,setParty]=useState(""); const [productId,setProduct]=useState(""); const [category,setCategory]=useState(""); const [method,setMethod]=useState("");
-  const [search,setSearch]=useState(""); const [page,setPage]=useState(0); const [sort,setSort]=useState<{key:string;desc:boolean}|null>(null);
+  const [search,setSearch]=useState(""); const [page,setPage]=useState(0); const [sort,setSort]=useState<{key:string;desc:boolean}|null>({key:"date",desc:true});
   const {data:stores}=useStores(); const pc=usePrintCenter(); const accounting=["bank","balance-sheet"].includes(id); const orders=["orders","order-items"].includes(id);
   const valid=!!from && !!to && from <= to;
   const query=useQuery({queryKey:["pos-detailed-report",id,from,to,storeId,party,productId,category,method],queryFn:()=>getDetailedReport({data:{id,from,to,tzOffsetMin:new Date().getTimezoneOffset(),storeId:!accounting && !orders && storeId ? storeId:undefined,party:party||undefined,productId:productId||undefined,category:category||undefined,method:method||undefined}}),enabled:valid,staleTime:30000});

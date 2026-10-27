@@ -32,7 +32,7 @@ export function buildReport(id: ReportId, s: ReportSources, f: ReportFilter): Re
     const total = num(i.line_total) - num(i.tax_amount);
     const linesTotal = num(d.subtotal) || 1;
     const allocation = num(d.discount_total) * total / linesTotal;
-    return { date: day(d.created_at), document: d.doc_number, type: d.doc_type === "return" ? `${side} return` : side, party: d.customer_name || d.supplier_name || "Walk-in", item: clean(i.name), category: products.get(i.product_id)?.category || "Uncategorized", unit: i.unit || "", qty: sg * num(i.qty), stockQty: sg * num(i.stock_qty ?? i.qty), rate: num(i.rate), amount: round(sg * num(i.line_total)), revenue: round(sg * (total - allocation)), cost: round(sg * num(i.cost)), profit: round(sg * (total - allocation - num(i.cost))), discount: round(sg * (num(i.discount) * num(i.qty) + allocation)), tax: round(sg * num(i.tax_amount)), taxRate: num(i.tax_percent), batch: i.batch || "", expiry: i.expiry || "" };
+    return { date: day(d.created_at), document: d.doc_number, type: d.doc_type === "return" ? `${side} return` : side, party: d.customer_name || d.supplier_name || "Walk-in", item: clean(i.name), category: products.get(i.product_id)?.category || "Uncategorized", unit: i.unit || "", qty: sg * num(i.qty), stockQty: sg * num(i.stock_qty ?? i.qty), rate: num(i.rate), amount: round(sg * num(i.line_total)), revenue: round(sg * (total - allocation)), cost: round(sg * num(i.cost)), profit: round(sg * (total - allocation - num(i.cost))), discount: round(sg * (num(i.discount) + allocation)), tax: round(sg * num(i.tax_amount)), taxRate: num(i.tax_percent), batch: i.batch || "", expiry: i.expiry || "" };
   });
   const saleLines = lineRows(s.saleItems, saleMap, "Sale", "sale_id");
   const purchaseLines = lineRows(s.purchaseItems, purchaseMap, "Purchase", "purchase_id");
@@ -68,8 +68,9 @@ export function buildReport(id: ReportId, s: ReportSources, f: ReportFilter): Re
   if (id === "loans") {
     notes.push("Recorded loan cash statement only: Loan received and Loan repaid Day Book entries. Interest, fees and repayment schedules are not separately tracked.");
     const entries = cashAll.filter(e => ["Loan received","Loan repaid"].includes(e.category) && (!f.party || e.party === f.party)).sort((a,b) => a.entry_date.localeCompare(b.entry_date) || a.created_at.localeCompare(b.created_at));
-    const balances = new Map<string,number>(); const rows: ReportRow[] = [];
-    for (const e of entries) { const party = e.party || "Unassigned lender"; const delta = (e.category === "Loan received" ? 1 : -1) * num(e.amount); const balance = round((balances.get(party) ?? 0) + delta); balances.set(party,balance); if (inPeriod(e.entry_date)) rows.push({ date:e.entry_date,party,type:e.category,received:delta > 0 ? delta : 0,repaid:delta < 0 ? -delta : 0,balance,note:e.note || "" }); }
+    const balances = new Map<string,number>(); const rows: ReportRow[] = []; const opened = new Set<string>();
+    for (const e of entries) { const party = e.party || "Unassigned lender"; if(inPeriod(e.entry_date) && !opened.has(party)) { rows.push({date:f.from,party,type:"Opening balance",received:0,repaid:0,balance:balances.get(party) ?? 0,note:""}); opened.add(party); } const delta = (e.category === "Loan received" ? 1 : -1) * num(e.amount); const balance = round((balances.get(party) ?? 0) + delta); balances.set(party,balance); if (inPeriod(e.entry_date)) rows.push({ date:e.entry_date,party,type:e.category,received:delta > 0 ? delta : 0,repaid:delta < 0 ? -delta : 0,balance,note:e.note || "" }); }
+    for(const [party,balance] of balances) if(!opened.has(party)) rows.push({date:f.from,party,type:"Opening balance",received:0,repaid:0,balance,note:""});
     return result(rows,["date","party","type","received","repaid","balance","note"],["received","repaid"]);
   }
   if (id === "orders" || id === "order-items") {
