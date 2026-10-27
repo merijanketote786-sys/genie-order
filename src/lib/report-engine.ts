@@ -31,7 +31,8 @@ export function buildReport(id: ReportId, s: ReportSources, f: ReportFilter): Re
     const d = docs.get(i[parent]) ?? {}; const sg = sign(d);
     const total = num(i.line_total) - num(i.tax_amount);
     const linesTotal = num(d.subtotal) || 1;
-    const allocation = num(d.discount_total) * total / linesTotal;
+    const itemDiscounts = parent === "sale_id" ? items.filter(x=>x[parent] === d.id).reduce((n,x)=>n+num(x.discount),0) : 0;
+    const allocation = Math.max(0,num(d.discount_total)-itemDiscounts) * total / linesTotal;
     return { date: day(d.created_at), document: d.doc_number, type: d.doc_type === "return" ? `${side} return` : side, party: d.customer_name || d.supplier_name || "Walk-in", item: clean(i.name), category: products.get(i.product_id)?.category || "Uncategorized", unit: i.unit || "", qty: sg * num(i.qty), stockQty: sg * num(i.stock_qty ?? i.qty), rate: num(i.rate), amount: round(sg * num(i.line_total)), revenue: round(sg * (total - allocation)), cost: round(sg * num(i.cost)), profit: round(sg * (total - allocation - num(i.cost))), discount: round(sg * (num(i.discount) + allocation)), tax: round(sg * num(i.tax_amount)), taxRate: num(i.tax_percent), batch: i.batch || "", expiry: i.expiry || "" };
   });
   const saleLines = lineRows(s.saleItems, saleMap, "Sale", "sale_id");
