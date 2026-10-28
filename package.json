@@ -12,8 +12,6 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@ai-sdk/openai-compatible": "^3.0.7",
-    "@ai-sdk/react": "^4.0.23",
     "@lovable.dev/cloud-auth-js": "^1.1.2",
     "@lovable.dev/mcp-js": "^2.1.0",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -37,7 +35,6 @@
     "@tanstack/router-plugin": "1.168.42",
     "@zxing/browser": "^0.2.1",
     "@zxing/library": "^0.23.0",
-    "ai": "^7.0.22",
     "baseline-browser-mapping": "^2.11.23",
     "browserslist": "^4.28.9",
     "class-variance-authority": "^0.7.1",
