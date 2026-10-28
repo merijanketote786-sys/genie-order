@@ -22,6 +22,7 @@ const ITEMS = [
   { to: "/expenses", label: "Expenses", icon: Receipt, perm: "manage_expenses" },
   { to: "/attendance", label: "Attendance", icon: ClipboardList, perm: "manage_expenses" },
   { to: "/daybook", label: "Day Book", icon: Notebook, perm: "view_reports" },
+  { to: "/shifts", label: "Shifts", icon: CalendarCheck, perm: "view_pos" },
   { to: "/inventory", label: "Inventory", icon: Boxes, perm: "edit_stock" },
   { to: "/fixed-assets", label: "Fixed Assets", icon: Boxes, perm: "view_pos" },
   { to: "/reports", label: "Reports", icon: BarChart3, perm: "view_reports" },
@@ -34,6 +35,7 @@ const ITEMS = [
 const KEYWORDS: Record<string, string> = {
   "/pos-guide": "guide help faq question answer app support madad sawal jawab",
   "/admin": "admin users access permissions",
+  "/shifts": "shift cash drawer z report float opening closing cash in out counter",
   "/pos-dashboard": "home quick actions overview summary units categories cash in hand",
   "/pos": "sale bill billing new sale invoice counter checkout",
   "/returns": "sale return refund credit note purchase return",
