@@ -1,5 +1,8 @@
 /** Courier rate files (Excel / CSV / Word) se plain text nikalne wale server-only helpers. */
-import { read, utils } from "xlsx";
+// Core bundle instead of the main entry: the main entry requires Node's
+// "stream" at load time and crashed the published Worker runtime (SSR 500s).
+import { read, utils } from "xlsx/dist/xlsx.core.min.js";
+
 
 const MAX_TEXT = 60_000;
 
