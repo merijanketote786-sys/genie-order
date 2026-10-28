@@ -124,7 +124,6 @@ export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { can, config } = usePosAccess();
   const subscription = useMySubscription().data;
   const adminAccess = useQuery({ queryKey: ["my-access"], queryFn: () => getMyAccess(), staleTime: 5 * 60 * 1000 }).data;
-  const wsAllowed = !!subscription && subscription.workspace !== false;
   const attOn = (config as unknown as { attendance?: { enabled?: boolean } }).attendance?.enabled !== false;
   const [attOpen, setAttOpen] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
