@@ -51,7 +51,7 @@ function ShiftsPage() {
   const close = useMutation({ mutationFn: () => doClose({ data: { shiftId: q.data!.open!.id, counted: Number(counted) || 0, note: closeNote } }), onSuccess: (r) => { toast.success("Shift closed"); printZ(r.summary, r.counted, r.openedAt, r.closedAt); setCounted(""); setCloseNote(""); refresh(); }, onError: onErr });
   const s = q.data?.open;
   const sum = s?.summary as ShiftSummary | undefined;
-  return <AppShell title="Shifts" subtitle="Cash drawer & Z-Report" active="/shifts">
+  return <AppShell title="Shifts" subtitle="Cash drawer & Z-Report" active="/pos">
     <section className="space-y-6 py-6">
       <div className="flex items-center gap-3"><Timer className="size-7 text-primary" /><h2 className="font-display text-2xl font-bold">Shift & Cash Drawer</h2></div>
       {q.isLoading ? <p className="text-muted-foreground">Loading…</p> : !s ? (
