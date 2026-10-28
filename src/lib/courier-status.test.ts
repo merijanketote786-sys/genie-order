@@ -1,10 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, test } from "node:test";
+import { strict as assert } from "node:assert";
 import { normalizeStatus } from "./courier-booking.server";
 
 describe("courier status mapping", () => {
-  it("delivered", () => expect(normalizeStatus("Delivered to customer")).toBe("delivered"));
-  it("undelivered is not delivered", () => expect(normalizeStatus("Undelivered - customer not available")).not.toBe("delivered"));
-  it("returned", () => expect(normalizeStatus("Returned to shipper")).toBe("returned"));
-  it("out for delivery", () => expect(normalizeStatus("Out For Delivery")).toBe("out_for_delivery"));
-  it("in transit", () => expect(normalizeStatus("Arrived at hub")).toBe("in_transit"));
+  test("delivered", () => assert.equal(normalizeStatus("Delivered to customer"), "delivered"));
+  test("undelivered is not delivered", () => assert.notEqual(normalizeStatus("Undelivered - customer not available"), "delivered"));
+  test("returned", () => assert.equal(normalizeStatus("Returned to shipper"), "returned"));
+  test("out for delivery", () => assert.equal(normalizeStatus("Out For Delivery"), "out_for_delivery"));
+  test("in transit", () => assert.equal(normalizeStatus("Arrived at hub"), "in_transit"));
 });
