@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { Eye, EyeOff, Loader2, LogIn } from "lucide-react";
+import { Eye, EyeOff, Loader2, LogIn, PlayCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { storedOfflineUser } from "@/lib/offline-sync";
 import { toast } from "sonner";
@@ -97,6 +97,10 @@ export const Route = createFileRoute("/auth")({
 
 type Mode = "signin" | "signup" | "forgot";
 
+// Shared demo workspace credentials — intentionally public so any visitor can try the POS.
+const DEMO_EMAIL = "demo@hbpos.demo";
+const DEMO_PASSWORD = "hbpos-demo-2026";
+
 function AuthPage() {
   const navigate = useNavigate();
   const { next } = Route.useSearch();
@@ -166,6 +170,27 @@ function AuthPage() {
       return true;
     }
     return false;
+  };
+
+  // One shared demo workspace — real login, sample data, no signup needed.
+  const startDemo = async () => {
+    if (busy) return;
+    setBusy(true);
+    busyRef.current = true;
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: DEMO_EMAIL, password: DEMO_PASSWORD });
+      if (error) throw error;
+      toast.info("Demo workspace opened — sample data; try everything freely.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not open the demo");
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+      if (!pendingRef.current) {
+        const { data: s2 } = await supabase.auth.getSession();
+        if (s2.session) goNext();
+      }
+    }
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -399,6 +424,24 @@ function AuthPage() {
               </p>
             )}
           </div>
+
+          {mode !== "forgot" ? (
+            <div className="mt-5 rounded-2xl border border-gold/40 bg-gold/10 p-3 sm:p-4">
+              <p className="text-xs text-muted-foreground">
+                New here? Explore the full POS with sample data — no account needed.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={busy}
+                onClick={startDemo}
+                className="mt-2.5 h-10 w-full gap-2"
+              >
+                {busy ? <Loader2 className="size-4 animate-spin" /> : <PlayCircle className="size-4" />}
+                Try demo
+              </Button>
+            </div>
+          ) : null}
         </div>
         <p className={`text-center text-xs text-muted-foreground ${mv === "b" ? "bg-card pb-4 pt-2 lg:bg-transparent lg:mt-6" : "mt-6"}`}>© HB POS</p>
       </div>
