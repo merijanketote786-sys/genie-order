@@ -238,7 +238,7 @@ function AuthPage() {
       </section>
 
       <div className={`relative flex justify-center lg:items-center lg:px-4 lg:py-10 ${mv === "b" ? "items-end" : "items-start"} ${mv === "b" ? "" : "px-4 pb-6"}`}>
-      {mv === "b" ? <div className="absolute inset-0 lg:hidden"><AuthShowcase compact /></div> : null}
+      {mv === "b" ? <div className="absolute inset-x-0 top-0 h-[47dvh] lg:hidden"><AuthShowcase compact /></div> : null}
       <div className={`relative w-full max-w-md auth-rise ${mv === "b" ? "max-lg:pt-[42dvh]" : ""}`}>
         {mv === "a" ? (
           <div className="relative -mx-4 mb-4 h-56 overflow-hidden rounded-b-3xl lg:hidden"><AuthShowcase compact /></div>
