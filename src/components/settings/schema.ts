@@ -53,7 +53,7 @@ export const FIELDS: Field[] = [
   { s: "business", path: "business.phone", label: "Phone", type: "text" },
   { s: "business", path: "business.email", label: "Email", type: "text" },
   { s: "business", path: "business.website", label: "Website", type: "text" },
-  { s: "business", path: "business.taxId", label: "NTN / GST number", type: "text" },
+  { s: "business", path: "business.taxId", label: "Tax registration number", type: "text" },
   { s: "business", path: "business.currencySymbol", label: "Currency symbol (on print)", type: "text", placeholder: "Rs", danger: "Changing the currency symbol will print the new symbol on new invoices and receipts. Amounts on old records will not change." },
 
   // POS
@@ -61,6 +61,13 @@ export const FIELDS: Field[] = [
   { s: "pos", path: "pos.scanAutoAdd", label: "Add scanned product straight to cart", type: "bool", def: true, help: "Scanning again = quantity +1" },
   { s: "pos", path: "pos.showGrid", label: "Show product shortcut grid by default", type: "bool", def: false },
   { s: "pos", path: "pos.shortcuts", label: "Keyboard shortcuts (F2/F4/F8/F9/F10)", type: "bool", def: true },
+  { s: "pos", path: "pos.weightBarcode.enabled", label: "Weight-embedded scale barcodes", type: "bool", def: false },
+  { s: "pos", path: "pos.weightBarcode.prefix", label: "Scale barcode prefix", type: "text" },
+  { s: "pos", path: "pos.weightBarcode.productDigits", label: "Product code digits", type: "number", min: 1, max: 8, step: 1, def: 5 },
+  { s: "pos", path: "pos.weightBarcode.weightDigits", label: "Weight digits", type: "number", min: 1, max: 8, step: 1, def: 5 },
+  { s: "pos", path: "pos.weightBarcode.decimals", label: "Encoded weight decimal places", type: "number", min: 0, max: 6, step: 1, def: 3 },
+  { s: "pos", path: "pos.weightBarcode.unit", label: "Scale weight unit", type: "select", options: [{ v: "kg", l: "Kilograms (kg)" }, { v: "g", l: "Grams (g)" }, { v: "lb", l: "Pounds (lb)" }], def: "kg" },
+  { s: "pos", path: "pos.weightBarcode.checkDigit", label: "Validate EAN-13 check digit", type: "bool", def: true },
   { s: "pos", path: "sales.keepCustomerAfterSale", label: "Keep customer after sale", type: "bool", def: false, help: "Off = a new bill (New Sale) after every sale" },
 
   // Sales
@@ -96,6 +103,7 @@ export const FIELDS: Field[] = [
   { s: "taxes", path: "tax.enabled", label: "Tax enabled", type: "bool", def: true, help: "Off = no tax column/option in POS" },
   { s: "taxes", path: "tax.inclusive", label: "Rates include tax (tax-inclusive)", type: "bool", def: false, danger: "With tax-inclusive on, tax will be extracted from the rate on NEW bills (total stays the same). Old bills will not change." },
   { s: "taxes", path: "tax.defaultPct", label: "Default tax % (on new item)", type: "number", min: 0, max: 100, def: 0 },
+  { s: "taxes", path: "tax.registrationLabel", label: "Tax registration label", type: "text", placeholder: "VAT / GST / Sales tax ID", def: "NTN/GST" },
 
   // Invoices (numbers, text)
   { s: "invoices", path: "terms", label: "Terms & conditions", type: "textarea" },
@@ -116,6 +124,6 @@ export const FIELDS: Field[] = [
   { s: "advanced", path: "decimals", label: "Amount decimal places", type: "number", min: 0, max: 3, def: 2, danger: "Decimal places only affect display/print. Amounts are stored in the database with up to 2 decimal places." },
   { s: "advanced", path: "business.dateFormat", label: "Date format", type: "select", options: [{ v: "dd/mm/yyyy", l: "DD/MM/YYYY" }, { v: "mm/dd/yyyy", l: "MM/DD/YYYY" }, { v: "yyyy-mm-dd", l: "YYYY-MM-DD" }], def: "dd/mm/yyyy" },
   { s: "advanced", path: "business.timeFormat", label: "Time format", type: "select", options: [{ v: "12", l: "12 hour" }, { v: "24", l: "24 hour" }], def: "12" },
-  { s: "advanced", path: "business.timezone", label: "Timezone", type: "select", options: ["Asia/Karachi", "Asia/Dubai", "Asia/Riyadh", "Europe/London", "UTC"].map((z) => ({ v: z, l: z })), def: "Asia/Karachi" },
+  { s: "advanced", path: "business.timezone", label: "Timezone", type: "select", options: [...new Set(["UTC", ...Intl.supportedValuesOf("timeZone"), "Asia/Karachi"])].sort().map((z) => ({ v: z, l: z })), def: "Asia/Karachi" },
 ];
 

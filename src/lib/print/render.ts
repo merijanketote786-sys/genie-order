@@ -112,7 +112,7 @@ function pageHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, tpl: Tem
   const date = docDate(doc.date, cfg, f.dateTime);
 
   const logo = f.logo && b.logo ? `<img class=logo src="${esc(b.logo)}" alt="">` : "";
-  const bizLines = ([ ["address", f.address && b.address], ["phone", f.phone && b.phone && `Ph: ${b.phone}`], ["email", f.email && b.email], ["website", f.website && b.website], ["taxId", f.taxId && b.taxId && `NTN/GST: ${b.taxId}`] ] as const).filter((x) => x[1]);
+  const bizLines = ([ ["address", f.address && b.address], ["phone", f.phone && b.phone && `Ph: ${b.phone}`], ["email", f.email && b.email], ["website", f.website && b.website], ["taxId", f.taxId && b.taxId && `${cfg.tax.registrationLabel}: ${b.taxId}`] ] as const).filter((x) => x[1]);
   const header = `<div class="hd ${L.logoAlign === "center" ? "hd-c" : L.logoAlign === "right" ? "hd-r" : ""}">
     ${logo}<div class=biz>${f.businessName ? `<div class="bizname fs-businessName">${esc(b.name || "")}</div>` : ""}${bizLines.map(([key, value]) => `<div class="muted fs-${key}">${esc(value)}</div>`).join("")}</div>
     <div class=docbox>${f.title ? `<div class="doc-title fs-title">${esc(doc.title)}</div>` : ""}${f.number ? `<div class=fs-number><b>${esc(doc.number)}</b></div>` : ""}<div class="muted fs-dateTime">${esc(date)}</div></div>
@@ -250,7 +250,7 @@ function thermalHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, ex: E
    .copy{page-break-after:always;break-after:page}.copy:last-child{page-break-after:auto}
    ${typographyCss(cfg)}`;
    const inner = `<div class=c>${f.logo && b.logo ? `<img class=logo src="${esc(b.logo)}" alt="">` : ""}${f.businessName ? `<div class="bn fs-businessName">${esc(b.name || "")}</div>` : ""}
-    ${f.address && b.address ? `<div class=fs-address>${esc(b.address)}</div>` : ""}${f.phone && b.phone ? `<div class=fs-phone>${esc(b.phone)}</div>` : ""}${f.email && b.email ? `<div class=fs-email>${esc(b.email)}</div>` : ""}${f.website && b.website ? `<div class=fs-website>${esc(b.website)}</div>` : ""}${f.taxId && b.taxId ? `<div class=fs-taxId>NTN/GST: ${esc(b.taxId)}</div>` : ""}
+    ${f.address && b.address ? `<div class=fs-address>${esc(b.address)}</div>` : ""}${f.phone && b.phone ? `<div class=fs-phone>${esc(b.phone)}</div>` : ""}${f.email && b.email ? `<div class=fs-email>${esc(b.email)}</div>` : ""}${f.website && b.website ? `<div class=fs-website>${esc(b.website)}</div>` : ""}${f.taxId && b.taxId ? `<div class=fs-taxId>${esc(cfg.tax.registrationLabel)}: ${esc(b.taxId)}</div>` : ""}
     ${f.title ? `<div class=fs-title><b>${esc(doc.title)}</b></div>` : ""}</div><hr>
     ${f.number ? kv("No.", esc(doc.number), "", "number") : ""}${kv("Date", esc(date), "", "dateTime")}
     ${t.showCustomer && doc.party?.name && f.customer ? kv(esc(doc.party.label), esc(doc.party.name), "", "customer") : ""}${t.showCustomer && doc.party?.phone && f.customerPhone ? kv("Phone", esc(doc.party.phone), "", "customerPhone") : ""}${t.showCustomer && doc.party?.address && f.customerAddress ? kv("Address", esc(doc.party.address), "", "customerAddress") : ""}

@@ -1,4 +1,5 @@
 import { DevicesManager, LabourManager } from "@/components/attendance";
+import { WeightBarcodeEditor } from "@/components/settings/weight-barcode-editor";
 import { PrintTemplatesPicker } from "@/components/settings/print-templates";
 import { PartyImport } from "@/components/settings/party-import";
 import { AppShell } from "@/components/app-shell";
@@ -20,9 +21,9 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/pos-settings")({
   head: () => ({
     meta: [
-      { title: "Business Settings & Printing — HB Chemicals Pakistan Workspace" },
+      { title: "POS Business Settings & Printing — HBPOS" },
       { name: "description", content: "Business, POS, sales, inventory, tax, printing, printers, permissions, backup, Vyapar sync and audit settings in one place — with search." },
-      { property: "og:title", content: "Business Settings & Printing — HB Chemicals Pakistan Workspace" },
+      { property: "og:title", content: "POS Business Settings & Printing — HBPOS" },
       { property: "og:description", content: "Advanced POS settings and printing system." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/_authenticated/pos-settings")({
 /** Custom (non-schema) blocks har section me. keywords search ke liye. */
 const CUSTOM: Partial<Record<SectionId, { keywords: string; render: (p: { draft: PosConfig; upd: (p: string, v: unknown) => void; disabled: boolean; dirty: boolean; saving: boolean; onSave: () => void }) => ReactNode }[]>> = {
   business: [{ keywords: "logo image", render: (p) => <LogoField {...p} /> }],
+  pos: [{ keywords: "scale weight barcode prefix kg grams pounds embedded check", render: (p) => <WeightBarcodeEditor {...p} /> }],
   customers: [{ keywords: "import parties csv excel upload customers suppliers", render: () => <PartyImport /> }],
   payments: [{ keywords: "payment method cash card bank jazzcash easypaisa credit custom default", render: (p) => <PaymentsEditor {...p} /> }],
   taxes: [{ keywords: "tax rates multiple gst percentage name", render: (p) => <TaxRatesEditor {...p} /> }],
