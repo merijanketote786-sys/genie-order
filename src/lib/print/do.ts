@@ -8,7 +8,7 @@ export function toChallan(doc: PrintDoc): PrintDoc {
     title: "D-O",
     number: doc.number.startsWith("DC-") ? doc.number : `DC-${doc.number}`,
     party: { label: "Deliver To", name: doc.party?.name, phone: doc.party?.phone, address: doc.party?.address },
-    lines: (doc.lines ?? []).map((line) => ({ ...line, rate: 0, discount: 0, taxPct: 0, total: 0 })),
+    lines: (doc.lines ?? []).map((line) => ({ ...line, rate: 0, discount: 0, taxPct: 0, taxAmount: 0, taxIncl: false, total: 0 })),
     totals: [], payments: [], paid: 0, balance: 0, customFields: undefined,
   };
 }

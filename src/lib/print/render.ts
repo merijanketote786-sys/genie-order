@@ -12,7 +12,7 @@ function docDate(d: Date | string, cfg: ResolvedCfg, withTime: boolean) {
   return d;
 }
 
-export type PrintLine = { name: string; sku?: string; barcode?: string; unit?: string; qty: number; rate: number; discount?: number; taxPct?: number; total: number; note?: string };
+export type PrintLine = { name: string; sku?: string; barcode?: string; unit?: string; qty: number; rate: number; discount?: number; taxPct?: number; taxAmount?: number; taxIncl?: boolean; total: number; note?: string };
 export type PrintTotal = { label: string; value: number; bold?: boolean; neg?: boolean };
 export type PrintDoc = {
   kind: DocKind;
@@ -55,7 +55,12 @@ const esc = (s: unknown) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&
 
 export function makeMoney(cfg: ResolvedCfg) {
   const d = Math.min(3, Math.max(0, cfg.decimals));
-  return (n: number) => (Math.round((Number(n) || 0) * 10 ** d) / 10 ** d).toLocaleString("en-PK", { minimumFractionDigits: d > 0 ? Math.min(d, 2) : 0, maximumFractionDigits: d });
+  return (n: number) => (Number(n) || 0).toLocaleString("en-GB", { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+
+function taxText(l: PrintLine, m: (n: number) => string) {
+  if (!l.taxPct) return "0%";
+  return `${l.taxPct}%${l.taxAmount == null ? "" : ` (${m(l.taxAmount)}${l.taxIncl ? " incl." : ""})`}`;
 }
 const qtyFmt = (n: number) => String(Math.round(n * 1000) / 1000);
 
@@ -101,7 +106,7 @@ function pageHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, tpl: Tem
   const a5 = format === "a5";
   const f = p.fields;
   const m = makeMoney(cfg);
-  const cur = esc(cfg.business.currencySymbol || doc.currency || "Rs");
+  const cur = esc(doc.currency || cfg.business.currencySymbol || "Rs");
   const font = a5 ? p.a5.fontPt : L.fontPt;
   const tableFont = a5 ? Math.max(6.5, p.a5.fontPt - 0.5) : L.tableFontPt;
   const headPt = a5 ? Math.max(11, Math.round(p.a5.fontPt * 1.6)) : L.headerPt;
@@ -147,7 +152,7 @@ function pageHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, tpl: Tem
         case "qty": return qtyFmt(l.qty);
         case "rate": return m(l.rate);
         case "discount": return l.discount ? m(l.discount) : "-";
-        case "tax": return l.taxPct ? `${l.taxPct}%` : "-";
+        case "tax": return taxText(l, m);
         default: return m(l.total);
       }
     };
@@ -218,14 +223,14 @@ function thermalHtml(doc: PrintDoc, format: PaperFormat, cfg: ResolvedCfg, ex: E
   const t = cfg.printing.thermal;
   const f = cfg.printing.fields;
   const m = makeMoney(cfg);
-  const cur = esc(cfg.business.currencySymbol || doc.currency || "Rs");
+  const cur = esc(doc.currency || cfg.business.currencySymbol || "Rs");
   const narrow = widthMm < 70;
   const font = narrow ? Math.min(t.fontPt, 8) : t.fontPt;
   const b = cfg.business;
   const date = docDate(doc.date, cfg, f.dateTime);
   const kv = (a: string, v: string, cls = "", field?: InvoiceTextField) => `<div class="kv ${cls} ${field ? `fs-${field}` : ""}"><span>${a}</span><span>${v}</span></div>`;
   const lines = (doc.lines ?? [])
-    .map((l, i) => `<div class=it><div class="nm fs-item">${i + 1}. ${esc(l.name)}${l.unit && !narrow ? ` <small class=fs-unit>${esc(l.unit)}</small>` : ""}</div><div class=kv><span><span class=fs-qty>${t.showQtyRate ? qtyFmt(l.qty) : `x${qtyFmt(l.qty)}`}</span>${t.showQtyRate ? ` × <span class=fs-rate>${m(l.rate)}</span>${l.discount ? ` <span class=fs-discount>-${m(l.discount)}</span>` : ""}${l.taxPct ? ` <span class=fs-tax>Tax ${l.taxPct}%</span>` : ""}` : ""}</span><span class=fs-amount>${m(l.total)}</span></div>${l.note ? `<div class="note fs-notes">${esc(l.note)}</div>` : ""}</div>`)
+    .map((l, i) => `<div class=it><div class="nm fs-item">${i + 1}. ${esc(l.name)}${l.unit && !narrow ? ` <small class=fs-unit>${esc(l.unit)}</small>` : ""}</div><div class=kv><span><span class=fs-qty>${t.showQtyRate ? qtyFmt(l.qty) : `x${qtyFmt(l.qty)}`}</span>${t.showQtyRate ? ` × <span class=fs-rate>${m(l.rate)}</span>${l.discount ? ` <span class=fs-discount>-${m(l.discount)}</span>` : ""}` : ""}</span><span class=fs-amount>${m(l.total)}</span></div>${l.taxPct ? `<div class=fs-tax>Tax ${esc(taxText(l, m))}</div>` : ""}${l.note ? `<div class="note fs-notes">${esc(l.note)}</div>` : ""}</div>`)
     .join("");
   const table = doc.table ? doc.table.rows.map((r) => `<div class=it>${r.map((v, i) => (i === 0 ? `<div class="nm fs-item">${esc(v)}</div>` : "")).join("")}${kv(doc.table!.head.slice(1).map((h, i) => `${h}: ${typeof r[i + 1] === "number" ? m(r[i + 1] as number) : esc(r[i + 1])}`).join(" · "), "", "", "amount")}</div>`).join("") : "";
   const totals = (doc.totals ?? []).filter(totalVisible(f)).map((x) => kv(esc(x.label), `${x.neg ? "-" : ""}${cur} ${m(x.value)}`, x.bold && t.boldTotal ? "grand" : "", x.bold ? "grandTotal" : /^sub/i.test(x.label) ? "subtotal" : "totals")).join("");
