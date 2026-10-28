@@ -133,14 +133,14 @@
   --card-foreground: #E6ECF2;
   --popover: #1C2B3C;
   --popover-foreground: #E6ECF2;
-  --primary: #34B3A3;
+  --primary: #A9B4C0;
   --primary-foreground: #0E1A24;
   --secondary: #22344A;
   --secondary-foreground: #E6ECF2;
   --muted: #1F2F42;
   --muted-foreground: #94A3B8;
-  --accent: #1E3B42;
-  --accent-foreground: #CDEBE7;
+  --accent: #2B3742;
+  --accent-foreground: #D7DDE4;
   --destructive: #E05A4B;
   --destructive-foreground: #FFFFFF;
   --success: #5FB37F;
@@ -149,19 +149,19 @@
   --gold-foreground: #2A2008;
   --border: #2A3B50;
   --input: #2A3B50;
-  --ring: #34B3A3;
-  --bubble-out: #1E3B42;
+  --ring: #A9B4C0;
+  --bubble-out: #2B3742;
   --bubble-in: #1C2B3C;
   --sidebar: #0E1823;
   --sidebar-foreground: #E6ECF2;
   --sidebar-muted: #8FA0B4;
-  --sidebar-primary: #34B3A3;
+  --sidebar-primary: #A9B4C0;
   --sidebar-primary-foreground: #0E1A24;
   --sidebar-accent: #1B2B3D;
   --sidebar-accent-foreground: #FFFFFF;
   --sidebar-border: #22334A;
-  --sidebar-ring: #34B3A3;
-  --gradient-brand: linear-gradient(180deg, #3ABCAC, #2A9D8F);
+  --sidebar-ring: #A9B4C0;
+  --gradient-brand: linear-gradient(180deg, #B7C1CB, #A9B4C0);
   --shadow-elegant: 0 10px 28px -18px rgb(0 0 0 / 0.8);
 }
 
