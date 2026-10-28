@@ -354,3 +354,30 @@
   .mrow-sale > :nth-child(7)::before { content: "Price"; }
   .mrow-sale > :nth-child(8)::before { content: "Amount"; }
 }
+
+@utility auth-mesh {
+  background:
+    radial-gradient(40rem 30rem at 85% -10%, color-mix(in oklab, var(--primary) 18%, transparent), transparent 70%),
+    radial-gradient(30rem 24rem at 10% 110%, color-mix(in oklab, var(--gold) 14%, transparent), transparent 70%);
+}
+@utility auth-grid {
+  background-image: linear-gradient(color-mix(in oklab, var(--sidebar-foreground) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--sidebar-foreground) 8%, transparent) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+@utility auth-orb {
+  background: radial-gradient(circle, color-mix(in oklab, var(--sidebar-primary) 45%, transparent), transparent 65%);
+  filter: blur(10px);
+  animation: auth-float 12s ease-in-out infinite;
+}
+@utility auth-orb-2 {
+  background: radial-gradient(circle, color-mix(in oklab, var(--gold) 35%, transparent), transparent 65%);
+  animation-delay: -6s;
+}
+@utility auth-rise {
+  animation: auth-rise 500ms cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes auth-float { 0%,100% { transform: translate(0,0) } 50% { transform: translate(30px,40px) } }
+@keyframes auth-rise { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: none } }
+@media (prefers-reduced-motion: reduce) { .auth-orb, .auth-rise { animation: none } }
