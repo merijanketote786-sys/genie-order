@@ -1034,6 +1034,9 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
                 aria-label="Search or scan item"
                 className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-muted-foreground max-md:text-base max-md:font-semibold max-md:placeholder:font-normal"
               />
+                  {(term.trim() || staged || pendingNew) ? (
+                    <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setTerm(""); setStaged(null); setPendingNew(null); setHi(-1); setDropOpen(false); resetSf(); }} aria-label="Clear item search" title="Clear — remove typed or staged item" className="inline-flex size-7 shrink-0 items-center justify-center rounded-sm border border-primary/40 bg-background text-primary hover:bg-accent"><X className="size-3.5" /></button>
+                  ) : null}
                   </div>
                   <div onKeyDown={(e) => {
                     if (e.key !== "Enter" || e.ctrlKey || e.altKey || e.metaKey || savingNew || !(staged || pendingNew)) return;
