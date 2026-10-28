@@ -63,9 +63,9 @@
 
 :root {
   --radius: 0.625rem;
-  /* HB POS 4-color system: Slate #243B53, Teal #2A9D8F, Amber #E9C46A, Mist #F4F7FA */
+  /* HB POS 4-color system: Slate #243B53, Light Gray #9AA5B1, Amber #E9C46A, Mist #F4F7FA */
   --brand-slate: #243B53;
-  --brand-teal: #2A9D8F;
+  --brand-teal: #9AA5B1;
   --brand-amber: #E9C46A;
   --brand-mist: #F4F7FA;
   --background: #F4F7FA;
@@ -76,43 +76,43 @@
   --card-foreground: #1F2937;
   --popover: #FFFFFF;
   --popover-foreground: #1F2937;
-  --primary: #2A9D8F;
+  --primary: #9AA5B1;
   --primary-foreground: #FFFFFF;
   --secondary: #E8EDF3;
   --secondary-foreground: #243B53;
   --muted: #EEF2F6;
   --muted-foreground: #64748B;
-  --accent: #E3F2F0;
-  --accent-foreground: #1F6F66;
+  --accent: #EFF1F4;
+  --accent-foreground: #3D4A57;
   --destructive: #C0392B;
   --destructive-foreground: #FFFFFF;
   --success: #3E8E5E;
   --warning: #E9C46A;
   --border: #DCE4EC;
   --input: #DCE4EC;
-  --ring: #2A9D8F;
+  --ring: #9AA5B1;
   --gold: #E9C46A;
   --gold-foreground: #3D2F0A;
-  --bubble-out: #E3F2F0;
+  --bubble-out: #EFF1F4;
   --bubble-in: #FFFFFF;
-  --chart-1: #2A9D8F;
+  --chart-1: #9AA5B1;
   --chart-2: #243B53;
   --chart-3: #E9C46A;
-  --chart-4: #7FB8B0;
+  --chart-4: #B9C2CC;
   --chart-5: #8A9BB0;
   --sidebar: #243B53;
   --sidebar-foreground: #F4F7FA;
   --sidebar-muted: #A9B8C9;
-  --sidebar-primary: #2A9D8F;
+  --sidebar-primary: #9AA5B1;
   --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: #2E4A66;
   --sidebar-accent-foreground: #FFFFFF;
   --sidebar-border: #33506E;
-  --sidebar-ring: #2A9D8F;
-  --gradient-brand: linear-gradient(180deg, #2FA89A, #2A9D8F);
+  --sidebar-ring: #9AA5B1;
+  --gradient-brand: linear-gradient(180deg, #A8B2BD, #9AA5B1);
   --gradient-surface: linear-gradient(180deg, var(--card), var(--surface-2));
   --shadow-elegant: 0 1px 2px rgb(36 59 83 / 0.06), 0 8px 24px -16px rgb(36 59 83 / 0.25);
-  --shadow-glow: 0 0 0 1px rgb(42 157 143 / 0.25), 0 6px 16px -10px rgb(42 157 143 / 0.5);
+  --shadow-glow: 0 0 0 1px rgb(154 165 177 / 0.25), 0 6px 16px -10px rgb(154 165 177 / 0.5);
   --input-height: 2.25rem;
   --table-row-height: 2.5rem;
   --sidebar-width: 15rem;
