@@ -5,7 +5,7 @@ import { parseWeightBarcode, weightBarcodeError } from "@/lib/weight-barcode";
 import { resolveCfg, type PosConfig } from "@/lib/pos-config";
 import { ScanBarcode } from "lucide-react";
 
-export function WeightBarcodeEditor({ draft, upd }: { draft: PosConfig; upd: (path: string, value: unknown) => void; disabled: boolean }) {
+export function WeightBarcodeEditor({ draft }: { draft: PosConfig; upd: (path: string, value: unknown) => void; disabled: boolean }) {
   const c = resolveCfg(draft).pos.weightBarcode;
   const [sample, setSample] = useState("");
   const [result, setResult] = useState("");

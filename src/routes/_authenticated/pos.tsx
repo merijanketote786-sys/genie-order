@@ -1013,7 +1013,11 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
                   } else if (e.key === "Enter" && term.trim()) {
                     e.preventDefault();
                     const t = term.trim().toLowerCase();
-                    if (staged && t === staged.name.toLowerCase()) {
+                    const scale = cfg.pos.weightBarcode;
+                    const scan = (scale.enabled && !!scale.prefix && t.startsWith(scale.prefix)) || products.some((p) => p.barcode?.toLowerCase() === t || p.sku?.toLowerCase() === t) || !!links[t.toUpperCase()];
+                    if (!staged && scan && handleCode(term)) {
+                      setDropOpen(false); setHi(-1);
+                    } else if (staged && t === staged.name.toLowerCase()) {
                       add(staged, undefined, stagedOverrides()); setTerm(""); setStaged(null); setHi(-1); resetSf();
                     } else if (hi >= 0 && list[hi]) {
                       if (pendingCode) saveLink(pendingCode, list[hi]); else stage(list[hi]);
