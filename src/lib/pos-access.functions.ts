@@ -2,6 +2,8 @@ import { withStore } from "@/lib/pos-store.server";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { weightBarcodeError } from "@/lib/weight-barcode";
+import type { WeightBarcodeConfig } from "@/lib/weight-barcode";
 
 type Sb = any;
 
@@ -49,6 +51,11 @@ export const savePosSettings = createServerFn({ method: "POST" })
     pin: z.string().max(8).nullable(),
   }).parse(d))
   .handler(async ({ data, context }) => {
+    const pos = data.config.pos as { weightBarcode?: WeightBarcodeConfig } | undefined;
+    if (pos?.weightBarcode) {
+      const error = weightBarcodeError(pos.weightBarcode);
+      if (error) throw new Error(error);
+    }
     const { error } = await (context.supabase as Sb).rpc("pos_save_settings", { _config: data.config, _pin: data.pin });
     if (error) throw new Error(error.message.includes("PIN") ? "PIN must be 4 to 8 digits" : error.message.includes("permission") ? "Not allowed to change settings" : "Settings could not be saved. Try again.");
     return { ok: true };

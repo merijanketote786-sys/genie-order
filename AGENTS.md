@@ -22,8 +22,8 @@
 - Render Parties transaction actions through the shared portal dropdown and use compact transaction rows on phones; this prevents clipping inside scroll areas while keeping ledger amounts readable.
 - Keep historical sales and purchase party IDs in their existing records, and present same-phone contacts together in POS; this preserves transaction links and balances without destructive data migration.
 - POS party selectors must request only POS-scoped customers; the full contact list stays out of POS workflows so unrelated contacts cannot be selected.
-- POS units (main/sub with conversion factor = sub units per 1 main) and saved categories live in pos_units / pos_categories, written via the browser client under RLS (edit_stock or admin); keeps them workspace-scoped without new RPCs.
-- Dashboard quick-action popups render route components directly inside EmbeddedShell (AppShell renders children only) instead of iframes; nested iframes lose the preview auth session.
+- POS units/categories use pos_units / pos_categories under RLS (edit_stock/admin); sub-unit factor = sub units per main unit.
+- Dashboard popups render pages in EmbeddedShell, not iframes, to preserve auth.
 - Handle rotation with shared AppShell/dialog safe-area and short-landscape CSS rather than orientation listeners or remounts, so in-progress entries survive viewport changes.
 - POS document formatting, extract and rate imports are rule-based (src/lib/template-engine.ts + per-user order_templates kinds incl. *_input); no AI calls anywhere in the app, so they work without credits and stay predictable.
 
@@ -31,7 +31,7 @@
 - Fixed assets use a POS-only register with workspace-scoped RLS, edit_stock writes, subscription guards and UUID upserts; register changes do not post inventory, payments or accounting journals.
 - POS D-O conversion and customer-output filtering live in the shared print helper and apply to preview, print, PDF and sharing; source invoices and global customer print settings remain unchanged.
 - POS saves use additive pos_save_doc_v3: quotation edits update the existing estimate atomically, conversion derives the invoice number from the source in the database, and other writes delegate to pos_save_sale; prior versions remain for deployed callers. pos_delete_doc_v2 checks active POS sales permission and writes audit entries directly without the restricted print-event logger.
-- POS invoice saves and cancellations write only POS transaction tables, never Workspace invoice mirrors; this keeps POS usable when Workspace access is disabled and preserves module separation. Historical invoice_id links remain for reference only.
+- POS invoice saves/cancellations write only POS tables, never Workspace mirrors; historical invoice_id links are reference-only.
 - POS party details are edited by existing customer/supplier IDs through the invoker-rights atomic pos_edit_party_details function; combined parties update both records together without changing historical links or balances.
 - POS purchase orders live in public.purchases as doc_type 'order' with status open/converted: pos_save_purchase_order writes no stock/payment/accounting, pos_convert_purchase_order locks the order, creates the linked purchase (ref_order_id, PUR- prefix) and marks it converted, and pos_cancel_purchase_order only touches open orders — keeping stock, balances and journals consistent with the existing purchase flow.
 - Purchase financial reports query only purchase/return documents; purchase saves share UI store/credit-party guards, and order conversion enforces them server-side and atomically in the database so orders cannot affect balances or bypass read-only store mode.
@@ -43,3 +43,5 @@
 - POS Guide matches free-text questions to a local curated FAQ catalog, filtering disabled-module topics before matching; it never calls AI or fabricates missing answers. POS Admin links reuse the existing panel authorization and preserve POS shell context through a validated search parameter.
 - Detailed POS reports use a shared catalog and pure calculation engine behind a workspace-scoped, paginated, permission-checked server function; saved transaction costs and explicit limitations prevent historical margins or missing traceability from being fabricated.
 - The Workspace module and its data are permanently removed; every page is POS (routeModule returns pos except shared /admin), / redirects to /pos-dashboard, and all future changes stay POS-only — no Workspace entry point, feature or data may be reintroduced.
+- Scale barcodes use an opt-in firm profile and shared decoder with check-digit/unit validation; never guess regional layouts.
+- New sale lines prefer saved product tax (including zero), falling back only when absent; saved payloads retain inclusive/exclusive mode.

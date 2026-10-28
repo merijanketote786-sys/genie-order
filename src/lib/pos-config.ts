@@ -1,4 +1,5 @@
-/** Business / POS configuration — workspace-level, pos_settings.config (JSONB) me save hoti hai. Client-safe. */
+/** Business / POS configuration — firm-level JSON settings. Client-safe. */
+import { DEFAULT_WEIGHT_BARCODE, type WeightBarcodeConfig } from "@/lib/weight-barcode";
 
 export type PaperFormat = "a4" | "a5" | "t58" | "t80" | "custom";
 export type TemplateId = "modern" | "classic" | "compact" | "minimal" | "retail" | "thermal";
@@ -68,8 +69,8 @@ export type PosConfig = {
   };
   customers?: { requirePhoneForCredit?: boolean; defaultCreditLimit?: number | null; reminderText?: string };
   payments?: { enabled?: string[]; custom?: string[]; default?: string };
-  tax?: { enabled?: boolean; inclusive?: boolean; rates?: TaxRate[]; defaultPct?: number };
-  pos?: { autoFocusSearch?: boolean; showGrid?: boolean; scanAutoAdd?: boolean; shortcuts?: boolean };
+  tax?: { enabled?: boolean; inclusive?: boolean; rates?: TaxRate[]; defaultPct?: number; registrationLabel?: string };
+  pos?: { autoFocusSearch?: boolean; showGrid?: boolean; scanAutoAdd?: boolean; shortcuts?: boolean; weightBarcode?: WeightBarcodeConfig };
   printing?: {
     defaults?: Partial<Record<DocKind, PaperFormat>>;
     templates?: Partial<Record<PaperFormat, TemplateId>>;
@@ -143,8 +144,8 @@ export function resolveCfg(c: PosConfig = {}) {
     customers: { requirePhoneForCredit: !!c.customers?.requirePhoneForCredit, defaultCreditLimit: c.customers?.defaultCreditLimit ?? null, reminderText: c.customers?.reminderText ?? "" },
     payMethods: methods.length ? methods : ["Cash"],
     defaultPay: c.payments?.default || c.defaultPayMethod || "Cash",
-    tax: { enabled: c.tax?.enabled ?? true, inclusive: !!c.tax?.inclusive, rates: taxRates, defaultPct: c.tax?.defaultPct ?? c.defaultTax ?? 0 },
-    pos: { autoFocusSearch: c.pos?.autoFocusSearch ?? true, showGrid: c.pos?.showGrid ?? false, scanAutoAdd: c.pos?.scanAutoAdd ?? true, shortcuts: c.pos?.shortcuts ?? true },
+    tax: { enabled: c.tax?.enabled ?? true, inclusive: !!c.tax?.inclusive, rates: taxRates, defaultPct: c.tax?.defaultPct ?? c.defaultTax ?? 0, registrationLabel: c.tax?.registrationLabel?.trim() || "NTN/GST" },
+    pos: { autoFocusSearch: c.pos?.autoFocusSearch ?? true, showGrid: c.pos?.showGrid ?? false, scanAutoAdd: c.pos?.scanAutoAdd ?? true, shortcuts: c.pos?.shortcuts ?? true, weightBarcode: { ...DEFAULT_WEIGHT_BARCODE, ...c.pos?.weightBarcode } },
     printing: {
       defaults: { ...DEFAULT_FORMATS, ...(pr.defaults ?? {}) } as Record<DocKind, PaperFormat>,
       templates: { ...DEFAULT_TEMPLATES, ...(pr.templates ?? {}) } as Record<PaperFormat, TemplateId>,

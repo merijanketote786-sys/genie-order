@@ -1,4 +1,6 @@
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
+import { parseWeightBarcode, weightInProductUnit } from "@/lib/weight-barcode";
+import { productTaxPercent } from "@/lib/pos-tax";
 import { ProductEditDialog } from "@/components/product-edit-dialog";
 import { PosTabs } from "@/components/pos-tabs";
 import { PosCustomerSearch } from "@/components/pos-customer-search";
@@ -297,8 +299,8 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
     setCart((prev) => {
       const key = `${p.name}|${useRate}`;
       const ex = prev.find((l) => l.key === key);
-      if (ex && !ov) return prev.map((l) => (l.key === key ? withAutoRate({ ...l, qty: l.qty + 1 }) : l));
-      return [...prev, withAutoRate({ key, name: p.name, unit: p.unit, unitOverride, rateType: useRate, price, basePrice: price, wholesalePrice, wholesaleMinQty, minSalePrice: p.minSalePrice ?? null, qty, discount: 0, taxPercent: cfg.tax.enabled ? cfg.tax.defaultPct : 0, taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode, size: ov?.size || undefined, weight: ov?.weight || undefined, priceManual: ov?.price != null ? true : undefined })];
+      if (ex && (!ov || (ov.qty != null && ov.price == null && !ov.unit && !ov.size && !ov.weight))) return prev.map((l) => (l.key === key ? withAutoRate({ ...l, qty: Math.round((l.qty + qty) * 1000) / 1000 }) : l));
+      return [...prev, withAutoRate({ key: ex ? `${key}|${Date.now()}` : key, name: p.name, unit: p.unit, unitOverride, rateType: useRate, price, basePrice: price, wholesalePrice, wholesaleMinQty, minSalePrice: p.minSalePrice ?? null, qty, discount: 0, taxPercent: productTaxPercent(cfg.tax.enabled, p.taxPercent, cfg.tax.defaultPct), taxIncl: cfg.tax.inclusive, sku: p.sku, barcode: p.barcode, size: ov?.size || undefined, weight: ov?.weight || undefined, priceManual: ov?.price != null ? true : undefined })];
     });
     if (cfg.inventory.trackStock && cfg.inventory.warnOutOfStock && p.stock != null && p.stock <= 0) {
       toast.warning(`${p.name}: out of stock (${p.stock}) — stock will go negative`);
@@ -402,6 +404,9 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
   const findByCode = (raw: string): { p: DbProduct; rate?: RateType } | null => {
     const code = raw.trim().toUpperCase();
     if (!code) return null;
+    const exact = products.filter((p) => p.barcode?.toUpperCase() === code || p.sku?.toUpperCase() === code);
+    if (exact.length === 1) return { p: exact[0] };
+    if (exact.length > 1) throw new Error("Barcode matches multiple products; give each product a unique barcode or SKU");
     const link = links[code];
     if (link) {
       const p = products.find((x) => x.name === link.name);
@@ -422,6 +427,18 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
   };
 
   const handleCode = (raw: string) => {
+    try {
+      const measured = parseWeightBarcode(raw, cfg.pos.weightBarcode);
+      if (measured) {
+        const matches = products.filter((p) => p.sku === measured.productCode || p.barcode === measured.productCode);
+        const p = matches[0];
+        if (!p || matches.length !== 1) throw new Error(matches.length > 1 ? "Scale product code matches multiple products" : `Scale product code ${measured.productCode} is not assigned to a product SKU or barcode`);
+        const qty = weightInProductUnit(measured.weight, measured.unit, p.unit);
+        if (!cfg.inventory.allowFractional && !Number.isInteger(qty)) throw new Error("Enable decimal quantities before scanning fractional weights");
+        add(p, "sale", { qty });
+        setTerm(""); setPendingCode(null); setStaged(null);
+        return true;
+      }
     const hit = findByCode(raw);
     if (hit) {
       add(hit.p, hit.rate);
@@ -430,6 +447,10 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
       return true;
     }
     return false;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Invalid barcode");
+      return true;
+    }
   };
 
   // Barcode scanner: code type hota hai + Enter
@@ -992,7 +1013,11 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
                   } else if (e.key === "Enter" && term.trim()) {
                     e.preventDefault();
                     const t = term.trim().toLowerCase();
-                    if (staged && t === staged.name.toLowerCase()) {
+                    const scale = cfg.pos.weightBarcode;
+                    const scan = (scale.enabled && !!scale.prefix && t.startsWith(scale.prefix)) || products.some((p) => p.barcode?.toLowerCase() === t || p.sku?.toLowerCase() === t) || !!links[t.toUpperCase()];
+                    if (!staged && scan && handleCode(term)) {
+                      setDropOpen(false); setHi(-1);
+                    } else if (staged && t === staged.name.toLowerCase()) {
                       add(staged, undefined, stagedOverrides()); setTerm(""); setStaged(null); setHi(-1); resetSf();
                     } else if (hi >= 0 && list[hi]) {
                       if (pendingCode) saveLink(pendingCode, list[hi]); else stage(list[hi]);
