@@ -176,17 +176,49 @@ function AuthPage() {
   };
 
   return (
-    <main className="grid min-h-dvh place-items-center bg-background px-4 py-10">
-      <div className="w-full max-w-md">
+    <main className="relative grid min-h-dvh overflow-hidden bg-background lg:grid-cols-[1.1fr_1fr]">
+      <div aria-hidden className="pointer-events-none absolute inset-0 auth-mesh" />
+      <section className="relative hidden flex-col justify-between overflow-hidden bg-sidebar p-12 text-sidebar-foreground lg:flex">
+        <div aria-hidden className="auth-grid absolute inset-0 opacity-40" />
+        <div aria-hidden className="auth-orb absolute -left-24 -top-24 size-96 rounded-full" />
+        <div aria-hidden className="auth-orb auth-orb-2 absolute -bottom-32 right-0 size-[28rem] rounded-full" />
+        <div className="relative flex items-center gap-3">
+          <img src={logo} alt="HB POS" width={44} height={44} className="size-11 rounded-xl bg-card p-1" />
+          <span className="font-display text-lg font-bold tracking-wide">HB POS</span>
+        </div>
+        <div className="relative max-w-md">
+          <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-sidebar-border px-3 py-1 text-xs text-sidebar-muted">
+            <span className="size-1.5 rounded-full bg-gold" /> Works offline · Syncs automatically
+          </p>
+          <h1 className="font-display text-5xl font-bold leading-[1.05]">
+            Billing, stock & accounts —<span className="block text-sidebar-primary">in one place.</span>
+          </h1>
+          <p className="mt-5 text-sidebar-muted">Multi-store inventory, purchases, returns, manufacturing and 40+ reports for growing businesses.</p>
+        </div>
+        <div className="relative grid grid-cols-3 gap-3 text-sm">
+          {[["Stores", "Multi"], ["Reports", "40+"], ["Mode", "Offline"]].map(([k, v]) => (
+            <div key={k} className="rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3 backdrop-blur">
+              <div className="font-display text-xl font-bold text-sidebar-primary">{v}</div>
+              <div className="text-sidebar-muted">{k}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="relative flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md auth-rise">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <img src={logo} alt="HB POS" width={48} height={48} className="h-12 w-auto" />
+          <div className="relative">
+            <div aria-hidden className="absolute -inset-3 rounded-3xl bg-[image:var(--gradient-brand)] opacity-25 blur-xl" />
+            <img src={logo} alt="HB POS" width={80} height={80} className="relative size-20 rounded-2xl border border-border bg-card p-2 shadow-[var(--shadow-elegant)]" />
+          </div>
           <div>
-            <h1 className="font-display text-xl font-bold text-foreground">HB POS</h1>
+            <h2 className="font-display text-2xl font-bold text-foreground">Welcome to HB POS</h2>
             <p className="text-sm text-muted-foreground">Smart POS & business management</p>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+        <div className="rounded-3xl border border-border bg-card/85 p-5 shadow-[var(--shadow-elegant)] backdrop-blur-xl sm:p-7">
           <h2 className="font-display text-lg font-bold text-foreground">
             {mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : "Forgot password"}
           </h2>
@@ -326,6 +358,8 @@ function AuthPage() {
             )}
           </div>
         </div>
+        <p className="mt-6 text-center text-xs text-muted-foreground">© HB Chemicals Pakistan</p>
+      </div>
       </div>
     </main>
   );
