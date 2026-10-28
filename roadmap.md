@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Test POS billing on mobile/desktop: labeled mobile entry fields, larger clear/edit/close targets, keyboard-accessible pencil and bill tabs, persistent visible New bill button, narrow-phone action layout; authenticated browser checks and 19 calculation tests passed (no saved transaction created).
+
 - [x] Mobile login header: subscription plan pills + Plans button visible on phones (plans must exist to show; list currently empty).
 - [x] Login footer renamed from "© HB Chemicals Pakistan" to "© HB POS".
 - [x] Monitoring: AI chat/invoice "Forbidden" errors — dead Workspace-era AI routes already removed; deleted unused src/lib/ai-gateway.server.ts, src/components/lightweight-chat.tsx, src/components/ai-elements/, and the unused `ai` / `@ai-sdk/*` packages.
