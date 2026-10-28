@@ -17,28 +17,7 @@ import { toast } from "sonner";
 import { askReason } from "@/lib/ask-reason";
 import { WaTemplateButton } from "@/components/wa-template-button";
 import { usePosAccess } from "@/components/pos-access";
-import type { ReceiptInput } from "@/lib/pos";
-
-function saleToReceipt(s: SaleRow, business: string): ReceiptInput {
-  const ui = s.payload?.ui ?? s.payload;
-  return {
-    business,
-    invoiceNumber: s.doc_number,
-    title: s.doc_type === "quotation" ? "Quotation" : s.doc_type === "return" ? "Sale Return" : "Invoice",
-    date: new Date(s.created_at).toLocaleDateString("en-PK"),
-    customerName: s.customer_name ?? undefined,
-    customerPhone: s.customer_phone ?? undefined,
-    customerAddress: ui?.customerAddress,
-    customerCityArea: ui?.customerCityArea,
-    lines: s.items.map((it, i) => ({ key: String(i), name: it.name, unit: it.unit ?? "", rateType: "sale", price: Number(it.rate), qty: Number(it.qty), discount: Number(it.discount) || 0 }) as ReceiptInput["lines"][number]),
-    billDiscount: Math.max(0, Number(s.discount_total) - s.items.reduce((a, it) => a + (Number(it.discount) || 0), 0)),
-    delivery: Number(s.delivery) || 0,
-    payMode: s.payments.map((p) => p.method).join("+") || "Credit",
-    paid: Number(s.paid_total) || 0,
-    notes: s.notes ?? undefined,
-    currency: "PKR",
-  };
-}
+import { savedSaleToDoc as saleToDoc, savedSaleToReceipt as saleToReceipt, type SavedSaleRow as SaleRow } from "@/lib/pos-saved-invoice";
 
 export const Route = createFileRoute("/_authenticated/pos-invoices")({
   head: () => ({
@@ -53,59 +32,6 @@ export const Route = createFileRoute("/_authenticated/pos-invoices")({
   }),
   component: PosInvoicesPage,
 });
-
-type SaleRow = {
-  id: string;
-  doc_number: string;
-  doc_type: string;
-  status: string;
-  payment_status: string;
-  customer_name: string | null;
-  customer_phone: string | null;
-  subtotal: number;
-  discount_total: number;
-  tax_total: number;
-  delivery: number;
-  grand_total: number;
-  paid_total: number;
-  balance: number;
-  notes: string | null;
-  payload: { ui?: { customerAddress?: string; customerCityArea?: string; courierServiceName?: string; goodsAddaName?: string; customFields?: { label: string; value: string; show?: boolean; sizePt?: number; addToTotal?: boolean }[] }; customerAddress?: string; customerCityArea?: string; courierServiceName?: string; goodsAddaName?: string; customFields?: { label: string; value: string; show?: boolean; sizePt?: number; addToTotal?: boolean }[] } | null;
-  created_at: string;
-  items: { name: string; sku: string | null; unit: string | null; qty: number; rate: number; discount: number; tax_percent: number; line_total: number; note: string | null }[];
-  payments: { method: string; amount: number; kind: string }[];
-};
-
-function saleToDoc(s: SaleRow): PrintDoc {
-  const isReturn = s.doc_type === "return";
-  const delivery = s.payload?.ui ?? s.payload;
-  const totals: PrintDoc["totals"] = [{ label: "Subtotal", value: Number(s.subtotal) }];
-  if (Number(s.tax_total)) totals!.push({ label: "Tax", value: Number(s.tax_total) });
-  if (Number(s.discount_total)) totals!.push({ label: "Discount", value: Number(s.discount_total), neg: true });
-  if (Number(s.delivery)) totals!.push({ label: "Delivery", value: Number(s.delivery) });
-  for (const field of delivery?.customFields ?? []) {
-    if (field.show === false || !field.addToTotal) continue;
-    const amount = Number(String(field.value ?? "").replace(/,/g, "").trim());
-    if (Number.isFinite(amount) && amount > 0) totals!.push({ label: field.label.trim() || "Custom charge", value: amount });
-  }
-  totals!.push({ label: "Grand Total", value: Number(s.grand_total), bold: true });
-  return {
-    kind: "pos",
-    id: s.id,
-    title: isReturn ? "Sale Return" : s.doc_type === "quotation" ? "Estimate" : "Invoice",
-    number: s.doc_number,
-    date: s.created_at,
-    party: { label: "Customer", name: s.customer_name ?? undefined, phone: s.customer_phone ?? undefined, address: [delivery?.customerAddress, delivery?.customerCityArea].filter(Boolean).join(", ") || undefined },
-    meta: [["City / Area", delivery?.customerCityArea], ["Courier service", delivery?.courierServiceName], ["Goods adda", delivery?.goodsAddaName]].filter((entry): entry is [string, string] => Boolean(entry[1])),
-    lines: s.items.map((i) => ({ name: i.name, sku: i.sku ?? undefined, unit: i.unit ?? undefined, qty: Number(i.qty), rate: Number(i.rate), discount: Number(i.discount), taxPct: Number(i.tax_percent), total: Number(i.line_total), note: i.note ?? undefined })),
-    totals,
-    payments: s.payments.map((p) => ({ method: p.method, amount: Number(p.amount) })),
-    paid: Number(s.paid_total),
-    balance: Number(s.balance),
-    notes: s.notes ?? undefined,
-    customFields: delivery?.customFields,
-  };
-}
 
 /** D-O — print-only document, koi transaction nahi banta. */
 function challanDoc(s: SaleRow): PrintDoc {
@@ -292,7 +218,7 @@ function PosInvoicesPage() {
                     {Number(s.balance) > 0 ? <> · Balance <b className="text-destructive">{rs(Number(s.balance))}</b></> : null}
                   </div>
                 </div>
-                <WaTemplateButton compact label={`WhatsApp message for ${s.doc_number}`} getReceipt={() => saleToReceipt(s, business)} />
+                <WaTemplateButton compact label={`WhatsApp message for ${s.doc_number}`} getReceipt={() => saleToReceipt(s, business, cfg.business.currencySymbol || "Rs")} />
                 <div className="relative">
                   <button
                     title="Actions"
