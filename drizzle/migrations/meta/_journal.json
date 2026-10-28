@@ -582,6 +582,13 @@
       "when": 1793195184775,
       "tag": "0082_fix_demo_reset_search_path",
       "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1793201383663,
+      "tag": "0083_pos_courier_booking",
+      "breakpoints": true
     }
   ]
 }

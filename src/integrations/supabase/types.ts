@@ -972,6 +972,78 @@ export type Database = {
         }
         Relationships: []
       }
+      pos_courier_accounts: {
+        Row: {
+          courier: string
+          created_at: string
+          credentials: Json
+          id: string
+          is_active: boolean
+          is_default: boolean
+          label: string
+          settings: Json
+          updated_at: string
+          webhook_token: string | null
+          workspace_id: string
+        }
+        Insert: {
+          courier: string
+          created_at?: string
+          credentials?: Json
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          label?: string
+          settings?: Json
+          updated_at?: string
+          webhook_token?: string | null
+          workspace_id?: string
+        }
+        Update: {
+          courier?: string
+          created_at?: string
+          credentials?: Json
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          label?: string
+          settings?: Json
+          updated_at?: string
+          webhook_token?: string | null
+          workspace_id?: string
+        }
+        Relationships: []
+      }
+      pos_courier_events: {
+        Row: {
+          id: string
+          payload: Json
+          received_at: string
+          result: string | null
+          shipment_id: string | null
+          source: string
+          workspace_id: string | null
+        }
+        Insert: {
+          id?: string
+          payload: Json
+          received_at?: string
+          result?: string | null
+          shipment_id?: string | null
+          source: string
+          workspace_id?: string | null
+        }
+        Update: {
+          id?: string
+          payload?: Json
+          received_at?: string
+          result?: string | null
+          shipment_id?: string | null
+          source?: string
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
       pos_firms: {
         Row: {
           created_at: string
@@ -1488,6 +1560,101 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: []
+      }
+      pos_shipments: {
+        Row: {
+          account_id: string | null
+          booked_at: string | null
+          city: string
+          city_code: string | null
+          cod_amount: number
+          confirm_token: string
+          confirmation: string
+          consignee_address: string
+          consignee_name: string
+          consignee_phone: string
+          courier: string
+          created_at: string
+          created_by: string | null
+          doc_number: string
+          history: Json
+          id: string
+          item_summary: string
+          last_error: string | null
+          pieces: number
+          remarks: string | null
+          sale_id: string | null
+          status: string
+          tracking_number: string | null
+          updated_at: string
+          weight_kg: number
+          workspace_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          booked_at?: string | null
+          city?: string
+          city_code?: string | null
+          cod_amount?: number
+          confirm_token?: string
+          confirmation?: string
+          consignee_address?: string
+          consignee_name?: string
+          consignee_phone?: string
+          courier: string
+          created_at?: string
+          created_by?: string | null
+          doc_number: string
+          history?: Json
+          id?: string
+          item_summary?: string
+          last_error?: string | null
+          pieces?: number
+          remarks?: string | null
+          sale_id?: string | null
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+          weight_kg?: number
+          workspace_id?: string
+        }
+        Update: {
+          account_id?: string | null
+          booked_at?: string | null
+          city?: string
+          city_code?: string | null
+          cod_amount?: number
+          confirm_token?: string
+          confirmation?: string
+          consignee_address?: string
+          consignee_name?: string
+          consignee_phone?: string
+          courier?: string
+          created_at?: string
+          created_by?: string | null
+          doc_number?: string
+          history?: Json
+          id?: string
+          item_summary?: string
+          last_error?: string | null
+          pieces?: number
+          remarks?: string | null
+          sale_id?: string | null
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+          weight_kg?: number
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_shipments_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "pos_courier_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pos_store_stock: {
         Row: {
