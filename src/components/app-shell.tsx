@@ -53,8 +53,8 @@ const TABS = [
 
 const ADMIN_TAB = {
   to: "/admin",
-  label: "Admin",
-  description: "Users and access",
+  label: "Super Admin",
+  description: "Owner-only control panel",
   icon: Shield,
 } as const;
 

@@ -2,7 +2,8 @@ import { AppShell } from "@/components/app-shell";
 import { AdminWorkspaceSettings } from "@/components/admin-workspace-settings";
 import { SubscriptionManager } from "@/components/subscription";
 import { MfgPinSettings } from "@/components/mfg-pin-settings";
-import { Settings2 } from "lucide-react";
+import { Settings2, Crown } from "lucide-react";
+import { PlansManager } from "@/components/plans-manager";
 import { WorkspaceHeader } from "@/components/workspace-header";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,7 +66,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
   validateSearch: (search: Record<string, unknown>): { from?: "pos" } => ({ from: search.from === "pos" ? "pos" : undefined }),
   head: () => ({
     meta: [
-      { title: "Admin Panel — HBPOS" },
+      { title: "Super Admin — HBPOS" },
       {
         name: "description",
         content: "Manage users, records and app access — owner only.",
@@ -87,18 +88,19 @@ function AdminPage() {
   const access = useQuery({ queryKey: ["my-access"], queryFn: () => getMyAccess() });
   const isOwner = access.data?.isOwner === true;
   const [section, setSection] = useState<
-    "dashboard" | "users" | "settings" | "records" | "export"
+    "dashboard" | "users" | "plans" | "settings" | "records" | "export"
   >("dashboard");
   const sections = [
     { key: "dashboard" as const, label: "Overview", icon: BarChart3 },
     { key: "users" as const, label: "Users", icon: Users },
+    { key: "plans" as const, label: "Plans", icon: Crown },
     { key: "settings" as const, label: "Settings", icon: Settings2 },
     { key: "records" as const, label: "Records", icon: Database },
     { key: "export" as const, label: "Export", icon: Download },
   ];
 
   return (
-    <AppShell title="Admin Panel" subtitle="Users, records and access control" active="/admin" posContext={from === "pos"} wide>
+    <AppShell title="Super Admin" subtitle="Owner-only control: users, plans, records and access" active="/admin" posContext={from === "pos"} wide>
       <div className="shrink-0 pt-3 sm:pt-4">
         <WorkspaceHeader
           icon={Users}
@@ -123,7 +125,7 @@ function AdminPage() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-5 gap-1 rounded-xl border border-border bg-card p-1">
+            <div className="grid grid-cols-6 gap-1 rounded-xl border border-border bg-card p-1">
               {sections.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -136,6 +138,7 @@ function AdminPage() {
             </div>
             {section === "dashboard" ? <StatsSection /> : null}
             {section === "users" ? <UsersSection /> : null}
+            {section === "plans" ? <PlansManager /> : null}
             {section === "settings" ? <SettingsSection /> : null}
             {section === "records" ? <RecordsSection /> : null}
             {section === "export" ? <ExportSection /> : null}

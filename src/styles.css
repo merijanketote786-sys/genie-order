@@ -381,3 +381,9 @@
 @keyframes auth-float { 0%,100% { transform: translate(0,0) } 50% { transform: translate(30px,40px) } }
 @keyframes auth-rise { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: none } }
 @media (prefers-reduced-motion: reduce) { .auth-orb, .auth-rise { animation: none } }
+
+.showcase-img { opacity: 0; transform: scale(1.08); transition: opacity 1200ms ease, transform 6500ms ease-out; }
+.showcase-img.is-active { opacity: 1; transform: scale(1); }
+.showcase-bar { animation: showcase-bar 5500ms linear both; }
+@keyframes showcase-bar { from { width: 0 } to { width: 100% } }
+@media (prefers-reduced-motion: reduce) { .showcase-img { transition: opacity 300ms; transform: none !important; } .showcase-bar { animation: none; width: 100%; } }

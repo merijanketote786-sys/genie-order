@@ -9,6 +9,57 @@ import { storedOfflineUser } from "@/lib/offline-sync";
 import { toast } from "sonner";
 import logo from "@/assets/logo.webp";
 import { GoogleButton } from "@/components/google-button";
+import { AuthShowcase } from "@/components/auth-showcase";
+import { useQuery } from "@tanstack/react-query";
+import { plansQuery, formatPlanPrice } from "@/components/plans-manager";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Check, Crown } from "lucide-react";
+
+function PlansHeader() {
+  const plans = useQuery(plansQuery);
+  const [open, setOpen] = useState(false);
+  const list = (plans.data ?? []).filter((p) => p.is_active);
+  return (
+    <header className="relative z-10 flex items-center gap-3 border-b border-border bg-card/80 px-4 py-2.5 backdrop-blur-xl sm:px-6">
+      <img src={logo} alt="HB POS" width={32} height={32} className="size-8 rounded-lg" />
+      <span className="font-display font-bold">HB POS</span>
+      <div className="ml-auto flex min-w-0 items-center gap-2">
+        <div className="hidden min-w-0 items-center gap-2 overflow-x-auto md:flex">
+          {list.slice(0, 4).map((p) => (
+            <button key={p.id} type="button" onClick={() => setOpen(true)} className={`shrink-0 rounded-full border px-3 py-1 text-xs ${p.highlight ? "border-gold bg-gold/15 text-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}>
+              <span className="font-semibold">{p.name}</span> · {formatPlanPrice(p)}
+            </button>
+          ))}
+        </div>
+        {list.length ? (
+          <Button size="sm" variant="outline" onClick={() => setOpen(true)} className="gap-1.5"><Crown className="size-4" /> Plans</Button>
+        ) : null}
+      </div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Subscription plans</DialogTitle>
+            <DialogDescription>Choose the plan that fits your business.</DialogDescription>
+          </DialogHeader>
+          <div className="grid max-h-[70dvh] gap-3 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3">
+            {list.map((p) => (
+              <div key={p.id} className={`rounded-2xl border p-4 ${p.highlight ? "border-gold shadow-[var(--shadow-elegant)]" : "border-border"}`}>
+                {p.highlight ? <span className="mb-2 inline-block rounded-full bg-gold/20 px-2 py-0.5 text-[10px] font-semibold uppercase">Popular</span> : null}
+                <h3 className="font-display text-lg font-bold">{p.name}</h3>
+                <p className="mt-1 font-display text-2xl font-bold text-primary">{formatPlanPrice(p)}</p>
+                <ul className="mt-3 grid gap-1.5 text-sm">
+                  {p.features.split("\n").map((f) => f.trim()).filter(Boolean).map((f) => (
+                    <li key={f} className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-primary" />{f}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </header>
+  );
+}
 
 function safeNext(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
@@ -176,33 +227,12 @@ function AuthPage() {
   };
 
   return (
-    <main className="relative grid min-h-dvh overflow-hidden bg-background lg:grid-cols-[1.1fr_1fr]">
+    <main className="relative flex min-h-dvh flex-col overflow-hidden bg-background">
+      <PlansHeader />
+      <div className="relative grid flex-1 lg:grid-cols-[1.35fr_1fr]">
       <div aria-hidden className="pointer-events-none absolute inset-0 auth-mesh" />
-      <section className="relative hidden flex-col justify-between overflow-hidden bg-sidebar p-12 text-sidebar-foreground lg:flex">
-        <div aria-hidden className="auth-grid absolute inset-0 opacity-40" />
-        <div aria-hidden className="auth-orb absolute -left-24 -top-24 size-96 rounded-full" />
-        <div aria-hidden className="auth-orb auth-orb-2 absolute -bottom-32 right-0 size-[28rem] rounded-full" />
-        <div className="relative flex items-center gap-3">
-          <img src={logo} alt="HB POS" width={44} height={44} className="size-11 rounded-xl bg-card p-1" />
-          <span className="font-display text-lg font-bold tracking-wide">HB POS</span>
-        </div>
-        <div className="relative max-w-md">
-          <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-sidebar-border px-3 py-1 text-xs text-sidebar-muted">
-            <span className="size-1.5 rounded-full bg-gold" /> Works offline · Syncs automatically
-          </p>
-          <h1 className="font-display text-5xl font-bold leading-[1.05]">
-            Billing, stock & accounts —<span className="block text-sidebar-primary">in one place.</span>
-          </h1>
-          <p className="mt-5 text-sidebar-muted">Multi-store inventory, purchases, returns, manufacturing and 40+ reports for growing businesses.</p>
-        </div>
-        <div className="relative grid grid-cols-3 gap-3 text-sm">
-          {[["Stores", "Multi"], ["Reports", "40+"], ["Mode", "Offline"]].map(([k, v]) => (
-            <div key={k} className="rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3 backdrop-blur">
-              <div className="font-display text-xl font-bold text-sidebar-primary">{v}</div>
-              <div className="text-sidebar-muted">{k}</div>
-            </div>
-          ))}
-        </div>
+      <section className="relative hidden lg:block">
+        <AuthShowcase />
       </section>
 
       <div className="relative flex items-center justify-center px-4 py-10">
@@ -359,6 +389,7 @@ function AuthPage() {
           </div>
         </div>
         <p className="mt-6 text-center text-xs text-muted-foreground">© HB Chemicals Pakistan</p>
+      </div>
       </div>
       </div>
     </main>
