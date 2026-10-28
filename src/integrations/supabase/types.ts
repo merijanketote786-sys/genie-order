@@ -1406,6 +1406,89 @@ export type Database = {
         }
         Relationships: []
       }
+      pos_shift_moves: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string
+          direction: string
+          id: string
+          note: string | null
+          shift_id: string
+          workspace_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string
+          direction: string
+          id?: string
+          note?: string | null
+          shift_id: string
+          workspace_id?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string
+          direction?: string
+          id?: string
+          note?: string | null
+          shift_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_shift_moves_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "pos_shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pos_shifts: {
+        Row: {
+          closed_at: string | null
+          counted_cash: number | null
+          expected_cash: number | null
+          id: string
+          note: string | null
+          opened_at: string
+          opening_float: number
+          status: string
+          summary: Json | null
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          closed_at?: string | null
+          counted_cash?: number | null
+          expected_cash?: number | null
+          id?: string
+          note?: string | null
+          opened_at?: string
+          opening_float?: number
+          status?: string
+          summary?: Json | null
+          user_id?: string
+          workspace_id?: string
+        }
+        Update: {
+          closed_at?: string | null
+          counted_cash?: number | null
+          expected_cash?: number | null
+          id?: string
+          note?: string | null
+          opened_at?: string
+          opening_float?: number
+          status?: string
+          summary?: Json | null
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
       pos_store_stock: {
         Row: {
           product_id: string
