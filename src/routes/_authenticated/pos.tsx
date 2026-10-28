@@ -1226,7 +1226,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
               {discAmt ? <Row a="Bill discount" b={`- Rs ${money(discAmt)}`} /> : null}
               {n(delivery) ? <Row a="Delivery" b={`Rs ${money(n(delivery))}`} /> : null}
               {billCustomFields.map((field, index) => field.show !== false && field.addToTotal && n(field.value) > 0 ? <Row key={`${field.label}-${index}`} a={field.label.trim() || "Custom charge"} b={`Rs ${money(n(field.value))}`} /> : null)}
-              <Row a="Grand Total" b={`Rs ${money(total)}`} bold />
+              <div className="payable-total flex items-center justify-between"><span className="text-sm font-semibold text-foreground">Payable</span><span>Rs {money(total)}</span></div>
               <Row a="Paid" b={`Rs ${money(Math.min(paidNum, total))}`} />
               {paidNum > total ? <Row a="Change due" b={`Rs ${money(paidNum - total)}`} /> : null}
               {paidNum < total ? <Row a="Outstanding (credit)" b={`Rs ${money(total - paidNum)}`} /> : null}

@@ -191,6 +191,53 @@
     font-family: var(--font-display);
     letter-spacing: 0;
   }
+
+  /* Uniform screen headers */
+  main h1 {
+    font-weight: 700;
+    color: var(--color-foreground);
+  }
+
+  /* Uniform tables across all POS screens */
+  main table thead th {
+    background: var(--color-muted);
+    color: var(--color-muted-foreground);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  main table tbody tr:hover {
+    background: color-mix(in oklab, var(--color-primary) 6%, transparent);
+  }
+
+  /* Uniform form focus */
+  main input:focus-visible,
+  main select:focus-visible,
+  main textarea:focus-visible {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 22%, transparent);
+  }
+
+  /* Teal indicator on the active sidebar page */
+  aside a[aria-current="page"],
+  nav a[aria-current="page"] {
+    position: relative;
+    box-shadow: inset 3px 0 0 var(--color-primary);
+  }
+}
+
+@utility payable-total {
+  background: color-mix(in oklab, var(--color-primary) 12%, transparent);
+  border: 1px solid color-mix(in oklab, var(--color-primary) 35%, transparent);
+  border-radius: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--color-primary);
 }
 
 @utility glass-panel {
