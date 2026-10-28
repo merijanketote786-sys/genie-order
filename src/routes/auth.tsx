@@ -136,8 +136,7 @@ function AuthPage() {
   }, [navigate, next]);
 
   if (!mounted) return null;
-  const mvRaw = new URLSearchParams(window.location.search).get("m");
-  const mv = mvRaw === "b" || mvRaw === "c" ? mvRaw : "a";
+  const mv: string = "b";
 
   // Phone number ko ek internal email ID mein badalte hain taake bina SMS
   // service ke phone se signup/signin ho sake (phone hi login ID hai).
@@ -237,9 +236,9 @@ function AuthPage() {
         <AuthShowcase />
       </section>
 
-      <div className={`relative flex justify-center lg:items-center lg:px-4 lg:py-10 ${mv === "b" ? "items-end" : "items-start"} ${mv === "b" ? "" : "px-4 pb-6"}`}>
-      {mv === "b" ? <div className="absolute inset-x-0 top-0 h-[47dvh] lg:hidden"><AuthShowcase compact /></div> : null}
-      <div className={`relative w-full max-w-md auth-rise ${mv === "b" ? "max-lg:pt-[42dvh]" : ""}`}>
+      <div className={`relative flex flex-col lg:flex-row justify-end lg:justify-center lg:items-center lg:px-4 lg:py-10 ${mv === "b" ? "items-end" : "items-start"} ${mv === "b" ? "" : "px-4 pb-6"}`}>
+      {mv === "b" ? <div className="relative h-[44dvh] min-h-64 w-full shrink-0 lg:hidden"><AuthShowcase compact /></div> : null}
+      <div className={`relative w-full max-w-md auth-rise ${mv === "b" ? "max-lg:-mt-6 max-lg:mx-auto" : ""}`}>
         {mv === "a" ? (
           <div className="relative -mx-4 mb-4 h-56 overflow-hidden rounded-b-3xl lg:hidden"><AuthShowcase compact /></div>
         ) : null}

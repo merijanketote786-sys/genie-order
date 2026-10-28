@@ -31,7 +31,7 @@ export function AuthShowcase({ compact = false }: { compact?: boolean }) {
         />
       ))}
       <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-sidebar via-sidebar/60 to-sidebar/10" />
-      <div className={`absolute inset-x-0 bottom-0 text-sidebar-foreground ${compact ? "p-5" : "p-12"}`}>
+      <div className={`absolute inset-x-0 bottom-0 text-sidebar-foreground ${compact ? "px-5 pt-5 pb-12" : "p-12"}`}>
         <div key={i} className="auth-rise max-w-lg">
           <span className="inline-flex items-center gap-2 rounded-full border border-sidebar-border bg-sidebar/60 px-3 py-1 text-xs font-medium backdrop-blur">
             <span className="size-1.5 rounded-full bg-gold" /> {SLIDES[i].tag}
