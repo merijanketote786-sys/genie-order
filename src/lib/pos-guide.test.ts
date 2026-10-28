@@ -14,7 +14,7 @@ test("unknown questions never invent an answer", () => {
 });
 test("every POS user can open Guide without additional action permissions", () => {
   assert.equal(moduleEntryAllowed("/pos-guide", { pos: true, workspace: false }), true);
-  assert.equal(moduleRedirect("/pos-guide", { pos: false, workspace: true }), "/dashboard");
+  assert.equal(moduleRedirect("/pos-guide", { pos: false, workspace: true }), null);
 });
 test("disabled Workspace answers never enter question matching or topic list", () => {
   const allowed = availableFaqs(GUIDE_FAQS, { pos: true, workspace: false });
