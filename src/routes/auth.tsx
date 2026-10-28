@@ -261,7 +261,7 @@ function AuthPage() {
           </div>
         </div>
 
-        <div className={`border border-border bg-card/85 p-5 ${mv === "b" ? "max-lg:rounded-b-none max-lg:rounded-t-3xl max-lg:border-b-0 max-lg:bg-card rounded-3xl" : "rounded-3xl"}`} >
+        <div className={`border border-border bg-card/85 p-5 shadow-[var(--shadow-elegant)] backdrop-blur-xl sm:p-7 ${mv === "b" ? "max-lg:rounded-b-none max-lg:rounded-t-3xl max-lg:border-b-0 max-lg:bg-card rounded-3xl" : "rounded-3xl"}`} >
           <h2 className="font-display text-lg font-bold text-foreground">
             {mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : "Forgot password"}
           </h2>
