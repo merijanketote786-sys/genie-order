@@ -9,6 +9,57 @@ import { storedOfflineUser } from "@/lib/offline-sync";
 import { toast } from "sonner";
 import logo from "@/assets/logo.webp";
 import { GoogleButton } from "@/components/google-button";
+import { AuthShowcase } from "@/components/auth-showcase";
+import { useQuery } from "@tanstack/react-query";
+import { plansQuery, formatPlanPrice } from "@/components/plans-manager";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Check, Crown } from "lucide-react";
+
+function PlansHeader() {
+  const plans = useQuery(plansQuery);
+  const [open, setOpen] = useState(false);
+  const list = (plans.data ?? []).filter((p) => p.is_active);
+  return (
+    <header className="relative z-10 flex items-center gap-3 border-b border-border bg-card/80 px-4 py-2.5 backdrop-blur-xl sm:px-6">
+      <img src={logo} alt="HB POS" width={32} height={32} className="size-8 rounded-lg" />
+      <span className="font-display font-bold">HB POS</span>
+      <div className="ml-auto flex min-w-0 items-center gap-2">
+        <div className="hidden min-w-0 items-center gap-2 overflow-x-auto md:flex">
+          {list.slice(0, 4).map((p) => (
+            <button key={p.id} type="button" onClick={() => setOpen(true)} className={`shrink-0 rounded-full border px-3 py-1 text-xs ${p.highlight ? "border-gold bg-gold/15 text-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}>
+              <span className="font-semibold">{p.name}</span> · {formatPlanPrice(p)}
+            </button>
+          ))}
+        </div>
+        {list.length ? (
+          <Button size="sm" variant="outline" onClick={() => setOpen(true)} className="gap-1.5"><Crown className="size-4" /> Plans</Button>
+        ) : null}
+      </div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Subscription plans</DialogTitle>
+            <DialogDescription>Choose the plan that fits your business.</DialogDescription>
+          </DialogHeader>
+          <div className="grid max-h-[70dvh] gap-3 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3">
+            {list.map((p) => (
+              <div key={p.id} className={`rounded-2xl border p-4 ${p.highlight ? "border-gold shadow-[var(--shadow-elegant)]" : "border-border"}`}>
+                {p.highlight ? <span className="mb-2 inline-block rounded-full bg-gold/20 px-2 py-0.5 text-[10px] font-semibold uppercase">Popular</span> : null}
+                <h3 className="font-display text-lg font-bold">{p.name}</h3>
+                <p className="mt-1 font-display text-2xl font-bold text-primary">{formatPlanPrice(p)}</p>
+                <ul className="mt-3 grid gap-1.5 text-sm">
+                  {p.features.split("\n").map((f) => f.trim()).filter(Boolean).map((f) => (
+                    <li key={f} className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-primary" />{f}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </header>
+  );
+}
 
 function safeNext(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
@@ -338,6 +389,7 @@ function AuthPage() {
           </div>
         </div>
         <p className="mt-6 text-center text-xs text-muted-foreground">© HB Chemicals Pakistan</p>
+      </div>
       </div>
       </div>
     </main>
