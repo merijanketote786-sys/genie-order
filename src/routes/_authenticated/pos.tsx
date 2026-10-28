@@ -822,9 +822,9 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
         <PosAlerts cfg={cfg} products={products} credit={balance?.found && balance.creditLimit != null && balance.balance + Math.max(0, total - paidNum) > balance.creditLimit ? { limit: balance.creditLimit, after: balance.balance + Math.max(0, total - paidNum) } : null} />
 
         <div className="border border-border bg-card">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-6">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 py-3 sm:flex sm:flex-wrap sm:justify-between sm:px-6">
             <h1 className="text-lg font-bold text-foreground">{estimate ? "Estimate" : "Sale"}</h1>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground sm:gap-3">
+            <div className="col-span-2 flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground sm:gap-3">
               <span>{editing ? `${estimate ? "Estimate" : "Invoice"} ${displayedNumber || editing.number}` : "New invoice"}</span>
               <input
                 aria-label="Invoice number (optional)"
@@ -989,16 +989,17 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
                 <span />
               </div>
               <div className="entry-bar relative">
-                 <div className="mgrid grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_52px] items-center py-2.5 max-md:py-3">
+                 <div className="billing-entry mgrid grid grid-cols-[36px_minmax(190px,2.4fr)_minmax(92px,0.9fr)_minmax(92px,0.9fr)_minmax(96px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_minmax(104px,1fr)_42px] items-center py-2.5 max-md:py-3">
                    <span className="px-1 text-center"><span className="mx-auto grid size-7 place-items-center rounded-full bg-primary text-primary-foreground"><Zap className="size-4" /></span></span>
                   <div className="flex min-w-0 items-center gap-1 border-r border-border px-1.5">
-                    <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setCamOpen(true)} aria-label="Scan barcode with camera" title="Scan barcode with camera" className="inline-flex size-9 shrink-0 items-center justify-center rounded-sm border border-primary/40 bg-background text-primary hover:bg-accent"><ScanBarcode className="size-4" /></button>
+                    <Button type="button" size="icon-sm" variant="outline" onMouseDown={(e) => e.preventDefault()} onClick={() => setCamOpen(true)} aria-label="Scan barcode with camera" title="Scan barcode with camera" className="size-9 shrink-0 rounded-sm border-primary/40 text-primary"><ScanBarcode className="size-4" /></Button>
               <input
                 ref={scanRef}
                 autoFocus
                 value={term}
                 role="combobox"
                 aria-expanded={dropOpen}
+                aria-autocomplete="list"
                 onChange={(e) => { setTerm(e.target.value); setStaged(null); setPendingNew(null); setHi(-1); setDropOpen(true); resetSf(); }}
                 onFocus={() => { if (!staged && !pendingNew) setDropOpen(true); }}
                 onBlur={() => setTimeout(() => setDropOpen(false), 150)}
@@ -1030,12 +1031,12 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
                     }
                   }
                 }}
-                placeholder="Search or scan item · ↑↓ select · Enter add"
+                placeholder={phone ? "Search or scan item" : "Search or scan item · ↑↓ select · Enter add"}
                 aria-label="Search or scan item"
                 className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-muted-foreground max-md:text-base max-md:font-semibold max-md:placeholder:font-normal"
               />
                   {(term.trim() || staged || pendingNew) ? (
-                    <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setTerm(""); setStaged(null); setPendingNew(null); setHi(-1); setDropOpen(false); resetSf(); }} aria-label="Clear item search" title="Clear — remove typed or staged item" className="inline-flex size-7 shrink-0 items-center justify-center rounded-sm border border-primary/40 bg-background text-primary hover:bg-accent"><X className="size-3.5" /></button>
+                    <Button type="button" size="icon-sm" variant="outline" onMouseDown={(e) => e.preventDefault()} onClick={() => { setTerm(""); setStaged(null); setPendingNew(null); setHi(-1); resetSf(); scanRef.current?.focus(); setDropOpen(false); }} aria-label="Clear item search" title="Clear — remove typed or staged item" className="size-9 shrink-0 rounded-sm border-primary/40 text-primary"><X className="size-3.5" /></Button>
                   ) : null}
                   </div>
                   <div onKeyDown={(e) => {
@@ -1128,7 +1129,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
                   </label>
                   </div>
                   <div className="px-1">
-                    <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={confirmStaged} aria-label={staged ? `Add ${staged.name} to bill` : "Select first match"} title={staged ? `Add ${staged.name} to bill` : "Select first match"} className="entry-add flex h-11 w-full items-center justify-center rounded-sm bg-primary text-primary-foreground hover:opacity-90"><Zap className="size-5" /></button>
+                    <Button type="button" size="icon" disabled={savingNew || !term.trim()} onMouseDown={(e) => e.preventDefault()} onClick={confirmStaged} aria-label={staged ? `Add ${staged.name} to bill` : "Select first match"} title={staged ? `Add ${staged.name} to bill` : "Select first match"} className="entry-add h-11 w-full rounded-sm"><Zap className="size-5" /></Button>
                   </div>
                 </div>
                 {dropOpen && !staged && !pendingNew && term.trim() && results.length ? (
@@ -1152,7 +1153,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
                       onMouseEnter={() => setHi(i)}
                       className={`cursor-pointer rounded-sm border-b border-border px-3 py-2 text-sm last:border-b-0 ${i === hi ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"}`}
                     >
-                      <span className="flex items-start justify-between gap-2"><span className="block font-semibold text-foreground">{p.name}</span><button type="button" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setEditItem(p.name); setDropOpen(false); }} aria-label={`Edit ${p.name}`} title="Edit item details" className="shrink-0 rounded-sm p-1 text-muted-foreground hover:bg-background hover:text-foreground"><Pencil className="size-4" /></button></span>
+                      <span className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2"><span className="min-w-0 break-words font-semibold text-foreground">{p.name}</span><Button type="button" size="icon-sm" variant="ghost" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); setEditItem(p.name); setDropOpen(false); }} aria-label={`Edit ${p.name}`} title="Edit item details" className="shrink-0 rounded-sm text-muted-foreground"><Pencil className="size-4" /></Button></span>
                        <span className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 sm:grid-cols-3 lg:grid-cols-6">
                          {detail.map(([label, value]) => <span key={label} className="min-w-0 text-xs"><span className="block text-[10px] text-muted-foreground">{label}</span><span className={`block break-words font-medium tabular-nums ${label === "Stock qty" && p.stock != null && p.stock < 0 ? "font-bold text-destructive" : "text-foreground"}`}>{value}</span></span>)}
                        </span>
@@ -1280,14 +1281,14 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
             {editing ? <p className="rounded-lg bg-accent p-2 text-xs text-accent-foreground">Open: <b>{editing.number}</b> — this will close when saved. <button className="underline" onClick={() => setEditing(null)}>Detach</button></p> : null}
 
             <Button size="lg" className="h-12 w-full text-base" disabled={!cart.length || saving} onClick={() => checkout("sale", true)}><Printer /> {estimate ? "Save + Print Estimate (F9)" : "Save + Print (F9)"} — Rs {money(total)}</Button>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2 min-[400px]:grid-cols-3">
               <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("sale", false)}><Save /> Save</Button>
               <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("held", false)}><Pause /> Hold (F10)</Button>
               <Button variant="outline" disabled={!cart.length || saving} onClick={() => checkout("quotation", false)}><FileText /> Quotation</Button>
             </div>
             <WaTemplateButton disabled={!cart.length} getReceipt={() => receipt(displayedNumber || editing?.number || "Draft")} />
             <p className="text-[11px] text-muted-foreground"><K>Ctrl+S</K> / <K>F9</K> save + print · <K>Ctrl+Enter</K> save without print · <K>Ctrl+Shift+H</K> hold · <K>Alt+N</K> new bill</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2 min-[400px]:grid-cols-3">
               <Button variant="ghost" size="sm" onClick={() => setDocsOpen("held")}><FolderOpen /> Held bills</Button>
               <Button variant="ghost" size="sm" onClick={() => setDocsOpen("quotation")}><FolderOpen /> Quotations</Button>
               <Button variant="ghost" size="sm" onClick={() => reset()}><RotateCcw /> New (F2)</Button>
@@ -1340,7 +1341,7 @@ function CartRow({ index, line, focus, onFocused, onDone, onPatch, onRemove, loc
         <div className="min-w-0 px-2 py-2">
           <div className="flex items-start justify-between gap-1.5">
             <p className="min-w-0 truncate font-semibold text-foreground" title={line.name}>{line.name}{isWholesale(line) ? <span className="ml-2 rounded bg-primary/15 px-1.5 py-0.5 align-middle text-[10px] font-bold uppercase text-primary">Wholesale</span> : null}</p>
-            <button type="button" aria-label={`Edit ${line.name}`} title="Edit item details" className="shrink-0 rounded-sm p-1 text-muted-foreground hover:bg-background hover:text-foreground" onClick={() => onEditItem?.(line.name)}><Pencil className="size-4" /></button>
+            <Button type="button" size="icon-sm" variant="ghost" aria-label={`Edit ${line.name}`} title="Edit item details" className="shrink-0 rounded-sm text-muted-foreground" onClick={() => onEditItem?.(line.name)}><Pencil className="size-4" /></Button>
           </div>
           <div className="flex items-center gap-2">
             <Button size="sm" variant="ghost" className="h-6 px-0 text-xs text-muted-foreground" onClick={() => setShowNote((v) => !v)}><StickyNote className="size-3" /> {line.note ? "Edit note" : "Add note"}</Button>
