@@ -36,7 +36,7 @@ export const listCourierAccounts = createServerFn({ method: "GET" })
     const { data } = await a.from("pos_courier_accounts").select("*").eq("workspace_id", ws).order("created_at");
     return {
       isAdmin,
-      accounts: (data ?? []).map((r: any) => {
+      accounts: ((data ?? []) as any[]).map((r: any) => {
         const creds: Record<string, string> = {};
         for (const [k, v] of Object.entries(r.credentials ?? {})) creds[k] = SECRET_KEYS.includes(k) ? (v ? "••••••" : "") : String(v ?? "");
         return { id: r.id as string, courier: r.courier as string, label: r.label as string, isActive: r.is_active as boolean, isDefault: r.is_default as boolean, settings: (r.settings ?? {}) as Record<string, unknown>, credentials: isAdmin ? creds : {}, webhookToken: isAdmin ? (r.webhook_token as string | null) : null };
