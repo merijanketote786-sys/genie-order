@@ -540,6 +540,13 @@
       "when": 1792851286461,
       "tag": "0076_keep_pos_payment_updates_in_pos",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1793148239215,
+      "tag": "0077_pos_shifts",
+      "breakpoints": true
     }
   ]
 }
