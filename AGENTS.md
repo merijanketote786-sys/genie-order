@@ -21,11 +21,11 @@
 - Render the shared POS navigation in AppShell's dedicated POS sidebar rather than per-page strips; this keeps every POS screen's links consistent across desktop and mobile.
 - Render Parties transaction actions through the shared portal dropdown and use compact transaction rows on phones; this prevents clipping inside scroll areas while keeping ledger amounts readable.
 - Keep historical sales and purchase party IDs in their existing records, and present same-phone contacts together in POS; this preserves transaction links and balances without destructive data migration.
-- POS party selectors must request only POS-scoped customers, while Workspace customer selectors retain their existing full list; this prevents Workspace-only contacts from appearing in POS workflows.
+- POS party selectors must request only POS-scoped customers; the full contact list stays out of POS workflows so unrelated contacts cannot be selected.
 - POS units (main/sub with conversion factor = sub units per 1 main) and saved categories live in pos_units / pos_categories, written via the browser client under RLS (edit_stock or admin); keeps them workspace-scoped without new RPCs.
 - Dashboard quick-action popups render route components directly inside EmbeddedShell (AppShell renders children only) instead of iframes; nested iframes lose the preview auth session.
 - Handle rotation with shared AppShell/dialog safe-area and short-landscape CSS rather than orientation listeners or remounts, so in-progress entries survive viewport changes.
-- Workspace order/invoice/confirmation formatting, extract and rate imports are rule-based (src/lib/template-engine.ts + per-user order_templates kinds incl. *_input); no AI calls anywhere in the app, so they work without credits and stay predictable.
+- POS document formatting, extract and rate imports are rule-based (src/lib/template-engine.ts + per-user order_templates kinds incl. *_input); no AI calls anywhere in the app, so they work without credits and stay predictable.
 
 - POS writes (sales, purchases, returns) go through runOrQueue in src/lib/offline-sync.ts: offline saves queue in IndexedDB with a per-device number prefix and replay via the same server functions using clientRef idempotency; query cache persists to IndexedDB and a guarded service worker (published site only) caches the app shell.
 - Fixed assets use a POS-only register with workspace-scoped RLS, edit_stock writes, subscription guards and UUID upserts; register changes do not post inventory, payments or accounting journals.
@@ -42,4 +42,4 @@
 - Use the database's is_platform_owner check for owner UI and server permissions, requiring authenticated identity plus the protected admin role; shared checks prevent staff privilege exemptions and inconsistent admin menus.
 - POS Guide matches free-text questions to a local curated FAQ catalog, filtering disabled-module topics before matching; it never calls AI or fabricates missing answers. POS Admin links reuse the existing panel authorization and preserve POS shell context through a validated search parameter.
 - Detailed POS reports use a shared catalog and pure calculation engine behind a workspace-scoped, paginated, permission-checked server function; saved transaction costs and explicit limitations prevent historical margins or missing traceability from being fabricated.
-- Workspace pages were permanently removed; every page is POS (routeModule returns pos except shared /admin) and / redirects to /pos-dashboard, so no Workspace entry points can reappear.
+- The Workspace module and its data are permanently removed; every page is POS (routeModule returns pos except shared /admin), / redirects to /pos-dashboard, and all future changes stay POS-only — no Workspace entry point, feature or data may be reintroduced.
