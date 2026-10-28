@@ -15,6 +15,7 @@ import type { PrintDoc } from "@/lib/print/render";
 import { toChallan } from "@/lib/print/do";
 import { toast } from "sonner";
 import { askReason } from "@/lib/ask-reason";
+import { CourierBookingDialog, type BookSource } from "@/components/courier-booking-dialog";
 import { WaTemplateButton } from "@/components/wa-template-button";
 import { usePosAccess } from "@/components/pos-access";
 import { savedSaleToDoc as saleToDoc, savedSaleToReceipt as saleToReceipt, type SavedSaleRow as SaleRow } from "@/lib/pos-saved-invoice";
@@ -77,6 +78,7 @@ function PosInvoicesPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [share, setShare] = useState<SaleRow | null>(null);
+  const [book, setBook] = useState<BookSource | null>(null);
   const [estimates, setEstimates] = useState(false);
   const [range, setRange] = useState<DateRange>(ALL_DATES);
   const [menuFor, setMenuFor] = useState<string | null>(null);
@@ -239,6 +241,7 @@ function PosInvoicesPage() {
                         {s.doc_type === "sale" && Number(s.balance) > 0 ? item(s, <Wallet className="size-4" />, "Receive Payment", () => setReceive(s)) : null}
                         {item(s, <Pencil className="size-4" />, "Edit", () => openInBilling(s, false))}
                         {isEstimate ? item(s, <FileInput className="size-4" />, "Convert to Invoice", () => openInBilling(s, true)) : null}
+                        {s.doc_type === "sale" ? item(s, <Truck className="size-4" />, "Book courier", () => { const u = s.payload?.ui ?? s.payload; setBook({ saleId: s.id, docNumber: s.doc_number, name: s.customer_name ?? "", phone: s.customer_phone ?? "", address: u?.customerAddress ?? "", city: u?.customerCityArea ?? "", cod: Math.max(0, Number(s.balance)), items: s.items.map((i) => `${i.name} x ${i.qty}`).join("\n") }); }) : null}
                         {item(s, <Truck className="size-4" />, "Convert to D-O", () => pc.preview(challanDoc(s), false))}
                         {!isEstimate ? item(s, <Ban className="size-4" />, "Cancel", () => void doCancel(s), true) : null}
                         {isEstimate ? item(s, <Trash2 className="size-4" />, "Delete", () => void doDelete(s), true) : null}
@@ -280,6 +283,7 @@ function PosInvoicesPage() {
           <PosPage onSaved={(d) => { setEditSale(null); refresh(); if (d) pc.preview(d, false); }} />
         </div>
       ) : null}
+      {book ? <CourierBookingDialog source={book} business={business} onClose={() => setBook(null)} /> : null}
       {pc.node}
     </AppShell>
   );
