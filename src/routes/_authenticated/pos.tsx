@@ -1,6 +1,6 @@
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
 import { parseWeightBarcode, weightInProductUnit } from "@/lib/weight-barcode";
-import { productTaxPercent } from "@/lib/pos-tax";
+import { billDiscountAmount, productTaxPercent } from "@/lib/pos-tax";
 import { ProductEditDialog } from "@/components/product-edit-dialog";
 import { PosTabs } from "@/components/pos-tabs";
 import { PosCustomerSearch } from "@/components/pos-customer-search";
@@ -516,7 +516,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
     );
 
   const pre = totals(cart, 0, 0);
-  const discAmt = discType === "pct" ? Math.round(((pre.subtotal + pre.taxTotal) * Math.min(100, n(billDiscount))) / 100 * 100) / 100 : n(billDiscount);
+  const discAmt = billDiscountAmount(discType === "pct" ? (pre.subtotal + pre.taxTotal) * Math.min(100, n(billDiscount)) / 100 : n(billDiscount), pre.subtotal + pre.taxTotal);
   const billCustomFields = cfg.printing.customFields
     .map((field, index) => ({
       ...field,
@@ -659,7 +659,7 @@ const withAutoRate = (l: CartLine): CartLine => ({ ...l, price: autoRate(l) });
             lineTotal: lineTotal(l),
             note: [l.note, l.weight?.trim() ? `Wt: ${l.weight.trim()}` : "", l.size?.trim() ? `Size: ${l.size.trim()}` : ""].filter(Boolean).join(" · ") || undefined,
           })),
-           ui: { cart, billDiscount, discType, delivery, notes, customerName, customerPhone, customerAddress, customerCityArea, courierServiceName, goodsAddaName, customFields: r.customFields },
+           ui: { cart, billDiscount, discType, delivery, notes, customerName, customerPhone, customerAddress, customerCityArea, courierServiceName, goodsAddaName, currency: r.currency, customFields: r.customFields },
           clientRef: docRef.current,
       };
       const out = await runOrQueue<Awaited<ReturnType<typeof savePosDoc>>>("posDoc", posData as unknown as Record<string, unknown>, { label: kind === "quotation" ? "Estimate" : kind === "held" ? "Held bill" : "Sale", numberField: "docNumber" });

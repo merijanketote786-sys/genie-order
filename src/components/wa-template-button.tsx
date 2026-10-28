@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReceiptInput } from "@/lib/pos";
+import { renderWaTemplate as render } from "@/lib/pos-wa-template";
 import { openWhatsAppApp, waNumber } from "@/components/whatsapp-send";
 import { Copy, MessageCircle, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -20,6 +21,7 @@ Phone: {{customer_phone}}
 {{items}}
 
 Subtotal: {{subtotal}}
+Tax: {{tax}}
 Discount: {{discount}}
 Delivery: {{delivery}}
 *Grand Total: {{grand_total}}*
@@ -28,25 +30,8 @@ Balance: {{balance}}
 
 Thank you for your order!`;
 
-const VARS = ["business", "invoice_number", "date", "customer_name", "customer_phone", "customer_address", "city", "items", "subtotal", "discount", "delivery", "grand_total", "paid", "balance", "payment", "notes"];
+const VARS = ["business", "invoice_number", "date", "customer_name", "customer_phone", "customer_address", "city", "items", "subtotal", "tax", "discount", "delivery", "grand_total", "paid", "balance", "payment", "notes"];
 const KEY = "pos_wa_templates";
-const money = (n: number) => `Rs ${(Math.round((Number(n) || 0) * 100) / 100).toLocaleString("en-PK")}`;
-
-function render(body: string, r: ReceiptInput) {
-  const sub = r.lines.reduce((s, l) => s + l.price * l.qty - (l.discount || 0), 0);
-  const grand = sub - (r.billDiscount || 0) + (r.delivery || 0);
-  const items = r.lines.map((l) => `${l.name} ${l.qty}${l.unitOverride || l.unit || ""}`.trim()).join(",");
-  const map: Record<string, string> = {
-    business: r.business, invoice_number: r.invoiceNumber, date: r.date,
-    customer_name: r.customerName ?? "", customer_phone: r.customerPhone ?? "",
-    customer_address: r.customerAddress ?? "", city: r.customerCityArea ?? "",
-    items, subtotal: money(sub), discount: money(r.billDiscount || 0), delivery: money(r.delivery || 0),
-    grand_total: money(grand), paid: money(r.paid || 0), balance: money(Math.max(0, grand - (r.paid || 0))),
-    payment: String(r.payMode ?? ""), notes: r.notes ?? "",
-  };
-  return body.replace(/\{\{\s*(\w+)\s*\}\}/g, (m, k) => (k in map ? map[k] : m));
-}
-
 export function WaTemplateButton({ getReceipt, disabled, compact, label }: { getReceipt: () => ReceiptInput; disabled?: boolean; compact?: boolean; label?: string }) {
   const [st, setSt] = useState<Stored>({ enabled: false, selected: null, templates: [] });
   const [open, setOpen] = useState(false);

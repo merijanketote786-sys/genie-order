@@ -44,4 +44,4 @@
 - Detailed POS reports use a shared catalog and pure calculation engine behind a workspace-scoped, paginated, permission-checked server function; saved transaction costs and explicit limitations prevent historical margins or missing traceability from being fabricated.
 - The Workspace module and its data are permanently removed; every page is POS (routeModule returns pos except shared /admin), / redirects to /pos-dashboard, and all future changes stay POS-only — no Workspace entry point, feature or data may be reintroduced.
 - Scale barcodes use an opt-in firm profile and shared decoder with check-digit/unit validation; never guess regional layouts.
-- New sale lines prefer saved product tax (including zero), falling back only when absent; saved payloads retain inclusive/exclusive mode.
+- New lines prefer product tax including zero; payloads retain inclusive mode. Shared saved-invoice adapters use persisted totals/tax, never double-deduct item discounts. Bill discounts stay post-tax; per-line two-decimal rounding matches database writes, not display precision.

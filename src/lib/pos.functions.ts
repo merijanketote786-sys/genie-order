@@ -140,11 +140,11 @@ export const listPosSales = createServerFn({ method: "GET" })
     const ids = (rows ?? []).map((r: { id: string }) => r.id);
     const [{ data: items }, { data: pays }] = ids.length
       ? await Promise.all([
-          supabase.from("pos_sale_items").select("sale_id, name, sku, unit, qty, rate, discount, tax_percent, line_total, note").in("sale_id", ids),
+          supabase.from("pos_sale_items").select("sale_id, name, sku, unit, qty, rate, discount, tax_percent, tax_amount, line_total, note").in("sale_id", ids),
           supabase.from("pos_payments").select("sale_id, method, amount, kind, status").in("sale_id", ids).eq("status", "completed"),
         ])
       : [{ data: [] }, { data: [] }];
-    type Item = { sale_id: string; name: string; sku: string | null; unit: string | null; qty: number; rate: number; discount: number; tax_percent: number; line_total: number; note: string | null };
+    type Item = { sale_id: string; name: string; sku: string | null; unit: string | null; qty: number; rate: number; discount: number; tax_percent: number; tax_amount: number; line_total: number; note: string | null };
     type Pay = { sale_id: string; method: string; amount: number; kind: string; status: string };
     const itemsOf = new Map<string, Item[]>();
     for (const it of (items ?? []) as Item[]) itemsOf.set(it.sale_id, [...(itemsOf.get(it.sale_id) ?? []), it]);
@@ -172,7 +172,7 @@ export const getSaleForEdit = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error || !r) throw new Error("Invoice not found");
     const [{ data: items }, { data: pays }] = await Promise.all([
-      supabase.from("pos_sale_items").select("sale_id, name, sku, unit, qty, rate, discount, tax_percent, line_total, note").eq("sale_id", data.id),
+      supabase.from("pos_sale_items").select("sale_id, name, sku, unit, qty, rate, discount, tax_percent, tax_amount, line_total, note").eq("sale_id", data.id),
       supabase.from("pos_payments").select("sale_id, method, amount, kind, status").eq("sale_id", data.id).eq("status", "completed"),
     ]);
     return { sale: { ...r, items: items ?? [], payments: pays ?? [] } };
