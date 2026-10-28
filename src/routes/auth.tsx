@@ -136,6 +136,8 @@ function AuthPage() {
   }, [navigate, next]);
 
   if (!mounted) return null;
+  const mvRaw = new URLSearchParams(window.location.search).get("m");
+  const mv = mvRaw === "b" || mvRaw === "c" ? mvRaw : "a";
 
   // Phone number ko ek internal email ID mein badalte hain taake bina SMS
   // service ke phone se signup/signin ho sake (phone hi login ID hai).
@@ -235,9 +237,20 @@ function AuthPage() {
         <AuthShowcase />
       </section>
 
-      <div className="relative flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md auth-rise">
-        <div className="mb-6 flex flex-col items-center gap-3 text-center">
+      <div className={`relative flex justify-center lg:items-center lg:px-4 lg:py-10 ${mv === "b" ? "items-end" : "items-start"} ${mv === "b" ? "" : "px-4 pb-6"}`}>
+      {mv === "b" ? <div className="absolute inset-x-0 top-0 h-[47dvh] lg:hidden"><AuthShowcase compact /></div> : null}
+      <div className={`relative w-full max-w-md auth-rise ${mv === "b" ? "max-lg:pt-[42dvh]" : ""}`}>
+        {mv === "a" ? (
+          <div className="relative -mx-4 mb-4 h-56 overflow-hidden rounded-b-3xl lg:hidden"><AuthShowcase compact /></div>
+        ) : null}
+        {mv === "c" ? (
+          <div className="mb-4 flex gap-2 overflow-x-auto py-4 lg:hidden">
+            {["Fast billing", "Multi-store stock", "40+ reports", "Works offline"].map((t) => (
+              <span key={t} className="shrink-0 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground"><span className="mr-1.5 inline-block size-1.5 rounded-full bg-gold" />{t}</span>
+            ))}
+          </div>
+        ) : null}
+        <div className={`mb-6 flex-col items-center gap-3 text-center ${mv === "c" ? "flex" : "hidden lg:flex"}`}>
           <div className="relative">
             <div aria-hidden className="absolute -inset-3 rounded-3xl bg-[image:var(--gradient-brand)] opacity-25 blur-xl" />
             <img src={logo} alt="HB POS" width={80} height={80} className="relative size-20 rounded-2xl border border-border bg-card p-2 shadow-[var(--shadow-elegant)]" />
@@ -248,7 +261,7 @@ function AuthPage() {
           </div>
         </div>
 
-        <div className="rounded-3xl border border-border bg-card/85 p-5 shadow-[var(--shadow-elegant)] backdrop-blur-xl sm:p-7">
+        <div className={`border border-border bg-card/85 p-5 shadow-[var(--shadow-elegant)] backdrop-blur-xl sm:p-7 ${mv === "b" ? "max-lg:rounded-b-none max-lg:rounded-t-3xl max-lg:border-b-0 max-lg:bg-card rounded-3xl" : "rounded-3xl"}`} >
           <h2 className="font-display text-lg font-bold text-foreground">
             {mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : "Forgot password"}
           </h2>
@@ -388,7 +401,7 @@ function AuthPage() {
             )}
           </div>
         </div>
-        <p className="mt-6 text-center text-xs text-muted-foreground">© HB Chemicals Pakistan</p>
+        <p className={`text-center text-xs text-muted-foreground ${mv === "b" ? "bg-card pb-4 pt-2 lg:bg-transparent lg:mt-6" : "mt-6"}`}>© HB Chemicals Pakistan</p>
       </div>
       </div>
       </div>

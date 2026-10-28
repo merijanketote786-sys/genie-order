@@ -11,7 +11,7 @@ const SLIDES = [
   { img: mobile, tag: "Anywhere", title: "Works offline, syncs automatically", text: "Use it on PC, tablet or phone. Sales keep saving even when the internet drops." },
 ];
 
-export function AuthShowcase() {
+export function AuthShowcase({ compact = false }: { compact?: boolean }) {
   const [i, setI] = useState(0);
   useEffect(() => {
     const t = setInterval(() => setI((v) => (v + 1) % SLIDES.length), 5500);
@@ -31,15 +31,15 @@ export function AuthShowcase() {
         />
       ))}
       <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-sidebar via-sidebar/60 to-sidebar/10" />
-      <div className="absolute inset-x-0 bottom-0 p-12 text-sidebar-foreground">
+      <div className={`absolute inset-x-0 bottom-0 text-sidebar-foreground ${compact ? "p-5" : "p-12"}`}>
         <div key={i} className="auth-rise max-w-lg">
           <span className="inline-flex items-center gap-2 rounded-full border border-sidebar-border bg-sidebar/60 px-3 py-1 text-xs font-medium backdrop-blur">
             <span className="size-1.5 rounded-full bg-gold" /> {SLIDES[i].tag}
           </span>
-          <h2 className="mt-4 font-display text-4xl font-bold leading-tight">{SLIDES[i].title}</h2>
-          <p className="mt-3 text-sidebar-muted">{SLIDES[i].text}</p>
+          <h2 className={`font-display font-bold leading-tight ${compact ? "mt-2 text-xl" : "mt-4 text-4xl"}`}>{SLIDES[i].title}</h2>
+          <p className={`text-sidebar-muted ${compact ? "mt-1 line-clamp-2 text-xs" : "mt-3"}`}>{SLIDES[i].text}</p>
         </div>
-        <div className="mt-8 flex gap-2">
+        <div className={`flex gap-2 ${compact ? "mt-3" : "mt-8"}`}>
           {SLIDES.map((s, k) => (
             <button
               key={s.tag}
