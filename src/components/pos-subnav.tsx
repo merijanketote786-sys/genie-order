@@ -124,7 +124,6 @@ export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { can, config } = usePosAccess();
   const subscription = useMySubscription().data;
   const adminAccess = useQuery({ queryKey: ["my-access"], queryFn: () => getMyAccess(), staleTime: 5 * 60 * 1000 }).data;
-  const wsAllowed = !!subscription && subscription.workspace !== false;
   const attOn = (config as unknown as { attendance?: { enabled?: boolean } }).attendance?.enabled !== false;
   const [attOpen, setAttOpen] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -248,11 +247,6 @@ export function PosSidebar({ onNavigate }: { onNavigate?: () => void }) {
         <ItemsDialog open={itemsOpen} onOpenChange={setItemsOpen} />
         <AttendanceDialog open={attOpen} onOpenChange={setAttOpen} />
       </nav>
-      {wsAllowed && <div className="border-t border-sidebar-border p-3">
-        <Button asChild variant="ghost" className="w-full justify-start text-sidebar-foreground">
-          <Link to="/dashboard" onClick={onNavigate}><ArrowLeft className="size-4" /> Workspace</Link>
-        </Button>
-      </div>}
     </div>
   );
 }

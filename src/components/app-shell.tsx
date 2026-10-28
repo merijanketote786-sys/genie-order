@@ -4,7 +4,6 @@ import { FontSizeControl } from "@/components/font-size-control";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Button } from "@/components/ui/button";
-import { WorkspaceNavDialog } from "@/components/workspace-nav-dialog";
 import { PosSidebar } from "@/components/pos-subnav";
 import { FeatureAccessMenu } from "@/components/feature-access-menu";
 import { cn } from "@/lib/utils";
@@ -46,17 +45,7 @@ export const EmbeddedShell = createContext(false);
 const NAV_HIDDEN_KEY = "workspace-nav-hidden";
 
 const TABS = [
-  { to: "/dashboard", label: "Dashboard", description: "Full progress at a glance", icon: LayoutDashboard },
-  { to: "/", label: "Order", description: "Format customer orders", icon: ClipboardList },
-  { to: "/invoice", label: "Invoice", description: "Create item invoices", icon: ReceiptText },
   { to: "/pos", label: "POS", description: "Counter billing and receipt", icon: ShoppingCart },
-  { to: "/confirmation", label: "Confirm", description: "Order proforma and WhatsApp", icon: FileSignature },
-  { to: "/extract", label: "Extract", description: "Read images and PDFs", icon: FileScan },
-  { to: "/rates", label: "Rates", description: "Search staff prices", icon: Tag },
-  { to: "/calculator", label: "Calculator", description: "Courier charges calculate", icon: Calculator },
-  { to: "/history", label: "History", description: "Saved orders record", icon: History },
-  { to: "/invoices", label: "Invoices", description: "Invoice records and status", icon: FileCheck2 },
-  { to: "/customers", label: "Customers", description: "Customer record", icon: Users },
   { to: "/labels", label: "Labels", description: "Barcode labels print", icon: QrCode },
   { to: "/sync", label: "Sync", description: "Update trade rates", icon: RefreshCw },
   { to: "/accounting", label: "Accounting", description: "Ledger, P&L, balance sheet", icon: Landmark },
@@ -116,9 +105,10 @@ function AppShellInner({
   const [posMenuOpen, setPosMenuOpen] = useState(false);
   const navigate = useNavigate();
   const sub = useMySubscription().data;
-  const isPos = posContext === true || active === "/pos" || active === "/accounting" || (active === "/admin" && sub?.workspace === false && sub.pos !== false);
-  const sideLocked = !!sub && (isPos ? sub.pos === false : sub.workspace === false);
-  const otherLocked = !!sub && (isPos ? sub.workspace === false : sub.pos === false);
+  void posContext;
+  const isPos = true;
+  const sideLocked = !!sub && sub.pos === false;
+  const otherLocked = true;
   useEffect(() => {
     if (!posMenuOpen) return;
     const close = (event: KeyboardEvent) => { if (event.key === "Escape") setPosMenuOpen(false); };
@@ -155,14 +145,14 @@ function AppShellInner({
       } else if (e.key.toLowerCase() === "p") {
         e.preventDefault();
         e.stopPropagation();
-        if (!otherLocked) void navigate({ to: isPos ? "/dashboard" : "/pos-dashboard" });
+
       }
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
   }, [toggleNav, navigate, isPos, otherLocked]);
   useEffect(() => {
-    if (sideLocked && !otherLocked) void navigate({ to: isPos ? "/dashboard" : "/pos-dashboard", replace: true });
+
   }, [sideLocked, otherLocked, isPos, navigate]);
   const access = useQuery({
     queryKey: ["my-access"],
@@ -274,10 +264,6 @@ function AppShellInner({
             </div>
             <div className="flex shrink-0 items-center gap-1 sm:gap-2">
               <OfflineStatus />
-              {!otherLocked && <Button variant="outline" size="sm" asChild className="h-10 shrink-0 border-border bg-card font-semibold"
-                title={isPos ? "Switch to Workspace (press P)" : "Switch to POS (press P)"}>
-                <Link to={isPos ? "/dashboard" : "/pos-dashboard"}>{isPos ? "Workspace" : "POS"}</Link>
-              </Button>}
               {isPos && <Button variant="outline" size="icon" onClick={() => setPosMenuOpen(true)}
                 className="size-10 shrink-0 border-border bg-card xl:hidden" title="Open POS menu" aria-label="Open POS menu">
                 <Menu className="size-4" />
@@ -350,7 +336,6 @@ function AppShellInner({
             <div className="mx-auto mt-10 max-w-md rounded-xl border border-border bg-card p-6 text-center">
               <h2 className="font-display text-base font-bold text-foreground">{isPos ? "POS" : "Workspace"} not included</h2>
               <p className="mt-1 text-sm text-muted-foreground">Your subscription does not include {isPos ? "POS" : "Workspace"}. Please contact the admin to add it.</p>
-              <Button asChild className="mt-4"><Link to={isPos ? "/dashboard" : "/pos-dashboard"}>Go to {isPos ? "Workspace" : "POS"}</Link></Button>
             </div>
           ) : (
             children
@@ -376,7 +361,6 @@ function AppShellInner({
                 </Link>
               );
             })}
-            <WorkspaceNavDialog tabs={tabs} active={active} />
           </div>
         </nav>}
       </section>

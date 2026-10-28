@@ -18,18 +18,10 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAccountingRouteImport } from './routes/_authenticated/accounting'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authenticated/attendance'
-import { Route as AuthenticatedCalculatorRouteImport } from './routes/_authenticated/calculator'
-import { Route as AuthenticatedConfirmationRouteImport } from './routes/_authenticated/confirmation'
-import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDaybookRouteImport } from './routes/_authenticated/daybook'
 import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
-import { Route as AuthenticatedExtractRouteImport } from './routes/_authenticated/extract'
 import { Route as AuthenticatedFixedAssetsRouteImport } from './routes/_authenticated/fixed-assets'
-import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
-import { Route as AuthenticatedInvoiceRouteImport } from './routes/_authenticated/invoice'
-import { Route as AuthenticatedInvoicesRouteImport } from './routes/_authenticated/invoices'
 import { Route as AuthenticatedItemManufacturingRouteImport } from './routes/_authenticated/item-manufacturing'
 import { Route as AuthenticatedLabelsRouteImport } from './routes/_authenticated/labels'
 import { Route as AuthenticatedLedgerRouteImport } from './routes/_authenticated/ledger'
@@ -41,7 +33,6 @@ import { Route as AuthenticatedPosInvoicesRouteImport } from './routes/_authenti
 import { Route as AuthenticatedPosLabelsRouteImport } from './routes/_authenticated/pos-labels'
 import { Route as AuthenticatedPosSettingsRouteImport } from './routes/_authenticated/pos-settings'
 import { Route as AuthenticatedPurchasesRouteImport } from './routes/_authenticated/purchases'
-import { Route as AuthenticatedRatesRouteImport } from './routes/_authenticated/rates'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedReturnsRouteImport } from './routes/_authenticated/returns'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -103,27 +94,6 @@ const AuthenticatedAttendanceRoute = AuthenticatedAttendanceRouteImport.update({
   path: '/attendance',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedCalculatorRoute = AuthenticatedCalculatorRouteImport.update({
-  id: '/calculator',
-  path: '/calculator',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedConfirmationRoute =
-  AuthenticatedConfirmationRouteImport.update({
-    id: '/confirmation',
-    path: '/confirmation',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedCustomersRoute = AuthenticatedCustomersRouteImport.update({
-  id: '/customers',
-  path: '/customers',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedDaybookRoute = AuthenticatedDaybookRouteImport.update({
   id: '/daybook',
   path: '/daybook',
@@ -134,35 +104,15 @@ const AuthenticatedExpensesRoute = AuthenticatedExpensesRouteImport.update({
   path: '/expenses',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedExtractRoute = AuthenticatedExtractRouteImport.update({
-  id: '/extract',
-  path: '/extract',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedFixedAssetsRoute =
   AuthenticatedFixedAssetsRouteImport.update({
     id: '/fixed-assets',
     path: '/fixed-assets',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
-  id: '/history',
-  path: '/history',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedInventoryRoute = AuthenticatedInventoryRouteImport.update({
   id: '/inventory',
   path: '/inventory',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedInvoiceRoute = AuthenticatedInvoiceRouteImport.update({
-  id: '/invoice',
-  path: '/invoice',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedInvoicesRoute = AuthenticatedInvoicesRouteImport.update({
-  id: '/invoices',
-  path: '/invoices',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedItemManufacturingRoute =
@@ -222,11 +172,6 @@ const AuthenticatedPosSettingsRoute =
 const AuthenticatedPurchasesRoute = AuthenticatedPurchasesRouteImport.update({
   id: '/purchases',
   path: '/purchases',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedRatesRoute = AuthenticatedRatesRouteImport.update({
-  id: '/rates',
-  path: '/rates',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
@@ -314,18 +259,10 @@ export interface FileRoutesByFullPath {
   '/accounting': typeof AuthenticatedAccountingRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/attendance': typeof AuthenticatedAttendanceRoute
-  '/calculator': typeof AuthenticatedCalculatorRoute
-  '/confirmation': typeof AuthenticatedConfirmationRoute
-  '/customers': typeof AuthenticatedCustomersRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
   '/daybook': typeof AuthenticatedDaybookRoute
   '/expenses': typeof AuthenticatedExpensesRoute
-  '/extract': typeof AuthenticatedExtractRoute
   '/fixed-assets': typeof AuthenticatedFixedAssetsRoute
-  '/history': typeof AuthenticatedHistoryRoute
   '/inventory': typeof AuthenticatedInventoryRoute
-  '/invoice': typeof AuthenticatedInvoiceRoute
-  '/invoices': typeof AuthenticatedInvoicesRoute
   '/item-manufacturing': typeof AuthenticatedItemManufacturingRoute
   '/labels': typeof AuthenticatedLabelsRoute
   '/ledger': typeof AuthenticatedLedgerRoute
@@ -337,7 +274,6 @@ export interface FileRoutesByFullPath {
   '/pos-labels': typeof AuthenticatedPosLabelsRoute
   '/pos-settings': typeof AuthenticatedPosSettingsRoute
   '/purchases': typeof AuthenticatedPurchasesRoute
-  '/rates': typeof AuthenticatedRatesRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/returns': typeof AuthenticatedReturnsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -362,18 +298,10 @@ export interface FileRoutesByTo {
   '/accounting': typeof AuthenticatedAccountingRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/attendance': typeof AuthenticatedAttendanceRoute
-  '/calculator': typeof AuthenticatedCalculatorRoute
-  '/confirmation': typeof AuthenticatedConfirmationRoute
-  '/customers': typeof AuthenticatedCustomersRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
   '/daybook': typeof AuthenticatedDaybookRoute
   '/expenses': typeof AuthenticatedExpensesRoute
-  '/extract': typeof AuthenticatedExtractRoute
   '/fixed-assets': typeof AuthenticatedFixedAssetsRoute
-  '/history': typeof AuthenticatedHistoryRoute
   '/inventory': typeof AuthenticatedInventoryRoute
-  '/invoice': typeof AuthenticatedInvoiceRoute
-  '/invoices': typeof AuthenticatedInvoicesRoute
   '/item-manufacturing': typeof AuthenticatedItemManufacturingRoute
   '/labels': typeof AuthenticatedLabelsRoute
   '/ledger': typeof AuthenticatedLedgerRoute
@@ -385,7 +313,6 @@ export interface FileRoutesByTo {
   '/pos-labels': typeof AuthenticatedPosLabelsRoute
   '/pos-settings': typeof AuthenticatedPosSettingsRoute
   '/purchases': typeof AuthenticatedPurchasesRoute
-  '/rates': typeof AuthenticatedRatesRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/returns': typeof AuthenticatedReturnsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -413,18 +340,10 @@ export interface FileRoutesById {
   '/_authenticated/accounting': typeof AuthenticatedAccountingRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/attendance': typeof AuthenticatedAttendanceRoute
-  '/_authenticated/calculator': typeof AuthenticatedCalculatorRoute
-  '/_authenticated/confirmation': typeof AuthenticatedConfirmationRoute
-  '/_authenticated/customers': typeof AuthenticatedCustomersRoute
-  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/daybook': typeof AuthenticatedDaybookRoute
   '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
-  '/_authenticated/extract': typeof AuthenticatedExtractRoute
   '/_authenticated/fixed-assets': typeof AuthenticatedFixedAssetsRoute
-  '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
-  '/_authenticated/invoice': typeof AuthenticatedInvoiceRoute
-  '/_authenticated/invoices': typeof AuthenticatedInvoicesRoute
   '/_authenticated/item-manufacturing': typeof AuthenticatedItemManufacturingRoute
   '/_authenticated/labels': typeof AuthenticatedLabelsRoute
   '/_authenticated/ledger': typeof AuthenticatedLedgerRoute
@@ -436,7 +355,6 @@ export interface FileRoutesById {
   '/_authenticated/pos-labels': typeof AuthenticatedPosLabelsRoute
   '/_authenticated/pos-settings': typeof AuthenticatedPosSettingsRoute
   '/_authenticated/purchases': typeof AuthenticatedPurchasesRoute
-  '/_authenticated/rates': typeof AuthenticatedRatesRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/returns': typeof AuthenticatedReturnsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -465,18 +383,10 @@ export interface FileRouteTypes {
     | '/accounting'
     | '/admin'
     | '/attendance'
-    | '/calculator'
-    | '/confirmation'
-    | '/customers'
-    | '/dashboard'
     | '/daybook'
     | '/expenses'
-    | '/extract'
     | '/fixed-assets'
-    | '/history'
     | '/inventory'
-    | '/invoice'
-    | '/invoices'
     | '/item-manufacturing'
     | '/labels'
     | '/ledger'
@@ -488,7 +398,6 @@ export interface FileRouteTypes {
     | '/pos-labels'
     | '/pos-settings'
     | '/purchases'
-    | '/rates'
     | '/reports'
     | '/returns'
     | '/settings'
@@ -513,18 +422,10 @@ export interface FileRouteTypes {
     | '/accounting'
     | '/admin'
     | '/attendance'
-    | '/calculator'
-    | '/confirmation'
-    | '/customers'
-    | '/dashboard'
     | '/daybook'
     | '/expenses'
-    | '/extract'
     | '/fixed-assets'
-    | '/history'
     | '/inventory'
-    | '/invoice'
-    | '/invoices'
     | '/item-manufacturing'
     | '/labels'
     | '/ledger'
@@ -536,7 +437,6 @@ export interface FileRouteTypes {
     | '/pos-labels'
     | '/pos-settings'
     | '/purchases'
-    | '/rates'
     | '/reports'
     | '/returns'
     | '/settings'
@@ -563,18 +463,10 @@ export interface FileRouteTypes {
     | '/_authenticated/accounting'
     | '/_authenticated/admin'
     | '/_authenticated/attendance'
-    | '/_authenticated/calculator'
-    | '/_authenticated/confirmation'
-    | '/_authenticated/customers'
-    | '/_authenticated/dashboard'
     | '/_authenticated/daybook'
     | '/_authenticated/expenses'
-    | '/_authenticated/extract'
     | '/_authenticated/fixed-assets'
-    | '/_authenticated/history'
     | '/_authenticated/inventory'
-    | '/_authenticated/invoice'
-    | '/_authenticated/invoices'
     | '/_authenticated/item-manufacturing'
     | '/_authenticated/labels'
     | '/_authenticated/ledger'
@@ -586,7 +478,6 @@ export interface FileRouteTypes {
     | '/_authenticated/pos-labels'
     | '/_authenticated/pos-settings'
     | '/_authenticated/purchases'
-    | '/_authenticated/rates'
     | '/_authenticated/reports'
     | '/_authenticated/returns'
     | '/_authenticated/settings'
@@ -688,34 +579,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAttendanceRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/calculator': {
-      id: '/_authenticated/calculator'
-      path: '/calculator'
-      fullPath: '/calculator'
-      preLoaderRoute: typeof AuthenticatedCalculatorRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/confirmation': {
-      id: '/_authenticated/confirmation'
-      path: '/confirmation'
-      fullPath: '/confirmation'
-      preLoaderRoute: typeof AuthenticatedConfirmationRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/customers': {
-      id: '/_authenticated/customers'
-      path: '/customers'
-      fullPath: '/customers'
-      preLoaderRoute: typeof AuthenticatedCustomersRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/daybook': {
       id: '/_authenticated/daybook'
       path: '/daybook'
@@ -730,13 +593,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedExpensesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/extract': {
-      id: '/_authenticated/extract'
-      path: '/extract'
-      fullPath: '/extract'
-      preLoaderRoute: typeof AuthenticatedExtractRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/fixed-assets': {
       id: '/_authenticated/fixed-assets'
       path: '/fixed-assets'
@@ -744,32 +600,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFixedAssetsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/history': {
-      id: '/_authenticated/history'
-      path: '/history'
-      fullPath: '/history'
-      preLoaderRoute: typeof AuthenticatedHistoryRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/inventory': {
       id: '/_authenticated/inventory'
       path: '/inventory'
       fullPath: '/inventory'
       preLoaderRoute: typeof AuthenticatedInventoryRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/invoice': {
-      id: '/_authenticated/invoice'
-      path: '/invoice'
-      fullPath: '/invoice'
-      preLoaderRoute: typeof AuthenticatedInvoiceRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/invoices': {
-      id: '/_authenticated/invoices'
-      path: '/invoices'
-      fullPath: '/invoices'
-      preLoaderRoute: typeof AuthenticatedInvoicesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/item-manufacturing': {
@@ -847,13 +682,6 @@ declare module '@tanstack/react-router' {
       path: '/purchases'
       fullPath: '/purchases'
       preLoaderRoute: typeof AuthenticatedPurchasesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/rates': {
-      id: '/_authenticated/rates'
-      path: '/rates'
-      fullPath: '/rates'
-      preLoaderRoute: typeof AuthenticatedRatesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/reports': {
@@ -968,18 +796,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountingRoute: typeof AuthenticatedAccountingRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAttendanceRoute: typeof AuthenticatedAttendanceRoute
-  AuthenticatedCalculatorRoute: typeof AuthenticatedCalculatorRoute
-  AuthenticatedConfirmationRoute: typeof AuthenticatedConfirmationRoute
-  AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
-  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDaybookRoute: typeof AuthenticatedDaybookRoute
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
-  AuthenticatedExtractRoute: typeof AuthenticatedExtractRoute
   AuthenticatedFixedAssetsRoute: typeof AuthenticatedFixedAssetsRoute
-  AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
-  AuthenticatedInvoiceRoute: typeof AuthenticatedInvoiceRoute
-  AuthenticatedInvoicesRoute: typeof AuthenticatedInvoicesRoute
   AuthenticatedItemManufacturingRoute: typeof AuthenticatedItemManufacturingRoute
   AuthenticatedLabelsRoute: typeof AuthenticatedLabelsRoute
   AuthenticatedLedgerRoute: typeof AuthenticatedLedgerRoute
@@ -991,7 +811,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPosLabelsRoute: typeof AuthenticatedPosLabelsRoute
   AuthenticatedPosSettingsRoute: typeof AuthenticatedPosSettingsRoute
   AuthenticatedPurchasesRoute: typeof AuthenticatedPurchasesRoute
-  AuthenticatedRatesRoute: typeof AuthenticatedRatesRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedReturnsRoute: typeof AuthenticatedReturnsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -1004,18 +823,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountingRoute: AuthenticatedAccountingRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAttendanceRoute: AuthenticatedAttendanceRoute,
-  AuthenticatedCalculatorRoute: AuthenticatedCalculatorRoute,
-  AuthenticatedConfirmationRoute: AuthenticatedConfirmationRoute,
-  AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
-  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDaybookRoute: AuthenticatedDaybookRoute,
   AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
-  AuthenticatedExtractRoute: AuthenticatedExtractRoute,
   AuthenticatedFixedAssetsRoute: AuthenticatedFixedAssetsRoute,
-  AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
-  AuthenticatedInvoiceRoute: AuthenticatedInvoiceRoute,
-  AuthenticatedInvoicesRoute: AuthenticatedInvoicesRoute,
   AuthenticatedItemManufacturingRoute: AuthenticatedItemManufacturingRoute,
   AuthenticatedLabelsRoute: AuthenticatedLabelsRoute,
   AuthenticatedLedgerRoute: AuthenticatedLedgerRoute,
@@ -1027,7 +838,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPosLabelsRoute: AuthenticatedPosLabelsRoute,
   AuthenticatedPosSettingsRoute: AuthenticatedPosSettingsRoute,
   AuthenticatedPurchasesRoute: AuthenticatedPurchasesRoute,
-  AuthenticatedRatesRoute: AuthenticatedRatesRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedReturnsRoute: AuthenticatedReturnsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,

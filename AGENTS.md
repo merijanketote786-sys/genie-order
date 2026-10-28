@@ -42,3 +42,4 @@
 - Use the database's is_platform_owner check for owner UI and server permissions, requiring authenticated identity plus the protected admin role; shared checks prevent staff privilege exemptions and inconsistent admin menus.
 - POS Guide matches free-text questions to a local curated FAQ catalog, filtering disabled-module topics before matching; it never calls AI or fabricates missing answers. POS Admin links reuse the existing panel authorization and preserve POS shell context through a validated search parameter.
 - Detailed POS reports use a shared catalog and pure calculation engine behind a workspace-scoped, paginated, permission-checked server function; saved transaction costs and explicit limitations prevent historical margins or missing traceability from being fabricated.
+- Workspace pages were permanently removed; every page is POS (routeModule returns pos except shared /admin) and / redirects to /pos-dashboard, so no Workspace entry points can reappear.
