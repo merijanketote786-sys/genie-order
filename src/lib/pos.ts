@@ -1,6 +1,7 @@
 /** POS helpers — client-safe (online + offline dono me). */
 import type { DbProduct } from "@/lib/products.functions";
 import type { InvoiceCustomField } from "@/lib/pos-config";
+import { billDiscountAmount, roundPosAmount } from "@/lib/pos-tax";
 
 export type RateType = "sale" | "p100" | "p250" | "p500";
 export const RATE_TYPES: { id: RateType; label: string; packGrams: number | null }[] = [
@@ -30,6 +31,9 @@ export type CartLine = {
   taxPercent?: number;
   /** Rate me tax shamil hai (tax-inclusive pricing) */
   taxIncl?: boolean;
+  /** Persisted values on historical receipts; never recalculate them using current settings. */
+  savedTaxAmount?: number;
+  savedLineTotal?: number;
   sku?: string;
   barcode?: string;
   note?: string;
@@ -80,15 +84,16 @@ export function stockDeduction(line: Pick<CartLine, "rateType" | "unit" | "qty">
   return line.qty;
 }
 
-const r2 = (x: number) => Math.round(x * 100) / 100;
+const r2 = roundPosAmount;
 const grossOf = (l: CartLine) => Math.max(0, l.price * l.qty - (l.discount || 0));
 /** Tax-inclusive: rate me tax shamil — tax = gross × t/(100+t). Exclusive: tax = base × t/100. */
 export const lineTax = (l: CartLine) => {
+  if (l.savedTaxAmount != null) return l.savedTaxAmount;
   const t = l.taxPercent || 0;
   return l.taxIncl ? r2((grossOf(l) * t) / (100 + t)) : r2((grossOf(l) * t) / 100);
 };
-export const lineBase = (l: CartLine) => (l.taxIncl ? r2(grossOf(l) - lineTax(l)) : grossOf(l));
-export const lineTotal = (l: CartLine) => (l.taxIncl ? r2(grossOf(l)) : r2(grossOf(l) + lineTax(l)));
+export const lineBase = (l: CartLine) => r2(lineTotal(l) - lineTax(l));
+export const lineTotal = (l: CartLine) => l.savedLineTotal ?? (l.taxIncl ? r2(grossOf(l)) : r2(grossOf(l) + lineTax(l)));
 
 /** billDiscount = amount (percent pehle hi amount me convert karein). */
 export function customChargesTotal(fields?: InvoiceCustomField[]) {
@@ -102,7 +107,7 @@ export function totals(lines: CartLine[], billDiscount: number, delivery: number
   const subtotal = r2(lines.reduce((s, l) => s + lineBase(l), 0));
   const taxTotal = r2(lines.reduce((s, l) => s + lineTax(l), 0));
   const itemDiscount = r2(lines.reduce((s, l) => s + (l.discount || 0), 0));
-  const total = Math.max(0, r2(subtotal + taxTotal - (billDiscount || 0) + (delivery || 0) + (customCharges || 0)));
+  const total = Math.max(0, r2(subtotal + taxTotal - billDiscountAmount(billDiscount, subtotal + taxTotal) + (delivery || 0) + (customCharges || 0)));
   return { subtotal, taxTotal, itemDiscount, total };
 }
 
@@ -136,14 +141,19 @@ export type ReceiptInput = {
   footer?: string;
   customFields?: InvoiceCustomField[];
   currency: string;
+  savedTotals?: { subtotal: number; taxTotal: number; total: number };
 };
+
+export function receiptTotals(r: ReceiptInput) {
+  return r.savedTotals ?? totals(r.lines, r.billDiscount, r.delivery, customChargesTotal(r.customFields));
+}
 
 const payLabel = (r: ReceiptInput) =>
   r.payments?.length ? r.payments.filter((p) => p.amount > 0).map((p) => `${p.method} ${money(p.amount)}`).join(", ") : String(r.payMode);
 
 /** Plain text invoice — record + WhatsApp ke liye. */
 export function receiptText(r: ReceiptInput) {
-  const { subtotal, taxTotal, total } = totals(r.lines, r.billDiscount, r.delivery, customChargesTotal(r.customFields));
+  const { subtotal, taxTotal, total } = receiptTotals(r);
   const out: string[] = [];
   out.push(`*${r.business || "Invoice"}*`, `${r.title || "Invoice"}: ${r.invoiceNumber}`, `Date: ${r.date}`);
   if (r.customerName) out.push(`Customer: ${r.customerName}`);
@@ -213,7 +223,7 @@ export const PRINTER_PRESETS: ReceiptPrinter[] = [
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
 export function receiptHtml(r: ReceiptInput, p: ReceiptPrinter) {
-  const { subtotal, taxTotal, total } = totals(r.lines, r.billDiscount, r.delivery, customChargesTotal(r.customFields));
+  const { subtotal, taxTotal, total } = receiptTotals(r);
   const wide = p.widthMm >= 120;
   const rows = r.lines
     .map(
@@ -265,7 +275,7 @@ export function printReceipt(html: string) {
 export async function downloadReceiptPdf(r: ReceiptInput) {
   const { jsPDF } = await import("jspdf");
   const { default: autoTable } = await import("jspdf-autotable");
-  const { subtotal, taxTotal, total } = totals(r.lines, r.billDiscount, r.delivery, customChargesTotal(r.customFields));
+  const { subtotal, taxTotal, total } = receiptTotals(r);
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const c = r.currency;
   doc.setFont("helvetica", "bold").setFontSize(16).text(r.business || "Invoice", 14, 18);
@@ -309,7 +319,7 @@ export async function downloadReceiptPdf(r: ReceiptInput) {
 
 /** POS receipt -> central PrintDoc. */
 export function receiptToDoc(r: ReceiptInput, o: { kind?: import("@/lib/pos-config").DocKind; id?: string; date?: Date } = {}): import("@/lib/print/render").PrintDoc {
-  const { subtotal, taxTotal, total } = totals(r.lines, r.billDiscount, r.delivery, customChargesTotal(r.customFields));
+  const { subtotal, taxTotal, total } = receiptTotals(r);
   const quote = r.title === "Quotation";
   const t: import("@/lib/print/render").PrintTotal[] = [{ label: "Subtotal", value: subtotal }];
   if (taxTotal) t.push({ label: "Tax", value: taxTotal });
@@ -331,7 +341,7 @@ export function receiptToDoc(r: ReceiptInput, o: { kind?: import("@/lib/pos-conf
     currency: r.currency,
      party: { label: "Customer", name: r.customerName, phone: r.customerPhone, address: [r.customerAddress, r.customerCityArea].filter(Boolean).join(", ") || undefined },
      meta: [["Courier service", r.courierServiceName], ["Goods adda", r.goodsAddaName]].filter((entry): entry is [string, string] => Boolean(entry[1])),
-    lines: r.lines.map((l) => ({ name: l.name, sku: l.sku, barcode: l.barcode, unit: packLabel(l), qty: l.qty, rate: l.price, discount: l.discount || 0, taxPct: l.taxPercent || 0, total: lineTotal(l), note: l.note })),
+    lines: r.lines.map((l) => ({ name: l.name, sku: l.sku, barcode: l.barcode, unit: packLabel(l), qty: l.qty, rate: l.price, discount: l.discount || 0, taxPct: l.taxPercent || 0, taxAmount: lineTax(l), taxIncl: l.taxIncl, total: lineTotal(l), note: l.note })),
     totals: t,
     payments: quote ? undefined : r.payments,
     paid: quote ? undefined : Math.min(r.paid, total),
