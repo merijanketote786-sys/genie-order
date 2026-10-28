@@ -575,6 +575,13 @@
       "when": 1793195158573,
       "tag": "0081_enable_pg_cron",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1793195184775,
+      "tag": "0082_fix_demo_reset_search_path",
+      "breakpoints": true
     }
   ]
 }
