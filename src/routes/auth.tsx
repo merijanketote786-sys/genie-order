@@ -22,9 +22,9 @@ function PlansHeader() {
   return (
     <header className="relative z-10 flex items-center gap-3 border-b border-border bg-card/80 px-4 py-2.5 backdrop-blur-xl sm:px-6">
       <img src={logo} alt="HB POS" width={32} height={32} className="size-8 rounded-lg" />
-      <span className="font-display font-bold">HB POS</span>
+      <span className="hidden font-display font-bold sm:inline">HB POS</span>
       <div className="ml-auto flex min-w-0 items-center gap-2">
-        <div className="hidden min-w-0 items-center gap-2 overflow-x-auto md:flex">
+        <div className="flex min-w-0 items-center gap-2 overflow-x-auto md:flex">
           {list.slice(0, 4).map((p) => (
             <button key={p.id} type="button" onClick={() => setOpen(true)} className={`shrink-0 rounded-full border px-3 py-1 text-xs ${p.highlight ? "border-gold bg-gold/15 text-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}>
               <span className="font-semibold">{p.name}</span> · {formatPlanPrice(p)}
@@ -400,7 +400,7 @@ function AuthPage() {
             )}
           </div>
         </div>
-        <p className={`text-center text-xs text-muted-foreground ${mv === "b" ? "bg-card pb-4 pt-2 lg:bg-transparent lg:mt-6" : "mt-6"}`}>© HB Chemicals Pakistan</p>
+        <p className={`text-center text-xs text-muted-foreground ${mv === "b" ? "bg-card pb-4 pt-2 lg:bg-transparent lg:mt-6" : "mt-6"}`}>© HB POS</p>
       </div>
       </div>
       </div>
