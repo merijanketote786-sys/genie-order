@@ -97,6 +97,10 @@ export const Route = createFileRoute("/auth")({
 
 type Mode = "signin" | "signup" | "forgot";
 
+// Shared demo workspace credentials — intentionally public so any visitor can try the POS.
+const DEMO_EMAIL = "demo@hbpos.demo";
+const DEMO_PASSWORD = "hbpos-demo-2026";
+
 function AuthPage() {
   const navigate = useNavigate();
   const { next } = Route.useSearch();
@@ -420,6 +424,24 @@ function AuthPage() {
               </p>
             )}
           </div>
+
+          {mode !== "forgot" ? (
+            <div className="mt-5 rounded-2xl border border-gold/40 bg-gold/10 p-3 sm:p-4">
+              <p className="text-xs text-muted-foreground">
+                New here? Explore the full POS with sample data — no account needed.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={busy}
+                onClick={startDemo}
+                className="mt-2.5 h-10 w-full gap-2"
+              >
+                {busy ? <Loader2 className="size-4 animate-spin" /> : <PlayCircle className="size-4" />}
+                Try demo
+              </Button>
+            </div>
+          ) : null}
         </div>
         <p className={`text-center text-xs text-muted-foreground ${mv === "b" ? "bg-card pb-4 pt-2 lg:bg-transparent lg:mt-6" : "mt-6"}`}>© HB POS</p>
       </div>
