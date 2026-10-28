@@ -2413,6 +2413,7 @@ export type Database = {
         Returns: undefined
       }
       pos_request_store: { Args: { _ws: string }; Returns: string }
+      pos_reset_demo_workspace: { Args: never; Returns: undefined }
       pos_restore_backup: {
         Args: { _data: Json; _mode: string }
         Returns: Json

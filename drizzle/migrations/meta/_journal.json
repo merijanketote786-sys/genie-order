@@ -561,6 +561,27 @@
       "when": 1793194448848,
       "tag": "0079_seed_demo_workspace",
       "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1793195130973,
+      "tag": "0080_pos_demo_workspace_reset",
+      "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1793195158573,
+      "tag": "0081_enable_pg_cron",
+      "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1793195184775,
+      "tag": "0082_fix_demo_reset_search_path",
+      "breakpoints": true
     }
   ]
 }
