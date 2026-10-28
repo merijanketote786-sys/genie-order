@@ -1,4 +1,7 @@
-import { read, utils } from "xlsx";
+// Core bundle instead of the main entry: the main entry requires Node's
+// "stream" at load time and crashed the published Worker runtime (SSR 500s).
+import { read, utils } from "xlsx/dist/xlsx.core.min.js";
+
 
 export type SheetRow = { name: string; unit: string; sale_price: number; stock: number };
 

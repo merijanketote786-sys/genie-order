@@ -1,43 +1,7 @@
-# Roadmap — Vyapar-style POS
-- [x] International tax audit: UK/UAE/Japan/Pakistan/configured US rates tested inclusive/exclusive; fixed half-cent rounding, fractional-line reconciliation, excess bill discounts, double item-discount display on reprints, missing saved tax/amounts in WhatsApp and inclusive tax detail in print. 41 regression tests pass; real saved INV-00070 preview/PDF read back, five country fixture PDFs generated, A4/A5/58/80 outputs verified without live financial/settings changes. Ledger stays two-decimal/per-line and bill discount post-tax; country-specific statutory discount/rounding policies, native JPY/three-decimal accounting and administrator settings save are not verified or implemented.
-- [x] Phase 4 foundation: configurable weight-embedded barcodes with checksum/unit validation, exact barcode/SKU matching, product-specific tax and international registration labels/timezones. 10 tests pass; signed-in real product entry/tax and settings check verified. No live financial records changed. Physical scale scan and administrator settings save await a real scale profile/admin session; country-specific statutory tax compliance and currency conversion are not included.
-- [x] Add screenshot's 40-report catalog with POS calculations, filters, sorting/pagination, CSV/Excel and shared print/PDF/WhatsApp preview; all 40 signed-in views loaded, exports read back, mobile/store/date validation verified. Batch receipts and recorded loan cash statements disclose limits; serial traceability, batch depletion and loan interest/schedules are not recorded and cannot be inferred.
-- [x] Fix POS invoice save blocked by Workspace access: removed legacy Workspace mirror writes from saves/cancellation/payment completion; signed-in POS-only staff saved INV-2610-0103, preview and persisted list verified, then cancelled verification bill with stock restored. Access/separation and estimate regression tests pass.
-- [x] Add authorized Admin entry in POS and a ready-answer Guide for all POS users; 9 tests pass, signed-in staff question matching/fallback and desktop/mobile Guide navigation verified with no runtime errors. Staff has no Admin link; real owner Admin navigation remains unverified without an owner session.
-- [x] Verify restricted modes: 13 Workspace and 19 POS direct links, live redirects and mobile menus pass with browser-only responses. Corrected the staff account's erroneous platform-owner exemption; real saved !ws now redirects /invoice to POS with Workspace/Settings/owner menu absent. No saved access changed; 7 tests pass.
-- [x] Hide admin-disabled POS/Workspace and open the allowed module directly; shared pre-render gate, live refresh with 10-second fallback, 3 tests pass, signed-in direct-link/menu checks pass with browser-only permission overrides (real admin revocation not exercised)
-- [x] Monitoring: exclude purchase orders from dashboard/reports/day book/payables and enforce store/credit-party checks during conversion (37 tests pass; signed-in UI and conversion server rejection verified without saving financial records)
-- [x] Bulk update items: "Rate by %" master switch — on applies percentage pricing, off stops every percentage-driven rate change (5 tests; live purchase 100→sale 145 on, 200→sale unchanged off, 300→435 back on)
-- [x] POS Purchase Orders: create PO (rate optional) with Order tab, convert to purchase from the list with editable rates/payment, cancel open orders only (6 SQL tests pass; live create PO-00025 → convert PUR-00026 verified, then test data cleaned up)
-- [x] Estimate conversion changes only QT prefix to INV, preserving serial (SQL tests pass; real QT-00054 opens as INV-00054; no financial transaction posted during verification)
-- [x] Add Edit details for each POS party (atomic ID-based saves; real party save/reload verified; balance/link/separation tests pass)
-- [x] Preserve POS estimate numbers on edit/conversion and allow staff estimate deletion with workspace/security guards (7 SQL tests; signed-in existing estimate edit/save verified)
-- [x] Rename POS delivery challans to D-O and make customer details optional across all D-O outputs
-- [x] POS Fixed Assets: asset register, add/edit/archive, categories, values, permission checks and verification
-- [x] Enable mobile/tablet rotation and verify shared POS/Workspace navigation and popups in both orientations
-- [x] POS backup: save to computer folder/download, restore with merge or replace
-- [ ] Daily automatic Google Drive backup — blocked: Google Drive connection was declined
-- [x] Keep Workspace-only customers out of POS Parties, billing, purchase, and payment selections
-- [x] Merge supplier and party experience across purchases, sales, navigation, and settings without losing historical transactions
-- [x] Fix Parties transaction action popup and make Parties page mobile responsive
-- [x] Custom invoice fields: bill-level values, optional per-field Add to total, saved with invoice and included in preview/print/PDF
-- [x] Printing templates: individual invoice field font sizes and whole-invoice font style
-- [x] Match POS billing page to the supplied full-width sale-invoice layout without changing billing behavior
-- [x] Phase 1–6: POS business system
-- [x] Production audit: idempotency, change/overpayment fix, return/cancel guards, locked direct writes, indexes, friendly errors
-- [ ] Optional: server-side price-edit check (needs per-unit pricing rules on server)
-- [x] Block sale on insufficient stock — now a setting (Inventory > negative stock)
-- [x] Printing & Settings: central print engine (A4/A5/58/80/custom), settings hub, printers, POS/purchase/return/statement/receipt/expense/day book printing, offline + desktop printer bridge
-- [x] Advanced Accounting: COA, journals, auto-posting, GL, TB, P&L, BS, AR/AP, dashboard, periods, permissions
-- [x] Sale Return: optional original bill, POS product dropdown and staged entry, atomic bill-free refund/stock posting
-- [x] Item Manufacturing: per-product raw materials + expenses setup, cost per unit, Manufacture button deducts raw stock
-- [x] COD/CC payment status correctly saved when order confirmed and transferred to Orders (auto-detect on Order page + History shows COD/CC badge)
-- [x] Move POS section links into a dedicated POS side menu on desktop and mobile
-- [x] Billing: customer dues/advance badge next to customer fields
-- [x] Day Book: cash denomination counter
-- [x] Invoices: direct "Receive Payment" on unpaid bills
-- [x] Purchases: supplier bill # + bilty/transport charges
-- [x] Parties statement, expense voucher, best-selling report (already existed); Attendance salary sheet print/PDF added
+# Roadmap
 
-- [x] Expenses: store select, store-to-store transfer, custom expense name
-- [x] Multi-firm: one owner login, separate staff per firm, subscription from first firm
+- [x] Mobile login header: subscription plan pills + Plans button visible on phones (plans must exist to show; list currently empty).
+- [x] Login footer renamed from "© HB Chemicals Pakistan" to "© HB POS".
+- [x] Monitoring: AI chat/invoice "Forbidden" errors — dead Workspace-era AI routes already removed; deleted unused src/lib/ai-gateway.server.ts, src/components/lightweight-chat.tsx, src/components/ai-elements/, and the unused `ai` / `@ai-sdk/*` packages.
+- [x] Monitoring: SSR 500s (superCtor TypeError) — xlsx server helpers now use the Worker-safe `xlsx/dist/xlsx.core.min.js` bundle; imports were already lazy.
+- [ ] User: add real subscription plans in Super Admin → Plans tab (no prices may be invented; header shows them once added).
