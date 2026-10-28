@@ -547,6 +547,13 @@
       "when": 1793148239215,
       "tag": "0077_pos_shifts",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1793161717725,
+      "tag": "0078_subscription_plans",
+      "breakpoints": true
     }
   ]
 }

@@ -1968,6 +1968,48 @@ export type Database = {
           },
         ]
       }
+      subscription_plans: {
+        Row: {
+          created_at: string
+          currency: string
+          features: string
+          highlight: boolean
+          id: string
+          is_active: boolean
+          name: string
+          period: string
+          price: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          features?: string
+          highlight?: boolean
+          id?: string
+          is_active?: boolean
+          name: string
+          period?: string
+          price?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          features?: string
+          highlight?: boolean
+          id?: string
+          is_active?: boolean
+          name?: string
+          period?: string
+          price?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       suppliers: {
         Row: {
           address: string | null
