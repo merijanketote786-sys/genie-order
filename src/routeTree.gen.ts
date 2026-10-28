@@ -39,12 +39,14 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedShiftsRouteImport } from './routes/_authenticated/shifts'
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
 import { Route as AuthenticatedSyncRouteImport } from './routes/_authenticated/sync'
+import { Route as ConfirmTokenRouteImport } from './routes/confirm.$token'
 import { Route as IclockCdataRouteImport } from './routes/iclock/cdata'
 import { Route as IclockDevicecmdRouteImport } from './routes/iclock/devicecmd'
 import { Route as IclockGetrequestRouteImport } from './routes/iclock/getrequest'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicAttendanceRouteImport } from './routes/api/public/attendance'
 import { Route as ApiSyncProductsRouteImport } from './routes/api/sync/products'
+import { Route as ApiPublicConfirmflowTokenRouteImport } from './routes/api/public/confirmflow/$token'
 import { Route as ApiPublicSyncProductsRouteImport } from './routes/api/public/sync/products'
 import { Route as TTokenIclockCdataRouteImport } from './routes/t/$token/iclock/cdata'
 import { Route as TTokenIclockDevicecmdRouteImport } from './routes/t/$token/iclock/devicecmd'
@@ -205,6 +207,11 @@ const AuthenticatedSyncRoute = AuthenticatedSyncRouteImport.update({
   path: '/sync',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ConfirmTokenRoute = ConfirmTokenRouteImport.update({
+  id: '/confirm/$token',
+  path: '/confirm/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IclockCdataRoute = IclockCdataRouteImport.update({
   id: '/iclock/cdata',
   path: '/iclock/cdata',
@@ -235,6 +242,12 @@ const ApiSyncProductsRoute = ApiSyncProductsRouteImport.update({
   path: '/api/sync/products',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicConfirmflowTokenRoute =
+  ApiPublicConfirmflowTokenRouteImport.update({
+    id: '/api/public/confirmflow/$token',
+    path: '/api/public/confirmflow/$token',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicSyncProductsRoute = ApiPublicSyncProductsRouteImport.update({
   id: '/api/public/sync/products',
   path: '/api/public/sync/products',
@@ -286,12 +299,14 @@ export interface FileRoutesByFullPath {
   '/shifts': typeof AuthenticatedShiftsRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/sync': typeof AuthenticatedSyncRoute
+  '/confirm/$token': typeof ConfirmTokenRoute
   '/iclock/cdata': typeof IclockCdataRoute
   '/iclock/devicecmd': typeof IclockDevicecmdRoute
   '/iclock/getrequest': typeof IclockGetrequestRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/public/attendance': typeof ApiPublicAttendanceRoute
   '/api/sync/products': typeof ApiSyncProductsRoute
+  '/api/public/confirmflow/$token': typeof ApiPublicConfirmflowTokenRoute
   '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
   '/t/$token/iclock/cdata': typeof TTokenIclockCdataRoute
   '/t/$token/iclock/devicecmd': typeof TTokenIclockDevicecmdRoute
@@ -326,6 +341,7 @@ export interface FileRoutesByTo {
   '/shifts': typeof AuthenticatedShiftsRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/sync': typeof AuthenticatedSyncRoute
+  '/confirm/$token': typeof ConfirmTokenRoute
   '/iclock/cdata': typeof IclockCdataRoute
   '/iclock/devicecmd': typeof IclockDevicecmdRoute
   '/iclock/getrequest': typeof IclockGetrequestRoute
@@ -333,6 +349,7 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/public/attendance': typeof ApiPublicAttendanceRoute
   '/api/sync/products': typeof ApiSyncProductsRoute
+  '/api/public/confirmflow/$token': typeof ApiPublicConfirmflowTokenRoute
   '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
   '/t/$token/iclock/cdata': typeof TTokenIclockCdataRoute
   '/t/$token/iclock/devicecmd': typeof TTokenIclockDevicecmdRoute
@@ -369,6 +386,7 @@ export interface FileRoutesById {
   '/_authenticated/shifts': typeof AuthenticatedShiftsRoute
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
   '/_authenticated/sync': typeof AuthenticatedSyncRoute
+  '/confirm/$token': typeof ConfirmTokenRoute
   '/iclock/cdata': typeof IclockCdataRoute
   '/iclock/devicecmd': typeof IclockDevicecmdRoute
   '/iclock/getrequest': typeof IclockGetrequestRoute
@@ -376,6 +394,7 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/public/attendance': typeof ApiPublicAttendanceRoute
   '/api/sync/products': typeof ApiSyncProductsRoute
+  '/api/public/confirmflow/$token': typeof ApiPublicConfirmflowTokenRoute
   '/api/public/sync/products': typeof ApiPublicSyncProductsRoute
   '/t/$token/iclock/cdata': typeof TTokenIclockCdataRoute
   '/t/$token/iclock/devicecmd': typeof TTokenIclockDevicecmdRoute
@@ -413,12 +432,14 @@ export interface FileRouteTypes {
     | '/shifts'
     | '/suppliers'
     | '/sync'
+    | '/confirm/$token'
     | '/iclock/cdata'
     | '/iclock/devicecmd'
     | '/iclock/getrequest'
     | '/.lovable/oauth/consent'
     | '/api/public/attendance'
     | '/api/sync/products'
+    | '/api/public/confirmflow/$token'
     | '/api/public/sync/products'
     | '/t/$token/iclock/cdata'
     | '/t/$token/iclock/devicecmd'
@@ -453,6 +474,7 @@ export interface FileRouteTypes {
     | '/shifts'
     | '/suppliers'
     | '/sync'
+    | '/confirm/$token'
     | '/iclock/cdata'
     | '/iclock/devicecmd'
     | '/iclock/getrequest'
@@ -460,6 +482,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/api/public/attendance'
     | '/api/sync/products'
+    | '/api/public/confirmflow/$token'
     | '/api/public/sync/products'
     | '/t/$token/iclock/cdata'
     | '/t/$token/iclock/devicecmd'
@@ -495,6 +518,7 @@ export interface FileRouteTypes {
     | '/_authenticated/shifts'
     | '/_authenticated/suppliers'
     | '/_authenticated/sync'
+    | '/confirm/$token'
     | '/iclock/cdata'
     | '/iclock/devicecmd'
     | '/iclock/getrequest'
@@ -502,6 +526,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/api/public/attendance'
     | '/api/sync/products'
+    | '/api/public/confirmflow/$token'
     | '/api/public/sync/products'
     | '/t/$token/iclock/cdata'
     | '/t/$token/iclock/devicecmd'
@@ -514,12 +539,14 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  ConfirmTokenRoute: typeof ConfirmTokenRoute
   IclockCdataRoute: typeof IclockCdataRoute
   IclockDevicecmdRoute: typeof IclockDevicecmdRoute
   IclockGetrequestRoute: typeof IclockGetrequestRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   ApiPublicAttendanceRoute: typeof ApiPublicAttendanceRoute
   ApiSyncProductsRoute: typeof ApiSyncProductsRoute
+  ApiPublicConfirmflowTokenRoute: typeof ApiPublicConfirmflowTokenRoute
   ApiPublicSyncProductsRoute: typeof ApiPublicSyncProductsRoute
   TTokenIclockCdataRoute: typeof TTokenIclockCdataRoute
   TTokenIclockDevicecmdRoute: typeof TTokenIclockDevicecmdRoute
@@ -738,6 +765,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSyncRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/confirm/$token': {
+      id: '/confirm/$token'
+      path: '/confirm/$token'
+      fullPath: '/confirm/$token'
+      preLoaderRoute: typeof ConfirmTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/iclock/cdata': {
       id: '/iclock/cdata'
       path: '/iclock/cdata'
@@ -778,6 +812,13 @@ declare module '@tanstack/react-router' {
       path: '/api/sync/products'
       fullPath: '/api/sync/products'
       preLoaderRoute: typeof ApiSyncProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/confirmflow/$token': {
+      id: '/api/public/confirmflow/$token'
+      path: '/api/public/confirmflow/$token'
+      fullPath: '/api/public/confirmflow/$token'
+      preLoaderRoute: typeof ApiPublicConfirmflowTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/sync/products': {
@@ -877,12 +918,14 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  ConfirmTokenRoute: ConfirmTokenRoute,
   IclockCdataRoute: IclockCdataRoute,
   IclockDevicecmdRoute: IclockDevicecmdRoute,
   IclockGetrequestRoute: IclockGetrequestRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   ApiPublicAttendanceRoute: ApiPublicAttendanceRoute,
   ApiSyncProductsRoute: ApiSyncProductsRoute,
+  ApiPublicConfirmflowTokenRoute: ApiPublicConfirmflowTokenRoute,
   ApiPublicSyncProductsRoute: ApiPublicSyncProductsRoute,
   TTokenIclockCdataRoute: TTokenIclockCdataRoute,
   TTokenIclockDevicecmdRoute: TTokenIclockDevicecmdRoute,
