@@ -405,6 +405,7 @@
     margin: 0 0 4px;
     overflow: visible;
     clip: auto;
+    clip-path: none;
     white-space: normal;
     font-size: 10px;
     font-weight: 600;
